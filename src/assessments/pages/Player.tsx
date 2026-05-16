@@ -55,7 +55,7 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const focusMode = false;
+  
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
   const [pendingCount, setPendingCount] = useState(0);
@@ -322,7 +322,7 @@ export default function Player() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, totalQ, answers, toggleFlag, focusMode, flushPending]);
+  }, [q, totalQ, answers, toggleFlag, flushPending]);
 
   if (isLoading) return null;
   if (error)
@@ -424,50 +424,46 @@ export default function Player() {
       <main
         data-testid="player-main"
         data-question-type={q?.type ?? ""}
-        className={getPlayerMainClass({ focusMode, questionType: q?.type ?? null })}
+        className={getPlayerMainClass({ focusMode: false, questionType: q?.type ?? null })}
       >
         {/* Mobile palette trigger */}
-        {!focusMode && (
-          <div className="lg:hidden">
-            <Sheet open={paletteOpen} onOpenChange={setPaletteOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full justify-between h-10">
-                  <span className="flex items-center gap-2">
-                    <LayoutGrid className="h-4 w-4" />
-                    Question {idx + 1} of {totalQ}
-                  </span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{answeredCount}/{totalQ} done</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[340px] p-4">
-                <SheetHeader>
-                  <SheetTitle>Navigation</SheetTitle>
-                </SheetHeader>
-                <div className="mt-4">
-                  <QuestionPalette
-                    items={paletteItems}
-                    currentIndex={idx}
-                    sections={paletteSections}
-                    onJump={(i) => { setIdx(i); setPaletteOpen(false); }}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        )}
+        <div className="lg:hidden">
+          <Sheet open={paletteOpen} onOpenChange={setPaletteOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full justify-between h-10">
+                <span className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  Question {idx + 1} of {totalQ}
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums">{answeredCount}/{totalQ} done</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[300px] sm:w-[340px] p-4">
+              <SheetHeader>
+                <SheetTitle>Navigation</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4">
+                <QuestionPalette
+                  items={paletteItems}
+                  currentIndex={idx}
+                  sections={paletteSections}
+                  onJump={(i) => { setIdx(i); setPaletteOpen(false); }}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
 
-        {!focusMode && (
-          <aside className="hidden lg:block">
-            <div className="sticky top-[5rem]">
-              <QuestionPalette
-                items={paletteItems}
-                currentIndex={idx}
-                sections={paletteSections}
-                onJump={setIdx}
-              />
-            </div>
-          </aside>
-        )}
+        <aside className="hidden lg:block">
+          <div className="sticky top-[5rem]">
+            <QuestionPalette
+              items={paletteItems}
+              currentIndex={idx}
+              sections={paletteSections}
+              onJump={setIdx}
+            />
+          </div>
+        </aside>
 
         <section className="min-w-0 w-full">
           <AnimatePresence mode="wait">
