@@ -88,7 +88,8 @@ export function useUpdateAssessment() {
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Assessment> }) => {
       const { data, error } = await supabase
         .from("assessments")
-        .update(patch)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(patch as any)
         .eq("id", id)
         .select("*")
         .single();
