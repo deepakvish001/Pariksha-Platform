@@ -472,40 +472,72 @@ export default function B2BDashboard() {
           v == null
             ? undefined
             : { value: Math.abs(v), positive: v >= 0, unit };
-        // We pass the unit as part of the hint string since KpiCard only renders value%.
-        // Quick patch: append unit-aware hint, keep KpiCard contract.
+        const windowDays = statsRange === "7d" ? 7 : statsRange === "90d" ? 90 : 30;
+        const hint = `vs prev ${windowDays}d`;
         return (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
-              label="Assessments"
-              value={stats?.assessments ?? 0}
-              icon={FileText}
-              delta={toDelta(d?.assessments, "%")}
-              hint="vs prev 30d"
-            />
-            <KpiCard
-              label="Candidates Invited"
-              value={stats?.invites ?? 0}
-              icon={Users}
-              delta={toDelta(d?.invites, "%")}
-              hint="vs prev 30d"
-            />
-            <KpiCard
-              label="Submissions"
-              value={stats?.submissions ?? 0}
-              icon={CheckCircle2}
-              delta={toDelta(d?.submissions, "%")}
-              hint="vs prev 30d"
-            />
-            <KpiCard
-              label="Avg Integrity"
-              value={
-                stats?.avgIntegrity != null ? `${stats.avgIntegrity}%` : "—"
-              }
-              icon={ShieldCheck}
-              delta={toDelta(d?.avgIntegrity, "pts")}
-              hint="vs prev 30d"
-            />
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                Key metrics
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Compare
+                </span>
+                <Select
+                  value={statsRange}
+                  onValueChange={(v) => setStatsRange(v as "7d" | "30d" | "90d")}
+                >
+                  <SelectTrigger
+                    aria-label="KPI comparison window"
+                    className="h-8 w-[140px] text-xs"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="90d">Last 90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="Assessments"
+                value={stats?.assessments ?? 0}
+                icon={FileText}
+                delta={toDelta(d?.assessments, "%")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+              <KpiCard
+                label="Candidates Invited"
+                value={stats?.invites ?? 0}
+                icon={Users}
+                delta={toDelta(d?.invites, "%")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+              <KpiCard
+                label="Submissions"
+                value={stats?.submissions ?? 0}
+                icon={CheckCircle2}
+                delta={toDelta(d?.submissions, "%")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+              <KpiCard
+                label="Avg Integrity"
+                value={
+                  stats?.avgIntegrity != null ? `${stats.avgIntegrity}%` : "—"
+                }
+                icon={ShieldCheck}
+                delta={toDelta(d?.avgIntegrity, "pts")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+            </div>
           </div>
         );
       })()}
