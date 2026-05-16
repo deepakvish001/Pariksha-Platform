@@ -24,6 +24,7 @@ import {
   UserPlus,
   Webhook,
   ChevronRight,
+  RefreshCw,
   LucideIcon,
 } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
@@ -182,6 +183,47 @@ function useSubmissionsSeries(orgId?: string, days = 30) {
   return data;
 }
 
+type AiInsight = {
+  title: string;
+  body: string;
+  severity: "info" | "positive" | "warning";
+  action?: string | null;
+};
+
+function useAiInsights(orgId?: string) {
+  const [insights, setInsights] = useState<AiInsight[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    if (!orgId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke(
+        "b2b-dashboard-insights",
+        { body: { org_id: orgId } },
+      );
+      if (invokeErr) throw invokeErr;
+      if (data?.error) throw new Error(data.error);
+      setInsights((data?.insights ?? []) as AiInsight[]);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load insights");
+      setInsights([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setInsights(null);
+    if (orgId) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
+
+  return { insights: insights ?? [], loading, error, refresh: load };
+}
+
 type ChannelCount = { source: string; count: number };
 
 function useInviteChannelCounts(orgId?: string) {
@@ -314,23 +356,8 @@ export default function B2BDashboard() {
   });
 
   const recent = (assessments ?? []).slice(0, 5);
-  const insights = [
-    {
-      title: "Submission velocity up",
-      body: `${totalSubmissions} attempts submitted in the last 30 days.`,
-    },
-    {
-      title: "Integrity looks healthy",
-      body:
-        stats?.avgIntegrity != null
-          ? `Average integrity score is ${stats.avgIntegrity}% across submissions.`
-          : "Run an assessment to start tracking integrity scores.",
-    },
-    {
-      title: "Reach more candidates",
-      body: "Bulk-invite via CSV to grow your candidate funnel this week.",
-    },
-  ];
+  const { insights, loading: insightsLoading, error: insightsError, refresh: refreshInsights } =
+    useAiInsights(org?.id);
 
   return (
     <OrgShell
@@ -543,24 +570,86 @@ export default function B2BDashboard() {
         </div>
 
         <div className="rounded-xl border border-[hsl(var(--border))] bg-gradient-to-br from-[hsl(var(--card))]/70 to-[hsl(var(--primary))]/5 backdrop-blur-xl p-5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-[hsl(var(--primary))]/15 grid place-items-center">
-              <Sparkles className="h-4 w-4 text-[hsl(var(--primary))]" />
-            </div>
-            <h2 className="text-base font-semibold">AI Insights</h2>
-          </div>
-          <div className="mt-4 space-y-3">
-            {insights.map((i) => (
-              <div
-                key={i.title}
-                className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/40 p-3"
-              >
-                <p className="text-sm font-medium">{i.title}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
-                  {i.body}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-[hsl(var(--primary))]/15 grid place-items-center">
+                <Sparkles className="h-4 w-4 text-[hsl(var(--primary))]" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">AI Insights</h2>
+                <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                  Generated from your last 30 days
                 </p>
               </div>
-            ))}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => refreshInsights()}
+              disabled={insightsLoading}
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${insightsLoading ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </div>
+          <div className="mt-4 space-y-3">
+            {insightsLoading && insights.length === 0 && (
+              <>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-16 rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/30 animate-pulse"
+                  />
+                ))}
+              </>
+            )}
+            {!insightsLoading && insightsError && (
+              <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-3 text-xs text-rose-400">
+                Could not generate insights: {insightsError}
+              </div>
+            )}
+            {!insightsLoading &&
+              !insightsError &&
+              insights.length === 0 && (
+                <p className="text-xs text-[hsl(var(--muted-foreground))] py-4 text-center">
+                  Not enough activity yet. Run an assessment to unlock insights.
+                </p>
+              )}
+            {insights.map((i, idx) => {
+              const tone =
+                i.severity === "positive"
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : i.severity === "warning"
+                  ? "border-amber-500/30 bg-amber-500/5"
+                  : "border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/40";
+              const dot =
+                i.severity === "positive"
+                  ? "bg-emerald-500"
+                  : i.severity === "warning"
+                  ? "bg-amber-500"
+                  : "bg-[hsl(var(--primary))]";
+              return (
+                <div
+                  key={`${i.title}-${idx}`}
+                  className={`rounded-lg border p-3 ${tone}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                    <p className="text-sm font-medium">{i.title}</p>
+                  </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
+                    {i.body}
+                  </p>
+                  {i.action && (
+                    <p className="text-xs text-[hsl(var(--primary))] mt-1.5 font-medium">
+                      → {i.action}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
