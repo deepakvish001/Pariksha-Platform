@@ -45,6 +45,8 @@ export function QuestionPalette({
   const { t } = useTranslation();
   const answered = items.filter((i) => i.answered).length;
   const flagged = items.filter((i) => i.flagged).length;
+  const visited = items.filter((i) => !i.answered && i.visited).length;
+  const notVisited = items.filter((i) => !i.answered && !i.visited).length;
   const unanswered = items.length - answered;
   const compact = variant === "compact";
 
