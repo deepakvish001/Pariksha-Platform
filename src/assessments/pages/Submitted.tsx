@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
 import { IntegrityExplanation } from "../components/IntegrityExplanation";
+import { SupportLink } from "../components/SupportLink";
 
 const AUTO_REDIRECT_SECONDS = 10;
 
