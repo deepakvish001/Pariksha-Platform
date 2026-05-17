@@ -221,6 +221,7 @@ Deno.serve(async (req) => {
     retention,
     snapshots_deleted: snapshotsDeleted,
     events_deleted: eventsDeleted,
+    chunks_deleted: chunksDeleted,
     snapshot_cutoff: snapCutoff,
     event_cutoff: eventCutoff,
     errors,
@@ -230,5 +231,4 @@ Deno.serve(async (req) => {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
   });
-});
 });
