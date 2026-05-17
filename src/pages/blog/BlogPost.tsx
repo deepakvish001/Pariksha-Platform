@@ -45,7 +45,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const SITE_NAME = "Byteskill";
+const SITE_NAME = "Parikshaa";
 const SITE_URL =
   (typeof window !== "undefined" && window.location.origin) ||
   "https://www.parikshaa.org";

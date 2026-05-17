@@ -46,7 +46,7 @@ const LANG_DISPLAY: Record<string, string> = {
 const langDisplay = (l: string) => LANG_DISPLAY[l] ?? l.toUpperCase();
 
 const PAGE_SIZE = 9;
-const SITE_NAME = "Byteskill";
+const SITE_NAME = "Parikshaa";
 const SITE_URL =
   (typeof window !== "undefined" && window.location.origin) ||
   "https://www.parikshaa.org";
@@ -190,7 +190,7 @@ export default function BlogIndex() {
         <title>Blog — {SITE_NAME}</title>
         <meta
           name="description"
-          content="Career advice, DSA tutorials, interview prep, and placement stories from Byteskill."
+          content="Career advice, DSA tutorials, interview prep, and placement stories from Parikshaa."
         />
         <link rel="canonical" href={canonical} />
         <meta property="og:type" content="website" />
