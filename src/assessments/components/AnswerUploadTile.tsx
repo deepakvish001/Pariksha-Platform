@@ -139,12 +139,61 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
   const [reordering, setReordering] = useState(false);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
+  const extFromMime = (mime: string | null | undefined): string | null => {
+    if (!mime) return null;
+    const m = mime.toLowerCase().split(";")[0].trim();
+    const map: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/jpg": "jpg",
+      "image/pjpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+      "image/heic": "heic",
+      "image/heif": "heif",
+      "image/avif": "avif",
+      "image/bmp": "bmp",
+      "image/tiff": "tiff",
+      "image/svg+xml": "svg",
+      "application/pdf": "pdf",
+    };
+    if (map[m]) return map[m];
+    // image/foo+bar -> foo
+    const sub = m.split("/")[1];
+    if (!sub) return null;
+    return sub.split("+")[0].replace(/[^a-z0-9]/g, "") || null;
+  };
+
+  const extFromUrl = (raw: string | undefined | null): string | null => {
+    if (!raw) return null;
+    try {
+      const u = new URL(raw, window.location.origin);
+      const path = u.pathname;
+      const m = /\.([a-zA-Z0-9]{2,5})$/.exec(path);
+      if (!m) return null;
+      const e = m[1].toLowerCase();
+      // Only accept extensions we'd actually expect for an uploaded page
+      const allowed = new Set([
+        "jpg", "jpeg", "png", "webp", "gif", "heic", "heif",
+        "avif", "bmp", "tiff", "svg", "pdf",
+      ]);
+      return allowed.has(e) ? (e === "jpeg" ? "jpg" : e) : null;
+    } catch {
+      return null;
+    }
+  };
+
   const downloadPage = async (p: Page): Promise<boolean> => {
     if (!p?.url) return false;
     try {
       const res = await fetch(p.url);
       const blob = await res.blob();
-      const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+      const headerType = res.headers.get("content-type");
+      const ext =
+        extFromMime(headerType) ??
+        extFromMime(blob.type) ??
+        extFromUrl(p.url) ??
+        "jpg";
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
