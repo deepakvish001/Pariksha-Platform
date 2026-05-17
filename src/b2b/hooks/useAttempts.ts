@@ -55,16 +55,25 @@ export type AttemptDetail = {
   }>;
 };
 
-export function useAttemptDetail(attemptId?: string) {
+/** Accepts either the attempt UUID or its slug (unique within its assessment). */
+export function useAttemptDetail(attemptIdOrSlug?: string, assessmentId?: string) {
   return useQuery({
-    queryKey: ["b2b", "attempt-detail", attemptId],
-    enabled: !!attemptId,
+    queryKey: ["b2b", "attempt-detail", attemptIdOrSlug, assessmentId ?? null],
+    enabled: !!attemptIdOrSlug,
     queryFn: async (): Promise<AttemptDetail> => {
-      const { data: attempt, error: e1 } = await supabase
+      const key = attemptIdOrSlug!;
+      let q = supabase
         .from("assessment_attempts")
-        .select("*, invite:assessment_invites(email,name,external_id), assessment:assessments(id,title,duration_min)")
-        .eq("id", attemptId!)
-        .maybeSingle();
+        .select(
+          "*, invite:assessment_invites(email,name,external_id), assessment:assessments(id,slug,title,duration_min)",
+        );
+      if (isUuid(key)) {
+        q = q.eq("id", key);
+      } else {
+        q = q.eq("slug", key);
+        if (assessmentId) q = q.eq("assessment_id", assessmentId);
+      }
+      const { data: attempt, error: e1 } = await q.maybeSingle();
       if (e1) throw e1;
       if (!attempt) throw new Error("Attempt not found");
 
