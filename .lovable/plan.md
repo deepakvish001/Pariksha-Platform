@@ -1,133 +1,147 @@
-## Goal
+# Invitation Section — Better & Easier Sending
 
-Continuously record every candidate's three eyes — webcam, screen, and side-camera — from attempt start to submit, upload in resilient ~165 s chunks, and review them later on the candidate detail page in a **synced 3-track timeline player** with event markers.
-
-This replaces the current manual "Record" button (which only works while a proctor is watching the live wall) with always-on, candidate/phone-side recording.
+Goal: make adding candidates and sending invitation emails fast, safe, and clear. Redesign the Invites tab UI, add CSV upload, give users a preview-before-send step, bulk actions, status filtering, one-click retry of failures, and optional scheduled sends + auto-reminders.
 
 ---
 
-## Architecture
+## 1. New Add-Candidates Flow
+
+Replace today's single textarea with a tabbed input card:
+
+- **Paste** (default) — same textarea, but with live parsing under it
+- **CSV / Excel upload** — drag-drop or click; supports `.csv`, `.tsv`, `.xlsx`
+- **Single candidate** — quick `name / email / roll id` form
+
+After parsing, show a **Review preview table** before insert:
 
 ```text
-Candidate browser (Player.tsx)        Phone (SideCamera.tsx)
-  ├─ webcam MediaStream  ──┐            └─ rear/front cam MediaStream
-  └─ screen MediaStream  ──┤                       │
-                           ▼                       ▼
-            useChunkedRecorder (new shared hook, 165 s chunks, 720p / ~800 kbps)
-                           │
-                           ▼
-   PUT → supabase.storage('assessment-proctor')
-        path: {attempt_id}/sessions/{kind}/{session_id}/{seq}.webm
-                           │
-                           ▼
-   INSERT row → assessment_proctor_session_chunks
-        (attempt_id, kind, session_id, seq, started_at, ended_at,
-         duration_ms, size_bytes, storage_path)
-
-Proctor (AttemptDetail → new "Session replay" tab)
-  └─ useSessionTimeline()  ─► loads all chunks for attempt
-       ├─ builds per-eye timeline (offset-from-attempt-start)
-       └─ <SessionTimelinePlayer />  3 stacked <video> tags + shared scrubber
-                                     + event-marker rail (attempt_events,
-                                       proctor_findings)
+┌──────────────────────────────────────────────────────────────┐
+│ 24 rows found · 22 valid · 2 issues · 3 duplicates of existing│
+├──────────────────────────────────────────────────────────────┤
+│ ✓ alex@acme.com       Alex Morgan      R001                  │
+│ ✓ sam@acme.com        Sam Lee          —                     │
+│ ⚠ not-an-email        Bad row          (invalid email)       │
+│ ⊘ jane@acme.com       Jane Roy         (already invited)     │
+└──────────────────────────────────────────────────────────────┘
+[ Send immediately ▾ ]  [ Add as drafts ]   [ Cancel ]
 ```
 
----
+The primary button is a **split button** with two modes (per the "let user choose each time" answer):
+- **Send immediately** — current behavior; saves user's last choice in localStorage as default
+- **Add as drafts** — inserts rows with no email send; they appear as `pending` in the list
 
-## Data model
-
-New table (migration):
-
-- `assessment_proctor_session_chunks`
-  - `id uuid pk`
-  - `attempt_id uuid` (fk → assessment_attempts)
-  - `session_id uuid` — one per (attempt, kind, page-load), used to stitch resumed sessions cleanly
-  - `kind text check (kind in ('webcam','screen','sideeye'))`
-  - `seq int` — monotonic chunk index within session
-  - `started_at timestamptz`, `ended_at timestamptz`, `duration_ms int`
-  - `size_bytes bigint`, `mime text`, `storage_path text`
-  - `uploaded_by uuid`, `created_at timestamptz default now()`
-  - unique (`attempt_id`, `kind`, `session_id`, `seq`)
-  - RLS: candidate can insert rows for their own `attempt_id`; org owners / admins / proctors can select.
-- Auto-purge: extend the existing `purge-proctoring-data` edge function to honor the same retention setting for the new table + its storage paths.
-
-The existing `assessment_proctor_recordings` table stays in place for proctor-side manual clips; the new table is the authoritative continuous session source.
+Invalid rows are skipped; duplicates of existing invites are skipped silently with a counted summary toast.
 
 ---
 
-## Capture (candidate side)
+## 2. Redesigned Invite List
 
-New shared hook `src/hooks/useChunkedRecorder.ts`:
+Replace today's flat list with a cleaner card + table layout:
 
-- Inputs: `stream`, `attemptId`, `kind`, `enabled`, `chunkMs = 165_000`, `bitsPerSecond = 800_000`, `width = 1280`.
-- Picks supported MIME via existing helper (`video/webm;codecs=vp9,opus` → vp8 → mp4 fallback).
-- Each chunk = a fresh `MediaRecorder` instance; on `stop`, uploads to storage and inserts the row, then immediately starts the next recorder. This guarantees each chunk is independently playable (whole-segment webm), not a fragment.
-- Retry queue in `IndexedDB` for offline / failed uploads; flushes on `online` event and on page show.
-- Auto-stops on `stream` end, `enabled=false`, page unload (with `navigator.sendBeacon` fallback for the trailing row).
+**Header strip** (sticky inside the tab):
+- Status pills with counts that act as filters: `All · Pending · Sent · Opened · Started · Submitted · Failed`
+- Search box (name / email / roll id)
+- Sort: Recent · Name · Status · Last sent
+- Right side: `[Resend pending]  [⋯ More]` (export CSV, copy all links)
 
-Wire-up in `src/assessments/pages/Player.tsx`:
+**Row** (denser, scannable):
+```
+☐  Avatar  Name              email                        roll_id
+            status pill      Last sent 2h ago · 2× attempts
+                                                  [Resend] [Copy link] [⋯]
+```
 
-- `useChunkedRecorder({ stream: camStream, attemptId, kind: 'webcam', enabled: proctoringEnabled && lockdownReady })`
-- Same for `screenStream` with `kind: 'screen'`.
+`[⋯]` menu: View email · Copy join link · Remove · (if failed) Show error
 
-Wire-up in `src/assessments/pages/SideCamera.tsx`:
+**Bulk selection bar** appears when any row is checked:
+```
+3 selected   [Resend]  [Copy links]  [Export CSV]  [Delete]   ✕
+```
 
-- Add same hook against the phone's `streamRef.current` with `kind: 'sideeye'`, gated on `status === 'streaming'`.
-- Keep the existing periodic still-frame upload for AI review (cheap thumbnails); they complement the video.
-
-Proctoring config (`AssessmentProctoringConfig.tsx`): add a single toggle **"Record full session (all eyes)"** defaulting on for new assessments; persisted in the existing `proctoring_config` JSON. Hook reads this flag.
-
----
-
-## Review (proctor side)
-
-New tab on `src/b2b/pages/assessments/AttemptDetail.tsx` called **"Session replay"** (sits next to the current proctoring evidence section).
-
-New components:
-
-- `src/b2b/hooks/useSessionChunks.ts` — loads all `session_chunks` for the attempt, groups by kind, sorts by `started_at`, computes per-eye `offset_ms` from the attempt's `started_at`, signs URLs in batches of 80.
-- `src/b2b/components/SessionTimelinePlayer.tsx`:
-  - Three stacked `<video>` elements (webcam · screen · sideeye), each with its own playlist of signed chunk URLs.
-  - Shared transport bar: play/pause, ±10 s, 1× / 1.5× / 2×, time display (`HH:MM:SS` of attempt + wall-clock).
-  - One canonical "playhead time" in ms-from-attempt-start. On scrub, each video seeks to the correct chunk and offset within it (chunk lookup table). When a chunk ends, advances to the next; gaps (e.g. side-cam reconnect) are rendered as a dimmed "no signal" overlay on that eye while playback continues for the others.
-  - Auto-syncs the other two videos when one buffers (pauses all until ready) so the three tracks never drift.
-  - Marker rail under the scrubber merges `attempt_events` (tab_switch, focus_loss, screenshare_lost, device_change, typing_burst) and `assessment_proctor_findings` (severity-colored dots). Click a marker → seek + flash the affected eye.
-- "Download session" button reuses the existing ZIP export, extended to include the new chunks under `sessions/{kind}/`.
-
-The existing inline gallery + lightbox is unchanged and stays as the "snapshots & clips" view.
+**Failed group**: when filter = Failed, show a banner "2 emails failed — Retry all" with last error inline per row.
 
 ---
 
-## Technical notes
+## 3. Sending Improvements
 
-- **Chunk = full WebM**, not fMP4 fragment — each file is independently playable, so a crashed upload only loses ~165 s and review still works.
-- Storage path convention `{attempt_id}/sessions/{kind}/{session_id}/{seq.padStart(5,'0')}.webm` keeps lexicographic order = playback order.
-- The candidate-side hook holds **at most one** in-flight upload per kind to keep bandwidth bounded; the rest queue in IndexedDB.
-- Session player only fetches signed URLs for chunks whose timestamp is within the current ±60 s window (lazy) to keep the page responsive for long attempts.
-- All new UI follows the existing semantic-token aesthetic (no raw colors).
-
----
-
-## Files
-
-New
-- `supabase/migrations/<ts>_create_session_chunks.sql`
-- `src/hooks/useChunkedRecorder.ts`
-- `src/b2b/hooks/useSessionChunks.ts`
-- `src/b2b/components/SessionTimelinePlayer.tsx`
-
-Edited
-- `src/assessments/pages/Player.tsx` — invoke recorder for webcam + screen
-- `src/assessments/pages/SideCamera.tsx` — invoke recorder for sideeye
-- `src/b2b/components/AssessmentProctoringConfig.tsx` — add "Record full session" toggle
-- `src/b2b/pages/assessments/AttemptDetail.tsx` — add "Session replay" tab
-- `src/b2b/components/AttemptProctoringPanel.tsx` — extend ZIP export to include session chunks
-- `supabase/functions/purge-proctoring-data/index.ts` — honor retention for the new table
+- **Confirm-before-send** modal for any batch ≥ 10 emails: "Send 24 emails now?" with recipient count + first 5 emails preview. Skippable with a "don't ask again" checkbox.
+- **Progress toast** during sends — "Sending 12 of 24…" instead of waiting silently.
+- **One-click retry** for failed sends from the row and from the Failed filter banner.
+- **Cooldown guard**: disable per-row Resend for 30s after a successful send to prevent accidental double-clicks.
+- Keep the existing **Preview email** and **Send test email** buttons, moved into the header strip.
 
 ---
 
-## Out of scope (call out, don't build)
+## 4. Schedule & Auto-Reminders
 
-- Audio capture from screen-share (browser support is inconsistent; webcam audio already lives on the webcam track when enabled).
-- Server-side transcoding to mp4 — playback is webm-native in all supported browsers.
-- AI review of session video (the existing snapshot-review flow remains the AI surface; can be extended later to sample frames from chunks).
+Add a **Schedule** option in the split button:
+- "Send immediately" / "Add as drafts" / **"Schedule for later…"** → picks date+time, stored as `scheduled_send_at` on each invite.
+- A small banner under the header strip shows scheduled batches: "12 invites scheduled for Tue 6:00 PM · Edit · Cancel".
+
+Add an **Auto-reminder** toggle in the Invites tab settings popover:
+- "Send a reminder after N days if still pending" (default off; 3 days when on)
+- Stored at the assessment level; reminders go only to invites still in `pending` and not past `expires_at`.
+
+Both run via a new scheduled edge function `process-invite-schedule` triggered by `pg_cron` every 5 minutes; it calls the existing `send-assessment-invite` for due invites.
+
+---
+
+## Technical Section
+
+### Frontend (`src/b2b/pages/assessments/Detail.tsx` + new files)
+Split the current `InvitesPanel` into focused components under `src/b2b/components/invites/`:
+- `AddCandidatesCard.tsx` — tabs (Paste / Upload / Single), parse + review preview, split send button.
+- `CsvDropzone.tsx` — `.csv`/`.tsv` via PapaParse (already use of paste parsing); `.xlsx` via `xlsx` package (add dependency).
+- `InvitesToolbar.tsx` — status pill filters, search, sort, export, preview/test buttons.
+- `InviteRow.tsx` — selectable row with checkbox, status pill, actions menu (shadcn DropdownMenu).
+- `BulkActionBar.tsx` — sticky bottom bar when selection > 0.
+- `ScheduleDialog.tsx` — date+time picker (reuse existing shadcn Calendar + Input time).
+- `useInviteSelection.ts` — small hook for selected ids + helpers.
+
+State management stays in React Query (`useInvites`, `useCreateInvites`, `useDeleteInvite`). Add:
+- `useResendInvites(ids)` mutation wrapping `supabase.functions.invoke("send-assessment-invite", { invite_ids })`.
+- `useUpdateInviteSchedule()` mutation for `scheduled_send_at`.
+- Client-side filtering/sorting/search; no extra queries.
+
+### Database (migration)
+Add columns to `assessment_invites`:
+- `scheduled_send_at timestamptz null`
+- `reminder_sent_at timestamptz null`
+
+Add columns to `assessments`:
+- `auto_reminder_enabled boolean not null default false`
+- `auto_reminder_after_days int not null default 3`
+
+Add indexes:
+- `idx_invites_scheduled_send_at` partial on `scheduled_send_at is not null and status = 'pending'`
+- `idx_invites_pending_reminder` on `(assessment_id, status, last_sent_at)`
+
+RLS: extend existing org-owner policies to cover the new columns (no new policies needed since columns inherit).
+
+### Edge Functions
+- **`send-assessment-invite`** — accept new `skip_send: true` flag (for drafts) and a `scheduled_send_at` body so the UI can both insert and schedule in one call. No behavior change when omitted.
+- **NEW `process-invite-schedule`** — runs via `pg_cron` every 5 min:
+  1. Picks invites where `scheduled_send_at <= now()` and `status = 'pending'`, calls existing sender, clears `scheduled_send_at`.
+  2. For assessments with `auto_reminder_enabled`, picks pending invites where `last_sent_at < now() - interval 'N days'` and `reminder_sent_at is null`, resends and stamps `reminder_sent_at`.
+
+Schedule the cron job via `supabase--insert` (not migration) per the scheduling guideline.
+
+### Dependencies
+- `xlsx` (SheetJS) for `.xlsx` parsing — small, browser-safe build.
+- `papaparse` if not already present, for robust CSV parsing.
+
+### Out of scope (won't change)
+- Email template rendering, brand color logic, suppression infra — untouched.
+- The student-side `useMyInvites` / claim flow.
+- Existing `assessment_invites` rows are fully compatible; all new columns are nullable / defaulted.
+
+---
+
+## Deliverables Order
+1. Migration (new columns + indexes) — request approval, apply.
+2. New components + refactored `InvitesPanel` wiring.
+3. `xlsx`/CSV upload + review preview.
+4. Bulk actions, filtering, search, sort.
+5. Schedule dialog + auto-reminder toggle UI.
+6. Edge function update + new `process-invite-schedule` + cron insert.
+7. Smoke test: add 5 via paste, 5 via CSV, schedule 2, fail-retry 1, bulk-resend 3.
