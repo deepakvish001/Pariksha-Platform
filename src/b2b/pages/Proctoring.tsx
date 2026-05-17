@@ -15,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertTriangle, ArrowRight, Camera, ExternalLink, Monitor, RefreshCw, Search, ShieldAlert,
+  AlertTriangle, ArrowRight, Camera, ExternalLink, Eye, Monitor, RefreshCw, Search, ShieldAlert,
   Smartphone, ShieldCheck,
 } from "lucide-react";
 
