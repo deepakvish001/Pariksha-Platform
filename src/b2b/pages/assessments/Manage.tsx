@@ -366,6 +366,7 @@ export default function AssessmentManage() {
 
         {canProctor && (
           <LiveProctorWall
+            orgId={org?.id}
             attempts={(participants ?? [])
               .filter((p) => p.status === "in_progress" && p.attempt_id)
               .map((p) => ({
