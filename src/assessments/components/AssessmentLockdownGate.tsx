@@ -31,10 +31,16 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [screen, setScreen] = useState<MediaStream | null>(null);
   const [sideEyePaired, setSideEyePaired] = useState(false);
+  const [detailsDone, setDetailsDone] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   useEffect(() => {
     if (stream && videoRef.current) {
