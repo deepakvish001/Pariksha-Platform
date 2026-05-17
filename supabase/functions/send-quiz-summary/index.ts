@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const authenticatedUserId = claimsData.claims.sub as string;
-    const { userId, email, userName }: QuizSummaryRequest = await req.json();
+    const { userId }: QuizSummaryRequest = await req.json();
 
     // Validate that the userId in the request matches the authenticated user
     if (userId !== authenticatedUserId) {
@@ -75,17 +75,35 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
- 
-     if (!userId || !email) {
-       throw new Error("Missing required fields: userId and email");
-     }
- 
+
+    if (!userId) {
+      throw new Error("Missing required field: userId");
+    }
+
     // Use service role client for data access
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
- 
-     // Fetch quiz results from the last 7 days
-     const weekAgo = new Date();
-     weekAgo.setDate(weekAgo.getDate() - 7);
+
+    // Fetch the verified email from auth — never trust caller-supplied address
+    const { data: authUserData, error: authUserError } = await supabase.auth.admin.getUserById(userId);
+    if (authUserError || !authUserData?.user?.email) {
+      return new Response(
+        JSON.stringify({ error: "User not found" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    const email = authUserData.user.email;
+
+    // Fetch display name from profile — never trust caller-supplied value
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const userName = escapeHtml(profileRow?.full_name || email.split("@")[0]);
+
+    // Fetch quiz results from the last 7 days
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
  
      const { data: results, error: resultsError } = await supabase
        .from("quiz_results")
