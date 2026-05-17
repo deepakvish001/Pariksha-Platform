@@ -123,6 +123,16 @@ export default function AssessmentManage() {
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ParticipantStatus | "all">("all");
+  const [sortKey, setSortKey] = useState<SortKey>("status");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "score" || k === "integrity" || k === "elapsed" ? "desc" : "asc");
+    }
+  };
 
   const counts = useMemo(() => {
     const c = {
@@ -149,7 +159,7 @@ export default function AssessmentManage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (participants ?? []).filter((p) => {
+    const rows = (participants ?? []).filter((p) => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (!q) return true;
       return (
@@ -158,7 +168,27 @@ export default function AssessmentManage() {
         (p.external_id ?? "").toLowerCase().includes(q)
       );
     });
-  }, [participants, query, statusFilter]);
+    const dir = sortDir === "asc" ? 1 : -1;
+    const nullLast = (v: number | null) => (v === null ? Number.POSITIVE_INFINITY : v);
+    const sorted = [...rows].sort((a, b) => {
+      switch (sortKey) {
+        case "name": {
+          const an = (a.name ?? a.email ?? "").toLowerCase();
+          const bn = (b.name ?? b.email ?? "").toLowerCase();
+          return an.localeCompare(bn) * dir;
+        }
+        case "status":
+          return (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]) * dir;
+        case "elapsed":
+          return (nullLast(elapsedMs(a)) - nullLast(elapsedMs(b))) * dir;
+        case "score":
+          return (nullLast(a.score) - nullLast(b.score)) * dir;
+        case "integrity":
+          return (nullLast(a.integrity_score) - nullLast(b.integrity_score)) * dir;
+      }
+    });
+    return sorted;
+  }, [participants, query, statusFilter, sortKey, sortDir]);
 
   if (isLoading) return null;
   if (!assessment) return <Navigate to="/b2b/assessments" replace />;
