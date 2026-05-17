@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import { DelayedLoginPrompt } from "@/components/DelayedLoginPrompt";
@@ -29,6 +30,18 @@ const Index = () => {
   }, []);
   return (
     <main className="min-h-screen bg-background">
+      <Helmet>
+        <title>Parikshaa — Learn to Code & Hire with AI-Proctored Assessments</title>
+        <meta name="description" content="Free structured learning for students plus secure AI-proctored hiring assessments for colleges and recruiters. One platform, two outcomes." />
+        <link rel="canonical" href="https://www.parikshaa.org/" />
+        <meta property="og:title" content="Parikshaa — Learn to Code & Hire with AI-Proctored Assessments" />
+        <meta property="og:description" content="Free DSA, SQL and interview prep for students. Secure AI-proctored coding rounds for colleges and recruiters." />
+        <meta property="og:url" content="https://www.parikshaa.org/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Parikshaa" />
+        <meta name="twitter:title" content="Parikshaa — Learn to Code & Hire with AI-Proctored Assessments" />
+        <meta name="twitter:description" content="Free structured learning for students. AI-proctored hiring assessments for colleges and recruiters." />
+      </Helmet>
       <DelayedLoginPrompt />
       <Navbar />
       {/* 1. HOOK — promise + primary CTA */}
