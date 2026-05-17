@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PlayerSosButton } from "./PlayerSosButton";
+import { PlayerSosStatus } from "./PlayerSosStatus";
 
 interface Props {
   title: string;
@@ -162,6 +163,7 @@ export function PlayerTopBar({
             )}
 
             {/* SOS */}
+            <PlayerSosStatus attemptId={attemptId} />
             <PlayerSosButton attemptId={attemptId} assessmentTitle={title} />
 
             {/* Timer */}
