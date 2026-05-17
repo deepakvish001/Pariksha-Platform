@@ -62,8 +62,8 @@ export default function B2BSettings() {
 
   const onSave = async () => {
     if (!canEdit || !dirty) return;
-    if (!isValidBrand) {
-      toast.error(brandValidation.ok ? "Brand color is invalid" : brandValidation.error);
+    if (!brandValidation.ok) {
+      toast.error(brandValidation.error);
       return;
     }
     setSaving(true);
