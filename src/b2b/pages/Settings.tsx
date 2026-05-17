@@ -47,7 +47,12 @@ export default function B2BSettings() {
   const isOwner = myRole === "owner" || org.owner_id === user?.id;
   const canEdit = isOwner || myRole === "admin";
   const normalizedBrand = brandColor.trim();
-  const isValidBrand = !normalizedBrand || /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalizedBrand);
+  const brandValidation = validateHexColor(normalizedBrand);
+  const isValidBrand = brandValidation.ok;
+  // Expand `#abc` -> `#aabbcc` for the swatch preview, uppercase for display.
+  const brandPreview = isValidBrand && normalizedBrand
+    ? expandHex(normalizedBrand).toUpperCase()
+    : null;
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
@@ -58,7 +63,7 @@ export default function B2BSettings() {
   const onSave = async () => {
     if (!canEdit || !dirty) return;
     if (!isValidBrand) {
-      toast.error("Brand color must be a hex value like #1f6feb");
+      toast.error(brandValidation.error ?? "Brand color must be a hex value like #1F6FEB");
       return;
     }
     setSaving(true);
