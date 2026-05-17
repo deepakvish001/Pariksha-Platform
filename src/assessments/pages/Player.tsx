@@ -25,6 +25,7 @@ import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
 import { AssessmentChatDock } from "../components/AssessmentChatDock";
+import { Submitted } from "./Submitted";
 import { AssessmentLockdownGate } from "../components/AssessmentLockdownGate";
 import { WebcamPip } from "../components/WebcamPip";
 import { ViolationBanner } from "../components/ViolationBanner";
