@@ -163,6 +163,7 @@ export function PlayerTopBar({
             )}
 
             {/* SOS */}
+            <PlayerSosStatus attemptId={attemptId} />
             <PlayerSosButton attemptId={attemptId} assessmentTitle={title} />
 
             {/* Timer */}
