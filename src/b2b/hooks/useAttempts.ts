@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid } from "@/lib/routing/slug";
 
 export type AttemptRow = {
   id: string;
+  slug: string | null;
   assessment_id: string;
   user_id: string;
   invite_id: string | null;
