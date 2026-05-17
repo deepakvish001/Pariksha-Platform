@@ -57,11 +57,20 @@ export default function B2BSettings() {
 
   const onSave = async () => {
     if (!canEdit || !dirty) return;
+    if (!isValidBrand) {
+      toast.error("Brand color must be a hex value like #1f6feb");
+      return;
+    }
     setSaving(true);
     const newSlug = slugify(name) ? `${slugify(name)}-${org.slug.split("-").pop()}` : org.slug;
     const { error } = await supabase
       .from("organizations")
-      .update({ name: name.trim(), logo_url: logoUrl.trim() || null, slug: newSlug })
+      .update({
+        name: name.trim(),
+        logo_url: logoUrl.trim() || null,
+        brand_color: normalizedBrand || null,
+        slug: newSlug,
+      })
       .eq("id", org.id);
     setSaving(false);
     if (error) {
