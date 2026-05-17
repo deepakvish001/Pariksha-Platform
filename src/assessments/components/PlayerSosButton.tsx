@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SUPPORT_EMAIL = "support@parikshaa.app";
 const SUPPORT_PHONE = "+91 80000 00000";
+// Digits-only E.164 for tel:/sms:/wa.me links (no +, no spaces).
+const SUPPORT_PHONE_DIGITS = SUPPORT_PHONE.replace(/\D/g, "");
 
 const QUICK_ISSUES = [
   "Camera or microphone stopped working",
