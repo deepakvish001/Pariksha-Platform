@@ -91,14 +91,14 @@ export function QuestionPalette({
                   if (!it) return null;
                   const active = i === currentIndex;
                   const dim = !passes(i);
-                  const status = getStatusLabel(it, active);
+                  const status = getStatusLabel(it, active, t);
                   return (
                     <Tooltip key={it.id} delayDuration={150}>
                       <TooltipTrigger asChild>
                         <button
                           onClick={() => onJump(i)}
                           aria-current={active ? "true" : undefined}
-                          aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                          aria-label={buildAriaLabel(t, i, undefined, status.label, it.flagged)}
                           className={cn(
                             "relative h-8 rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
                             dim && "opacity-30",
