@@ -555,11 +555,11 @@ function Section({
   renderTile,
 }: {
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   items: Array<{ key: string }>;
   cols: string;
   initial: number;
-  renderTile: (it: any) => React.ReactNode;
+  renderTile: (it: any) => ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? items : items.slice(0, initial);
