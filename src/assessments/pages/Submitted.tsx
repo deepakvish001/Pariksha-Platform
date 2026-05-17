@@ -95,6 +95,27 @@ function MetaTile({
 export function Submitted({ attempt, assessment, isPreview }: Props) {
   const navigate = useNavigate();
 
+  // Optional auto-redirect to dashboard after submission
+  const [autoRedirect, setAutoRedirect] = useState(!isPreview);
+  const [secondsLeft, setSecondsLeft] = useState(AUTO_REDIRECT_SECONDS);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (!autoRedirect || paused) return;
+    if (secondsLeft <= 0) {
+      navigate("/dashboard");
+      return;
+    }
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [autoRedirect, paused, secondsLeft, navigate]);
+
+  const cancelAutoRedirect = () => {
+    setAutoRedirect(false);
+    setSecondsLeft(AUTO_REDIRECT_SECONDS);
+    setPaused(false);
+  };
+
   const hasScore = typeof attempt.score === "number";
   const submittedAt = formatDateTime(attempt.submitted_at);
   const elapsed = formatDuration(attempt.started_at, attempt.submitted_at);
