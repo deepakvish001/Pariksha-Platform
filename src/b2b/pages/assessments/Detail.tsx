@@ -647,7 +647,7 @@ function ResultsPanel({ assessment, basePath }: { assessment: { id: string; slug
             <div className="col-span-2">{a.score ?? <span className="text-[hsl(var(--muted-foreground))]">—</span>}</div>
             <div className="col-span-2">{a.integrity_score}</div>
             <div className="col-span-2 text-right">
-              <Link to={`/b2b/assessments/${assessmentId}/attempts/${a.id}`}>
+              <Link to={paths.b2b.attempt(basePath, assessment, a)}>
                 <Button size="sm" variant="outline">Review</Button>
               </Link>
             </div>
