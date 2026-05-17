@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 export type PaperOption = { id: string; body: string; order_index: number };
 export type PaperQuestionType =
   | "coding" | "mcq" | "sql" | "subjective"
-  | "true_false" | "short_answer" | "matching";
+  | "true_false" | "short_answer" | "matching"
+  | "numerical" | "fill_blanks";
 export type PaperQuestion = {
   id: string;
   type: PaperQuestionType;
