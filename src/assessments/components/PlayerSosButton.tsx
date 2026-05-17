@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, LifeBuoy, Mail, Phone, Send, X } from "lucide-react";
+import { AlertTriangle, LifeBuoy, Loader2, Mail, Phone, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const SUPPORT_EMAIL = "support@parikshaa.app";
 const SUPPORT_PHONE = "+91 80000 00000";
