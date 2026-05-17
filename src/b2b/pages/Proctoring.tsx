@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import AttemptProctoringPanel from "@/b2b/components/AttemptProctoringPanel";
 import { AttemptInspector } from "@/components/proctoring/AttemptInspector";
 import { OrgShell } from "../layouts/OrgShell";
 import { useCurrentOrg } from "../context/OrgContext";
@@ -13,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertTriangle, ArrowRight, Camera, ExternalLink, Monitor, RefreshCw, Search, ShieldAlert,
+  AlertTriangle, ArrowRight, Camera, ExternalLink, Eye, Monitor, RefreshCw, Search, ShieldAlert,
   Smartphone, ShieldCheck,
 } from "lucide-react";
 
@@ -49,6 +51,8 @@ export default function B2BProctoring() {
   const [filter, setFilter] = useState<"all" | "flagged" | "high" | "live">("flagged");
   const [assessmentFilter, setAssessmentFilter] = useState<string>("all");
   const [inspectingId, setInspectingId] = useState<string | null>(null);
+  const [evidenceId, setEvidenceId] = useState<string | null>(null);
+  const [evidenceLabel, setEvidenceLabel] = useState<string>("");
 
   const refresh = async () => {
     if (!orgId) return;
@@ -166,13 +170,16 @@ export default function B2BProctoring() {
     assessmentFilter={assessmentFilter} setAssessmentFilter={setAssessmentFilter}
     snapCounts={snapCounts} sideCounts={sideCounts}
     inspectingId={inspectingId} setInspectingId={setInspectingId}
+    evidenceId={evidenceId} setEvidenceId={setEvidenceId}
+    evidenceLabel={evidenceLabel} setEvidenceLabel={setEvidenceLabel}
   />;
 }
 
 function ProctoringContent(props: any) {
   const { org, loading, refresh, filtered, summary, assessmentOptions,
     q, setQ, filter, setFilter, assessmentFilter, setAssessmentFilter,
-    snapCounts, sideCounts, inspectingId, setInspectingId } = props;
+    snapCounts, sideCounts, inspectingId, setInspectingId,
+    evidenceId, setEvidenceId, evidenceLabel, setEvidenceLabel } = props;
   const { canProctor, isLoading: permLoading } = useCanProctor(org.id);
 
   if (permLoading) return <OrgShell title="Proctoring"><div className="b2b-card p-6 text-sm text-muted-foreground">Checking permissions…</div></OrgShell>;
@@ -282,6 +289,19 @@ function ProctoringContent(props: any) {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground w-16 text-right">{a.integrity_score}</div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEvidenceLabel(a.invite?.name ?? a.invite?.email ?? a.assessment?.title ?? "Attempt");
+                        setEvidenceId(a.id);
+                      }}
+                      className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-[11px] px-1.5 py-1 rounded hover:bg-muted/60"
+                      aria-label="View evidence"
+                      title="View evidence (webcam, screen, side-camera)"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
                     <Link
                       to={`/b2b/assessments/${a.assessment_id}/attempts/${a.id}`}
                       onClick={(e) => e.stopPropagation()}
@@ -303,6 +323,22 @@ function ProctoringContent(props: any) {
         open={!!inspectingId}
         onClose={() => setInspectingId(null)}
       />
+
+      <Sheet open={!!evidenceId} onOpenChange={(o) => !o && setEvidenceId(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Eye className="h-4 w-4" /> Evidence — {evidenceLabel}
+            </SheetTitle>
+            <SheetDescription>
+              Live webcam, shared screen, and phone side-camera captures with AI findings.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            {evidenceId && <AttemptProctoringPanel attemptId={evidenceId} />}
+          </div>
+        </SheetContent>
+      </Sheet>
     </OrgShell>
   );
 }
