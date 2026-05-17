@@ -67,6 +67,7 @@ const PRESETS: Record<ProctoringConfig["strictness"], ProctoringConfig> = {
     require_face_detection: false,
     allow_clipboard_in_inputs: true,
     ai_review_interval_s: 0,
+    record_full_session: true,
     events: {
       tab_switch: { weight: 3, strike: true },
       window_blur: { weight: 2 },
@@ -87,6 +88,7 @@ const PRESETS: Record<ProctoringConfig["strictness"], ProctoringConfig> = {
     require_face_detection: true,
     allow_clipboard_in_inputs: true,
     ai_review_interval_s: 60,
+    record_full_session: true,
     events: {
       tab_switch: { weight: 5, strike: true },
       window_blur: { weight: 3 },
@@ -112,6 +114,7 @@ const PRESETS: Record<ProctoringConfig["strictness"], ProctoringConfig> = {
     require_face_detection: true,
     allow_clipboard_in_inputs: false,
     ai_review_interval_s: 30,
+    record_full_session: true,
     events: {
       tab_switch: { weight: 10, strike: true, autosubmit_after: 1 },
       window_blur: { weight: 5, strike: true },
@@ -154,6 +157,7 @@ export function resolveProctoringConfig(
       require_side_eye: false,
       require_face_detection: false,
       ai_review_interval_s: 0,
+    record_full_session: true,
       events: {},
     };
   }
