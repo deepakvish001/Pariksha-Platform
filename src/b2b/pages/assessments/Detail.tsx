@@ -47,15 +47,20 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function AssessmentDetail() {
-  const { id } = useParams();
+  const { id: idOrSlug } = useParams();
   const navigate = useNavigate();
-  const { data: assessment, isLoading } = useAssessment(id);
+  const { org } = useCurrentOrg();
+  const basePath = useOrgBasePath();
+  const { data: assessment, isLoading } = useAssessment(idOrSlug, org?.id);
   const update = useUpdateAssessment();
   const del = useDeleteAssessment();
   const { canProctor } = useCanProctor(assessment?.org_id);
 
   if (isLoading) return null;
-  if (!assessment) return <Navigate to="/b2b/assessments" replace />;
+  if (!assessment) return <Navigate to={paths.b2b.assessmentsList(basePath)} replace />;
+  if (assessment.slug && idOrSlug && idOrSlug !== assessment.slug) {
+    return <Navigate to={paths.b2b.assessment(basePath, assessment)} replace />;
+  }
 
   const isPublished = assessment.status === "published";
 
