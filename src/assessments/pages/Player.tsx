@@ -20,6 +20,8 @@ import { useProctoring } from "../hooks/useProctoring";
 import { resolveProctoringConfig } from "../lib/proctoringConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerTopBar } from "../components/PlayerTopBar";
+import { GeneralInstructionsDialog } from "../components/GeneralInstructionsDialog";
+import { useEditorPrefs, QUESTION_FONT_SCALES } from "../hooks/useEditorPrefs";
 import { QuestionPalette } from "../components/QuestionPalette";
 import { AnswerUploadTile } from "../components/AnswerUploadTile";
 import { isAnswered as isAnsweredFn } from "../lib/isAnswered";
