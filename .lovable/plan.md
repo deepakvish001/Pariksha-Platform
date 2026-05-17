@@ -1,147 +1,53 @@
-# Invitation Section — Better & Easier Sending
+## Re-audit result
 
-Goal: make adding candidates and sending invitation emails fast, safe, and clear. Redesign the Invites tab UI, add CSV upload, give users a preview-before-send step, bulk actions, status filtering, one-click retry of failures, and optional scheduled sends + auto-reminders.
+After reading the code, 2 of the 6 "partial" items from my previous list are actually **already done**:
 
----
+- **Image reorder + preview before upload** — `AnswerUploadTile.tsx` already has drag-reorder (`@dnd-kit`), lightbox preview with ←/→/Esc, delete, and download.
+- **"Sync uploaded images" button** — same file has an explicit `Sync` button plus Realtime auto-sync on `assessment_answer_uploads`.
 
-## 1. New Add-Candidates Flow
+So only **3 genuine gaps** remain vs. the PDF.
 
-Replace today's single textarea with a tabbed input card:
+## Gaps to close
 
-- **Paste** (default) — same textarea, but with live parsing under it
-- **CSV / Excel upload** — drag-drop or click; supports `.csv`, `.tsv`, `.xlsx`
-- **Single candidate** — quick `name / email / roll id` form
+### 1. Speaker playback self-test in Preflight (PDF p.11)
+Today `Preflight.tsx` checks **mic input + webcam** (`audioOk`, `videoOk`). The PDF flow also asks the candidate to **press Play and confirm they can hear** a sample tone — proving the speaker works, not just the mic.
 
-After parsing, show a **Review preview table** before insert:
+Add a small "Can you hear this?" step inside the existing Preflight card:
+- A `<audio>` element with a short generated tone (or a tiny bundled `tone.mp3` in `public/assets/`).
+- `Play` button → on `ended`, show **Yes / No, replay** buttons.
+- New `speakerOk` state; gate `onPass()` on `audioOk && videoOk && speakerOk`.
+- No DB / RLS changes.
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ 24 rows found · 22 valid · 2 issues · 3 duplicates of existing│
-├──────────────────────────────────────────────────────────────┤
-│ ✓ alex@acme.com       Alex Morgan      R001                  │
-│ ✓ sam@acme.com        Sam Lee          —                     │
-│ ⚠ not-an-email        Bad row          (invalid email)       │
-│ ⊘ jane@acme.com       Jane Roy         (already invited)     │
-└──────────────────────────────────────────────────────────────┘
-[ Send immediately ▾ ]  [ Add as drafts ]   [ Cancel ]
-```
+### 2. General Instructions modal + Zoom in/out in Player (PDF p.43–44)
+`PlayerTopBar` / `PlayerHelpSheet` cover help, but there is no per-question **font-size zoom** and no dedicated **General Instructions** dialog.
 
-The primary button is a **split button** with two modes (per the "let user choose each time" answer):
-- **Send immediately** — current behavior; saves user's last choice in localStorage as default
-- **Add as drafts** — inserts rows with no email send; they appear as `pending` in the list
+- Add two buttons to `PlayerTopBar.tsx`: `A−` / `A+` (cycles 90% / 100% / 115% / 130%) and an **Instructions** (ℹ) button.
+- Font-size state lives in `useEditorPrefs` (already exists) so it persists per attempt; apply via a CSS variable on the question-body container.
+- `Instructions` opens a new `GeneralInstructionsDialog.tsx` that renders the assessment's existing `instructions` markdown field (already on `assessments` table) plus a static "Proctoring rules" block.
 
-Invalid rows are skipped; duplicates of existing invites are skipped silently with a counted summary toast.
+### 3. Mobile pairing guidance: Auto-Rotate + Do Not Disturb (PDF p.20)
+`SideCameraPairing` + `SideEyeMobile` go straight from "Allow camera" to "stream live". The PDF inserts a small **before-you-place-the-phone** checklist.
 
----
+- Add a one-screen `SideEyeReadyCheck.tsx` shown after camera permission on the **mobile** route (`/contests/side-eye/...` / `/assessments/sidecam/...`):
+  - 3 checkbox items: "Auto-rotate on", "Do Not Disturb on", "Phone propped at table height".
+  - "I'm ready" button to advance to streaming.
+- Pure UI, no backend.
 
-## 2. Redesigned Invite List
+## Out of scope
 
-Replace today's flat list with a cleaner card + table layout:
+- SRM-specific portal / NetID — Parikshaa uses email + Google.
+- "Open Test / Third Eye" button labels — keep current Parikshaa wording.
+- CodeTantra branding, support phone numbers.
 
-**Header strip** (sticky inside the tab):
-- Status pills with counts that act as filters: `All · Pending · Sent · Opened · Started · Submitted · Failed`
-- Search box (name / email / roll id)
-- Sort: Recent · Name · Status · Last sent
-- Right side: `[Resend pending]  [⋯ More]` (export CSV, copy all links)
+## File touch-list (technical)
 
-**Row** (denser, scannable):
-```
-☐  Avatar  Name              email                        roll_id
-            status pill      Last sent 2h ago · 2× attempts
-                                                  [Resend] [Copy link] [⋯]
-```
+- `src/assessments/pages/Preflight.tsx` — add speaker test step + `speakerOk` gate.
+- `public/assets/preflight-tone.mp3` — short tone asset (or generate via `AudioContext`, no asset needed).
+- `src/assessments/components/PlayerTopBar.tsx` — add zoom buttons + Instructions trigger.
+- `src/assessments/components/GeneralInstructionsDialog.tsx` — **new**, renders assessment `instructions` markdown.
+- `src/assessments/hooks/useEditorPrefs.ts` — add `questionFontScale` field.
+- `src/assessments/pages/Player.tsx` — read `questionFontScale`, apply CSS var to question body.
+- `src/assessments/components/SideEyeReadyCheck.tsx` — **new**, mobile readiness checklist.
+- `src/pages/contests/SideEyeMobile.tsx` + `src/assessments/pages/SideCamera.tsx` — render the ready-check between permission grant and live stream.
 
-`[⋯]` menu: View email · Copy join link · Remove · (if failed) Show error
-
-**Bulk selection bar** appears when any row is checked:
-```
-3 selected   [Resend]  [Copy links]  [Export CSV]  [Delete]   ✕
-```
-
-**Failed group**: when filter = Failed, show a banner "2 emails failed — Retry all" with last error inline per row.
-
----
-
-## 3. Sending Improvements
-
-- **Confirm-before-send** modal for any batch ≥ 10 emails: "Send 24 emails now?" with recipient count + first 5 emails preview. Skippable with a "don't ask again" checkbox.
-- **Progress toast** during sends — "Sending 12 of 24…" instead of waiting silently.
-- **One-click retry** for failed sends from the row and from the Failed filter banner.
-- **Cooldown guard**: disable per-row Resend for 30s after a successful send to prevent accidental double-clicks.
-- Keep the existing **Preview email** and **Send test email** buttons, moved into the header strip.
-
----
-
-## 4. Schedule & Auto-Reminders
-
-Add a **Schedule** option in the split button:
-- "Send immediately" / "Add as drafts" / **"Schedule for later…"** → picks date+time, stored as `scheduled_send_at` on each invite.
-- A small banner under the header strip shows scheduled batches: "12 invites scheduled for Tue 6:00 PM · Edit · Cancel".
-
-Add an **Auto-reminder** toggle in the Invites tab settings popover:
-- "Send a reminder after N days if still pending" (default off; 3 days when on)
-- Stored at the assessment level; reminders go only to invites still in `pending` and not past `expires_at`.
-
-Both run via a new scheduled edge function `process-invite-schedule` triggered by `pg_cron` every 5 minutes; it calls the existing `send-assessment-invite` for due invites.
-
----
-
-## Technical Section
-
-### Frontend (`src/b2b/pages/assessments/Detail.tsx` + new files)
-Split the current `InvitesPanel` into focused components under `src/b2b/components/invites/`:
-- `AddCandidatesCard.tsx` — tabs (Paste / Upload / Single), parse + review preview, split send button.
-- `CsvDropzone.tsx` — `.csv`/`.tsv` via PapaParse (already use of paste parsing); `.xlsx` via `xlsx` package (add dependency).
-- `InvitesToolbar.tsx` — status pill filters, search, sort, export, preview/test buttons.
-- `InviteRow.tsx` — selectable row with checkbox, status pill, actions menu (shadcn DropdownMenu).
-- `BulkActionBar.tsx` — sticky bottom bar when selection > 0.
-- `ScheduleDialog.tsx` — date+time picker (reuse existing shadcn Calendar + Input time).
-- `useInviteSelection.ts` — small hook for selected ids + helpers.
-
-State management stays in React Query (`useInvites`, `useCreateInvites`, `useDeleteInvite`). Add:
-- `useResendInvites(ids)` mutation wrapping `supabase.functions.invoke("send-assessment-invite", { invite_ids })`.
-- `useUpdateInviteSchedule()` mutation for `scheduled_send_at`.
-- Client-side filtering/sorting/search; no extra queries.
-
-### Database (migration)
-Add columns to `assessment_invites`:
-- `scheduled_send_at timestamptz null`
-- `reminder_sent_at timestamptz null`
-
-Add columns to `assessments`:
-- `auto_reminder_enabled boolean not null default false`
-- `auto_reminder_after_days int not null default 3`
-
-Add indexes:
-- `idx_invites_scheduled_send_at` partial on `scheduled_send_at is not null and status = 'pending'`
-- `idx_invites_pending_reminder` on `(assessment_id, status, last_sent_at)`
-
-RLS: extend existing org-owner policies to cover the new columns (no new policies needed since columns inherit).
-
-### Edge Functions
-- **`send-assessment-invite`** — accept new `skip_send: true` flag (for drafts) and a `scheduled_send_at` body so the UI can both insert and schedule in one call. No behavior change when omitted.
-- **NEW `process-invite-schedule`** — runs via `pg_cron` every 5 min:
-  1. Picks invites where `scheduled_send_at <= now()` and `status = 'pending'`, calls existing sender, clears `scheduled_send_at`.
-  2. For assessments with `auto_reminder_enabled`, picks pending invites where `last_sent_at < now() - interval 'N days'` and `reminder_sent_at is null`, resends and stamps `reminder_sent_at`.
-
-Schedule the cron job via `supabase--insert` (not migration) per the scheduling guideline.
-
-### Dependencies
-- `xlsx` (SheetJS) for `.xlsx` parsing — small, browser-safe build.
-- `papaparse` if not already present, for robust CSV parsing.
-
-### Out of scope (won't change)
-- Email template rendering, brand color logic, suppression infra — untouched.
-- The student-side `useMyInvites` / claim flow.
-- Existing `assessment_invites` rows are fully compatible; all new columns are nullable / defaulted.
-
----
-
-## Deliverables Order
-1. Migration (new columns + indexes) — request approval, apply.
-2. New components + refactored `InvitesPanel` wiring.
-3. `xlsx`/CSV upload + review preview.
-4. Bulk actions, filtering, search, sort.
-5. Schedule dialog + auto-reminder toggle UI.
-6. Edge function update + new `process-invite-schedule` + cron insert.
-7. Smoke test: add 5 via paste, 5 via CSV, schedule 2, fail-retry 1, bulk-resend 3.
+No migrations, no RLS changes, no new env vars.
