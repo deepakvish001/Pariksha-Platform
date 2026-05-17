@@ -587,7 +587,8 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
   );
 }
 
-function ResultsPanel({ assessmentId }: { assessmentId: string }) {
+function ResultsPanel({ assessment, basePath }: { assessment: { id: string; slug: string | null }; basePath: string }) {
+  const assessmentId = assessment.id;
   const { data: attempts, isLoading } = useAttempts(assessmentId);
   if (isLoading) return null;
   if (!attempts?.length) {
