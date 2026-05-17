@@ -10,11 +10,18 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
  };
  
- interface QuizSummaryRequest {
-   userId: string;
-   email: string;
-   userName: string;
- }
+interface QuizSummaryRequest {
+  userId: string;
+}
+
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
  
  interface QuizResult {
    quiz_type: string;
@@ -59,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const authenticatedUserId = claimsData.claims.sub as string;
-    const { userId, email, userName }: QuizSummaryRequest = await req.json();
+    const { userId }: QuizSummaryRequest = await req.json();
 
     // Validate that the userId in the request matches the authenticated user
     if (userId !== authenticatedUserId) {
@@ -68,17 +75,35 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
- 
-     if (!userId || !email) {
-       throw new Error("Missing required fields: userId and email");
-     }
- 
+
+    if (!userId) {
+      throw new Error("Missing required field: userId");
+    }
+
     // Use service role client for data access
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
- 
-     // Fetch quiz results from the last 7 days
-     const weekAgo = new Date();
-     weekAgo.setDate(weekAgo.getDate() - 7);
+
+    // Fetch the verified email from auth — never trust caller-supplied address
+    const { data: authUserData, error: authUserError } = await supabase.auth.admin.getUserById(userId);
+    if (authUserError || !authUserData?.user?.email) {
+      return new Response(
+        JSON.stringify({ error: "User not found" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    const email = authUserData.user.email;
+
+    // Fetch display name from profile — never trust caller-supplied value
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const userName = escapeHtml(profileRow?.full_name || email.split("@")[0]);
+
+    // Fetch quiz results from the last 7 days
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
  
      const { data: results, error: resultsError } = await supabase
        .from("quiz_results")
@@ -101,9 +126,10 @@ const handler = async (req: Request): Promise<Response> => {
      const totalCorrect = quizResults.reduce((sum, r) => sum + r.score, 0);
      const totalQuestions = quizResults.reduce((sum, r) => sum + r.total_questions, 0);
  
-     // Count by quiz type
+     // Count by quiz type — escape since quiz_type is user-controlled
      const byType = quizResults.reduce((acc, r) => {
-       acc[r.quiz_type] = (acc[r.quiz_type] || 0) + 1;
+       const key = escapeHtml(String(r.quiz_type ?? "unknown"));
+       acc[key] = (acc[key] || 0) + 1;
        return acc;
      }, {} as Record<string, number>);
  

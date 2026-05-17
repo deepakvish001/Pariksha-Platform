@@ -10,6 +10,15 @@
      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
  };
  
+function escapeHtml(s: string): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+ 
  interface UserReviewSummary {
    userId: string;
    email: string;
@@ -120,16 +129,16 @@ const handler = async (req: Request): Promise<Response> => {
            .eq("user_id", userId)
            .single();
  
-         const userName = basicProfile?.full_name || "there";
-         const totalDue = reviewData.critical + reviewData.due;
-         
-         const urgencyText = reviewData.critical > 0 
-           ? `🚨 ${reviewData.critical} overdue` 
-           : `📚 ${totalDue} due today`;
- 
-         const questionsList = reviewData.questions
-           .map(q => `<li style="margin-bottom: 8px;">${q}</li>`)
-           .join("");
+        const userName = escapeHtml(basicProfile?.full_name || "there");
+        const totalDue = reviewData.critical + reviewData.due;
+        
+        const urgencyText = reviewData.critical > 0 
+          ? `🚨 ${reviewData.critical} overdue` 
+          : `📚 ${totalDue} due today`;
+
+        const questionsList = reviewData.questions
+          .map(q => `<li style="margin-bottom: 8px;">${escapeHtml(q)}</li>`)
+          .join("");
  
          const emailHtml = `
            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

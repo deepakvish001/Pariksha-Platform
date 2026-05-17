@@ -394,8 +394,6 @@ const QuizHistory: React.FC = () => {
       const response = await supabase.functions.invoke("send-quiz-summary", {
         body: {
           userId: user.id,
-          email: user.email,
-          userName: profile?.full_name || user.email.split("@")[0],
         },
       });
 

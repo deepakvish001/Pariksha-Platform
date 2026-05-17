@@ -20,6 +20,15 @@ interface ResumeScoreNotification {
   file_name: string;
 }
 
+function escapeHtml(s: string): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const getMilestoneInfo = (score: number): { reached: boolean; milestone: string; emoji: string } | null => {
   if (score >= 95) return { reached: true, milestone: "95+", emoji: "🏆" };
   if (score >= 90) return { reached: true, milestone: "90+", emoji: "🥇" };
@@ -103,7 +112,9 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("user_id", user_id)
       .single();
 
-    const userName = basicProfile?.full_name || "there";
+    const userName = escapeHtml(basicProfile?.full_name || "there");
+    const safeFileName = escapeHtml(file_name || "");
+    const safeMilestone = escapeHtml(milestone || "");
 
     if (profile?.email_notifications_enabled === false) {
       console.log("User has email notifications disabled");
@@ -140,7 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
           
           <div style="background: #f9fafb; border-radius: 8px; padding: 16px; margin: 16px 0;">
             <p style="margin: 0; color: #6b7280; font-size: 12px;">Resume Analyzed</p>
-            <p style="margin: 4px 0 0 0; color: #374151; font-weight: 500;">${file_name}</p>
+            <p style="margin: 4px 0 0 0; color: #374151; font-weight: 500;">${safeFileName}</p>
           </div>
           
           <p style="font-size: 16px; color: #374151;">
@@ -181,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
           
           <div style="background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
             <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">You've Reached The</p>
-            <p style="margin: 0; font-size: 36px; font-weight: bold; color: #4f46e5;">${milestone} Club</p>
+            <p style="margin: 0; font-size: 36px; font-weight: bold; color: #4f46e5;">${safeMilestone} Club</p>
             <p style="margin: 8px 0 0 0; color: #374151; font-size: 18px;">
               Score: <strong>${current_score}/100</strong>
             </p>
@@ -203,7 +214,7 @@ const handler = async (req: Request): Promise<Response> => {
           
           <div style="background: #f9fafb; border-radius: 8px; padding: 16px; margin: 16px 0;">
             <p style="margin: 0; color: #6b7280; font-size: 12px;">Resume Analyzed</p>
-            <p style="margin: 4px 0 0 0; color: #374151; font-weight: 500;">${file_name}</p>
+            <p style="margin: 4px 0 0 0; color: #374151; font-weight: 500;">${safeFileName}</p>
           </div>
           
           <p style="font-size: 16px; color: #374151;">
@@ -254,8 +265,8 @@ const handler = async (req: Request): Promise<Response> => {
         ? `Resume Score Improved by ${improvement} Points!` 
         : `Milestone Reached: ${milestone}`,
       message: notification_type === "improvement"
-        ? `Your resume "${file_name}" improved from ${previous_score} to ${current_score} points.`
-        : `Your resume "${file_name}" scored ${current_score}/100, reaching the ${milestone} milestone!`,
+        ? `Your resume "${safeFileName}" improved from ${previous_score} to ${current_score} points.`
+        : `Your resume "${safeFileName}" scored ${current_score}/100, reaching the ${milestone} milestone!`,
       data: { current_score, previous_score, improvement, milestone, file_name },
     });
 

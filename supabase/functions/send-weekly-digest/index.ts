@@ -10,6 +10,15 @@
      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
  };
  
+function escapeHtml(s: unknown): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+ 
  interface UserProfile {
    user_id: string;
    weekly_digest_enabled: boolean;
@@ -130,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
            continue;
          }
  
-         const userName = userNames.get(user.user_id) || email.split("@")[0];
+         const userName = escapeHtml(userNames.get(user.user_id) || email.split("@")[0]);
  
          // Calculate stats
          const totalQuizzes = quizResults.length;
@@ -140,9 +149,10 @@ const handler = async (req: Request): Promise<Response> => {
          const totalCorrect = quizResults.reduce((sum, r) => sum + r.score, 0);
          const totalQuestions = quizResults.reduce((sum, r) => sum + r.total_questions, 0);
  
-         // Count by quiz type
+         // Count by quiz type — escape quiz_type since it's user-controlled
          const byType = quizResults.reduce((acc, r) => {
-           acc[r.quiz_type] = (acc[r.quiz_type] || 0) + 1;
+           const key = escapeHtml(r.quiz_type ?? "unknown");
+           acc[key] = (acc[key] || 0) + 1;
            return acc;
          }, {} as Record<string, number>);
  
@@ -197,7 +207,7 @@ const handler = async (req: Request): Promise<Response> => {
               ${achievementsThisWeek.map(a => `
                 <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
                   <span style="font-size: 20px;">🎖️</span>
-                  <span style="font-weight: 500;">${a.achievement_id.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                  <span style="font-weight: 500;">${escapeHtml(String(a.achievement_id ?? "").replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()))}</span>
                 </div>
               `).join('')}
             </div>

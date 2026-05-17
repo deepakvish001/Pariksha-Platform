@@ -157,6 +157,13 @@ serve(async (req) => {
       );
     }
 
+    if (typeof topic !== "string" || topic.length > 500) {
+      return new Response(
+        JSON.stringify({ error: "Topic must be a string ≤500 chars" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const systemPrompt = contentTypePrompts[contentType];
     if (!systemPrompt) {
       return new Response(
