@@ -56,6 +56,22 @@ export function useAssessmentChat(attemptId: string | null | undefined) {
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "assessment_chat_messages",
+          filter: `attempt_id=eq.${attemptId}`,
+        },
+        (payload) => {
+          const msg = payload.new as AssessmentChatMessage;
+          qc.setQueryData<AssessmentChatMessage[]>(KEY(attemptId), (prev) => {
+            const list = prev ?? [];
+            return list.map((m) => (m.id === msg.id ? { ...m, ...msg } : m));
+          });
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
