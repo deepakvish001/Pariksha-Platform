@@ -117,6 +117,11 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
 
       const raisedAt = new Date().toISOString();
 
+      // ── Enriched context for proctors ────────────────────────────
+      // Helps the proctor decide whether this is a device issue, a
+      // network blip, or a user-side emergency without asking again.
+      const metadata = await collectSosMetadata();
+
       const sosInsert = supabase
         .from("assessment_sos_events")
         .insert({
@@ -136,6 +141,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           notes: notes || null,
           raised_at: raisedAt,
           assessment_title: assessmentTitle ?? null,
+          ...metadata,
         },
       });
 
