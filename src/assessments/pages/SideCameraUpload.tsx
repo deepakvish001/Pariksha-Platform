@@ -534,6 +534,16 @@ export default function SideCameraUploadPage() {
               <span>{Math.round((progress.done / progress.total) * 100)}%</span>
             </div>
             <Progress value={(progress.done / progress.total) * 100} className="h-1.5" />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full h-8"
+              onClick={cancelUpload}
+            >
+              <X className="h-3.5 w-3.5 mr-1.5" />
+              Cancel upload
+            </Button>
           </div>
         )}
 
