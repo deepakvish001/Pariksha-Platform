@@ -63,9 +63,17 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
   });
 
   const prevConnRef = useRef<boolean>(false);
+  const [lastConnectedAt, setLastConnectedAt] = useState<number | null>(null);
+  // Tick every 30s so the "Xm ago" label stays fresh without spamming renders.
+  const [, setNow] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setNow((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
   useEffect(() => {
     if (prevConnRef.current !== connected) {
       prevConnRef.current = connected;
+      if (connected) setLastConnectedAt(Date.now());
       onConnectionChange?.(connected, connectionState);
     }
   }, [connected, connectionState, onConnectionChange]);
