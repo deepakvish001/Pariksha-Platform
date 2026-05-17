@@ -241,6 +241,8 @@ export default function SideCameraUploadPage() {
   };
 
   useEffect(() => {
+    const sessionErr = validateSession(token, questionId);
+    if (sessionErr) { setError(sessionErr); return; }
     startCamera();
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
