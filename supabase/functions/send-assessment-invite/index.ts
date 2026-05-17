@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
                 </table>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px;">
                   <tr>
-                    <td style="border-radius:10px;background:#0f172a;">
+                    <td style="border-radius:10px;background:${brand};">
                       <a href="${link}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;letter-spacing:0.2px;">
                         Start assessment →
                       </a>
