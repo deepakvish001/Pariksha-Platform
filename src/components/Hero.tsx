@@ -118,16 +118,11 @@ const Hero = () => {
           <Sparkles className="w-4 h-4 text-primary" />
         </motion.div>
 
-        {/* Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tight mb-8"
-        >
+        {/* Headline — rendered without entrance animation so it's the immediate LCP element */}
+        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tight mb-8">
           <span className="block text-foreground">Turn Assessments</span>
           <TypingEffect />
-        </motion.h1>
+        </h1>
 
         {/* Subheadline */}
         <motion.p
