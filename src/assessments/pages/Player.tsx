@@ -838,19 +838,37 @@ function QuestionInput({
   if (question.type === "subjective") {
     const text = (value?.text as string) ?? "";
     const words = text.trim().split(/\s+/).filter(Boolean).length;
+    const pages = Array.isArray(value?.pages) ? (value!.pages as Array<{ id: string }>) : [];
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Textarea
           rows={10}
           placeholder="Type your answer here…"
           value={text}
-          onChange={(e) => onChange({ text: e.target.value })}
+          onChange={(e) => onChange({ ...(value ?? {}), text: e.target.value })}
           className="resize-y min-h-[220px] text-sm leading-relaxed"
         />
         <div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
           <span>{words} {words === 1 ? "word" : "words"}</span>
           <span>{text.length} characters</span>
         </div>
+        {attemptId && (
+          <AnswerUploadTile
+            attemptId={attemptId}
+            questionId={question.id}
+            onPagesChange={(next) =>
+              onChange({
+                ...(value ?? {}),
+                pages: next.map((p) => ({ id: p.id, ordinal: p.ordinal, storage_path: p.storage_path })),
+              })
+            }
+          />
+        )}
+        {pages.length > 0 && (
+          <p className="text-[10px] text-emerald-600">
+            {pages.length} uploaded page{pages.length === 1 ? "" : "s"} attached to this answer.
+          </p>
+        )}
       </div>
     );
   }
