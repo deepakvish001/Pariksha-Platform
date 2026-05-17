@@ -226,7 +226,9 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           raised_by: userId,
           issue,
           notes: notes || null,
-        })
+          delivery_status: "sent",
+          client_attempted_at: raisedAt,
+        } as any)
         .select("id")
         .single();
 
@@ -238,6 +240,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           notes: notes || null,
           raised_at: raisedAt,
           assessment_title: assessmentTitle ?? null,
+          delivery_status: "sent",
           ...metadata,
         },
       });
@@ -255,6 +258,29 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
       if (chat.error) console.warn("SOS chat post failed", chat.error);
       return { ok: true };
     } catch (e: any) {
+      // ── Durable offline fallback ────────────────────────────────
+      // Network is unreachable or Supabase rejected the write. Persist
+      // the alert locally so it replays automatically when we reconnect.
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        const userId = u?.user?.id;
+        if (userId && attemptId) {
+          const metadata = await collectSosMetadata();
+          enqueueSos({
+            attempt_id: attemptId,
+            raised_by: userId,
+            issue,
+            notes: notes || null,
+            metadata,
+            assessment_title: assessmentTitle ?? null,
+          });
+          // Fire-and-forget retry now in case the failure was transient.
+          void flushSosQueue();
+          return { ok: false, queued: true, error: e?.message ?? "Network error" };
+        }
+      } catch (queueErr) {
+        console.warn("SOS queue persist failed", queueErr);
+      }
       return { ok: false, error: e?.message ?? "Network error" };
     }
   };
