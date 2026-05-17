@@ -85,6 +85,15 @@ export default function AssessmentNew() {
             <Label htmlFor="proctor" className="cursor-pointer">Enable basic proctoring</Label>
           </div>
         </div>
+        <div className="flex items-start gap-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/30 p-3">
+          <Switch id="show-results" checked={showResults} onCheckedChange={setShowResults} className="mt-0.5" />
+          <div className="flex-1">
+            <Label htmlFor="show-results" className="cursor-pointer">Show results to candidate</Label>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+              When off, candidates only see a submission confirmation and a feedback form — no score, per-question breakdown, integrity report, or receipt PDF.
+            </p>
+          </div>
+        </div>
         <div className="flex gap-2 pt-2">
           <Button
             type="submit"
