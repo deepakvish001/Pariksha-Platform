@@ -131,7 +131,7 @@ export default function AssessmentDetail() {
           <InvitesPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="results">
-          <ResultsPanel assessmentId={assessment.id} />
+          <ResultsPanel assessment={assessment} basePath={basePath} />
         </TabsContent>
         <TabsContent value="proctoring">
           {canProctor ? (
