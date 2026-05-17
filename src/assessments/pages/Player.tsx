@@ -780,11 +780,12 @@ function ChoiceQuestionCard({
 }
 
 function QuestionInput({
-  question, value, onChange,
+  question, value, onChange, attemptId,
 }: {
   question: PaperQuestion;
   value: Record<string, unknown> | undefined;
   onChange: (v: Record<string, unknown>) => void;
+  attemptId: string | null;
 }) {
   if (question.type === "mcq") {
     const selected = new Set<string>(((value?.selected as string[]) ?? []));
