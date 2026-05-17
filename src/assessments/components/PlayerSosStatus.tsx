@@ -53,7 +53,7 @@ export function PlayerSosStatus({ attemptId }: Props) {
       const { data } = await supabase
         .from("assessment_sos_events")
         .select(
-          "id, attempt_id, issue, status, created_at, acknowledged_at, resolved_at, resolution_note"
+          "id, attempt_id, issue, status, created_at, acknowledged_at, resolved_at, resolution_note, delivery_status, delivery_error"
         )
         .eq("attempt_id", attemptId)
         .order("created_at", { ascending: false })
