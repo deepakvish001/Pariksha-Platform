@@ -44,6 +44,27 @@ export default function AttemptDetail() {
     return { earned, max };
   }, [data]);
 
+  const startedAt = data?.attempt.started_at ? new Date(data.attempt.started_at) : null;
+  const submittedAt = data?.attempt.submitted_at ? new Date(data.attempt.submitted_at) : null;
+
+  // Build a unified, sorted timeline from start/submit + recorded attempt_events.
+  const timeline = useMemo(() => {
+    const items: { at: string; label: string; tone?: "ok" | "warn" | "info" }[] = [];
+    if (startedAt) items.push({ at: startedAt.toISOString(), label: "Attempt started", tone: "info" });
+    for (const ev of (events ?? []) as Array<{ id: string; kind: string; payload: unknown; created_at: string }>) {
+      const k = ev.kind ?? "event";
+      const friendly = k.replace(/_/g, " ");
+      const isWarn = /violation|warning|tab|focus|copy|paste|left|away|exit/i.test(k);
+      items.push({ at: ev.created_at, label: friendly, tone: isWarn ? "warn" : "info" });
+    }
+    if (submittedAt) {
+      const finalLabel = data?.attempt.status === "auto_submitted" ? "Auto-submitted" : "Submitted";
+      items.push({ at: submittedAt.toISOString(), label: finalLabel, tone: "ok" });
+    }
+    return items.sort((a, b) => +new Date(a.at) - +new Date(b.at));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, data?.attempt.started_at, data?.attempt.submitted_at, data?.attempt.status]);
+
   if (isLoading) return null;
   if (error) return <OrgShell title="Attempt"><div className="b2b-card p-6">Failed: {(error as Error).message}</div></OrgShell>;
   if (!data || !assessment) return <Navigate to={paths.b2b.assessmentsList(basePath)} replace />;
@@ -69,29 +90,10 @@ export default function AttemptDetail() {
   const assessmentSeg = assessment.slug ?? assessment.id;
   const attemptSeg = data.attempt.slug ?? data.attempt.id;
 
-  const startedAt = data.attempt.started_at ? new Date(data.attempt.started_at) : null;
-  const submittedAt = data.attempt.submitted_at ? new Date(data.attempt.submitted_at) : null;
   const durationMin =
     startedAt && submittedAt
       ? Math.max(0, Math.round((submittedAt.getTime() - startedAt.getTime()) / 60000))
       : null;
-
-  // Build a unified, sorted timeline from start/submit + recorded attempt_events.
-  const timeline = useMemo(() => {
-    const items: { at: string; label: string; tone?: "ok" | "warn" | "info" }[] = [];
-    if (startedAt) items.push({ at: startedAt.toISOString(), label: "Attempt started", tone: "info" });
-    for (const ev of (events ?? []) as Array<{ id: string; kind: string; payload: unknown; created_at: string }>) {
-      const k = ev.kind ?? "event";
-      const friendly = k.replace(/_/g, " ");
-      const isWarn = /violation|warning|tab|focus|copy|paste|left|away|exit/i.test(k);
-      items.push({ at: ev.created_at, label: friendly, tone: isWarn ? "warn" : "info" });
-    }
-    if (submittedAt) {
-      const finalLabel = data.attempt.status === "auto_submitted" ? "Auto-submitted" : "Submitted";
-      items.push({ at: submittedAt.toISOString(), label: finalLabel, tone: "ok" });
-    }
-    return items.sort((a, b) => +new Date(a.at) - +new Date(b.at));
-  }, [events, startedAt, submittedAt, data.attempt.status]);
 
   return (
     <OrgShell
