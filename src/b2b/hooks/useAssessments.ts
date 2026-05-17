@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid } from "@/lib/routing/slug";
 
 export type AssessmentStatus = "draft" | "published" | "archived";
 
 export type Assessment = {
   id: string;
+  slug: string | null;
   org_id: string;
   title: string;
   description: string | null;
