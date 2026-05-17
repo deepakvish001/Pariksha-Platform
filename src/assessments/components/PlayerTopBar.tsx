@@ -7,6 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PlayerSosButton } from "./PlayerSosButton";
 import { PlayerSosStatus } from "./PlayerSosStatus";
+import { PlayerSosTimeline } from "./PlayerSosTimeline";
 
 interface Props {
   title: string;
@@ -164,6 +165,7 @@ export function PlayerTopBar({
 
             {/* SOS */}
             <PlayerSosStatus attemptId={attemptId} />
+            <PlayerSosTimeline attemptId={attemptId} />
             <PlayerSosButton attemptId={attemptId} assessmentTitle={title} />
 
             {/* Timer */}
