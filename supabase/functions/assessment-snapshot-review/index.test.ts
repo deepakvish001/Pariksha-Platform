@@ -96,18 +96,19 @@ Deno.test({ name: "POST authenticated without attempt_id returns 400", ...AUTHED
   const { status, json } = await post({}, token);
   assertEquals(status, 400);
   assertEquals(json.error, "attempt_id is required");
-});
+} });
 
 Deno.test({ name: "POST authenticated with unknown attempt_id returns 404", ...AUTHED_OPTS, fn: async () => {
   const token = await createOutsiderSession();
   const { status, json } = await post({ attempt_id: UNKNOWN_ATTEMPT_ID }, token);
   assertEquals(status, 404);
   assertExists(json.error);
-});
+} });
 
-Deno.test(
-  "POST authenticated non-proctor returns 403 for every real attempt/org",
-  async () => {
+Deno.test({
+  name: "POST authenticated non-proctor returns 403 for every real attempt/org",
+  ...AUTHED_OPTS,
+  fn: async () => {
     const token = await createOutsiderSession();
     for (const attemptId of REAL_ATTEMPT_IDS) {
       const { status, json } = await post({ attempt_id: attemptId }, token);
@@ -119,4 +120,4 @@ Deno.test(
       assertEquals(json.error, "Forbidden");
     }
   },
-);
+});
