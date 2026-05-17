@@ -274,6 +274,11 @@ export default function AssessmentManage() {
   if (isLoading) return null;
   if (!assessment) return <Navigate to="/b2b/assessments" replace />;
 
+  // Canonicalise URL: when accessed via UUID, redirect to the slug URL.
+  if (assessment.slug && idOrSlug && idOrSlug !== assessment.slug) {
+    return <Navigate to={paths.b2b.assessmentManage(basePath, assessment)} replace />;
+  }
+
   const state = getScheduleState(assessment);
   const isPublished = assessment.status === "published";
   const firstInvite = invites?.[0];
@@ -283,10 +288,10 @@ export default function AssessmentManage() {
       title={assessment.title}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/b2b/assessments")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(paths.b2b.assessmentsList(basePath))}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Hub
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/b2b/assessments/${assessment.id}`)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(paths.b2b.assessment(basePath, assessment))}>
             <Pencil className="h-4 w-4 mr-1" /> Edit
           </Button>
           <Button
