@@ -107,47 +107,62 @@ export function SideCameraPairing({ attemptId, onPaired }: Props) {
 
   if (meta.status === "paired") {
     return (
-      <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
-        <CheckCircle2 className="h-4 w-4" /> Phone connected as side camera.
+      <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-4 py-5 flex items-center gap-3">
+        <div className="relative h-10 w-10 rounded-full bg-emerald-500/20 grid place-items-center shrink-0">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          <span className="absolute inset-0 rounded-full ring-2 ring-emerald-500/40 animate-ping" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+            Third Eye connected
+          </div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            Keep your phone propped beside you for the entire test.
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-start gap-4">
-      <div className="p-2 bg-white rounded-md border shrink-0">
-        <QRCodeSVG value={join} size={140} />
-      </div>
-      <div className="flex-1 min-w-0 space-y-2">
-        <p className="text-xs text-muted-foreground">
-          Scan with your phone camera, sign in is not required. Keep your phone propped
-          beside you so it can see your desk.
-        </p>
-        <div className="rounded-md bg-muted/40 border px-3 py-2 flex items-center justify-between gap-2">
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Pair code
+    <div className="space-y-3">
+      <div className="flex items-start gap-4">
+        <div className="p-2 bg-white rounded-md border shrink-0">
+          <QRCodeSVG value={join} size={140} />
+        </div>
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="rounded-md bg-[hsl(var(--secondary))]/60 border border-[hsl(var(--border))] px-3 py-2 flex items-center justify-between gap-2">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Pair code
+              </div>
+              <div className="font-mono text-lg tracking-[0.3em]">
+                {meta.pairCode}
+              </div>
             </div>
-            <div className="font-mono text-base tracking-[0.3em]">{meta.pairCode}</div>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={async () => {
+                await navigator.clipboard.writeText(join);
+                toast.success("Pairing link copied");
+              }}
+              title="Copy link"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={async () => {
-              await navigator.clipboard.writeText(join);
-              toast.success("Pairing link copied");
-            }}
-            title="Copy link"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="text-[11px] inline-flex items-center gap-1.5 text-muted-foreground">
-          <Smartphone className="h-3.5 w-3.5" />
-          Waiting for phone to connect…
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <div className="text-[11px] inline-flex items-center gap-1.5 text-muted-foreground">
+            <Smartphone className="h-3.5 w-3.5" />
+            Waiting for phone to connect…
+            <Loader2 className="h-3 w-3 animate-spin" />
+          </div>
         </div>
       </div>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        Scan the QR with your phone camera — no sign-in needed. If the camera
+        doesn't auto-open the link, type the pair code in the assessment app.
+      </p>
     </div>
   );
 }
