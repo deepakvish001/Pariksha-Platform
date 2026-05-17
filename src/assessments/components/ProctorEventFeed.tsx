@@ -533,6 +533,11 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
               )}
             >
               {f}
+              {f === "pinned" && counts.pinned > 0 && (
+                <span className="ml-1 tabular-nums text-[10px] text-muted-foreground">
+                  ({counts.pinned})
+                </span>
+              )}
             </button>
           ))}
         </div>
