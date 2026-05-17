@@ -108,6 +108,25 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
           { title: "Keep practicing", detail: "Head back to your dashboard to keep your streak going." },
         ];
 
+  const handleDownloadReceipt = () => {
+    try {
+      downloadSubmissionReceipt({
+        attemptId: attempt.id,
+        assessmentTitle: assessment.title,
+        startedAt: attempt.started_at,
+        submittedAt: attempt.submitted_at,
+        score: attempt.score ?? null,
+        integrityScore: attempt.integrity_score ?? null,
+        durationLabel: elapsed,
+        nextSteps,
+      });
+    } catch (e) {
+      toast.error("Couldn't generate receipt", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    }
+  };
+
   return (
     <div className="theme-b2b min-h-screen bg-gradient-to-b from-background via-background to-muted/30 px-4 py-10 sm:py-16">
       <div className="max-w-3xl mx-auto space-y-6">
