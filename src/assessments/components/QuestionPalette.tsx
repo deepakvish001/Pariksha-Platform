@@ -315,46 +315,55 @@ export function QuestionPalette({
                     const active = i === currentIndex;
                     const dim = !passes(i);
                     if (dim && filter !== "all") return null;
+                    const status = getStatusLabel(it, active);
                     return (
                       <li key={it.id}>
-                        <button
-                          onClick={() => onJump(i)}
-                          aria-current={active ? "true" : undefined}
-                          className={cn(
-                            "group w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors text-left",
-                            active
-                              ? "bg-primary/10 text-foreground ring-1 ring-primary/40"
-                              : "hover:bg-muted/60 text-foreground/80 hover:text-foreground"
-                          )}
-                        >
-                          {/* Status icon */}
-                          <StatusIcon
-                            answered={it.answered}
-                            visited={!!it.visited}
-                            active={active}
-                          />
-                          {/* Number */}
-                          <span
-                            className={cn(
-                              "tabular-nums font-semibold w-6 shrink-0 text-[11px]",
-                              active ? "text-primary" : "text-muted-foreground"
-                            )}
-                          >
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          {/* Label */}
-                          <span className="flex-1 truncate">
-                            Question {i + 1}
-                          </span>
-                          {/* Flag */}
-                          {it.flagged && (
-                            <Flag className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0" />
-                          )}
-                          {/* Active rail accent */}
-                          {active && (
-                            <span className="h-4 w-0.5 rounded-full bg-primary shrink-0" />
-                          )}
-                        </button>
+                        <Tooltip delayDuration={200}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => onJump(i)}
+                              aria-current={active ? "true" : undefined}
+                              aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                              className={cn(
+                                "group w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors text-left",
+                                active
+                                  ? "bg-primary/10 text-foreground ring-1 ring-primary/40"
+                                  : "hover:bg-muted/60 text-foreground/80 hover:text-foreground"
+                              )}
+                            >
+                              {/* Status icon */}
+                              <StatusIcon
+                                answered={it.answered}
+                                visited={!!it.visited}
+                                active={active}
+                              />
+                              {/* Number */}
+                              <span
+                                className={cn(
+                                  "tabular-nums font-semibold w-6 shrink-0 text-[11px]",
+                                  active ? "text-primary" : "text-muted-foreground"
+                                )}
+                              >
+                                {String(i + 1).padStart(2, "0")}
+                              </span>
+                              {/* Label */}
+                              <span className="flex-1 truncate">
+                                Question {i + 1}
+                              </span>
+                              {/* Flag */}
+                              {it.flagged && (
+                                <Flag className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0" />
+                              )}
+                              {/* Active rail accent */}
+                              {active && (
+                                <span className="h-4 w-0.5 rounded-full bg-primary shrink-0" />
+                              )}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-[260px]">
+                            <StatusTooltipBody index={i} item={it} status={status} />
+                          </TooltipContent>
+                        </Tooltip>
                       </li>
                     );
                   })}
