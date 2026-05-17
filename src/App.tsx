@@ -53,6 +53,7 @@ import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
 import StudentPreflight from "@/assessments/pages/Preflight";
 import StudentPlayer from "@/assessments/pages/Player";
+import IntegrityPolicy from "@/assessments/pages/IntegrityPolicy";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -304,6 +305,7 @@ const App = () => (
                 {/* Student-side assessments */}
                 <Route path="/assessments/join/:token" element={<StudentJoin />} />
                 <Route path="/assessments/sidecam/:token" element={<StudentSideCamera />} />
+                <Route path="/assessments/integrity-policy" element={<IntegrityPolicy />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/preflight" element={<ProtectedRoute><StudentPreflight /></ProtectedRoute>} />

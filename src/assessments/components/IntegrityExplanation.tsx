@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -9,6 +10,7 @@ import {
   Users,
   Wifi,
   Lightbulb,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -182,6 +184,14 @@ export function IntegrityExplanation({ score }: Props) {
             Integrity is a signal, not a verdict — recruiters review flagged attempts manually
             before making decisions.
           </p>
+
+          <Link
+            to="/assessments/integrity-policy"
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline underline-offset-2"
+          >
+            Read the integrity policy
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          </Link>
         </div>
       )}
     </div>
