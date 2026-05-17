@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot, HelpCircle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface PaletteItem {
   id: string;
