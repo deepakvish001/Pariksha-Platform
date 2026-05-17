@@ -230,6 +230,48 @@ export function OrgShell({
                 </div>
               ) : null}
             </div>
+            <nav
+              aria-label="Breadcrumb"
+              className="px-4 sm:px-6 lg:px-8 py-2 border-t border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/60 overflow-x-auto b2b-scroll b2b-scroll-slim"
+            >
+              <ol className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                <li className="flex items-center">
+                  <NavLink
+                    to={homeHref}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:text-foreground hover:bg-[hsl(var(--secondary))]/60 transition-colors"
+                  >
+                    <Home className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="sr-only">Home</span>
+                  </NavLink>
+                </li>
+                {crumbs.map((c, i) => {
+                  const isLast = i === crumbs.length - 1;
+                  return (
+                    <li key={c.to} className="flex items-center gap-1.5">
+                      <ChevronRight
+                        className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0"
+                        aria-hidden="true"
+                      />
+                      {isLast ? (
+                        <span
+                          aria-current="page"
+                          className="px-1.5 py-0.5 font-medium text-foreground truncate max-w-[180px] sm:max-w-[260px]"
+                        >
+                          {c.label}
+                        </span>
+                      ) : (
+                        <NavLink
+                          to={c.to}
+                          className="px-1.5 py-0.5 rounded hover:text-foreground hover:bg-[hsl(var(--secondary))]/60 transition-colors truncate max-w-[160px]"
+                        >
+                          {c.label}
+                        </NavLink>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
           </header>
           <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 b2b-scroll">{children}</div>
         </main>
