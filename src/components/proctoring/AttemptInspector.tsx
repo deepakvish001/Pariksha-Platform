@@ -376,10 +376,12 @@ function AIFindingsPanel({ attemptId, canRunReview = true }: { attemptId: string
               <Badge variant="outline" className="text-[10px]">{counts.low} low</Badge>
             </div>
           )}
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={runReview} disabled={reviewing}>
-            {reviewing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-            Run AI review
-          </Button>
+          {canRunReview ? (
+            <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={runReview} disabled={reviewing}>
+              {reviewing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+              Run AI review
+            </Button>
+          ) : null}
         </div>
       </div>
       {loading ? (
