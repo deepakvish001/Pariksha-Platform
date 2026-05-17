@@ -25,6 +25,7 @@ import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdo
 import { ResultsColorKey } from "../components/ResultsColorKey";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
 import { IntegrityExplanation } from "../components/IntegrityExplanation";
+import { IntegrityTimeline } from "../components/IntegrityTimeline";
 import { SupportLink } from "../components/SupportLink";
 
 const AUTO_REDIRECT_SECONDS = 10;
@@ -219,6 +220,14 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
 
             {typeof attempt.integrity_score === "number" && (
               <IntegrityExplanation score={attempt.integrity_score} />
+            )}
+
+            {typeof attempt.integrity_score === "number" && (
+              <IntegrityTimeline
+                attemptId={attempt.id}
+                assessmentId={assessment.id}
+                finalScore={attempt.integrity_score}
+              />
             )}
 
             {/* Next steps */}
