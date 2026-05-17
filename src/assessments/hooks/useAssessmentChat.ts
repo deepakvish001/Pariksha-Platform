@@ -315,21 +315,43 @@ export function useChatPresence(
         online,
         lastSeen: online ? Date.now() : peerLastBeatRef.current ?? prev.lastSeen,
         typing: online ? prev.typing : false,
+        typingByRole: online
+          ? prev.typingByRole
+          : { candidate: false, proctor: false },
       }));
     };
 
     // Periodically mark the peer offline if their heartbeat goes stale.
-    // Runs locally — independent of presence events — so we react to closed
-    // tabs / killed browsers without waiting for the realtime "leave" event.
     const runStaleCheck = () => {
       const lastBeat = peerLastBeatRef.current;
       if (lastBeat === null) return;
       if (Date.now() - lastBeat <= staleAfterMs) return;
       setPeer((prev) =>
         prev.online
-          ? { ...prev, online: false, typing: false, lastSeen: lastBeat }
+          ? {
+              ...prev,
+              online: false,
+              typing: false,
+              lastSeen: lastBeat,
+              typingByRole: { candidate: false, proctor: false },
+            }
           : prev
       );
+    };
+
+    const clearTypingFor = (role: "candidate" | "proctor") => {
+      const t = typingTimersRef.current[role];
+      if (t) window.clearTimeout(t);
+      typingTimersRef.current[role] = null;
+      setPeer((prev) => {
+        if (!prev.typingByRole[role]) return prev;
+        const next = { ...prev.typingByRole, [role]: false };
+        return {
+          ...prev,
+          typingByRole: next,
+          typing: role === peerRole ? false : prev.typing,
+        };
+      });
     };
 
     channel
@@ -342,19 +364,38 @@ export function useChatPresence(
           online: false,
           typing: false,
           lastSeen: peerLastBeatRef.current ?? Date.now(),
+          typingByRole: { candidate: false, proctor: false },
         }));
       })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
         const p = payload as TypingPayload;
-        if (!p || p.role !== peerRole || p.user_id === viewerUserId) return;
-        if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+        // Ignore our own broadcasts; accept any role other than the viewer's
+        // so the dock can show separate proctor/candidate typing indicators.
+        if (!p || p.user_id === viewerUserId || p.role === viewerRole) return;
+        const role = p.role;
+        const existing = typingTimersRef.current[role];
+        if (existing) window.clearTimeout(existing);
         if (p.typing) {
-          setPeer((prev) => ({ ...prev, typing: true }));
-          typingTimerRef.current = window.setTimeout(() => {
-            setPeer((prev) => ({ ...prev, typing: false }));
+          setPeer((prev) => ({
+            ...prev,
+            typing: role === peerRole ? true : prev.typing,
+            typingByRole: { ...prev.typingByRole, [role]: true },
+          }));
+          typingTimersRef.current[role] = window.setTimeout(() => {
+            typingTimersRef.current[role] = null;
+            setPeer((prev) => ({
+              ...prev,
+              typing: role === peerRole ? false : prev.typing,
+              typingByRole: { ...prev.typingByRole, [role]: false },
+            }));
           }, TYPING_TIMEOUT_MS);
         } else {
-          setPeer((prev) => ({ ...prev, typing: false }));
+          typingTimersRef.current[role] = null;
+          setPeer((prev) => ({
+            ...prev,
+            typing: role === peerRole ? false : prev.typing,
+            typingByRole: { ...prev.typingByRole, [role]: false },
+          }));
         }
       })
       .subscribe(async (status) => {
