@@ -418,32 +418,28 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
           <p className="text-xs text-muted-foreground">No proctoring evidence captured for this attempt.</p>
         ) : null}
 
-        {webcam.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Camera className="h-3 w-3" /> Webcam snapshots ({webcam.length})</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {webcam.slice(0, 12).map((s) => <Tile key={s.id} path={s.storage_path} captured_at={s.captured_at} finding={findingBySnap.get(s.id)} />)}
-            </div>
-          </div>
-        )}
-
-        {screen.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Monitor className="h-3 w-3" /> Screen captures ({screen.length})</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {screen.slice(0, 9).map((s) => <Tile key={s.id} path={s.storage_path} captured_at={s.captured_at} finding={findingBySnap.get(s.id)} />)}
-            </div>
-          </div>
-        )}
-
-        {frames.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Smartphone className="h-3 w-3" /> Third Eye side-camera ({frames.length})</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {frames.slice(0, 12).map((f) => <Tile key={f.id} path={f.storage_path} captured_at={f.captured_at} source="sideeye" />)}
-            </div>
-          </div>
-        )}
+        {(() => {
+          const webcamItems = gallery.filter((g) => g.source === "webcam");
+          const screenItems = gallery.filter((g) => g.source === "screen");
+          const sideeyeItems = gallery.filter((g) => g.source === "sideeye");
+          const recItems = gallery.filter((g) => g.kind === "video");
+          return (
+            <>
+              {webcamItems.length > 0 && (
+                <Section title="Webcam snapshots" icon={Camera} items={webcamItems} cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" initial={12} renderTile={(it) => <Tile key={it.key} item={it} />} />
+              )}
+              {screenItems.length > 0 && (
+                <Section title="Screen captures" icon={Monitor} items={screenItems} cols="grid-cols-2 sm:grid-cols-3" initial={9} renderTile={(it) => <Tile key={it.key} item={it} />} />
+              )}
+              {sideeyeItems.length > 0 && (
+                <Section title="Third Eye side-camera" icon={Smartphone} items={sideeyeItems} cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" initial={12} renderTile={(it) => <Tile key={it.key} item={it} />} />
+              )}
+              {recItems.length > 0 && (
+                <Section title="Recorded clips" icon={Video} items={recItems} cols="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" initial={6} renderTile={(it) => <Tile key={it.key} item={it} />} />
+              )}
+            </>
+          );
+        })()}
 
         {findings.length > 0 && (
           <div>
@@ -471,54 +467,120 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
             </div>
           </div>
         )}
-
-        {recordings.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-              <Video className="h-3 w-3" /> Recorded clips ({recordings.length})
-            </p>
-            <div className="space-y-2">
-              {recordings.map((r) => {
-                const url = urls[r.storage_path];
-                const Icon = r.kind === "screen" ? Monitor : r.kind === "sideeye" ? Smartphone : Camera;
-                const secs = r.duration_ms ? Math.round(r.duration_ms / 1000) : 0;
-                const mb = r.size_bytes ? (r.size_bytes / 1_048_576).toFixed(1) : null;
-                return (
-                  <div key={r.id} className="rounded-md border border-[hsl(var(--border))] p-2 space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs">
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="font-medium capitalize">{r.kind}</span>
-                      <Badge variant="outline" className="text-[10px] h-5">{Math.floor(secs / 60)}m {secs % 60}s</Badge>
-                      {mb && <span className="text-muted-foreground">{mb} MB</span>}
-                      <span className="ml-auto text-muted-foreground">{new Date(r.started_at).toLocaleString()}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1.5"
-                        onClick={async () => {
-                          const { error } = await supabase.from("assessment_proctor_recordings").delete().eq("id", r.id);
-                          if (error) toast.error(error.message);
-                          else {
-                            await supabase.storage.from(BUCKET).remove([r.storage_path]).catch(() => { /* noop */ });
-                            void refresh();
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    {url ? (
-                      <video src={url} controls preload="metadata" className="w-full max-h-72 rounded bg-black" />
-                    ) : (
-                      <div className="h-24 grid place-items-center text-[10px] text-muted-foreground">Loading…</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </CardContent>
+
+      <Dialog open={!!lightboxItem} onOpenChange={(o) => !o && setLightboxKey(null)}>
+        <DialogContent className="max-w-5xl p-0 overflow-hidden bg-black border-[hsl(var(--border))]">
+          {lightboxItem && (() => {
+            const url = urls[lightboxItem.path];
+            const rec = lightboxItem.kind === "video"
+              ? recordings.find((r) => r.storage_path === lightboxItem.path)
+              : null;
+            return (
+              <div className="relative">
+                <div className="absolute top-2 left-2 right-2 z-10 flex items-center gap-2">
+                  <Badge variant="secondary" className="text-[10px] h-5 capitalize">{lightboxItem.label}</Badge>
+                  {lightboxItem.finding && (
+                    <Badge variant="outline" className={`text-[10px] h-5 ${sevColor(lightboxItem.finding.severity)}`}>
+                      {lightboxItem.finding.severity}
+                    </Badge>
+                  )}
+                  <span className="text-[11px] text-white/70">
+                    {new Date(lightboxItem.captured_at).toLocaleString()}
+                  </span>
+                  <span className="ml-auto text-[11px] text-white/60">
+                    {lightboxIdx + 1} / {gallery.length}
+                  </span>
+                  <Button size="sm" variant="secondary" className="h-7" onClick={() => downloadOne(lightboxItem.path)}>
+                    <Download className="h-3 w-3 mr-1" /> Download
+                  </Button>
+                  <Button size="sm" variant="secondary" className="h-7 w-7 p-0" onClick={() => setLightboxKey(null)}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => stepLightbox(-1)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/60 hover:bg-black/80 p-2"
+                  aria-label="Previous"
+                >
+                  <ChevronLeft className="h-5 w-5 text-white" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => stepLightbox(1)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/60 hover:bg-black/80 p-2"
+                  aria-label="Next"
+                >
+                  <ChevronRight className="h-5 w-5 text-white" />
+                </button>
+
+                <div className="w-full max-h-[80vh] grid place-items-center bg-black">
+                  {url ? (
+                    lightboxItem.kind === "video" ? (
+                      <video key={lightboxItem.key} src={url} controls autoPlay className="max-h-[80vh] w-auto" />
+                    ) : (
+                      <img src={url} alt={lightboxItem.path} className="max-h-[80vh] w-auto object-contain" />
+                    )
+                  ) : (
+                    <div className="p-12 text-xs text-white/60">Loading…</div>
+                  )}
+                </div>
+
+                {rec && (
+                  <div className="px-4 py-2 text-[11px] text-white/70 bg-black/60 flex items-center gap-3">
+                    <span className="capitalize">{rec.kind}</span>
+                    {rec.duration_ms && (
+                      <span>{Math.floor(rec.duration_ms / 60000)}m {Math.round((rec.duration_ms % 60000) / 1000)}s</span>
+                    )}
+                    {rec.size_bytes && <span>{(rec.size_bytes / 1_048_576).toFixed(1)} MB</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </Card>
+  );
+}
+
+function Section({
+  title,
+  icon: Icon,
+  items,
+  cols,
+  initial,
+  renderTile,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: Array<{ key: string }>;
+  cols: string;
+  initial: number;
+  renderTile: (it: any) => React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? items : items.slice(0, initial);
+  const hidden = items.length - shown.length;
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+        <Icon className="h-3 w-3" /> {title} ({items.length})
+      </p>
+      <div className={`grid ${cols} gap-2`}>
+        {shown.map(renderTile)}
+      </div>
+      {items.length > initial && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-[11px] text-primary hover:underline"
+        >
+          {expanded ? "Show less" : `Show all (${hidden} more)`}
+        </button>
+      )}
+    </div>
   );
 }
