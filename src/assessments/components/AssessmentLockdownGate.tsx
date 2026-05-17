@@ -104,6 +104,7 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   };
 
   const canStart =
+    detailsDone &&
     !!stream &&
     acknowledged &&
     (!requireScreen || !!screen) &&
