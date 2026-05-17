@@ -805,9 +805,27 @@ function ParticipantRow({
       )}
       <td className="py-2.5 px-2 text-right" data-row-action>
         <div className="inline-flex items-center gap-1">
-          <Button size="sm" variant="ghost" className="h-7 px-2" title="View details" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
+          <Button size="sm" variant="ghost" className="h-7 px-2" title="Quick view (drawer)" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
             <Eye className="h-3.5 w-3.5" />
           </Button>
+          {detailHref && (
+            <Button
+              asChild
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2"
+              title="Open full candidate page in new tab"
+            >
+              <a
+                href={detailHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </Button>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
