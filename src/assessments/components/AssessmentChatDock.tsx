@@ -120,18 +120,52 @@ export function AssessmentChatDock({
     >
       <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="h-7 w-7 rounded-md bg-primary/15 text-primary grid place-items-center shrink-0">
+          <div className="relative h-7 w-7 rounded-md bg-primary/15 text-primary grid place-items-center shrink-0">
             <ShieldCheck className="h-3.5 w-3.5" />
+            <Circle
+              className={cn(
+                "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card",
+                peer.online
+                  ? "fill-emerald-500 text-emerald-500"
+                  : "fill-muted-foreground/60 text-muted-foreground/60"
+              )}
+              aria-hidden
+            />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold leading-tight truncate">
               {viewerRole === "candidate" ? "Chat with proctor" : "Candidate chat"}
             </p>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground leading-tight">
-              {ordered.length} {ordered.length === 1 ? "message" : "messages"} · live
+            <p
+              className={cn(
+                "text-[10px] leading-tight truncate flex items-center gap-1",
+                peer.typing
+                  ? "text-primary"
+                  : peer.online
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-muted-foreground"
+              )}
+              aria-live="polite"
+            >
+              {peer.typing ? (
+                <>
+                  <TypingDots />
+                  <span>{peerLabel} is typing…</span>
+                </>
+              ) : peer.online ? (
+                <span>{peerLabel} online</span>
+              ) : (
+                <span>{lastSeenLabel(peer.lastSeen)}</span>
+              )}
             </p>
           </div>
         </div>
+        {variant === "floating" && (
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </header>
         {variant === "floating" && (
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)}>
             <X className="h-4 w-4" />
