@@ -117,7 +117,7 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
     const t = toast.loading("Preparing evidence export…");
     try {
       // Pull EVERYTHING for this attempt (the on-screen lists are paginated).
-      const [s, f, fd, rec] = await Promise.all([
+      const [s, f, fd, rec, ch] = await Promise.all([
         supabase.from("assessment_proctor_snapshots")
           .select("id,source,storage_path,captured_at,reviewed")
           .eq("attempt_id", attemptId).order("captured_at", { ascending: true }),
@@ -130,17 +130,22 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
         supabase.from("assessment_proctor_recordings")
           .select("id,kind,storage_path,started_at,ended_at,duration_ms,size_bytes")
           .eq("attempt_id", attemptId).order("started_at", { ascending: true }),
+        supabase.from("assessment_proctor_session_chunks")
+          .select("id,kind,seq,storage_path,started_at,ended_at,duration_ms,size_bytes")
+          .eq("attempt_id", attemptId).order("started_at", { ascending: true }),
       ]);
 
       const allSnaps = (s.data ?? []) as Snap[];
       const allFrames = (f.data ?? []) as Frame[];
       const allFindings = (fd.data ?? []) as Finding[];
       const allRecs = (rec.data ?? []) as Recording[];
+      const allChunks = (ch.data ?? []) as Array<{ id: string; kind: "webcam" | "screen" | "sideeye"; seq: number; storage_path: string; started_at: string; ended_at: string; duration_ms: number; size_bytes: number | null }>;
 
       const paths = [
         ...allSnaps.map((x) => x.storage_path),
         ...allFrames.map((x) => x.storage_path),
         ...allRecs.map((x) => x.storage_path),
+        ...allChunks.map((x) => x.storage_path),
       ];
 
       // Sign URLs in batches (createSignedUrls accepts up to ~100).
