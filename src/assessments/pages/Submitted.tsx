@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
   Mail,
   Sparkles,
@@ -13,7 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
+import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
 
 interface Attempt {
   id: string;
