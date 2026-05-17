@@ -513,3 +513,189 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     </div>
   );
 }
+
+function formatRelative(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+function authorInitials(name: string | null, fallbackId: string): string {
+  const src = (name && name.trim()) || fallbackId;
+  const parts = src.split(/\s+/).filter(Boolean).slice(0, 2);
+  if (parts.length === 0) return "?";
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
+interface EventNotesThreadProps {
+  notes: NoteRow[];
+  currentUserId: string | null;
+  canAdd: boolean;
+  onAdd: (body: string) => Promise<boolean>;
+  onDelete: (id: string) => Promise<void> | void;
+}
+
+function EventNotesThread({ notes, currentUserId, canAdd, onAdd, onDelete }: EventNotesThreadProps) {
+  const [open, setOpen] = useState(notes.length > 0);
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    // Auto-expand when a note arrives from realtime, so collaborating
+    // proctors see context the moment a teammate adds it.
+    if (notes.length > 0) setOpen(true);
+  }, [notes.length]);
+
+  const submit = async () => {
+    if (!draft.trim()) return;
+    setSaving(true);
+    const ok = await onAdd(draft);
+    setSaving(false);
+    if (ok) {
+      setDraft("");
+      setComposing(false);
+    }
+  };
+
+  const hasNotes = notes.length > 0;
+
+  return (
+    <div className="mt-2 -ml-5 pl-5 border-l border-border/60">
+      <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          aria-expanded={open}
+        >
+          <StickyNote className="h-3 w-3" />
+          <span>
+            Proctor notes
+            {hasNotes && <span className="ml-1 tabular-nums">({notes.length})</span>}
+          </span>
+        </button>
+        {canAdd && !composing && (
+          <button
+            type="button"
+            onClick={() => {
+              setComposing(true);
+              setOpen(true);
+            }}
+            className="ml-auto inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline"
+          >
+            <Plus className="h-3 w-3" /> Add note
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <div className="mt-1.5 space-y-1.5">
+          {hasNotes ? (
+            notes.map((n) => {
+              const mine = n.author_id === currentUserId;
+              return (
+                <div
+                  key={n.id}
+                  className="flex items-start gap-2 rounded-md border border-border/60 bg-background/60 px-2 py-1.5"
+                >
+                  <span
+                    className="h-5 w-5 shrink-0 rounded-full bg-primary/15 text-primary grid place-items-center text-[10px] font-semibold"
+                    aria-hidden
+                  >
+                    {authorInitials(n.author_name, n.author_id)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2 text-[10px] text-muted-foreground">
+                      <span className="font-medium text-foreground truncate">
+                        {n.author_name?.trim() || "Proctor"}
+                        {mine && <span className="ml-1 text-[9px] text-primary">(you)</span>}
+                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="tabular-nums">{formatRelative(n.created_at)}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {new Date(n.created_at).toLocaleString()}
+                        </TooltipContent>
+                      </Tooltip>
+                      {mine && (
+                        <button
+                          type="button"
+                          onClick={() => onDelete(n.id)}
+                          className="ml-auto text-muted-foreground hover:text-destructive transition-colors"
+                          aria-label="Delete note"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-foreground/90 mt-0.5 leading-snug whitespace-pre-wrap break-words">
+                      {n.body}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            !composing && (
+              <div className="text-[10px] text-muted-foreground italic">
+                No notes on this event yet.
+              </div>
+            )
+          )}
+
+          {composing && (
+            <div className="rounded-md border border-border bg-background/80 p-1.5 space-y-1.5">
+              <Textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Add context for the team (e.g. confirmed via call, false alarm)…"
+                rows={2}
+                className="text-[11px] resize-none min-h-[44px]"
+                autoFocus
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    void submit();
+                  }
+                }}
+              />
+              <div className="flex items-center justify-end gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => {
+                    setComposing(false);
+                    setDraft("");
+                  }}
+                  disabled={saving}
+                >
+                  <X className="h-3 w-3 mr-1" /> Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => void submit()}
+                  disabled={saving || !draft.trim()}
+                >
+                  {saving ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Save className="h-3 w-3 mr-1" />
+                  )}
+                  Save note
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
