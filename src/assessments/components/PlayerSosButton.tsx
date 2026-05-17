@@ -142,6 +142,9 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
   const [issue, setIssue] = useState<string>(QUICK_ISSUES[0]);
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
   // Replay any SOS alerts that failed to deliver in a previous session
   // (e.g. tab crashed while offline). Safe to call repeatedly.
@@ -149,6 +152,56 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
     installSosQueueAutoflush();
     void flushSosQueue();
   }, []);
+
+  // Tick once per second while a cooldown is active so the countdown
+  // label updates live without re-querying the database.
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [cooldownUntil]);
+
+  // Pull the latest SOS state (last timestamp + total count) so the
+  // countdown reflects reality even on first mount or after a refresh.
+  const refreshRateLimit = async () => {
+    if (!attemptId) return;
+    try {
+      const { data, error } = await supabase
+        .from("assessment_sos_events")
+        .select("created_at")
+        .eq("attempt_id", attemptId)
+        .order("created_at", { ascending: false })
+        .limit(MAX_PER_ATTEMPT);
+      if (error) return;
+      setTotalCount(data?.length ?? 0);
+      const last = data?.[0];
+      if (last) {
+        const until = new Date(last.created_at).getTime() + COOLDOWN_MS;
+        setCooldownUntil(until > Date.now() ? until : null);
+      } else {
+        setCooldownUntil(null);
+      }
+    } catch {
+      /* best-effort */
+    }
+  };
+
+  useEffect(() => {
+    void refreshRateLimit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attemptId]);
+
+  useEffect(() => {
+    if (open) void refreshRateLimit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const remainingMs = cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
+  const remainingSec = Math.ceil(remainingMs / 1000);
+  const inCooldown = remainingMs > 0;
+  const maxedOut = totalCount >= MAX_PER_ATTEMPT;
+  const blocked = inCooldown || maxedOut;
+
 
   const reset = () => {
     setStep("confirm");
