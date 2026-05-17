@@ -138,6 +138,7 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const extFromMime = (mime: string | null | undefined): string | null => {
     if (!mime) return null;
