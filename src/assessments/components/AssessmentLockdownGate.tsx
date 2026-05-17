@@ -145,7 +145,28 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
         </div>
 
         <CardContent className="p-6 space-y-5">
-          <Step n={1} title="Enable your camera" done={!!stream} icon={<Camera className="h-4 w-4" />}>
+          <Step
+            n={1}
+            title="Verify your details"
+            done={detailsDone}
+            icon={<UserCircle className="h-4 w-4" />}
+          >
+            {userId ? (
+              <CandidateDetailsStep
+                attemptId={attemptId}
+                userId={userId}
+                done={detailsDone}
+                onComplete={() => {
+                  setDetailsDone(true);
+                  log("candidate_details_saved");
+                }}
+              />
+            ) : (
+              <div className="text-xs text-muted-foreground">Loading your session…</div>
+            )}
+          </Step>
+
+          <Step n={2} title="Enable your camera" done={!!stream} icon={<Camera className="h-4 w-4" />}>
             {stream ? (
               <div className="flex items-center gap-3">
                 <video
@@ -159,7 +180,7 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
                 </span>
               </div>
             ) : (
-              <Button size="sm" onClick={requestCamera} disabled={busy}>
+              <Button size="sm" onClick={requestCamera} disabled={busy || !detailsDone}>
                 <Camera className="h-4 w-4 mr-2" />
                 Allow camera access
               </Button>
@@ -167,7 +188,7 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
           </Step>
 
           {requireScreen && (
-            <Step n={2} title="Share your entire screen" done={!!screen} icon={<MonitorUp className="h-4 w-4" />}>
+            <Step n={3} title="Share your entire screen" done={!!screen} icon={<MonitorUp className="h-4 w-4" />}>
               {screen ? (
                 <span className="text-xs text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Screen sharing active
@@ -183,7 +204,7 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
 
           {requireSideEye && (
             <Step
-              n={requireScreen ? 3 : 2}
+              n={requireScreen ? 4 : 3}
               title="Pair your phone as side camera (Third Eye)"
               done={sideEyePaired}
               icon={<Smartphone className="h-4 w-4" />}
