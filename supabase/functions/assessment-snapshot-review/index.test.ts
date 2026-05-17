@@ -91,14 +91,14 @@ Deno.test("POST with garbage bearer returns 401", async () => {
   assertEquals(status, 401);
 });
 
-Deno.test("POST authenticated without attempt_id returns 400", async () => {
+Deno.test({ name: "POST authenticated without attempt_id returns 400", ...AUTHED_OPTS, fn: async () => {
   const token = await createOutsiderSession();
   const { status, json } = await post({}, token);
   assertEquals(status, 400);
   assertEquals(json.error, "attempt_id is required");
 });
 
-Deno.test("POST authenticated with unknown attempt_id returns 404", async () => {
+Deno.test({ name: "POST authenticated with unknown attempt_id returns 404", ...AUTHED_OPTS, fn: async () => {
   const token = await createOutsiderSession();
   const { status, json } = await post({ attempt_id: UNKNOWN_ATTEMPT_ID }, token);
   assertEquals(status, 404);
