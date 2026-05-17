@@ -681,6 +681,16 @@ export default function Preflight() {
           </div>
         </section>
       </main>
+
+      <PreflightSummaryDialog
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        title={a.title ?? "Assessment"}
+        durationMin={a.duration_min}
+        environment={{ os: env.os, browser: env.browser }}
+        checks={summaryChecks}
+        onStart={onStart}
+      />
     </div>
   );
 }
