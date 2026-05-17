@@ -273,7 +273,7 @@ const App = () => (
                 <Route path="/b2b/assessments/:id/manage" element={<ProtectedRoute><B2BAssessmentManage /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/attempts/:attemptId" element={<ProtectedRoute><B2BAttemptDetail /></ProtectedRoute>} />
                 <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
-                <Route path="/b2b/proctoring" element={<ProtectedRoute><B2BProctoring /></ProtectedRoute>} />
+                <Route path="/b2b/proctoring" element={<Navigate to="/b2b/assessments" replace />} />
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
                 <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
                 <Route path="/b2b/insights/feedback" element={<ProtectedRoute><B2BInsightsFeedback /></ProtectedRoute>} />
