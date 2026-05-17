@@ -71,7 +71,7 @@ export function QuestionPalette({
     return (
       <div className="rounded-lg border border-border bg-card p-2.5">
         <div className="flex items-center justify-between mb-2 text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">Questions</span>
+          <span className="font-semibold text-foreground">{t("palette.header.title")}</span>
           <span className="tabular-nums">
             {answered}/{items.length}
           </span>
