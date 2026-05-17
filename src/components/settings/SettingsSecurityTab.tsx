@@ -189,6 +189,8 @@ const SettingsSecurityTab = () => {
         )}
       </SettingsCard>
 
+      <TwoFactorAuthCard />
+
       {/* Security Tips Card */}
       <SettingsCard delay={0.05}>
         <div className="flex items-center gap-2 mb-4">
