@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, LifeBuoy, Loader2, Mail, Phone, Send, X } from "lucide-react";
+import { AlertTriangle, LifeBuoy, Loader2, Mail, MessageCircle, MessageSquare, Phone, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SUPPORT_EMAIL = "support@parikshaa.app";
 const SUPPORT_PHONE = "+91 80000 00000";
+// Digits-only E.164 for tel:/sms:/wa.me links (no +, no spaces).
+const SUPPORT_PHONE_DIGITS = SUPPORT_PHONE.replace(/\D/g, "");
 
 const QUICK_ISSUES = [
   "Camera or microphone stopped working",
@@ -178,20 +180,48 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
                 Use SOS only for genuine emergencies during the test (technical failure, power loss,
                 health issue). A proctor will be notified.
               </p>
-              <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-sm">
                 <a
-                  href={`mailto:${SUPPORT_EMAIL}?subject=${buildSubject()}`}
-                  className="flex items-center gap-2 hover:text-primary"
+                  href={`tel:${SUPPORT_PHONE_DIGITS}`}
+                  className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
                 >
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-mono">{SUPPORT_EMAIL}</span>
+                  <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Call</div>
+                    <div className="font-mono text-xs truncate">{SUPPORT_PHONE}</div>
+                  </div>
                 </a>
                 <a
-                  href={`tel:${SUPPORT_PHONE.replace(/\s/g, "")}`}
-                  className="flex items-center gap-2 hover:text-primary"
+                  href={`sms:${SUPPORT_PHONE_DIGITS}?&body=${buildBody()}`}
+                  className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
                 >
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-mono">{SUPPORT_PHONE}</span>
+                  <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">SMS</div>
+                    <div className="text-xs truncate">Text support</div>
+                  </div>
+                </a>
+                <a
+                  href={`https://wa.me/${SUPPORT_PHONE_DIGITS}?text=${buildBody()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 hover:border-emerald-500/70 hover:bg-emerald-500/15 transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300">WhatsApp</div>
+                    <div className="text-xs truncate">Chat with proctor</div>
+                  </div>
+                </a>
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}?subject=${buildSubject()}&body=${buildBody()}`}
+                  className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                >
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Email</div>
+                    <div className="text-xs truncate">{SUPPORT_EMAIL}</div>
+                  </div>
                 </a>
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
