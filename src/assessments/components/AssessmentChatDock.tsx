@@ -88,11 +88,26 @@ export function AssessmentChatDock({
   useAutoMarkRead(attemptId, messages, viewerRole, isPanelVisible);
   const { peer, sendTyping } = useChatPresence(attemptId, viewerRole, user?.id ?? null);
   const scrollRef = useAutoScrollRef<HTMLDivElement>(
-    `${messages?.length ?? 0}:${peer.typing ? 1 : 0}`
+    `${messages?.length ?? 0}:${peer.typingByRole?.candidate ? 1 : 0}:${peer.typingByRole?.proctor ? 1 : 0}`
   );
 
   const ordered = useMemo(() => messages ?? [], [messages]);
   const peerLabel = viewerRole === "candidate" ? "Proctor" : "Candidate";
+
+  // Per-role typing — every role except the viewer's own.
+  const typingRoles = useMemo(() => {
+    const out: Array<"candidate" | "proctor"> = [];
+    if (viewerRole !== "candidate" && peer.typingByRole?.candidate) out.push("candidate");
+    if (viewerRole !== "proctor" && peer.typingByRole?.proctor) out.push("proctor");
+    return out;
+  }, [peer.typingByRole, viewerRole]);
+  const anyTyping = typingRoles.length > 0;
+  const typingLabel =
+    typingRoles.length === 0
+      ? ""
+      : typingRoles.length === 1
+      ? `${typingRoles[0] === "proctor" ? "Proctor" : "Candidate"} is typing…`
+      : "Proctor and Candidate are typing…";
 
   // Most recent moment the peer read one of our messages.
   const peerLastReadAt = useMemo(() => {
@@ -210,7 +225,7 @@ export function AssessmentChatDock({
             <p
               className={cn(
                 "text-[10px] leading-tight truncate flex items-center gap-1",
-                peer.typing
+                anyTyping
                   ? "text-primary"
                   : peer.online
                   ? "text-emerald-600 dark:text-emerald-400"
@@ -218,10 +233,10 @@ export function AssessmentChatDock({
               )}
               aria-live="polite"
             >
-              {peer.typing ? (
+              {anyTyping ? (
                 <>
                   <TypingDots />
-                  <span>{peerLabel} is typing…</span>
+                  <span>{typingLabel}</span>
                 </>
               ) : peer.online ? (
                 <span>{peerLabel} online</span>
@@ -339,12 +354,17 @@ export function AssessmentChatDock({
             );
           })
         )}
-        {peer.typing && ordered.length > 0 && (
-          <div className="flex items-start" aria-live="polite">
-            <div className="max-w-[85%] rounded-lg px-3 py-2 bg-muted text-muted-foreground border border-border inline-flex items-center gap-1.5 text-xs">
-              <TypingDots />
-              <span>{peerLabel} is typing…</span>
-            </div>
+        {anyTyping && ordered.length > 0 && (
+          <div className="flex flex-col gap-1 items-start" aria-live="polite">
+            {typingRoles.map((role) => (
+              <div
+                key={role}
+                className="max-w-[85%] rounded-lg px-3 py-2 bg-muted text-muted-foreground border border-border inline-flex items-center gap-1.5 text-xs"
+              >
+                <TypingDots />
+                <span>{role === "proctor" ? "Proctor" : "Candidate"} is typing…</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
