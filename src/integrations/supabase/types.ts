@@ -668,14 +668,17 @@ export type Database = {
       assessment_attempts: {
         Row: {
           assessment_id: string
+          candidate_details: Json | null
           created_at: string
           device_fingerprint: string | null
           device_ip: unknown
           id: string
+          id_photo_url: string | null
           integrity_score: number
           invite_id: string | null
           score: number | null
           screen_extended: boolean
+          selfie_url: string | null
           sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
@@ -686,14 +689,17 @@ export type Database = {
         }
         Insert: {
           assessment_id: string
+          candidate_details?: Json | null
           created_at?: string
           device_fingerprint?: string | null
           device_ip?: unknown
           id?: string
+          id_photo_url?: string | null
           integrity_score?: number
           invite_id?: string | null
           score?: number | null
           screen_extended?: boolean
+          selfie_url?: string | null
           sideeye_required?: boolean
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
@@ -704,14 +710,17 @@ export type Database = {
         }
         Update: {
           assessment_id?: string
+          candidate_details?: Json | null
           created_at?: string
           device_fingerprint?: string | null
           device_ip?: unknown
           id?: string
+          id_photo_url?: string | null
           integrity_score?: number
           invite_id?: string | null
           score?: number | null
           screen_extended?: boolean
+          selfie_url?: string | null
           sideeye_required?: boolean
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
@@ -8384,14 +8393,17 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           assessment_id: string
+          candidate_details: Json | null
           created_at: string
           device_fingerprint: string | null
           device_ip: unknown
           id: string
+          id_photo_url: string | null
           integrity_score: number
           invite_id: string | null
           score: number | null
           screen_extended: boolean
+          selfie_url: string | null
           sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
@@ -8827,14 +8839,17 @@ export type Database = {
         Args: { _assessment: string }
         Returns: {
           assessment_id: string
+          candidate_details: Json | null
           created_at: string
           device_fingerprint: string | null
           device_ip: unknown
           id: string
+          id_photo_url: string | null
           integrity_score: number
           invite_id: string | null
           score: number | null
           screen_extended: boolean
+          selfie_url: string | null
           sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
@@ -8854,14 +8869,17 @@ export type Database = {
         Args: { _attempt: string }
         Returns: {
           assessment_id: string
+          candidate_details: Json | null
           created_at: string
           device_fingerprint: string | null
           device_ip: unknown
           id: string
+          id_photo_url: string | null
           integrity_score: number
           invite_id: string | null
           score: number | null
           screen_extended: boolean
+          selfie_url: string | null
           sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
