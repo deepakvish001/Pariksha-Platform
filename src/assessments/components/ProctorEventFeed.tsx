@@ -63,6 +63,17 @@ interface ChatRow {
   created_at: string;
 }
 
+interface NoteRow {
+  id: string;
+  event_id: string;
+  attempt_id: string;
+  author_id: string;
+  author_name: string | null;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface Props {
   attemptId: string;
   className?: string;
