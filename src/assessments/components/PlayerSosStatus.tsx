@@ -24,6 +24,8 @@ interface SosRow {
   acknowledged_at: string | null;
   resolved_at: string | null;
   resolution_note: string | null;
+  delivery_status: DeliveryStatus | null;
+  delivery_error: string | null;
 }
 
 interface Props {
