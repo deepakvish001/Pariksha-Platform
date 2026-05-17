@@ -933,3 +933,101 @@ function CandidatePreview({ question, options }: { question: Question; options: 
     </pre>
   );
 }
+
+// ───────── Numerical editor ─────────
+function NumericalEditor({ question }: { question: Question }) {
+  const update = useUpdateQuestion();
+  const meta = (question.meta as { expected?: string | number; tolerance?: string | number; unit?: string } | null) ?? {};
+  const [expected, setExpected] = useState(String(meta.expected ?? ""));
+  const [tolerance, setTolerance] = useState(String(meta.tolerance ?? "0"));
+  const [unit, setUnit] = useState(meta.unit ?? "");
+  const [dirty, setDirty] = useState(false);
+
+  const save = async () => {
+    await update.mutateAsync({
+      id: question.id,
+      patch: { meta: { ...(question.meta ?? {}), expected, tolerance, unit } },
+    });
+    setDirty(false);
+    toast.success("Numerical answer saved");
+  };
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-sm font-medium">Expected answer</h4>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <Label className="text-xs">Expected value</Label>
+          <Input type="number" step="any" value={expected} onChange={(e) => { setExpected(e.target.value); setDirty(true); }} className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs">± Tolerance</Label>
+          <Input type="number" step="any" min="0" value={tolerance} onChange={(e) => { setTolerance(e.target.value); setDirty(true); }} className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs">Unit (optional)</Label>
+          <Input value={unit} onChange={(e) => { setUnit(e.target.value); setDirty(true); }} placeholder="e.g. kg, %, m/s" className="mt-1" />
+        </div>
+      </div>
+      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+        Candidate answers within ± tolerance of the expected value earn full points.
+      </p>
+      <Button onClick={save} disabled={!dirty || update.isPending} className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+        {update.isPending ? "Saving…" : "Save"}
+      </Button>
+    </div>
+  );
+}
+
+// ───────── Fill-in-the-blanks editor ─────────
+type Blank = { id: string; answer: string; case_sensitive?: boolean };
+function FillBlanksEditor({ question }: { question: Question }) {
+  const update = useUpdateQuestion();
+  const initial = ((question.meta as { blanks?: Blank[] } | null)?.blanks ?? []).map((b) => ({ ...b }));
+  const [blanks, setBlanks] = useState<Blank[]>(initial.length ? initial : [{ id: "1", answer: "" }]);
+  const [dirty, setDirty] = useState(false);
+
+  const setBlank = (i: number, patch: Partial<Blank>) => {
+    setBlanks((arr) => arr.map((b, idx) => (idx === i ? { ...b, ...patch } : b)));
+    setDirty(true);
+  };
+  const addBlank = () => { setBlanks((a) => [...a, { id: String(a.length + 1), answer: "" }]); setDirty(true); };
+  const removeBlank = (i: number) => { setBlanks((a) => a.filter((_, idx) => idx !== i)); setDirty(true); };
+
+  const save = async () => {
+    const clean = blanks.filter((b) => b.id && b.answer.trim());
+    await update.mutateAsync({ id: question.id, patch: { meta: { ...(question.meta ?? {}), blanks: clean } } });
+    setDirty(false);
+    toast.success(`Saved ${clean.length} blank${clean.length === 1 ? "" : "s"}`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="text-sm font-medium">Blanks</h4>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Reference each blank in the prompt with <code>{`{{id}}`}</code> (e.g. <code>{`{{1}}`}</code>).
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={addBlank}><Plus className="h-4 w-4 mr-1" />Add blank</Button>
+      </div>
+      <div className="space-y-2">
+        {blanks.map((b, i) => (
+          <div key={i} className="grid grid-cols-[80px_1fr_auto_auto] items-center gap-2">
+            <Input value={b.id} onChange={(e) => setBlank(i, { id: e.target.value })} placeholder="id" />
+            <Input value={b.answer} onChange={(e) => setBlank(i, { answer: e.target.value })} placeholder="Correct answer" />
+            <label className="flex items-center gap-1 text-xs">
+              <Checkbox checked={!!b.case_sensitive} onCheckedChange={(v) => setBlank(i, { case_sensitive: !!v })} />
+              Case
+            </label>
+            <Button variant="ghost" size="sm" onClick={() => removeBlank(i)}><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        ))}
+      </div>
+      <Button onClick={save} disabled={!dirty || update.isPending} className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+        {update.isPending ? "Saving…" : "Save blanks"}
+      </Button>
+    </div>
+  );
+}
