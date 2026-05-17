@@ -482,7 +482,20 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         </div>
       )}
 
-      <Button onClick={handleSave} disabled={busy} size="sm" className="font-semibold">
+      <Button
+        onClick={handleSave}
+        disabled={
+          busy ||
+          !idPhotoUrl ||
+          !selfieUrl ||
+          idChecks.length === 0 ||
+          selfieChecks.length === 0 ||
+          idChecks.some((c) => !c.ok) ||
+          selfieChecks.some((c) => !c.ok)
+        }
+        size="sm"
+        className="font-semibold"
+      >
         {busy ? (
           <>
             <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Saving…
