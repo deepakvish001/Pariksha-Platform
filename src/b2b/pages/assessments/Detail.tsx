@@ -69,10 +69,10 @@ export default function AssessmentDetail() {
       title={assessment.title}
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/b2b/assessments")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(paths.b2b.assessmentsList(basePath))}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/b2b/assessments/${assessment.id}/manage`)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(paths.b2b.assessmentManage(basePath, assessment))}>
             <Activity className="h-4 w-4 mr-1" /> Live monitor
           </Button>
           <Badge variant={isPublished ? "default" : "secondary"}>{assessment.status}</Badge>
@@ -84,7 +84,7 @@ export default function AssessmentDetail() {
               const { data, error } = await supabase.rpc("start_preview_attempt", { _assessment: assessment.id });
               if (error) { toast.error(error.message); return; }
               const attempt: any = data;
-              navigate(`/assessments/${attempt.id}/play?preview=1`);
+              navigate(paths.student.play(attempt, { preview: true }));
             }}
           >
             <Play className="h-4 w-4 mr-1" /> Take preview
