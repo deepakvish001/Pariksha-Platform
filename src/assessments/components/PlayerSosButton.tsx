@@ -170,6 +170,14 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
       return;
     }
 
+    // Rate limited → don't spam email fallback, just warn and stay on the dialog.
+    if (result.rateLimited) {
+      toast.warning("SOS not sent", {
+        description: result.error ?? "Please wait before raising another alert.",
+      });
+      return;
+    }
+
     // Fallback: open email so the candidate still gets help.
     toast.error("Couldn't reach proctor — opening email backup", {
       description: result.error ?? "Please send the email so support can call back.",
