@@ -18,6 +18,7 @@ export type Assessment = {
   proctoring_config: Record<string, unknown> | null;
   show_results_to_candidate: boolean;
   status: AssessmentStatus;
+  brand_color: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
