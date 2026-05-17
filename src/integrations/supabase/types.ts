@@ -8041,6 +8041,7 @@ export type Database = {
         }
         Returns: number
       }
+      can_view_proctoring: { Args: { _org_id: string }; Returns: boolean }
       can_write_org: { Args: { _org: string }; Returns: boolean }
       claim_assessment_invite: {
         Args: { _token: string }
