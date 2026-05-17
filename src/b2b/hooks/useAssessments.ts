@@ -14,6 +14,7 @@ export type Assessment = {
   max_attempts: number;
   proctoring_enabled: boolean;
   proctoring_config: Record<string, unknown> | null;
+  show_results_to_candidate: boolean;
   status: AssessmentStatus;
   created_by: string;
   created_at: string;
