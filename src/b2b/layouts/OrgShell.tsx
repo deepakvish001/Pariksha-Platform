@@ -207,7 +207,7 @@ export function OrgShell({
               ) : null}
             </div>
           </header>
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">{children}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 b2b-scroll">{children}</div>
         </main>
       </div>
     </div>
