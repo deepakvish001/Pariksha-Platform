@@ -390,7 +390,8 @@ export function AssessmentChatDock({
           })
         )}
         {anyTyping && ordered.length > 0 && (
-          <div className="flex flex-col gap-1 items-start" aria-live="polite">
+          // Visual-only — announcer above already speaks the typing state.
+          <div className="flex flex-col gap-1 items-start" aria-hidden="true">
             {typingRoles.map((role) => (
               <div
                 key={role}
