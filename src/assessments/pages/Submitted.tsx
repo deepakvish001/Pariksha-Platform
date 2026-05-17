@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
 import { IntegrityExplanation } from "../components/IntegrityExplanation";
+import { SupportLink } from "../components/SupportLink";
 
 const AUTO_REDIRECT_SECONDS = 10;
 
@@ -360,17 +361,8 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
         <SubmittedResultsBreakdown attemptId={attempt.id} />
 
 
-        {!isPreview && (
-          <div className="text-xs text-muted-foreground text-center">
-            Issue with your submission? Reach support at{" "}
-            <a
-              href="mailto:support@parikshaa.app"
-              className="inline-flex items-center gap-1 text-foreground hover:text-primary underline-offset-2 hover:underline"
-            >
-              <Mail className="h-3 w-3" /> support@parikshaa.app
-            </a>
-          </div>
-        )}
+        {!isPreview && <SupportLink attempt={attempt} assessment={assessment} />}
+
       </div>
     </div>
   );
