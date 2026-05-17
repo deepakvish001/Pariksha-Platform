@@ -419,11 +419,104 @@ function StatusIcon({
   return <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />;
 }
 
-function LegendRow({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
+function LegendRow({
+  icon,
+  label,
+  tip,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  tip?: string;
+}) {
+  const content = (
+    <div className="flex items-center gap-1.5 cursor-help">
       {icon}
       <span>{label}</span>
+    </div>
+  );
+  if (!tip) return content;
+  return (
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] text-xs">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+interface StatusInfo {
+  label: string;
+  description: string;
+  swatchClass: string;
+}
+
+function getStatusLabel(
+  item: { answered: boolean; visited?: boolean; flagged: boolean },
+  active: boolean,
+): StatusInfo {
+  if (item.answered) {
+    return {
+      label: "Answered",
+      description: "You've saved an answer. You can still revisit and edit it.",
+      swatchClass: "bg-emerald-500",
+    };
+  }
+  if (active) {
+    return {
+      label: "Current",
+      description: "This is the question you're viewing right now.",
+      swatchClass: "bg-primary",
+    };
+  }
+  if (item.visited) {
+    return {
+      label: "Visited · not answered",
+      description: "You opened this question but haven't submitted an answer yet.",
+      swatchClass: "bg-muted-foreground",
+    };
+  }
+  return {
+    label: "Not visited",
+    description: "You haven't opened this question yet.",
+    swatchClass: "bg-muted-foreground/40",
+  };
+}
+
+function StatusTooltipBody({
+  index,
+  item,
+  status,
+}: {
+  index: number;
+  item: { title?: string; flagged: boolean };
+  status: StatusInfo;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs font-semibold leading-tight">
+        Q{index + 1}
+        {item.title ? (
+          <>
+            <span className="text-muted-foreground"> · </span>
+            <span className="font-normal">{item.title}</span>
+          </>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-1.5 text-[11px]">
+        <span className={cn("h-2 w-2 rounded-full", status.swatchClass)} />
+        <span className="font-medium">{status.label}</span>
+        {item.flagged && (
+          <>
+            <span className="opacity-50">·</span>
+            <Flag className="h-3 w-3 fill-amber-500 text-amber-500" />
+            <span>Flagged</span>
+          </>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground leading-snug">
+        {status.description}
+      </p>
     </div>
   );
 }
