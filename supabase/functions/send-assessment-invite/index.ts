@@ -379,3 +379,46 @@ function darken(hex: string, amount: number) {
   b = Math.round(b * f);
   return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 }
+
+function lighten(hex: string, amount: number) {
+  let h = hex.replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const num = parseInt(h, 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+  const f = Math.max(0, Math.min(1, amount));
+  r = Math.round(r + (255 - r) * f);
+  g = Math.round(g + (255 - g) * f);
+  b = Math.round(b + (255 - b) * f);
+  return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+// Relative luminance per WCAG. Returns 0..1.
+function luminance(hex: string) {
+  let h = hex.replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const num = parseInt(h, 16);
+  const toLin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const r = toLin((num >> 16) & 0xff);
+  const g = toLin((num >> 8) & 0xff);
+  const b = toLin(num & 0xff);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+// Brighten dark brands until they hit a luminance threshold readable on a
+// dark (~#0b0f17) background. Light brands are returned unchanged.
+function ensureReadableOnDark(hex: string, target = 0.35) {
+  let out = hex;
+  let lum = luminance(out);
+  let i = 0;
+  while (lum < target && i < 8) {
+    out = lighten(out, 0.18);
+    lum = luminance(out);
+    i++;
+  }
+  return out;
+}
