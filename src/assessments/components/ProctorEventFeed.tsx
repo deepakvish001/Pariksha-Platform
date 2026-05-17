@@ -366,8 +366,8 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
   const counts = useMemo(() => {
     const critical = events.filter((e) => KIND_MAP[e.kind]?.severity === "critical").length;
     const warn = events.filter((e) => KIND_MAP[e.kind]?.severity === "warn").length;
-    return { total: events.length + chats.length, critical, warn, chat: chats.length };
-  }, [events, chats]);
+    return { total: events.length + chats.length, critical, warn, chat: chats.length, pinned: pins.length };
+  }, [events, chats, pins]);
 
   const notesByEvent = useMemo(() => {
     const map = new Map<string, NoteRow[]>();
