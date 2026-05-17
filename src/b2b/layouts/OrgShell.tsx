@@ -148,6 +148,30 @@ export function OrgShell({
   const homeHref = isLegacy ? "/b2b/dashboard" : base;
   const orgName = org?.name ?? "Assessments";
 
+  // Build breadcrumbs from the path segments after the org base.
+  const baseTrim = base.replace(/\/+$/, "");
+  const rest = pathname.startsWith(baseTrim)
+    ? pathname.slice(baseTrim.length).replace(/^\/+|\/+$/g, "")
+    : "";
+  const segments = rest ? rest.split("/") : [];
+  const humanize = (s: string) =>
+    decodeURIComponent(s)
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  const labelForSegment = (seg: string, fullPath: string) => {
+    const match = NAV.find(
+      (n) => n.to.replace(/\/+$/, "").toLowerCase() === fullPath.toLowerCase(),
+    );
+    if (match) return match.label;
+    // UUID-ish? show short hash
+    if (/^[0-9a-f]{8}-[0-9a-f-]+$/i.test(seg)) return `#${seg.slice(0, 6)}`;
+    return humanize(seg);
+  };
+  const crumbs = segments.map((seg, i) => {
+    const full = `${baseTrim}/${segments.slice(0, i + 1).join("/")}`;
+    return { label: labelForSegment(seg, full), to: full };
+  });
+
   return (
     <div className="theme-b2b relative h-screen overflow-hidden">
       <B2BBackdrop variant="subtle" />
