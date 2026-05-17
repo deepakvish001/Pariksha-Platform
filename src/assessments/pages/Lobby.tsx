@@ -74,8 +74,8 @@ export default function Lobby() {
             </p>
           )}
           <div className="flex gap-2">
-            <Button disabled={blocked} onClick={() => navigate(`/assessments/${attemptId}/play`)}>
-              Start now
+            <Button disabled={blocked} onClick={() => navigate(`/assessments/${attemptId}/preflight`)}>
+              Continue to pre-flight
             </Button>
             <Button variant="ghost" onClick={() => navigate("/assessments")}>Cancel</Button>
           </div>
