@@ -71,12 +71,49 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
    *  3. Post a system chat message so the proctor sees it instantly in chat.
    * Best-effort: if all fail, fall back to email so the candidate is never stranded.
    */
-  const notifyProctor = async (): Promise<{ ok: boolean; error?: string }> => {
+  const notifyProctor = async (): Promise<{ ok: boolean; error?: string; rateLimited?: boolean }> => {
     if (!attemptId) return { ok: false, error: "No active attempt" };
     try {
       const { data: u } = await supabase.auth.getUser();
       const userId = u?.user?.id ?? null;
       if (!userId) return { ok: false, error: "Not signed in" };
+
+      // ── Rate limit ───────────────────────────────────────────────
+      // Ad-hoc guard against accidental floods / double-clicks:
+      //   • At most 1 SOS every 60 seconds
+      //   • At most 5 SOS per attempt total
+      // Backed by the assessment_sos_events history table.
+      const { data: recent, error: recentErr } = await supabase
+        .from("assessment_sos_events")
+        .select("id, created_at, status")
+        .eq("attempt_id", attemptId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (recentErr) console.warn("SOS rate-limit lookup failed", recentErr);
+
+      const MAX_PER_ATTEMPT = 5;
+      const COOLDOWN_MS = 60_000;
+      if (recent) {
+        if (recent.length >= MAX_PER_ATTEMPT) {
+          return {
+            ok: false,
+            rateLimited: true,
+            error: `You've reached the limit of ${MAX_PER_ATTEMPT} SOS alerts for this attempt. Please use the call or WhatsApp option instead.`,
+          };
+        }
+        const last = recent[0];
+        if (last) {
+          const sinceMs = Date.now() - new Date(last.created_at).getTime();
+          if (sinceMs < COOLDOWN_MS) {
+            const wait = Math.ceil((COOLDOWN_MS - sinceMs) / 1000);
+            return {
+              ok: false,
+              rateLimited: true,
+              error: `Another SOS was just sent. Please wait ${wait}s — proctors are already alerted.`,
+            };
+          }
+        }
+      }
 
       const raisedAt = new Date().toISOString();
 
@@ -130,6 +167,14 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
       });
       setOpen(false);
       reset();
+      return;
+    }
+
+    // Rate limited → don't spam email fallback, just warn and stay on the dialog.
+    if (result.rateLimited) {
+      toast.warning("SOS not sent", {
+        description: result.error ?? "Please wait before raising another alert.",
+      });
       return;
     }
 
