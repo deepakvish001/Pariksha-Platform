@@ -169,9 +169,39 @@ const ICON_STYLES: Record<Severity, string> = {
 export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Props) {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [chats, setChats] = useState<ChatRow[]>([]);
+  const [notes, setNotes] = useState<NoteRow[]>([]);
   const [filter, setFilter] = useState<"all" | "events" | "chat" | "critical">("all");
   const [autoscroll, setAutoscroll] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Identify the proctor so we can stamp authorship and gate delete actions.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      if (cancelled || !user) return;
+      setCurrentUserId(user.id);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setCurrentUserName(
+        profile?.full_name?.trim() ||
+          (user.user_metadata as any)?.full_name ||
+          user.email ||
+          null
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   // Initial load + realtime subscriptions for both streams.
   useEffect(() => {
