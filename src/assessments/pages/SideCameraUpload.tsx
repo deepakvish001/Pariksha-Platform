@@ -20,9 +20,12 @@ import {
   RotateCcw,
   Trash2,
   Upload,
-  WifiOff,
+  
   GripVertical,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
   DndContext,
   closestCenter,
@@ -47,6 +50,8 @@ const CAPTURE_WIDTH = 1280;
 const CAPTURE_HEIGHT = 1700; // portrait A4-ish
 const JPEG_QUALITY = 0.78;
 
+type UploadState = "pending" | "uploading" | "uploaded" | "error";
+
 type Page = {
   /** Local-only id (uuid) until uploaded. */
   localId: string;
@@ -56,10 +61,29 @@ type Page = {
   dataUrl: string;
   ordinal: number;
   uploaded: boolean;
+  state: UploadState;
+  errorMsg?: string;
 };
 
 function uid() {
   return `p_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+}
+
+function friendlyError(e: unknown): string {
+  if (e instanceof Error) {
+    const m = e.message.toLowerCase();
+    if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("network"))
+      return "No internet connection. Check your Wi-Fi or mobile data and try again.";
+    if (m.includes("timeout")) return "The upload timed out. Try again on a stronger connection.";
+    if (m.includes("413") || m.includes("too large"))
+      return "This page is too large to upload. Try retaking it with less zoom.";
+    if (m.includes("401") || m.includes("403") || m.includes("token"))
+      return "Your phone session expired. Re-scan the QR code from your laptop.";
+    if (m.includes("500") || m.includes("server"))
+      return "Server error while saving the page. Please retry.";
+    return e.message;
+  }
+  return "Upload failed. Please retry.";
 }
 
 function SortablePage({
@@ -78,14 +102,19 @@ function SortablePage({
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
+  const borderCls =
+    page.state === "error"
+      ? "border-destructive/60"
+      : page.state === "uploading"
+      ? "border-primary/60"
+      : page.uploaded
+      ? "border-emerald-500/50"
+      : "border-border";
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        "relative rounded-md overflow-hidden border bg-card",
-        page.uploaded ? "border-emerald-500/50" : "border-border"
-      )}
+      className={cn("relative rounded-md overflow-hidden border bg-card", borderCls)}
     >
       <button
         type="button"
@@ -117,7 +146,17 @@ function SortablePage({
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
-      {page.uploaded && (
+      {page.state === "uploading" && (
+        <span className="absolute bottom-1 right-1 inline-flex items-center gap-1 bg-primary/90 text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">
+          <Loader2 className="h-3 w-3 animate-spin" /> Uploading
+        </span>
+      )}
+      {page.state === "error" && (
+        <span className="absolute bottom-1 right-1 inline-flex items-center gap-1 bg-destructive/90 text-white text-[10px] px-1.5 py-0.5 rounded">
+          <AlertTriangle className="h-3 w-3" /> Failed
+        </span>
+      )}
+      {page.uploaded && page.state !== "uploading" && (
         <span className="absolute bottom-1 right-1 inline-flex items-center gap-1 bg-emerald-600/90 text-white text-[10px] px-1.5 py-0.5 rounded">
           <CheckCircle2 className="h-3 w-3" /> Synced
         </span>
@@ -191,6 +230,7 @@ export default function SideCameraUploadPage() {
               dataUrl: "",
               ordinal: p.ordinal,
               uploaded: true,
+              state: "uploaded" as const,
             }))
           );
         }
@@ -225,7 +265,7 @@ export default function SideCameraUploadPage() {
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
     setPages((prev) => [
       ...prev,
-      { localId: uid(), dataUrl, ordinal: prev.length + 1, uploaded: false },
+      { localId: uid(), dataUrl, ordinal: prev.length + 1, uploaded: false, state: "pending" as const },
     ]);
   };
 
@@ -258,33 +298,71 @@ export default function SideCameraUploadPage() {
     });
   };
 
-  const upload = async () => {
-    if (!pages.length) return;
-    setUploading(true);
-    setError(null);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+
+  const uploadOne = async (p: Page): Promise<{ ok: boolean; serverId?: string; error?: string }> => {
     try {
-      for (const p of pages) {
-        if (!p.dataUrl) continue; // already uploaded
-        const r = await fetch(`${FN_URL}?action=answer-upload`, {
-          method: "POST",
-          headers: { apikey: ANON, "Content-Type": "application/json", "x-pair-token": token },
-          body: JSON.stringify({ dataUrl: p.dataUrl, questionId, ordinal: p.ordinal }),
-        });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j?.error ?? "Upload failed");
-      }
-      setDone(true);
-      stopCamera();
+      const r = await fetch(`${FN_URL}?action=answer-upload`, {
+        method: "POST",
+        headers: { apikey: ANON, "Content-Type": "application/json", "x-pair-token": token },
+        body: JSON.stringify({ dataUrl: p.dataUrl, questionId, ordinal: p.ordinal }),
+      });
+      let j: { id?: string; error?: string } = {};
+      try { j = await r.json(); } catch { /* ignore */ }
+      if (!r.ok) return { ok: false, error: j?.error ?? `HTTP ${r.status}` };
+      return { ok: true, serverId: j?.id };
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploading(false);
-      setConfirmOpen(false);
+      return { ok: false, error: e instanceof Error ? e.message : "network" };
     }
   };
 
+  const runUpload = async (targets: Page[]) => {
+    if (!targets.length) return;
+    setUploading(true);
+    setError(null);
+    setProgress({ done: 0, total: targets.length });
+    let failures = 0;
+    let lastErr: string | null = null;
+    for (let i = 0; i < targets.length; i++) {
+      const p = targets[i];
+      setPages((prev) => prev.map((x) => (x.localId === p.localId ? { ...x, state: "uploading", errorMsg: undefined } : x)));
+      const res = await uploadOne(p);
+      setPages((prev) =>
+        prev.map((x) =>
+          x.localId === p.localId
+            ? res.ok
+              ? { ...x, uploaded: true, state: "uploaded", serverId: res.serverId ?? x.serverId, errorMsg: undefined }
+              : { ...x, state: "error", errorMsg: friendlyError(new Error(res.error ?? "")) }
+            : x
+        )
+      );
+      if (!res.ok) { failures++; lastErr = res.error ?? null; }
+      setProgress({ done: i + 1, total: targets.length });
+    }
+    setUploading(false);
+    setConfirmOpen(false);
+    if (failures === 0) {
+      setDone(true);
+      stopCamera();
+    } else {
+      setError(
+        failures === targets.length
+          ? friendlyError(new Error(lastErr ?? ""))
+          : `${failures} of ${targets.length} pages failed to upload. Tap Retry to try again.`
+      );
+    }
+  };
+
+  const upload = () => runUpload(pages.filter((p) => !p.uploaded));
+  const retryFailed = () => runUpload(pages.filter((p) => p.state === "error"));
+
   const counter = useMemo(
-    () => ({ total: pages.length, pending: pages.filter((p) => !p.uploaded).length }),
+    () => ({
+      total: pages.length,
+      pending: pages.filter((p) => !p.uploaded && p.state !== "error").length,
+      failed: pages.filter((p) => p.state === "error").length,
+      uploaded: pages.filter((p) => p.uploaded).length,
+    }),
     [pages]
   );
 
@@ -327,10 +405,13 @@ export default function SideCameraUploadPage() {
         >
           <ChevronLeft className="h-4 w-4 mr-1" /> Third Eye
         </Link>
-        <div className="text-xs tabular-nums">
+        <div className="text-xs tabular-nums flex items-center gap-2">
           <span className="font-semibold">{counter.total}</span> page{counter.total === 1 ? "" : "s"}
           {counter.pending > 0 && (
-            <span className="text-amber-600 ml-2">{counter.pending} to upload</span>
+            <span className="text-amber-600">· {counter.pending} to upload</span>
+          )}
+          {counter.failed > 0 && (
+            <span className="text-destructive">· {counter.failed} failed</span>
           )}
         </div>
       </header>
@@ -371,8 +452,45 @@ export default function SideCameraUploadPage() {
         </div>
 
         {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive flex items-start gap-2">
-            <WifiOff className="h-3.5 w-3.5 mt-0.5" /> {error}
+          <div
+            role="alert"
+            aria-live="polite"
+            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive flex items-start gap-2"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div className="flex-1 space-y-1">
+              <p className="font-medium leading-snug">{error}</p>
+              {counter.failed > 0 && !uploading && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 mt-1"
+                  onClick={retryFailed}
+                >
+                  <RefreshCw className="h-3 w-3 mr-1.5" />
+                  Retry {counter.failed} failed page{counter.failed === 1 ? "" : "s"}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {uploading && progress.total > 0 && (
+          <div
+            className="space-y-1.5"
+            role="status"
+            aria-live="polite"
+            aria-label={`Uploading page ${progress.done + (progress.done < progress.total ? 1 : 0)} of ${progress.total}`}
+          >
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Uploading {Math.min(progress.done + 1, progress.total)} of {progress.total}
+              </span>
+              <span>{Math.round((progress.done / progress.total) * 100)}%</span>
+            </div>
+            <Progress value={(progress.done / progress.total) * 100} className="h-1.5" />
           </div>
         )}
 
