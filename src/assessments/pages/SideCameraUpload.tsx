@@ -20,7 +20,7 @@ import {
   RotateCcw,
   Trash2,
   Upload,
-  
+  X,
   GripVertical,
   AlertTriangle,
   RefreshCw,
