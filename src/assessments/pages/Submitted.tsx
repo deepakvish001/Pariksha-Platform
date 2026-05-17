@@ -28,6 +28,8 @@ import { IntegrityExplanation } from "../components/IntegrityExplanation";
 import { IntegrityFactorSummary } from "../components/IntegrityFactorSummary";
 import { IntegrityTimeline } from "../components/IntegrityTimeline";
 import { SupportLink } from "../components/SupportLink";
+import { AssessmentFeedbackForm } from "../components/AssessmentFeedbackForm";
+import { supabase } from "@/integrations/supabase/client";
 
 const AUTO_REDIRECT_SECONDS = 10;
 
@@ -44,6 +46,7 @@ interface Assessment {
   id: string;
   title: string;
   duration_min?: number | null;
+  show_results_to_candidate?: boolean | null;
 }
 
 interface Props {
