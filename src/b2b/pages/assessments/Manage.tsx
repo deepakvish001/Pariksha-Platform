@@ -15,6 +15,7 @@ import { useCanProctor } from "../../hooks/usePermissions";
 import { useCurrentOrg } from "../../context/OrgContext";
 import ParticipantDetailDrawer from "../../components/ParticipantDetailDrawer";
 import { RetentionCard } from "@/components/proctoring/RetentionCard";
+import { LiveProctorWall } from "../../components/LiveProctorWall";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
