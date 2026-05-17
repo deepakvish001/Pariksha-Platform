@@ -233,6 +233,24 @@ export function AssessmentChatDock({
             </p>
           </div>
         </div>
+        {unread > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[11px] gap-1"
+            onClick={handleMarkAllRead}
+            disabled={markingRead}
+            aria-label={`Mark ${unread} message${unread === 1 ? "" : "s"} as read`}
+            title="Mark all as read"
+          >
+            {markingRead ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <MarkReadIcon className="h-3 w-3" />
+            )}
+            <span className="hidden sm:inline">Mark read</span>
+          </Button>
+        )}
         {variant === "floating" && (
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)}>
             <X className="h-4 w-4" />
