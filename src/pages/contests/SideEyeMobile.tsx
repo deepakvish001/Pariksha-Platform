@@ -253,13 +253,12 @@ const SideEyeMobile = () => {
         )}
 
         {step === "permission" && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Tap Allow when your browser asks for camera and microphone access.
-              Use the rear camera and place the phone on your side, 1-2 m away,
-              showing you and your desk.
+              You'll use the rear camera as a side view of you and your desk.
+              Confirm the settings below, then tap to start.
             </p>
-            <Button onClick={requestCamera} className="w-full">Start Side Camera</Button>
+            <SideEyeReadyCheck onReady={requestCamera} buttonLabel="Start Side Camera" />
           </div>
         )}
 
