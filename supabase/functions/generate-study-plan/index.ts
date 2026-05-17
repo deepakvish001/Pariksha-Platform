@@ -107,6 +107,19 @@ Deno.serve(async (req) => {
       return json({ error: "Missing profile fields" }, 400);
     }
 
+    // Input validation: cap user-controlled prompt fields to prevent AI credit abuse
+    if (typeof profile.goal !== "string" || profile.goal.length > 1000) {
+      return json({ error: "goal must be a string ≤1000 chars" }, 400);
+    }
+    if (!Array.isArray(profile.topics_known) || profile.topics_known.length > 100) {
+      return json({ error: "topics_known must be an array of ≤100 items" }, 400);
+    }
+    for (const t of profile.topics_known) {
+      if (typeof t !== "string" || t.length > 200) {
+        return json({ error: "Each topics_known item must be a string ≤200 chars" }, 400);
+      }
+    }
+
     const daysToTarget = profile.target_date
       ? Math.max(1, Math.ceil((new Date(profile.target_date).getTime() - Date.now()) / 86400000))
       : 28;
