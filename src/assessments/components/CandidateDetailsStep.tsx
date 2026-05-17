@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Camera, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // ---- Image validation helpers ----
 interface CheckResult { ok: boolean; label: string; detail?: string }
@@ -323,6 +324,9 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         .from("attempt_events")
         .insert({ attempt_id: attemptId, kind: "candidate_details_saved", payload: {} as never });
       onComplete({ ...(parsed.data as Omit<CandidateDetailsPayload, "id_photo_url" | "selfie_url">), id_photo_url: idPhotoUrl, selfie_url: selfieUrl });
+      toast.success("Saved ✓ Identity details verified", {
+        description: "You can now continue with the remaining checks.",
+      });
     } catch (err) {
       setGlobalError(err instanceof Error ? err.message : "Could not save details");
     } finally {
