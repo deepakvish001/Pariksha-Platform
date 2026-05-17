@@ -107,13 +107,23 @@ export async function sendChatMessage(opts: {
   if (error) throw error;
 }
 
-export async function markMessagesRead(ids: string[]) {
+export async function markMessagesRead(
+  ids: string[],
+  opts: { attemptId: string; viewerRole: "candidate" | "proctor" }
+) {
   if (!ids.length) return;
+  if (!opts?.attemptId || !opts?.viewerRole) {
+    throw new Error("markMessagesRead requires attemptId and viewerRole");
+  }
   const { error } = await supabase
     .from("assessment_chat_messages")
     .update({ read_by_recipient: true, read_at: new Date().toISOString() })
     .in("id", ids)
-    .eq("read_by_recipient", false);
+    .eq("attempt_id", opts.attemptId)
+    .eq("read_by_recipient", false)
+    // Never mark your own messages or system messages as read
+    .neq("sender_role", opts.viewerRole)
+    .neq("sender_role", "system");
   if (error) throw error;
 }
 
@@ -139,8 +149,13 @@ export function useAutoMarkRead(
   const qc = useQueryClient();
   useEffect(() => {
     if (!attemptId || !isOpen || !messages?.length) return;
+    // Only consider messages that belong to this attempt thread
     const unread = messages.filter(
-      (m) => m.sender_role !== viewerRole && m.sender_role !== "system" && !m.read_by_recipient
+      (m) =>
+        m.attempt_id === attemptId &&
+        m.sender_role !== viewerRole &&
+        m.sender_role !== "system" &&
+        !m.read_by_recipient
     );
     if (!unread.length) return;
     const ids = unread.map((m) => m.id);
@@ -151,7 +166,7 @@ export function useAutoMarkRead(
         ids.includes(m.id) ? { ...m, read_by_recipient: true, read_at: nowIso } : m
       )
     );
-    markMessagesRead(ids).catch(() => {
+    markMessagesRead(ids, { attemptId, viewerRole }).catch(() => {
       // revert silently on failure; realtime/refetch will reconcile
     });
   }, [attemptId, messages, viewerRole, isOpen, qc]);
