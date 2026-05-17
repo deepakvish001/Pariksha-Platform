@@ -118,7 +118,7 @@ export function QuestionPalette({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[240px]">
-                        <StatusTooltipBody index={i} item={it} status={status} />
+                        <StatusTooltipBody index={i} item={it} status={status} t={t} />
                       </TooltipContent>
                     </Tooltip>
                   );
