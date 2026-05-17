@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   // Load assessment + org
   const { data: assessment, error: aErr } = await admin
     .from("assessments")
-    .select("id, title, org_id, organizations:org_id(id, name)")
+    .select("id, title, duration_min, org_id, organizations:org_id(id, name)")
     .eq("id", assessmentId)
     .maybeSingle();
   if (aErr || !assessment) return json(404, { error: "assessment_not_found" });
