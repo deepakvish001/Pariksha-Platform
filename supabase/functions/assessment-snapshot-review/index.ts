@@ -96,17 +96,16 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    // Resolve caller from JWT directly against the auth API.
+    // Resolve caller from JWT directly against the auth API. We avoid the
+    // supabase-js client's session storage path so this works in stateless
+    // edge invocations.
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { Authorization: `Bearer ${bearer}`, apikey: anonKey },
     });
-    const userText = await userRes.text();
-    let userJson: any = {};
-    try { userJson = JSON.parse(userText); } catch { /* noop */ }
+    const userJson: any = await userRes.json().catch(() => ({}));
     const uid = userRes.ok ? userJson?.id : null;
     if (!uid) {
-      console.error("auth lookup failed", userRes.status, userText.slice(0, 200), "anonKeyLen=", anonKey.length);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
