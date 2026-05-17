@@ -130,13 +130,10 @@ export default function ParticipantDetailDrawer({
     if (canProctor && status === "in_progress" && prev !== "in_progress") {
       setTab("live");
     }
-    // Candidate just stopped (submitted/auto/abandoned) → leave live, show activity.
-    if (
-      tab === "live" &&
-      status !== "in_progress" &&
-      prev === "in_progress"
-    ) {
-      setTab("activity");
+    // Candidate just stopped (submitted/auto/abandoned) → jump to Evidence
+    // so the proctor sees the latest timeline markers and recordings.
+    if (status !== "in_progress" && prev === "in_progress") {
+      setTab("evidence");
     }
     prevStatusRef.current = status;
   }, [status, open, canProctor, tab]);
