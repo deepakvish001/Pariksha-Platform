@@ -363,6 +363,17 @@ export default function AssessmentManage() {
           </div>
         </GlassCard>
 
+        {canProctor && (
+          <LiveProctorWall
+            attempts={(participants ?? [])
+              .filter((p) => p.status === "in_progress" && p.attempt_id)
+              .map((p) => ({
+                attempt_id: p.attempt_id as string,
+                candidate_name: p.name ?? p.email ?? "Candidate",
+              }))}
+          />
+        )}
+
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Participants */}
           <GlassCard className="lg:col-span-2 p-4">
