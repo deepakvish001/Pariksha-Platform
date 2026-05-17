@@ -62,11 +62,18 @@ export function OrgShell({
             </NavLink>
           </div>
           <nav className="flex-1 p-2 space-y-1">
-            {NAV.map((n) => {
-              const active = n.exact
-                ? pathname === n.to
-                : pathname === n.to || pathname.startsWith(n.to + "/");
-              const Icon = n.icon;
+            {(() => {
+              // Normalize pathname: lowercase + strip trailing slash so the
+              // active check never partially matches sibling routes (e.g.
+              // /b2b/proctoring vs /b2b/proctoring-archive) or breaks on
+              // trailing-slash variants.
+              const current = (pathname || "/").replace(/\/+$/, "").toLowerCase() || "/";
+              return NAV.map((n) => {
+                const target = n.to.replace(/\/+$/, "").toLowerCase() || "/";
+                const active = n.exact
+                  ? current === target
+                  : current === target || current.startsWith(target + "/");
+                const Icon = n.icon;
               return (
                 <NavLink
                   key={n.to}
@@ -82,7 +89,8 @@ export function OrgShell({
                   {n.label}
                 </NavLink>
               );
-            })}
+              });
+            })()}
           </nav>
           <div className="p-3 border-t">
             <NavLink to="/learn" className="text-xs text-muted-foreground hover:text-foreground">
