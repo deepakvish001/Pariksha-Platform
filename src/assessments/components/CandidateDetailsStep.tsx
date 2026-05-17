@@ -338,8 +338,56 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
     );
   }
 
+  const formValid = detailsSchema.safeParse(form).success;
+  const idOk = !!idPhotoUrl && idChecks.length > 0 && idChecks.every((c) => c.ok);
+  const selfieOk = !!selfieUrl && selfieChecks.length > 0 && selfieChecks.every((c) => c.ok);
+  const idPending = !idPhotoUrl && idChecks.length === 0;
+  const selfiePending = !selfieUrl && selfieChecks.length === 0;
+
   return (
     <div className="space-y-3">
+      <div className="rounded-md border border-border bg-muted/30 p-2.5 space-y-1.5">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Step 1 status
+        </div>
+        <StatusRow
+          ok={formValid}
+          pending={!formValid && Object.keys(errors).filter((k) => errors[k]).length === 0}
+          label="Student details complete"
+          hint={
+            Object.values(errors).filter(Boolean).length > 0
+              ? `Fix: ${Object.values(errors).filter(Boolean).join(", ")}`
+              : !formValid
+                ? "Fill in all required fields"
+                : undefined
+          }
+        />
+        <StatusRow
+          ok={idOk}
+          pending={idPending}
+          label="Government ID uploaded & validated"
+          hint={
+            !idOk && idChecks.length > 0
+              ? `Failed: ${idChecks.filter((c) => !c.ok).map((c) => c.label).join(", ")}`
+              : idPending
+                ? "Upload a clear photo of your ID"
+                : undefined
+          }
+        />
+        <StatusRow
+          ok={selfieOk}
+          pending={selfiePending}
+          label="Live selfie captured & validated"
+          hint={
+            !selfieOk && selfieChecks.length > 0
+              ? `Failed: ${selfieChecks.filter((c) => !c.ok).map((c) => c.label).join(", ")}`
+              : selfiePending
+                ? "Start camera and capture a selfie"
+                : undefined
+          }
+        />
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <Field label="Full name" error={errors.full_name}>
           <Input
@@ -549,5 +597,35 @@ function ChecklistView({ checks }: { checks: CheckResult[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function StatusRow({
+  ok,
+  pending,
+  label,
+  hint,
+}: {
+  ok: boolean;
+  pending: boolean;
+  label: string;
+  hint?: string;
+}) {
+  const tone = ok
+    ? "text-emerald-700 dark:text-emerald-300"
+    : pending
+      ? "text-muted-foreground"
+      : "text-destructive";
+  const Icon = ok ? CheckCircle2 : pending ? Loader2 : XCircle;
+  return (
+    <div className={"flex items-start gap-1.5 text-xs " + tone}>
+      <Icon
+        className={"h-3.5 w-3.5 shrink-0 mt-0.5 " + (pending && !ok ? "opacity-60" : "")}
+      />
+      <div className="min-w-0">
+        <div className="font-medium leading-tight">{label}</div>
+        {hint && <div className="text-[11px] opacity-80 leading-snug">{hint}</div>}
+      </div>
+    </div>
   );
 }
