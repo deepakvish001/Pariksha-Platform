@@ -251,7 +251,8 @@ export default function ParticipantDetailDrawer({
             </div>
           ) : (
             <Tabs
-              defaultValue={canProctor && participant.status === "in_progress" ? "live" : "activity"}
+              value={tab}
+              onValueChange={setTab}
               className="w-full"
             >
               <TabsList className="flex flex-wrap h-auto bg-white/[0.03] border border-white/5">
