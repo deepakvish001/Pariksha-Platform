@@ -411,23 +411,23 @@ export function QuestionPalette({
       <footer className="px-3 py-2 border-t border-border bg-muted/20 text-[10px] text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1">
         <LegendRow
           icon={<CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
-          label="Answered"
-          tip="You've saved an answer for this question."
+          label={t("palette.legend.answered.label")}
+          tip={t("palette.legend.answered.tip")}
         />
         <LegendRow
           icon={<CircleDot className="h-3 w-3 text-muted-foreground" />}
-          label="Visited"
-          tip="You opened this question but haven't submitted an answer yet."
+          label={t("palette.legend.visited.label")}
+          tip={t("palette.legend.visited.tip")}
         />
         <LegendRow
           icon={<Circle className="h-3 w-3 text-muted-foreground" />}
-          label="Not visited"
-          tip="You haven't opened this question yet."
+          label={t("palette.legend.notVisited.label")}
+          tip={t("palette.legend.notVisited.tip")}
         />
         <LegendRow
           icon={<Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />}
-          label="Flagged"
-          tip="Marked for review — come back to it before submitting."
+          label={t("palette.legend.flagged.label")}
+          tip={t("palette.legend.flagged.tip")}
         />
       </footer>
     </aside>
@@ -484,51 +484,71 @@ interface StatusInfo {
   swatchClass: string;
 }
 
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
 function getStatusLabel(
   item: { answered: boolean; visited?: boolean; flagged: boolean },
   active: boolean,
+  t: TFn,
 ): StatusInfo {
   if (item.answered) {
     return {
-      label: "Answered",
-      description: "You've saved an answer. You can still revisit and edit it.",
+      label: t("palette.status.answered.label"),
+      description: t("palette.status.answered.description"),
       swatchClass: "bg-emerald-500",
     };
   }
   if (active) {
     return {
-      label: "Current",
-      description: "This is the question you're viewing right now.",
+      label: t("palette.status.current.label"),
+      description: t("palette.status.current.description"),
       swatchClass: "bg-primary",
     };
   }
   if (item.visited) {
     return {
-      label: "Visited · not answered",
-      description: "You opened this question but haven't submitted an answer yet.",
+      label: t("palette.status.visited.label"),
+      description: t("palette.status.visited.description"),
       swatchClass: "bg-muted-foreground",
     };
   }
   return {
-    label: "Not visited",
-    description: "You haven't opened this question yet.",
+    label: t("palette.status.notVisited.label"),
+    description: t("palette.status.notVisited.description"),
     swatchClass: "bg-muted-foreground/40",
   };
+}
+
+function buildAriaLabel(
+  t: TFn,
+  index: number,
+  title: string | undefined,
+  statusLabel: string,
+  flagged: boolean,
+): string {
+  return t("palette.ariaQuestion", {
+    n: index + 1,
+    title: title ? `${t("palette.ariaQuestionTitlePrefix")}${title}` : "",
+    status: statusLabel,
+    flaggedSuffix: flagged ? t("palette.ariaFlaggedSuffix") : "",
+  });
 }
 
 function StatusTooltipBody({
   index,
   item,
   status,
+  t,
 }: {
   index: number;
   item: { title?: string; flagged: boolean };
   status: StatusInfo;
+  t: TFn;
 }) {
   return (
     <div className="space-y-1.5">
       <div className="text-xs font-semibold leading-tight">
-        Q{index + 1}
+        {t("palette.qShort", { n: index + 1 })}
         {item.title ? (
           <>
             <span className="text-muted-foreground"> · </span>
@@ -543,7 +563,7 @@ function StatusTooltipBody({
           <>
             <span className="opacity-50">·</span>
             <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
-            <span>Flagged</span>
+            <span>{t("palette.flaggedShort")}</span>
           </>
         )}
       </div>
