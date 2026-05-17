@@ -144,6 +144,42 @@ const Login = () => {
       subtitle="Sign in to continue tracking your academic journey and unlock your full potential."
     >
       <div className="card-dark">
+        {mfaStep ? (
+          <div className="space-y-5">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-foreground">Two-factor authentication</h1>
+              <p className="text-muted-foreground mt-2">Enter the 6-digit code from your authenticator app.</p>
+            </div>
+            <div className="flex justify-center">
+              <InputOTP maxLength={6} value={mfaCode} onChange={setMfaCode}>
+                <InputOTPGroup>
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <InputOTPSlot key={i} index={i} />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <Button className="w-full h-11 btn-primary" onClick={handleMfaVerify} disabled={mfaVerifying || mfaCode.length !== 6}>
+              {mfaVerifying ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                "Verify"
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setMfaStep(null);
+                setMfaCode("");
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+        <>
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-4 lg:hidden">
