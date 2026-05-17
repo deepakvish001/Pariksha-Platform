@@ -365,6 +365,7 @@ export default function AssessmentManage() {
                       <SortTh label="Elapsed" k="elapsed" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       <SortTh label="Score" k="score" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       <SortTh label="Integrity" k="integrity" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      {canProctor && <th className="font-medium py-2 px-2 text-left">Evidence</th>}
                       <th className="text-right font-medium py-2 px-2">Actions</th>
                     </tr>
                   </thead>
@@ -375,6 +376,9 @@ export default function AssessmentManage() {
                         p={p}
                         assessmentId={assessment.id}
                         pending={forceSubmit.isPending}
+                        evidence={p.attempt_id ? evidenceMap?.[p.attempt_id] : undefined}
+                        canProctor={canProctor}
+                        onOpen={() => setSelectedInviteId(p.invite_id)}
                         onForceSubmit={() => {
                           if (!p.attempt_id) return;
                           forceSubmit.mutate(
