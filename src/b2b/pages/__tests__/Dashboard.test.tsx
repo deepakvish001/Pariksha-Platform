@@ -4,15 +4,16 @@
  * We mock the data hooks, OrgShell, and the supabase client so the page can be
  * rendered in isolation. The goal is to verify:
  *  - KPI tiles render with the values returned by the stats hook
- *  - The submissions chart container is mounted (ResponsiveContainer is stubbed)
  *  - The Recent Assessments list renders rows and clicking one navigates
- *  - The header action buttons (Home, New assessment) navigate to the right
- *    routes
+ *  - Header action buttons (Home, New assessment) navigate to the right routes
+ *  - The new widgets (Upcoming, Integrity alerts, Top performers, QB health)
+ *    mount with their section headings
  */
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ───────── Navigation spy ─────────
 const navigateMock = vi.fn();
@@ -100,13 +101,16 @@ vi.mock("../../hooks/useAssessments", () => ({
 }));
 
 // ───────── Supabase client mock ─────────
+// Builder that resolves any await chain to the supplied rows.
 function makeBuilder(rows: any[]) {
   const api: any = {
     select: () => api,
     eq: () => api,
     in: () => api,
     gte: () => api,
+    lt: () => api,
     not: () => api,
+    or: () => api,
     order: () => api,
     limit: () => api,
     maybeSingle: async () => ({ data: null, error: null }),
@@ -119,68 +123,29 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (table: string) => {
       if (table === "assessments") {
-        return makeBuilder([{ id: "a1" }, { id: "a2" }]);
+        return makeBuilder([{ id: "a1", title: "Frontend Screening" }]);
       }
-      if (table === "assessment_invites") {
-        return makeBuilder([
-          { source: "email" },
-          { source: "email" },
-          { source: "link" },
-          { source: "bulk_upload" },
-        ]);
-      }
-      if (table === "assessment_attempts") {
-        return makeBuilder([]);
-      }
+      if (table === "assessment_attempts") return makeBuilder([]);
+      if (table === "questions") return makeBuilder([]);
       return makeBuilder([]);
-    },
-    functions: {
-      invoke: vi.fn(async () => ({
-        data: {
-          insights: [
-            {
-              title: "Submissions trending up",
-              body: "You had more submissions than the prior period.",
-              severity: "positive",
-              action: "Invite more candidates",
-            },
-          ],
-        },
-        error: null,
-      })),
     },
     rpc: vi.fn(),
   },
 }));
 
-// ───────── Recharts stub ─────────
-// ResponsiveContainer needs measurable dimensions in jsdom — stub the tree so we
-// can simply assert the chart is mounted.
-vi.mock("recharts", () => {
-  const Passthrough = ({ children }: { children?: React.ReactNode }) => (
-    <div data-testid="recharts-passthrough">{children}</div>
-  );
-  return {
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="chart-container">{children}</div>
-    ),
-    AreaChart: Passthrough,
-    Area: () => null,
-    XAxis: () => null,
-    YAxis: () => null,
-    CartesianGrid: () => null,
-    Tooltip: () => null,
-  };
-});
-
 // ───────── System under test ─────────
 import B2BDashboard from "../Dashboard";
 
 function renderDashboard() {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={["/colleges/test-college"]}>
-      <B2BDashboard />
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={["/colleges/test-college"]}>
+        <B2BDashboard />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -198,12 +163,20 @@ describe("B2BDashboard (college view)", () => {
     expect(screen.getAllByText(/vs prev 30d/i).length).toBeGreaterThanOrEqual(4);
   });
 
-  it("mounts the submission activity chart", async () => {
+  it("renders the new dashboard widgets", async () => {
     renderDashboard();
     expect(
-      await screen.findByRole("heading", { name: /submission activity/i }),
+      await screen.findByRole("heading", { name: /upcoming assessments/i }),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("chart-container")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /integrity alerts/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /top performers/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /question bank health/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders recent assessments and navigates on click", async () => {
@@ -218,14 +191,6 @@ describe("B2BDashboard (college view)", () => {
     );
   });
 
-  it("View all jumps to the assessments index", async () => {
-    renderDashboard();
-    fireEvent.click(await screen.findByRole("button", { name: /view all/i }));
-    expect(navigateMock).toHaveBeenCalledWith(
-      "/colleges/test-college/assessments",
-    );
-  });
-
   it("header action buttons navigate to Home and New assessment", async () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole("button", { name: /home/i }));
@@ -234,17 +199,6 @@ describe("B2BDashboard (college view)", () => {
     fireEvent.click(screen.getByRole("button", { name: /new assessment/i }));
     expect(navigateMock).toHaveBeenCalledWith(
       "/colleges/test-college/assessments/new",
-    );
-  });
-
-  it("renders the Top Invite Channels card with aggregated counts", async () => {
-    renderDashboard();
-    expect(
-      await screen.findByRole("heading", { name: /top invite channels/i }),
-    ).toBeInTheDocument();
-    // 4 invites total were returned by the supabase mock.
-    await waitFor(() =>
-      expect(screen.getByText(/4 invites/i)).toBeInTheDocument(),
     );
   });
 });
