@@ -388,6 +388,31 @@ export default function SideCameraUploadPage() {
 
   const runUpload = async (targets: Page[]) => {
     if (!targets.length) return;
+    const sessionErr = validateSession(token, questionId);
+    if (sessionErr) { setError(sessionErr); setConfirmOpen(false); return; }
+    // Pre-flight: validate every page before we burn any bandwidth.
+    const invalid: { localId: string; reason: string }[] = [];
+    for (const p of targets) {
+      const reason = validateDataUrl(p.dataUrl);
+      if (reason) invalid.push({ localId: p.localId, reason });
+    }
+    if (invalid.length) {
+      const bad = new Set(invalid.map((x) => x.localId));
+      setPages((prev) =>
+        prev.map((x) =>
+          bad.has(x.localId)
+            ? { ...x, state: "error", errorMsg: invalid.find((i) => i.localId === x.localId)!.reason }
+            : x
+        )
+      );
+      setError(
+        invalid.length === targets.length
+          ? invalid[0].reason
+          : `${invalid.length} of ${targets.length} pages can't be uploaded: ${invalid[0].reason}`
+      );
+      setConfirmOpen(false);
+      return;
+    }
     cancelRef.current = false;
     setUploading(true);
     setError(null);
