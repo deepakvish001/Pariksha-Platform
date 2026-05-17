@@ -91,12 +91,17 @@ Deno.serve(async (req) => {
   const isServiceCall = bearer && bearer === SERVICE_KEY;
 
   if (!isServiceCall) {
-    // Resolve caller from JWT using anon client.
+    if (!bearer) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Resolve caller from JWT using anon client. Pass the token explicitly so
+    // it works without relying on persisted-session storage.
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
-      global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
     });
-    const { data: who } = await userClient.auth.getUser();
+    const { data: who } = await userClient.auth.getUser(bearer);
     const uid = who?.user?.id;
     if (!uid) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
