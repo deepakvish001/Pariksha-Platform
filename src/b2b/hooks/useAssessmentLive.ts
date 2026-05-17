@@ -61,7 +61,7 @@ export function useLiveParticipants(assessmentId?: string) {
           .eq("assessment_id", assessmentId!),
         supabase
           .from("assessment_attempts")
-          .select("id,invite_id,status,started_at,submitted_at,score,integrity_score")
+          .select("id,slug,invite_id,status,started_at,submitted_at,score,integrity_score")
           .eq("assessment_id", assessmentId!)
           .order("started_at", { ascending: false }),
       ]);
