@@ -50,6 +50,40 @@ const CAPTURE_WIDTH = 1280;
 const CAPTURE_HEIGHT = 1700; // portrait A4-ish
 const JPEG_QUALITY = 0.78;
 
+// Must stay in sync with edge fn MAX_DATAURL_BYTES (10 MB)
+const MAX_DATAURL_BYTES = 10 * 1024 * 1024;
+const MIN_IMAGE_DIM = 320;
+const MAX_PAGES = 50;
+const TOKEN_RE = /^[a-f0-9]{16,128}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function dataUrlByteSize(dataUrl: string): number {
+  const i = dataUrl.indexOf(",");
+  if (i < 0) return dataUrl.length;
+  const b64 = dataUrl.slice(i + 1);
+  const padding = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
+  return Math.floor((b64.length * 3) / 4) - padding;
+}
+
+function validateDataUrl(dataUrl: string): string | null {
+  if (!dataUrl.startsWith("data:image/")) return "Captured image is invalid. Try recapturing.";
+  const size = dataUrlByteSize(dataUrl);
+  if (size > MAX_DATAURL_BYTES) {
+    return `This page is ${(size / 1024 / 1024).toFixed(1)} MB, over the 10 MB limit. Retake with less zoom.`;
+  }
+  return null;
+}
+
+function validateSession(token: string, questionId: string): string | null {
+  if (!token || !TOKEN_RE.test(token)) {
+    return "Your phone session link is invalid. Re-scan the QR code from your laptop.";
+  }
+  if (!questionId || !UUID_RE.test(questionId)) {
+    return "Question link is invalid. Re-open the upload from your laptop.";
+  }
+  return null;
+}
+
 type UploadState = "pending" | "uploading" | "uploaded" | "error";
 
 type Page = {
