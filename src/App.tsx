@@ -49,6 +49,7 @@ import ParikshaaInviteSourceBackfill from "@/admin/parikshaa/InviteSourceBackfil
 import ParikshaaProctoring from "@/admin/parikshaa/Proctoring";
 import StudentJoin from "@/assessments/pages/Join";
 import StudentSideCamera from "@/assessments/pages/SideCamera";
+import StudentSideCameraUpload from "@/assessments/pages/SideCameraUpload";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
 import StudentPreflight from "@/assessments/pages/Preflight";
