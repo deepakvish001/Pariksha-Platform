@@ -38,7 +38,32 @@ import {
   Eye,
   StopCircle,
   Clock,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
+
+type SortKey = "name" | "status" | "elapsed" | "score" | "integrity";
+type SortDir = "asc" | "desc";
+
+const STATUS_ORDER: Record<ParticipantStatus, number> = {
+  in_progress: 0,
+  joined: 1,
+  not_joined: 2,
+  submitted: 3,
+  auto_submitted: 4,
+  abandoned: 5,
+};
+
+function elapsedMs(p: LiveParticipant): number | null {
+  if (p.status === "in_progress" && p.started_at) {
+    return Date.now() - new Date(p.started_at).getTime();
+  }
+  if (p.submitted_at && p.started_at) {
+    return new Date(p.submitted_at).getTime() - new Date(p.started_at).getTime();
+  }
+  return null;
+}
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { formatWindow, getScheduleState } from "../../lib/assessmentSchedule";
