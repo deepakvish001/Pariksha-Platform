@@ -112,7 +112,9 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("user_id", user_id)
       .single();
 
-    const userName = basicProfile?.full_name || "there";
+    const userName = escapeHtml(basicProfile?.full_name || "there");
+    const safeFileName = escapeHtml(file_name || "");
+    const safeMilestone = escapeHtml(milestone || "");
 
     if (profile?.email_notifications_enabled === false) {
       console.log("User has email notifications disabled");
