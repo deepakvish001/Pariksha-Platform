@@ -57,10 +57,11 @@ export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, org
     webcam: null, screen: null, sideeye: null,
   });
 
+  const loadChunks = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      setLoading(true);
+    const run = async () => {
+      setLoading((prev) => (chunksByKind.webcam.length + chunksByKind.screen.length + chunksByKind.sideeye.length === 0 ? true : prev));
       const { data, error } = await supabase
         .from("assessment_proctor_session_chunks")
         .select("id,kind,seq,started_at,ended_at,duration_ms,storage_path")
@@ -87,12 +88,30 @@ export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, org
         if (end_ms > maxEnd) maxEnd = end_ms;
       }
       (Object.keys(grouped) as Kind[]).forEach((k) => grouped[k].sort((a, b) => a.start_ms - b.start_ms));
+      if (cancelled) return;
       setChunksByKind(grouped);
-      setDuration(Math.max(0, maxEnd));
+      setDuration((prev) => Math.max(prev, maxEnd));
       setLoading(false);
-    })();
+    };
+    loadChunks.current = run;
+    void run();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptId, attemptStartedAt]);
+
+  // Realtime: pull in newly-uploaded chunks as they land (post-submit ingest, late side-cam uploads, etc.)
+  useEffect(() => {
+    const ch = supabase
+      .channel(`attempt-session-chunks-${attemptId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "assessment_proctor_session_chunks", filter: `attempt_id=eq.${attemptId}` },
+        () => { void loadChunks.current?.(); },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [attemptId]);
+
 
   // Locate active chunk + offset within it for a given kind at time `t`.
   const seekKind = (k: Kind, target: number) => {
