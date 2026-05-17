@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   // Load assessment + org
   const { data: assessment, error: aErr } = await admin
     .from("assessments")
-    .select("id, title, duration_min, org_id, organizations:org_id(id, name)")
+    .select("id, title, duration_min, org_id, organizations:org_id(id, name, logo_url, brand_color)")
     .eq("id", assessmentId)
     .maybeSingle();
   if (aErr || !assessment) return json(404, { error: "assessment_not_found" });
@@ -89,6 +89,10 @@ Deno.serve(async (req) => {
   const subject = `${orgName} invited you to "${assessment.title}"`;
   const results: { email: string; ok: boolean; error?: string }[] = [];
   const duration = (assessment as any).duration_min as number | null;
+  const logoUrl = (assessment as any).organizations?.logo_url as string | null;
+  const rawBrand = ((assessment as any).organizations?.brand_color as string | null)?.trim() || "";
+  const brand = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(rawBrand) ? rawBrand : "#0f172a";
+  const brandDark = darken(brand, 0.18);
   const initials = orgName
     .split(/\s+/)
     .filter(Boolean)
@@ -116,12 +120,14 @@ Deno.serve(async (req) => {
         <td align="center">
           <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,0.04),0 8px 24px rgba(15,23,42,0.06);">
             <tr>
-              <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;">
+              <td style="background:linear-gradient(135deg,${brand} 0%,${brandDark} 100%);padding:28px 32px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td style="vertical-align:middle;">
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-                        <td style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:10px;width:40px;height:40px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:700;font-size:15px;letter-spacing:0.5px;">${escapeHtml(initials)}</td>
+                        <td style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.22);border-radius:10px;width:44px;height:44px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:700;font-size:15px;letter-spacing:0.5px;padding:0;">
+                          ${logoUrl ? `<img src="${escapeAttr(logoUrl)}" alt="${escapeAttr(orgName)} logo" width="36" height="36" style="display:block;margin:4px auto;border-radius:6px;object-fit:contain;background:#ffffff;" />` : escapeHtml(initials)}
+                        </td>
                         <td style="padding-left:12px;color:#ffffff;font-size:15px;font-weight:600;vertical-align:middle;">${escapeHtml(orgName)}</td>
                       </tr></table>
                     </td>
@@ -149,7 +155,7 @@ Deno.serve(async (req) => {
                 </table>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px;">
                   <tr>
-                    <td style="border-radius:10px;background:#0f172a;">
+                    <td style="border-radius:10px;background:${brand};">
                       <a href="${link}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;letter-spacing:0.2px;">
                         Start assessment →
                       </a>
@@ -158,7 +164,7 @@ Deno.serve(async (req) => {
                 </table>
                 <p style="margin:0 0 6px;font-size:12px;color:#64748b;">Or paste this link into your browser:</p>
                 <p style="margin:0 0 28px;font-size:12px;word-break:break-all;">
-                  <a href="${link}" style="color:#2563eb;text-decoration:none;">${link}</a>
+                  <a href="${link}" style="color:${brand};text-decoration:none;">${link}</a>
                 </p>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-top:1px solid #e2e8f0;margin:0 0 8px;">
                   <tr><td style="padding-top:20px;">
@@ -231,4 +237,22 @@ Deno.serve(async (req) => {
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+function escapeAttr(s: string) {
+  return escapeHtml(s).replace(/\n/g, "");
+}
+
+function darken(hex: string, amount: number) {
+  let h = hex.replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const num = parseInt(h, 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+  const f = Math.max(0, Math.min(1, 1 - amount));
+  r = Math.round(r * f);
+  g = Math.round(g * f);
+  b = Math.round(b * f);
+  return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 }

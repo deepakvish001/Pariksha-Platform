@@ -5224,6 +5224,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          brand_color: string | null
           created_at: string
           featured: boolean
           id: string
@@ -5238,6 +5239,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          brand_color?: string | null
           created_at?: string
           featured?: boolean
           id?: string
@@ -5252,6 +5254,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          brand_color?: string | null
           created_at?: string
           featured?: boolean
           id?: string
