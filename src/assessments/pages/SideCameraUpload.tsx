@@ -265,7 +265,7 @@ export default function SideCameraUploadPage() {
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
     setPages((prev) => [
       ...prev,
-      { localId: uid(), dataUrl, ordinal: prev.length + 1, uploaded: false },
+      { localId: uid(), dataUrl, ordinal: prev.length + 1, uploaded: false, state: "pending" as const },
     ]);
   };
 
