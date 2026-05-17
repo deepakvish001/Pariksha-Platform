@@ -8,6 +8,7 @@ export type Organization = {
   type: "college" | "company";
   slug: string;
   logo_url: string | null;
+  brand_color: string | null;
   owner_id: string;
   created_at: string;
 };
