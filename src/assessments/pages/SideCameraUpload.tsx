@@ -20,7 +20,7 @@ import {
   RotateCcw,
   Trash2,
   Upload,
-  WifiOff,
+  WifiOff as _WifiOff,
   GripVertical,
   AlertTriangle,
   RefreshCw,
