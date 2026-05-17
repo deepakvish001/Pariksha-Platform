@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,16 +8,23 @@ import {
   Download,
   ExternalLink,
   Mail,
+  Pause,
+  Play,
   Sparkles,
   Trophy,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
+
+const AUTO_REDIRECT_SECONDS = 10;
 
 interface Attempt {
   id: string;
@@ -86,6 +94,27 @@ function MetaTile({
 
 export function Submitted({ attempt, assessment, isPreview }: Props) {
   const navigate = useNavigate();
+
+  // Optional auto-redirect to dashboard after submission
+  const [autoRedirect, setAutoRedirect] = useState(!isPreview);
+  const [secondsLeft, setSecondsLeft] = useState(AUTO_REDIRECT_SECONDS);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (!autoRedirect || paused) return;
+    if (secondsLeft <= 0) {
+      navigate("/dashboard");
+      return;
+    }
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [autoRedirect, paused, secondsLeft, navigate]);
+
+  const cancelAutoRedirect = () => {
+    setAutoRedirect(false);
+    setSecondsLeft(AUTO_REDIRECT_SECONDS);
+    setPaused(false);
+  };
 
   const hasScore = typeof attempt.score === "number";
   const submittedAt = formatDateTime(attempt.submitted_at);
@@ -212,6 +241,76 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                 ))}
               </ol>
             </div>
+
+            {/* Auto-redirect */}
+            {!isPreview && (
+              <div
+                className={cn(
+                  "rounded-md border px-3 py-2.5 flex items-center gap-3 text-sm",
+                  autoRedirect
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border bg-card/60",
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  {autoRedirect ? (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-[11px] font-bold tabular-nums">
+                        {secondsLeft}
+                      </span>
+                      <span className="truncate">
+                        {paused ? "Auto-redirect paused" : "Redirecting to your dashboard…"}
+                      </span>
+                    </div>
+                  ) : (
+                    <Label
+                      htmlFor="auto-redirect"
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      Auto-return to dashboard in {AUTO_REDIRECT_SECONDS}s
+                    </Label>
+                  )}
+                </div>
+                {autoRedirect ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setPaused((p) => !p)}
+                      className="h-8"
+                    >
+                      {paused ? (
+                        <>
+                          <Play className="h-3.5 w-3.5 mr-1" /> Resume
+                        </>
+                      ) : (
+                        <>
+                          <Pause className="h-3.5 w-3.5 mr-1" /> Pause
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={cancelAutoRedirect}
+                      className="h-8"
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Switch
+                    id="auto-redirect"
+                    checked={autoRedirect}
+                    onCheckedChange={(v) => {
+                      setSecondsLeft(AUTO_REDIRECT_SECONDS);
+                      setPaused(false);
+                      setAutoRedirect(v);
+                    }}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2 pt-1">
