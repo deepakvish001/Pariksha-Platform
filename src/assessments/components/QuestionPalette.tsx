@@ -348,7 +348,7 @@ export function QuestionPalette({
                     const active = i === currentIndex;
                     const dim = !passes(i);
                     if (dim && filter !== "all") return null;
-                    const status = getStatusLabel(it, active);
+                    const status = getStatusLabel(it, active, t);
                     return (
                       <li key={it.id}>
                         <Tooltip delayDuration={200}>
@@ -356,7 +356,7 @@ export function QuestionPalette({
                             <button
                               onClick={() => onJump(i)}
                               aria-current={active ? "true" : undefined}
-                              aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                              aria-label={buildAriaLabel(t, i, it.title, status.label, it.flagged)}
                               className={cn(
                                 "group w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors text-left",
                                 active
@@ -381,7 +381,7 @@ export function QuestionPalette({
                               </span>
                               {/* Label */}
                               <span className="flex-1 truncate">
-                                Question {i + 1}
+                                {t("palette.questionLabel", { n: i + 1 })}
                               </span>
                               {/* Flag */}
                               {it.flagged && (
@@ -394,7 +394,7 @@ export function QuestionPalette({
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-[260px]">
-                            <StatusTooltipBody index={i} item={it} status={status} />
+                            <StatusTooltipBody index={i} item={it} status={status} t={t} />
                           </TooltipContent>
                         </Tooltip>
                       </li>
