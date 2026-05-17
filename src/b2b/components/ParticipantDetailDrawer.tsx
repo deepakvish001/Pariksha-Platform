@@ -98,7 +98,7 @@ function StatChip({ icon: Icon, label, value, tone = "muted" }: any) {
 }
 
 export default function ParticipantDetailDrawer({
-  open, onOpenChange, participant, assessmentId, evidence, canProctor, onForceSubmit, forceSubmitPending,
+  open, onOpenChange, participant, assessmentId, evidence, canProctor, orgId, onForceSubmit, forceSubmitPending,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -106,6 +106,7 @@ export default function ParticipantDetailDrawer({
   assessmentId: string;
   evidence?: EvidenceCounts;
   canProctor: boolean;
+  orgId?: string | null;
   onForceSubmit: (p: LiveParticipant) => void;
   forceSubmitPending?: boolean;
 }) {
@@ -277,7 +278,7 @@ export default function ParticipantDetailDrawer({
                   {participant.status === "in_progress" && (
                     <LiveProctorThreeEye attemptId={attemptId} />
                   )}
-                  <AttemptProctoringPanel attemptId={attemptId} />
+                  <AttemptProctoringPanel attemptId={attemptId} orgId={orgId} />
                 </TabsContent>
               )}
 

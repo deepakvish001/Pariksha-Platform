@@ -89,7 +89,7 @@ export default function AttemptDetail() {
         </Card>
       </div>
 
-      {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} />}
+      {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} orgId={org?.id} />}
 
       <AttemptFeedbackPanel attemptId={data.attempt.id} />
 

@@ -29,7 +29,10 @@ async function signMany(paths: string[]) {
   return map;
 }
 
-export default function AttemptProctoringPanel({ attemptId }: { attemptId: string }) {
+import { useCanProctor } from "../hooks/usePermissions";
+
+export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId: string; orgId?: string | null }) {
+  const { canProctor, isLoading: roleLoading } = useCanProctor(orgId);
   const [snaps, setSnaps] = useState<Snap[]>([]);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -130,6 +133,19 @@ export default function AttemptProctoringPanel({ attemptId }: { attemptId: strin
   };
 
   const highCount = findings.filter((f) => f.severity === "high" || f.severity === "critical").length;
+
+  // Defence-in-depth: refuse to render proctoring evidence to non-proctor roles
+  // even if a parent forgets to gate this component.
+  if (roleLoading) return null;
+  if (!canProctor) {
+    return (
+      <Card className="mb-4">
+        <CardContent className="p-4 text-xs text-muted-foreground">
+          You do not have permission to view proctoring evidence for this attempt.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-4">
