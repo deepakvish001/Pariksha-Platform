@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, ShieldCheck, X, Loader2, User } from "lucide-react";
+import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   sendChatMessage,
   useAssessmentChat,
+  useAutoMarkRead,
   useAutoScrollRef,
   useUnreadCount,
   type ChatRole,
