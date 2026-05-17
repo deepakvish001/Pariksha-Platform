@@ -551,6 +551,20 @@ export default function Player() {
         onSubmit={() => setConfirmOpen(true)}
         onFullscreen={requestFullscreen}
         onPrefillKey={prefillAnswerKey}
+        onShowInstructions={() => setInstructionsOpen(true)}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        canZoomIn={canZoomIn}
+        canZoomOut={canZoomOut}
+      />
+
+      <GeneralInstructionsDialog
+        open={instructionsOpen}
+        onOpenChange={setInstructionsOpen}
+        assessmentTitle={paper.assessment.title}
+        instructions={(paper.assessment as { instructions?: string | null }).instructions ?? null}
+        durationMin={paper.assessment.duration_min}
+        proctoring={proctoringEnabled}
       />
 
       <ViolationBanner
