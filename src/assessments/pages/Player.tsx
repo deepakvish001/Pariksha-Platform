@@ -591,6 +591,7 @@ export default function Player() {
                     onChange={(v) => setQuestionAnswer(q.id, v)}
                     isFlagged={isFlagged}
                     onToggleFlag={toggleFlag}
+                    attemptId={attemptId ?? null}
                   />
                 )
               ) : (
