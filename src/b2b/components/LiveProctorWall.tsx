@@ -66,9 +66,10 @@ export function LiveProctorWall({ attempts, defaultCollapsed = true }: Props) {
               <div key={a.attempt_id} className="space-y-2">
                 <div className="text-xs font-medium truncate">{a.candidate_name}</div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <LiveStreamTile channelId={`proctor:${a.attempt_id}:webcam`} kind="webcam" />
-                  <LiveStreamTile channelId={`proctor:${a.attempt_id}:screen`} kind="screen" />
+                  <LiveStreamTile attemptId={a.attempt_id} channelId={`proctor:${a.attempt_id}:webcam`} kind="webcam" />
+                  <LiveStreamTile attemptId={a.attempt_id} channelId={`proctor:${a.attempt_id}:screen`} kind="screen" />
                   <LiveStreamTile
+                    attemptId={a.attempt_id}
                     channelId={tokens[a.attempt_id] ? `proctor:sidecam:${tokens[a.attempt_id]}` : null}
                     kind="sideeye"
                   />

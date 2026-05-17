@@ -43,9 +43,9 @@ function LiveProctorThreeEye({ attemptId }: { attemptId: string }) {
   }, [attemptId]);
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <LiveStreamTile channelId={`proctor:${attemptId}:webcam`} kind="webcam" />
-      <LiveStreamTile channelId={`proctor:${attemptId}:screen`} kind="screen" />
-      <LiveStreamTile channelId={token ? `proctor:sidecam:${token}` : null} kind="sideeye" />
+      <LiveStreamTile attemptId={attemptId} channelId={`proctor:${attemptId}:webcam`} kind="webcam" />
+      <LiveStreamTile attemptId={attemptId} channelId={`proctor:${attemptId}:screen`} kind="screen" />
+      <LiveStreamTile attemptId={attemptId} channelId={token ? `proctor:sidecam:${token}` : null} kind="sideeye" />
     </div>
   );
 }

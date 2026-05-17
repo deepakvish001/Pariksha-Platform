@@ -3,12 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle } from "lucide-react";
+import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle, Video, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Snap = { id: string; source: string; storage_path: string; captured_at: string; reviewed: boolean };
 type Frame = { id: string; storage_path: string; captured_at: string };
 type Finding = { id: string; snapshot_id: string; severity: string; finding: any; created_at: string };
+type Recording = {
+  id: string;
+  kind: "webcam" | "screen" | "sideeye";
+  storage_path: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_ms: number | null;
+  size_bytes: number | null;
+};
 
 const BUCKET = "assessment-proctor";
 
@@ -24,26 +33,35 @@ export default function AttemptProctoringPanel({ attemptId }: { attemptId: strin
   const [snaps, setSnaps] = useState<Snap[]>([]);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [recordings, setRecordings] = useState<Recording[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
-    const [s, f, fd] = await Promise.all([
+    const [s, f, fd, rec] = await Promise.all([
       supabase.from("assessment_proctor_snapshots").select("id,source,storage_path,captured_at,reviewed")
         .eq("attempt_id", attemptId).order("captured_at", { ascending: false }).limit(36),
       supabase.from("assessment_side_camera_frames").select("id,storage_path,captured_at")
         .eq("attempt_id", attemptId).order("captured_at", { ascending: false }).limit(18),
       supabase.from("assessment_proctor_findings").select("id,snapshot_id,severity,finding,created_at")
         .eq("attempt_id", attemptId).order("created_at", { ascending: false }).limit(50),
+      supabase.from("assessment_proctor_recordings").select("id,kind,storage_path,started_at,ended_at,duration_ms,size_bytes")
+        .eq("attempt_id", attemptId).order("started_at", { ascending: false }).limit(30),
     ]);
     const snapRows = (s.data ?? []) as Snap[];
     const frameRows = (f.data ?? []) as Frame[];
+    const recRows = (rec.data ?? []) as Recording[];
     setSnaps(snapRows);
     setFrames(frameRows);
     setFindings((fd.data ?? []) as Finding[]);
-    const allPaths = [...snapRows.map((x) => x.storage_path), ...frameRows.map((x) => x.storage_path)];
+    setRecordings(recRows);
+    const allPaths = [
+      ...snapRows.map((x) => x.storage_path),
+      ...frameRows.map((x) => x.storage_path),
+      ...recRows.map((x) => x.storage_path),
+    ];
     setUrls(await signMany(allPaths));
     setLoading(false);
   };
@@ -55,6 +73,7 @@ export default function AttemptProctoringPanel({ attemptId }: { attemptId: strin
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_proctor_snapshots", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_side_camera_frames", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_proctor_findings", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "assessment_proctor_recordings", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
   }, [attemptId]);
@@ -184,6 +203,53 @@ export default function AttemptProctoringPanel({ attemptId }: { attemptId: strin
                       {d.notes && <div className="text-muted-foreground line-clamp-2">{d.notes}</div>}
                     </div>
                     <span className="text-muted-foreground shrink-0">{new Date(f.created_at).toLocaleTimeString()}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {recordings.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+              <Video className="h-3 w-3" /> Recorded clips ({recordings.length})
+            </p>
+            <div className="space-y-2">
+              {recordings.map((r) => {
+                const url = urls[r.storage_path];
+                const Icon = r.kind === "screen" ? Monitor : r.kind === "sideeye" ? Smartphone : Camera;
+                const secs = r.duration_ms ? Math.round(r.duration_ms / 1000) : 0;
+                const mb = r.size_bytes ? (r.size_bytes / 1_048_576).toFixed(1) : null;
+                return (
+                  <div key={r.id} className="rounded-md border border-[hsl(var(--border))] p-2 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-medium capitalize">{r.kind}</span>
+                      <Badge variant="outline" className="text-[10px] h-5">{Math.floor(secs / 60)}m {secs % 60}s</Badge>
+                      {mb && <span className="text-muted-foreground">{mb} MB</span>}
+                      <span className="ml-auto text-muted-foreground">{new Date(r.started_at).toLocaleString()}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-1.5"
+                        onClick={async () => {
+                          const { error } = await supabase.from("assessment_proctor_recordings").delete().eq("id", r.id);
+                          if (error) toast.error(error.message);
+                          else {
+                            await supabase.storage.from(BUCKET).remove([r.storage_path]).catch(() => { /* noop */ });
+                            void refresh();
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {url ? (
+                      <video src={url} controls preload="metadata" className="w-full max-h-72 rounded bg-black" />
+                    ) : (
+                      <div className="h-24 grid place-items-center text-[10px] text-muted-foreground">Loading…</div>
+                    )}
                   </div>
                 );
               })}
