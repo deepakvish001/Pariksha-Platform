@@ -521,7 +521,9 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
                       ) : (
                         <Download className="h-3.5 w-3.5" />
                       )}
-                      {downloadingAll ? `Downloading…` : `Download all (${pages.length})`}
+                      {downloadingAll
+                        ? `Downloading ${downloadAllDone}/${downloadAllTotal}…`
+                        : `Download all (${pages.length})`}
                     </button>
                   )}
                   <a
