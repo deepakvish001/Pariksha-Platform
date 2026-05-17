@@ -8,7 +8,7 @@ import { AlertOctagon, CheckCheck, CheckCircle2, Loader2, Clock } from "lucide-r
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
-type SosStatus = "open" | "acknowledged" | "resolved" | "cancelled";
+type SosStatus = "open" | "acknowledged" | "resolved";
 
 type SosRow = {
   id: string;
