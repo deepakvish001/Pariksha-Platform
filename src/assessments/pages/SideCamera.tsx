@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, CheckCircle2, ShieldCheck, RotateCcw, WifiOff } from "lucide-react";
+import { useWebrtcStream } from "@/hooks/useWebrtcStream";
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assessment-sidecam`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -26,6 +27,15 @@ export default function SideCameraPage() {
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [framesSent, setFramesSent] = useState(0);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+
+  // Publish the rear-camera feed live to proctors via WebRTC, keyed by the
+  // pairing token (same token already authenticates snapshot uploads).
+  useWebrtcStream({
+    channelId: status === "streaming" && token ? `proctor:sidecam:${token}` : null,
+    role: "publisher",
+    localStream: liveStream,
+  });
 
   const call = async (action: string, init?: RequestInit) => {
     const res = await fetch(`${FN_URL}?action=${action}&token=${encodeURIComponent(token)}`, {
@@ -42,6 +52,7 @@ export default function SideCameraPage() {
   const stop = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setLiveStream(null);
     if (videoRef.current) videoRef.current.srcObject = null;
   };
 
@@ -85,6 +96,7 @@ export default function SideCameraPage() {
         audio: false,
       });
       streamRef.current = s;
+      setLiveStream(s);
       if (videoRef.current) {
         videoRef.current.srcObject = s;
         await videoRef.current.play().catch(() => {});

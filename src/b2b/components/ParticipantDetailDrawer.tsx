@@ -12,6 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AttemptProctoringPanel from "./AttemptProctoringPanel";
+import { LiveStreamTile } from "./LiveStreamTile";
 import AttemptSosHistoryPanel from "./AttemptSosHistoryPanel";
 import type { LiveParticipant, EvidenceCounts } from "../hooks/useAssessmentLive";
 import {
@@ -21,6 +22,33 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const EMPTY: EvidenceCounts = { webcam: 0, screen: 0, side_cam: 0, findings_high: 0, findings_med: 0 };
+
+import { useEffect, useState } from "react";
+
+/** Compact 3-tile live view for a single attempt. */
+function LiveProctorThreeEye({ attemptId }: { attemptId: string }) {
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("assessment_side_camera_pairings")
+        .select("pair_token,status")
+        .eq("attempt_id", attemptId)
+        .eq("status", "paired")
+        .maybeSingle();
+      if (!cancelled) setToken((data as { pair_token?: string } | null)?.pair_token ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [attemptId]);
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <LiveStreamTile channelId={`proctor:${attemptId}:webcam`} kind="webcam" />
+      <LiveStreamTile channelId={`proctor:${attemptId}:screen`} kind="screen" />
+      <LiveStreamTile channelId={token ? `proctor:sidecam:${token}` : null} kind="sideeye" />
+    </div>
+  );
+}
 
 function useAttemptTimeline(attemptId?: string) {
   return useQuery({
@@ -245,7 +273,10 @@ export default function ParticipantDetailDrawer({
               </TabsContent>
 
               {canProctor && (
-                <TabsContent value="evidence" className="mt-4">
+                <TabsContent value="evidence" className="mt-4 space-y-4">
+                  {participant.status === "in_progress" && (
+                    <LiveProctorThreeEye attemptId={attemptId} />
+                  )}
                   <AttemptProctoringPanel attemptId={attemptId} />
                 </TabsContent>
               )}

@@ -1,72 +1,63 @@
-# Merge Proctoring into Assessment Manage
+## Goal
 
-Goal: kill the separate **Proctoring monitor** and surface every proctoring capability *inside* each assessment's **Manage** page. Clicking any participant opens a side drawer with the full "what is this student doing right now" view.
+On the Manage Assessment page, let proctors watch each in-progress candidate live across three feeds:
 
-## 1. Retire the standalone Proctoring page
+1. **First eye** — laptop webcam
+2. **Second eye** — shared screen
+3. **Third eye** — paired mobile side camera
 
-- Delete `src/b2b/pages/Proctoring.tsx`.
-- Remove the `B2BProctoring` import + both route registrations in `src/App.tsx` (`/b2b/proctoring` and the nested `proctoring` route).
-- Add a redirect: `/b2b/proctoring` → `/b2b/assessments` (preserve old bookmarks).
-- Remove the **Proctoring** sidebar entry from `src/b2b/layouts/OrgShell.tsx` (both nav arrays).
-- Update `Dashboard.tsx` / any "Open proctoring" CTAs to point at the assessments hub instead.
+Today only the side camera streams live (WebRTC). Webcam and screen exist on the candidate side only as periodic snapshots uploaded to storage. We need to add live WebRTC publishing for those two and a viewer wall on Manage.
 
-## 2. Promote Manage into the per-assessment command center
+## What gets built
 
+### 1. Generic WebRTC stream hook
+Refactor `src/hooks/useSideEyeSignalling.ts` into a reusable `useWebrtcStream` (keep `useSideEyeSignalling` as a thin wrapper to avoid touching contest code).
+
+- Accepts a `channelId` (any string) and `role: "publisher" | "viewer"` plus optional `localStream`.
+- Same Supabase Realtime broadcast signalling, ICE fetch, reconnect/backoff, and quality stats.
+- Channel naming convention: `proctor:{attemptId}:{kind}` where kind ∈ `webcam | screen | sideeye`.
+
+### 2. Candidate side — publish webcam + screen
+In `src/assessments/pages/Player.tsx` (and/or `useProctoring` / `useDisplayCapture`):
+
+- When an attempt is in progress and the candidate already has webcam/display streams (these are already acquired today for snapshots), instantiate two `useWebrtcStream` publishers using those existing `MediaStream` objects.
+- No new permission prompts (re-use streams already in memory).
+- Gate behind the assessment's existing proctoring config flags (webcam_required / screen_required) so we don't publish when disabled.
+- Add lightweight `attempt_events` markers (`webcam_live_start`, `screen_live_start`) for the activity feed.
+
+### 3. Admin viewer — `LiveProctorWall` component
+New file `src/b2b/components/LiveProctorWall.tsx`:
+
+- Props: `attempts: { attempt_id, candidate_name, side_session_id? }[]`.
+- For each attempt renders a row of three tiles using a small `LiveStreamTile` (mirrors `SideEyeTile` UX: aspect-video, LIVE/WAITING badge, source icon, candidate label).
+- Tiles: webcam, screen, side-camera. Side tile keeps current `SideEyeTile` behaviour (uses `contest_side_camera_sessions.id`); for assessments we'll pass the attempt's paired session id resolved from the existing pairing flow, or fall back to `proctor:{attemptId}:sideeye` once the player publishes side-eye through the new generic channel.
+- Empty state ("Waiting for stream…") when no offer received within N seconds.
+- Pause/mute toggle per tile to save bandwidth; only mount RTCPeerConnection when tile is visible (IntersectionObserver) so 20+ candidates don't melt the browser.
+
+### 4. Integrate into Manage page
 In `src/b2b/pages/assessments/Manage.tsx`:
 
-- Apply the same role gate the Proctoring page used (`useCanProctor`) so sensitive evidence stays restricted; non-proctors still see the participants table but evidence/snapshot UI is hidden.
-- Extend the existing `useAssessmentLive` hook (or wrap it in this page) to additionally fetch for this assessment's attempts:
-  - `assessment_proctor_findings` (severity, finding, created_at)
-  - `assessment_proctor_snapshots` (webcam vs screen counts)
-  - `assessment_side_camera_frames` (side-cam counts)
-  - subscribe to `INSERT` on findings + snapshots for the live feel the Proctoring page had.
-- Add three new participant-row columns / chips: **Webcam / Screen / Side-cam counts** (Camera/Monitor/Smartphone icons + numbers) and **Findings** (`high`/`med`/`clean` badges) — exact styling reused from `Proctoring.tsx` so we don't lose the visual language.
-- Add `findings`, `snapshots`, `sideCam` to the sort/filter set (e.g. "Flagged only", "High severity", existing status filter stays).
-- Bring `RetentionCard` over and mount it at the bottom of Manage (collapsed by default) so admins can still tune retention from here.
+- New collapsible section "Live view (three-eye)" above the participants table, visible only when `useCanProctor` is true.
+- Source list = participants where `status === "in_progress"` from `useLiveParticipants`.
+- Default collapsed; show count badge of currently-live candidates.
+- Inside `ParticipantDetailDrawer`, add a single-candidate version of the three tiles at the top for focused review (keeps existing `AttemptProctoringPanel` snapshot history below).
 
-## 3. Student-in-test drawer
-
-Replace the current "row click does nothing" behaviour with a `Sheet` (side drawer) — using shadcn `Sheet`, opens on row click.
-
-Drawer contents (tabbed, all scoped to the selected `attempt_id`):
-
-1. **Overview** — candidate name/email, status, started/ended, elapsed, score, integrity score, force-submit button (existing), copy attempt link.
-2. **Live evidence** — embeds the existing `AttemptInspector` (`src/components/proctoring/AttemptInspector.tsx`) which already renders webcam/screen/side-cam playback.
-3. **Proctoring findings** — list from `assessment_proctor_findings` with severity badges; reuse `AttemptProctoringPanel`.
-4. **Activity timeline** — `attempt_events` already streamed by `useAssessmentLive`, filtered to this attempt, newest first, with icons for tab_blur/copy/paste/fullscreen_exit/etc.
-5. **SOS history** — reuse `AttemptSosHistoryPanel`.
-6. **Answers / progress** — pull from `assessment_attempt_answers` (question, answer, correct, time spent) so the proctor can see what the student is actually doing question-by-question.
-
-Footer of the drawer: **"Open full attempt page"** → existing `/b2b/assessments/:id/attempts/:attemptId` for deep forensics.
-
-Drawer is `w-full sm:max-w-2xl lg:max-w-4xl`, glass card aesthetic to match the rest of B2B.
-
-## 4. Cross-assessment safety net
-
-Because the org-wide list is gone, add a **"Flagged across all assessments"** ribbon at the top of the **Assessments Hub** (`List.tsx`) — a thin horizontal strip showing the 5 highest-severity live attempts org-wide, each chip deep-linking to `/b2b/assessments/:id/manage?attempt=<id>` (auto-opens the drawer). This keeps the cross-assessment triage that was the Proctoring page's main job, without a separate route.
-
-Manage page reads `?attempt=` on mount and opens the drawer for that id.
-
-## 5. Tests / cleanup
-
-- Update `src/b2b/pages/__tests__/Dashboard.test.tsx` if it referenced the proctoring link.
-- Delete any tests for `Proctoring.tsx`.
-- Add a smoke test for Manage: drawer opens on row click, force-submit confirmation still works, `?attempt=` auto-opens.
-
-## Technical notes
-
-- Reused components: `AttemptInspector`, `AttemptProctoringPanel`, `AttemptSosHistoryPanel`, `RetentionCard` — no rewrites.
-- New data wiring lives in `useAssessmentLive` (extended) — no new hook file.
-- All evidence queries already filter by attempt ids that belong to the current assessment, so existing RLS keeps tenants isolated.
-- No DB migrations required.
+### 5. Permissions & safety
+- Viewer mount gated by `useCanProctor` (owner / admin / proctor roles) — same gate as snapshots panel.
+- Publisher gated by the assessment proctoring config; if a candidate disables a stream mid-attempt, viewer tile reverts to WAITING and we log a `*_lost` event (already covered by existing handlers).
+- No new DB tables or storage — pure peer-to-peer signalling via existing Realtime broadcast.
 
 ## Files touched
 
-- delete: `src/b2b/pages/Proctoring.tsx`
-- edit: `src/App.tsx` (remove routes, add redirect)
-- edit: `src/b2b/layouts/OrgShell.tsx` (drop Proctoring nav entries)
-- edit: `src/b2b/hooks/useAssessmentLive.ts` (add findings/snapshots/side-cam queries + realtime)
-- edit: `src/b2b/pages/assessments/Manage.tsx` (new columns, drawer, role gate, retention card, `?attempt=` handler)
-- edit: `src/b2b/pages/assessments/List.tsx` (flagged ribbon)
-- edit: `src/b2b/pages/Dashboard.tsx` (retarget any proctoring CTA)
-- edit/remove: related tests
+- **New:** `src/hooks/useWebrtcStream.ts`, `src/b2b/components/LiveProctorWall.tsx`, `src/b2b/components/LiveStreamTile.tsx`
+- **Edited:** `src/hooks/useSideEyeSignalling.ts` (becomes wrapper), `src/assessments/pages/Player.tsx` (publish webcam + screen), `src/b2b/pages/assessments/Manage.tsx` (wall section), `src/b2b/components/ParticipantDetailDrawer.tsx` (per-candidate tiles)
+
+## Out of scope
+
+- Recording the live streams (snapshots already provide forensic record).
+- Two-way audio / proctor-to-candidate intervention.
+- Changes to the contest side-eye console (left untouched via the wrapper).
+
+## Open question
+
+The side-eye third eye today is wired through `contest_side_camera_sessions` (contest flow). For assessments, the existing player pairing already establishes a session id — confirm we pass that same session id through to the new wall, or migrate assessments to the new generic `proctor:{attemptId}:sideeye` channel. I'll default to **reusing the existing session id** (no migration) unless you want the unified naming.

@@ -15,6 +15,7 @@ import { useCanProctor } from "../../hooks/usePermissions";
 import { useCurrentOrg } from "../../context/OrgContext";
 import ParticipantDetailDrawer from "../../components/ParticipantDetailDrawer";
 import { RetentionCard } from "@/components/proctoring/RetentionCard";
+import { LiveProctorWall } from "../../components/LiveProctorWall";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -362,6 +363,17 @@ export default function AssessmentManage() {
             </div>
           </div>
         </GlassCard>
+
+        {canProctor && (
+          <LiveProctorWall
+            attempts={(participants ?? [])
+              .filter((p) => p.status === "in_progress" && p.attempt_id)
+              .map((p) => ({
+                attempt_id: p.attempt_id as string,
+                candidate_name: p.name ?? p.email ?? "Candidate",
+              }))}
+          />
+        )}
 
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Participants */}
