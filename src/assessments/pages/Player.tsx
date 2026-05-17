@@ -225,6 +225,23 @@ export default function Player() {
     maxBitrate: 800_000,
   });
 
+  // Continuous session recording — uploads independent ~165s WebM chunks to
+  // evidence storage so proctors can replay the whole attempt later, even
+  // when no proctor was watching live.
+  const recordEnabled = proctoringEnabled && lockdownReady && !!proctoringConfig.record_full_session;
+  useChunkedRecorder({
+    stream: camStream,
+    attemptId: attemptId ?? null,
+    kind: "webcam",
+    enabled: recordEnabled,
+  });
+  useChunkedRecorder({
+    stream: screenStream,
+    attemptId: attemptId ?? null,
+    kind: "screen",
+    enabled: recordEnabled,
+  });
+
   // Typing analytics — flags super-human typing bursts inside any text input or editor
   const typing = useTypingAnalytics({
     onBurst: (cpm) => { void logProctorEvent("typing_burst", { cpm }); },
