@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, LifeBuoy, Mail, Phone, Send, X } from "lucide-react";
+import { AlertTriangle, LifeBuoy, Loader2, Mail, Phone, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const SUPPORT_EMAIL = "support@parikshaa.app";
 const SUPPORT_PHONE = "+91 80000 00000";
@@ -37,11 +38,13 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
   const [step, setStep] = useState<"confirm" | "details">("confirm");
   const [issue, setIssue] = useState<string>(QUICK_ISSUES[0]);
   const [notes, setNotes] = useState("");
+  const [sending, setSending] = useState(false);
 
   const reset = () => {
     setStep("confirm");
     setIssue(QUICK_ISSUES[0]);
     setNotes("");
+    setSending(false);
   };
 
   const buildSubject = () =>
@@ -58,12 +61,70 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
         .join("\n")
     );
 
-  const sendEmail = () => {
+  /**
+   * Notify the proctor backend:
+   *  1. Insert an `sos` event into attempt_events so org members see it in the feed.
+   *  2. Post a system chat message so it appears in the proctor's chat dock.
+   * Best-effort: if either fails, fall back to email so the candidate is never stranded.
+   */
+  const notifyProctor = async (): Promise<{ ok: boolean; error?: string }> => {
+    if (!attemptId) return { ok: false, error: "No active attempt" };
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const userId = u?.user?.id ?? null;
+
+      const eventInsert = supabase.from("attempt_events").insert({
+        attempt_id: attemptId,
+        kind: "sos",
+        payload: {
+          issue,
+          notes: notes || null,
+          raised_at: new Date().toISOString(),
+          assessment_title: assessmentTitle ?? null,
+        },
+      });
+
+      const chatInsert = userId
+        ? supabase.from("assessment_chat_messages").insert({
+            attempt_id: attemptId,
+            sender_user_id: userId,
+            sender_role: "system",
+            body: `🚨 SOS raised by candidate — ${issue}${notes ? `\n\nDetails: ${notes}` : ""}`,
+          })
+        : Promise.resolve({ error: null } as any);
+
+      const [evt, chat] = await Promise.all([eventInsert, chatInsert]);
+      if (evt.error) throw evt.error;
+      if ((chat as any).error) {
+        // Non-fatal: event already logged.
+        console.warn("SOS chat post failed", (chat as any).error);
+      }
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e?.message ?? "Network error" };
+    }
+  };
+
+  const sendSos = async () => {
+    setSending(true);
+    const result = await notifyProctor();
+    setSending(false);
+
+    if (result.ok) {
+      toast.success("Proctor notified", {
+        description: "A proctor has been alerted and will respond in chat shortly.",
+      });
+      setOpen(false);
+      reset();
+      return;
+    }
+
+    // Fallback: open email so the candidate still gets help.
+    toast.error("Couldn't reach proctor — opening email backup", {
+      description: result.error ?? "Please send the email so support can call back.",
+    });
     const url = `mailto:${SUPPORT_EMAIL}?subject=${buildSubject()}&body=${buildBody()}`;
     window.location.href = url;
-    toast.success("Opening your email app", {
-      description: "Send the message and a proctor will reach out shortly.",
-    });
     setOpen(false);
     reset();
   };
@@ -184,11 +245,21 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
                 />
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
-                <Button variant="ghost" onClick={() => setStep("confirm")}>
+                <Button variant="ghost" onClick={() => setStep("confirm")} disabled={sending}>
                   Back
                 </Button>
-                <Button variant="destructive" onClick={sendEmail} className="font-semibold">
-                  <Send className="h-4 w-4 mr-1.5" /> Send SOS
+                <Button
+                  variant="destructive"
+                  onClick={sendSos}
+                  disabled={sending}
+                  className="font-semibold"
+                >
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-1.5" />
+                  )}
+                  {sending ? "Notifying proctor…" : "Send SOS"}
                 </Button>
               </DialogFooter>
             </div>
