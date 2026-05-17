@@ -38,7 +38,32 @@ import {
   Eye,
   StopCircle,
   Clock,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
+
+type SortKey = "name" | "status" | "elapsed" | "score" | "integrity";
+type SortDir = "asc" | "desc";
+
+const STATUS_ORDER: Record<ParticipantStatus, number> = {
+  in_progress: 0,
+  joined: 1,
+  not_joined: 2,
+  submitted: 3,
+  auto_submitted: 4,
+  abandoned: 5,
+};
+
+function elapsedMs(p: LiveParticipant): number | null {
+  if (p.status === "in_progress" && p.started_at) {
+    return Date.now() - new Date(p.started_at).getTime();
+  }
+  if (p.submitted_at && p.started_at) {
+    return new Date(p.submitted_at).getTime() - new Date(p.started_at).getTime();
+  }
+  return null;
+}
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { formatWindow, getScheduleState } from "../../lib/assessmentSchedule";
@@ -98,6 +123,16 @@ export default function AssessmentManage() {
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ParticipantStatus | "all">("all");
+  const [sortKey, setSortKey] = useState<SortKey>("status");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "score" || k === "integrity" || k === "elapsed" ? "desc" : "asc");
+    }
+  };
 
   const counts = useMemo(() => {
     const c = {
@@ -124,7 +159,7 @@ export default function AssessmentManage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (participants ?? []).filter((p) => {
+    const rows = (participants ?? []).filter((p) => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (!q) return true;
       return (
@@ -133,7 +168,27 @@ export default function AssessmentManage() {
         (p.external_id ?? "").toLowerCase().includes(q)
       );
     });
-  }, [participants, query, statusFilter]);
+    const dir = sortDir === "asc" ? 1 : -1;
+    const nullLast = (v: number | null) => (v === null ? Number.POSITIVE_INFINITY : v);
+    const sorted = [...rows].sort((a, b) => {
+      switch (sortKey) {
+        case "name": {
+          const an = (a.name ?? a.email ?? "").toLowerCase();
+          const bn = (b.name ?? b.email ?? "").toLowerCase();
+          return an.localeCompare(bn) * dir;
+        }
+        case "status":
+          return (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]) * dir;
+        case "elapsed":
+          return (nullLast(elapsedMs(a)) - nullLast(elapsedMs(b))) * dir;
+        case "score":
+          return (nullLast(a.score) - nullLast(b.score)) * dir;
+        case "integrity":
+          return (nullLast(a.integrity_score) - nullLast(b.integrity_score)) * dir;
+      }
+    });
+    return sorted;
+  }, [participants, query, statusFilter, sortKey, sortDir]);
 
   if (isLoading) return null;
   if (!assessment) return <Navigate to="/b2b/assessments" replace />;
@@ -276,11 +331,11 @@ export default function AssessmentManage() {
                 <table className="w-full text-xs">
                   <thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
                     <tr className="border-b border-white/5">
-                      <th className="text-left font-medium py-2 px-2">Candidate</th>
-                      <th className="text-left font-medium py-2 px-2">Status</th>
-                      <th className="text-left font-medium py-2 px-2">Elapsed</th>
-                      <th className="text-left font-medium py-2 px-2">Score</th>
-                      <th className="text-left font-medium py-2 px-2">Integrity</th>
+                      <SortTh label="Candidate" k="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Elapsed" k="elapsed" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Score" k="score" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Integrity" k="integrity" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       <th className="text-right font-medium py-2 px-2">Actions</th>
                     </tr>
                   </thead>
@@ -475,5 +530,38 @@ function ParticipantRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+function SortTh({
+  label,
+  k,
+  sortKey,
+  sortDir,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  k: SortKey;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (k: SortKey) => void;
+  align?: "left" | "right";
+}) {
+  const active = sortKey === k;
+  const Icon = !active ? ArrowUpDown : sortDir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <th className={`font-medium py-2 px-2 ${align === "right" ? "text-right" : "text-left"}`}>
+      <button
+        type="button"
+        onClick={() => onSort(k)}
+        className={`inline-flex items-center gap-1 uppercase tracking-wide transition-colors ${
+          active ? "text-[hsl(var(--primary))]" : "hover:text-foreground"
+        }`}
+      >
+        {label}
+        <Icon className="h-3 w-3 opacity-70" />
+      </button>
+    </th>
   );
 }
