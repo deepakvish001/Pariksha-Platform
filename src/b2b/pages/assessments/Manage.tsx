@@ -6,10 +6,15 @@ import { useInvites, buildJoinUrl } from "../../hooks/useInvites";
 import {
   useLiveParticipants,
   useAssessmentActivity,
+  useAssessmentEvidence,
   useForceSubmitAttempt,
   type LiveParticipant,
   type ParticipantStatus,
 } from "../../hooks/useAssessmentLive";
+import { useCanProctor } from "../../hooks/usePermissions";
+import { useCurrentOrg } from "../../context/OrgContext";
+import ParticipantDetailDrawer from "../../components/ParticipantDetailDrawer";
+import { RetentionCard } from "@/components/proctoring/RetentionCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
