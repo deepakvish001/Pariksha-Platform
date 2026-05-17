@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { enqueueSos, flushSosQueue, installSosQueueAutoflush } from "@/assessments/lib/sosDeliveryQueue";
 
+const MAX_PER_ATTEMPT = 5;
+const COOLDOWN_MS = 60_000;
 
 const SUPPORT_EMAIL = "support@parikshaa.app";
 const SUPPORT_PHONE = "+91 80000 00000";
