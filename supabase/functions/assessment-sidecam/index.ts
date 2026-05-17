@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
       const user = await getUser(req);
       if (!user) return json({ error: "auth_required" }, 401);
       const body = await req.json().catch(() => null) as { id?: string } | null;
-      if (!body?.id) return json({ error: "id required" }, 400);
+      if (!isUuid(body?.id)) return json({ error: "invalid_id" }, 400);
 
       const { data: row } = await admin
         .from("assessment_answer_uploads")
