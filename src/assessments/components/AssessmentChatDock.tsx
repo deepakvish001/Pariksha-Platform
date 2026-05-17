@@ -354,12 +354,17 @@ export function AssessmentChatDock({
             );
           })
         )}
-        {peer.typing && ordered.length > 0 && (
-          <div className="flex items-start" aria-live="polite">
-            <div className="max-w-[85%] rounded-lg px-3 py-2 bg-muted text-muted-foreground border border-border inline-flex items-center gap-1.5 text-xs">
-              <TypingDots />
-              <span>{peerLabel} is typing…</span>
-            </div>
+        {anyTyping && ordered.length > 0 && (
+          <div className="flex flex-col gap-1 items-start" aria-live="polite">
+            {typingRoles.map((role) => (
+              <div
+                key={role}
+                className="max-w-[85%] rounded-lg px-3 py-2 bg-muted text-muted-foreground border border-border inline-flex items-center gap-1.5 text-xs"
+              >
+                <TypingDots />
+                <span>{role === "proctor" ? "Proctor" : "Candidate"} is typing…</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
