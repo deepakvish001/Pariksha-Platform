@@ -424,10 +424,12 @@ function AIFindingsPanel({ attemptId, canRunReview = true }: { attemptId: string
 }
 
 // ---------- main inspector ----------
-export function AttemptInspector({ attemptId, open, onClose }: {
+export function AttemptInspector({ attemptId, open, onClose, canRunReview = true }: {
   attemptId: string | null;
   open: boolean;
   onClose: () => void;
+  /** Hide the "Run AI review" action for viewers without proctoring write access. */
+  canRunReview?: boolean;
 }) {
   const [attempt, setAttempt] = useState<AttemptRow | null>(null);
   const [events, setEvents] = useState<AttemptEvent[] | null>(null);
