@@ -28,17 +28,20 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: toastMock }),
 }));
 
-const mfa = {
-  getAuthenticatorAssuranceLevel: vi.fn(),
-  listFactors: vi.fn(),
-  challenge: vi.fn(),
-  verify: vi.fn(),
-};
-const auth = {
-  mfa,
-  getUser: vi.fn(async () => ({ data: { user: { id: "user-1" } } })),
-  signOut: vi.fn(async () => ({ error: null })),
-};
+const { mfa, auth } = vi.hoisted(() => {
+  const mfa = {
+    getAuthenticatorAssuranceLevel: vi.fn(),
+    listFactors: vi.fn(),
+    challenge: vi.fn(),
+    verify: vi.fn(),
+  };
+  const auth = {
+    mfa,
+    getUser: vi.fn(async () => ({ data: { user: { id: "user-1" } } })),
+    signOut: vi.fn(async () => ({ error: null })),
+  };
+  return { mfa, auth };
+});
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth },
 }));
