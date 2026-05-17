@@ -89,7 +89,8 @@ export function OrgShell({
                   {n.label}
                 </NavLink>
               );
-            })}
+              });
+            })()}
           </nav>
           <div className="p-3 border-t">
             <NavLink to="/learn" className="text-xs text-muted-foreground hover:text-foreground">
