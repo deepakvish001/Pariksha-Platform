@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
+import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
 import { useCurrentOrg } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
 
@@ -86,6 +87,21 @@ export default function AttemptDetail() {
       </div>
 
       {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} />}
+
+      {canProctor && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Candidate chat</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            <AssessmentChatDock
+              attemptId={data.attempt.id}
+              viewerRole="proctor"
+              variant="embedded"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {canProctor && events && events.length > 0 && (
         <Card className="mb-4">
