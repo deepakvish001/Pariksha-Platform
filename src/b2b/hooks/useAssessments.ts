@@ -62,6 +62,7 @@ export function useCreateAssessment() {
       description?: string;
       duration_min?: number;
       proctoring_enabled?: boolean;
+      show_results_to_candidate?: boolean;
     }) => {
       const { data, error } = await supabase
         .from("assessments")
@@ -71,6 +72,7 @@ export function useCreateAssessment() {
           description: input.description ?? null,
           duration_min: input.duration_min ?? 60,
           proctoring_enabled: input.proctoring_enabled ?? false,
+          show_results_to_candidate: input.show_results_to_candidate ?? true,
         })
         .select("*")
         .single();
