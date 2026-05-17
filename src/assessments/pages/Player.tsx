@@ -430,39 +430,12 @@ export default function Player() {
   if (!paper) return null;
 
   if (paper.attempt.status !== "in_progress" || submitted) {
-    const assessmentId = paper.assessment.id;
     return (
-      <div className="theme-b2b min-h-screen grid place-items-center p-8 bg-gradient-to-b from-background via-background to-muted/30">
-        <Card className="max-w-md w-full overflow-hidden shadow-lg border-emerald-500/30">
-          <div className="bg-gradient-to-br from-emerald-500/20 via-emerald-500/5 to-transparent p-8 text-center space-y-3 border-b border-emerald-500/20">
-            <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/20 grid place-items-center">
-              <Trophy className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <h1 className="text-xl font-bold">Assessment submitted</h1>
-            <p className="text-sm text-muted-foreground">
-              Your responses have been recorded.{!isPreview && " The recruiter will review your attempt."}
-            </p>
-            {typeof paper.attempt.score === "number" && (
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-card px-4 py-1.5 text-sm font-semibold">
-                Score · <span className="text-emerald-600 dark:text-emerald-400">{paper.attempt.score}</span>
-              </div>
-            )}
-          </div>
-          <CardContent className="p-6 flex flex-wrap gap-2 justify-center">
-            {isPreview && (
-              <Button onClick={() => navigate(`/b2b/assessments/${assessmentId}/attempts/${attemptId}`)}>
-                View grading & feedback
-              </Button>
-            )}
-            <Button
-              variant={isPreview ? "outline" : "default"}
-              onClick={() => navigate(isPreview ? `/b2b/assessments/${assessmentId}` : "/assessments")}
-            >
-              {isPreview ? "Back to assessment" : "Back to my assessments"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <Submitted
+        attempt={paper.attempt as any}
+        assessment={paper.assessment as any}
+        isPreview={isPreview}
+      />
     );
   }
 
