@@ -32,6 +32,27 @@ function roleLabel(role: ChatRole) {
   return role === "proctor" ? "Proctor" : role === "system" ? "System" : "You";
 }
 
+function lastSeenLabel(ts: number | null) {
+  if (!ts) return "Offline";
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return "Active just now";
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `Last seen ${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Last seen ${hrs}h ago`;
+  return `Last seen ${new Date(ts).toLocaleString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function TypingDots() {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label="Typing">
+      <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.2s]" />
+      <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.1s]" />
+      <span className="h-1 w-1 rounded-full bg-current animate-bounce" />
+    </span>
+  );
+}
+
 export function AssessmentChatDock({
   attemptId,
   viewerRole,
