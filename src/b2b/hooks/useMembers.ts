@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type OrgMemberRole = "owner" | "admin" | "recruiter" | "viewer";
+export type OrgMemberRole = "owner" | "admin" | "proctor" | "recruiter" | "viewer";
 
 export type OrgMember = {
   id: string;
