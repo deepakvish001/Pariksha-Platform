@@ -35,6 +35,7 @@ import { useOnline } from "../hooks/useOnline";
 import { useDeviceLock } from "../hooks/useDeviceLock";
 import { useDisplayCapture } from "../hooks/useDisplayCapture";
 import { useWebrtcStream } from "@/hooks/useWebrtcStream";
+import { useChunkedRecorder } from "@/hooks/useChunkedRecorder";
 import { useTypingAnalytics } from "../hooks/useTypingAnalytics";
 import { safeStorage } from "../lib/safeStorage";
 import { getPlayerMainClass } from "../lib/playerLayout";
