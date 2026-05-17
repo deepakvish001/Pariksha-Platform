@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ParticipantStatus =
@@ -114,8 +114,10 @@ export type LiveEvent = {
   candidate?: { email: string; name: string | null } | null;
 };
 
-export function useAssessmentActivity(assessmentId?: string, limit = 80) {
+export function useAssessmentActivity(assessmentId?: string, pageSize = 40) {
   const qc = useQueryClient();
+  const queryKey = ["b2b", "activity", assessmentId, pageSize] as const;
+
   useEffect(() => {
     if (!assessmentId) return;
     const ch = supabase
@@ -123,20 +125,22 @@ export function useAssessmentActivity(assessmentId?: string, limit = 80) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "attempt_events" },
-        () => qc.invalidateQueries({ queryKey: ["b2b", "activity", assessmentId] })
+        () => qc.invalidateQueries({ queryKey })
       )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [assessmentId, qc]);
+  }, [assessmentId, qc, pageSize]);
 
-  return useQuery({
-    queryKey: ["b2b", "activity", assessmentId, limit],
+  return useInfiniteQuery<LiveEvent[], Error, { pages: LiveEvent[][]; pageParams: (string | null)[] }, typeof queryKey, string | null>({
+    queryKey,
     enabled: !!assessmentId,
     refetchInterval: 20_000,
-    queryFn: async (): Promise<LiveEvent[]> => {
-      // Get attempts for this assessment first, then their events.
+    initialPageParam: null,
+    getNextPageParam: (lastPage) =>
+      lastPage.length < pageSize ? undefined : lastPage[lastPage.length - 1].created_at,
+    queryFn: async ({ pageParam }): Promise<LiveEvent[]> => {
       const { data: attempts, error: e1 } = await supabase
         .from("assessment_attempts")
         .select("id, invite:assessment_invites(email,name)")
@@ -147,12 +151,14 @@ export function useAssessmentActivity(assessmentId?: string, limit = 80) {
       const byAttempt = new Map<string, any>();
       for (const a of attempts ?? []) byAttempt.set((a as any).id, (a as any).invite);
 
-      const { data, error } = await supabase
+      let q = supabase
         .from("attempt_events")
         .select("id, attempt_id, kind, payload, created_at")
         .in("attempt_id", ids)
         .order("created_at", { ascending: false })
-        .limit(limit);
+        .limit(pageSize);
+      if (pageParam) q = q.lt("created_at", pageParam as string);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []).map((e: any) => ({ ...e, candidate: byAttempt.get(e.attempt_id) ?? null }));
     },

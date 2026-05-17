@@ -128,7 +128,16 @@ export default function AssessmentManage() {
   const { data: assessment, isLoading } = useAssessment(id);
   const update = useUpdateAssessment();
   const { data: participants } = useLiveParticipants(id);
-  const { data: events } = useAssessmentActivity(id);
+  const {
+    data: eventsData,
+    fetchNextPage: fetchMoreEvents,
+    hasNextPage: hasMoreEvents,
+    isFetchingNextPage: loadingMoreEvents,
+  } = useAssessmentActivity(id);
+  const events = useMemo(
+    () => (eventsData?.pages ?? []).flat(),
+    [eventsData]
+  );
   const { data: invites } = useInvites(id);
   const { data: evidenceMap } = useAssessmentEvidence(id);
   const forceSubmit = useForceSubmitAttempt();
@@ -406,10 +415,10 @@ export default function AssessmentManage() {
               <h2 className="text-sm font-semibold">Activity feed</h2>
             </div>
             <div className="space-y-2 max-h-[420px] overflow-y-auto b2b-scroll b2b-scroll-slim pr-1">
-              {(events ?? []).length === 0 && (
+              {events.length === 0 && (
                 <div className="text-xs text-muted-foreground text-center py-6">No activity yet.</div>
               )}
-              {(events ?? []).map((e) => (
+              {events.map((e) => (
                 <div key={e.id} className="rounded-md border border-white/5 bg-white/[0.02] px-2.5 py-1.5 text-[11px]">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium truncate">
@@ -422,6 +431,25 @@ export default function AssessmentManage() {
                   <div className="text-muted-foreground capitalize">{e.kind.replace(/_/g, " ")}</div>
                 </div>
               ))}
+              {events.length > 0 && (
+                <div className="pt-2">
+                  {hasMoreEvents ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="w-full h-7 text-[11px]"
+                      onClick={() => fetchMoreEvents()}
+                      disabled={loadingMoreEvents}
+                    >
+                      {loadingMoreEvents ? "Loading…" : "Load more"}
+                    </Button>
+                  ) : (
+                    <div className="text-center text-[10px] text-muted-foreground py-1">
+                      End of feed
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </GlassCard>
         </div>
