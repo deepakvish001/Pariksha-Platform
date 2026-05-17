@@ -514,6 +514,58 @@ export default function Preflight() {
     navigate(`/assessments/${attemptId}/play`);
   };
 
+  // Build the summary rows shown in the confirmation modal.
+  const toCheckState = (id: string): CheckState => {
+    const s = stateById[id];
+    if (s === "passed") return "passed";
+    if (s === "failed") return "failed";
+    return "pending";
+  };
+  const summaryChecks: SummaryCheck[] = useMemo(() => {
+    const rows: SummaryCheck[] = [
+      {
+        id: "device",
+        label: "Device & browser",
+        detail: `${env.os} · ${env.browser}`,
+        state: toCheckState("device"),
+        icon: SUMMARY_ICONS.device,
+      },
+      {
+        id: "permissions",
+        label: "Camera & microphone permission",
+        detail: stream ? "Allowed" : "Not granted yet",
+        state: toCheckState("permissions"),
+        icon: SUMMARY_ICONS.permissions,
+      },
+      {
+        id: "av",
+        label: "Audio / video self-test",
+        detail: "Webcam preview and mic meter responding",
+        state: toCheckState("av"),
+        icon: SUMMARY_ICONS.av,
+      },
+    ];
+    rows.push(
+      needsThirdEye
+        ? {
+            id: "thirdeye",
+            label: "Third Eye (side camera)",
+            detail: "Phone paired and streaming",
+            state: toCheckState("thirdeye"),
+            icon: SUMMARY_ICONS.thirdeye,
+          }
+        : {
+            id: "thirdeye",
+            label: "Third Eye (side camera)",
+            detail: "Not required for this assessment",
+            state: "skipped",
+            icon: SUMMARY_ICONS.thirdeye,
+          },
+    );
+    return rows;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateById, stream, env.os, env.browser, needsThirdEye]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">
