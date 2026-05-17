@@ -258,18 +258,18 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
               )}
             </div>
 
-            {typeof attempt.integrity_score === "number" && (
+            {showResults && typeof attempt.integrity_score === "number" && (
               <IntegrityExplanation score={attempt.integrity_score} />
             )}
 
-            {typeof attempt.integrity_score === "number" && (
+            {showResults && typeof attempt.integrity_score === "number" && (
               <IntegrityFactorSummary
                 attemptId={attempt.id}
                 assessmentId={assessment.id}
               />
             )}
 
-            {typeof attempt.integrity_score === "number" && (
+            {showResults && typeof attempt.integrity_score === "number" && (
               <IntegrityTimeline
                 attemptId={attempt.id}
                 assessmentId={assessment.id}
