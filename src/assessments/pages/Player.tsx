@@ -734,7 +734,7 @@ function ChipList({ label, questions, tone, onJump }: {
 }
 
 function ChoiceQuestionCard({
-  question, index, total, value, onChange, isFlagged, onToggleFlag,
+  question, index, total, value, onChange, isFlagged, onToggleFlag, attemptId,
 }: {
   question: PaperQuestion;
   index: number; total: number;
@@ -742,6 +742,7 @@ function ChoiceQuestionCard({
   onChange: (v: Record<string, unknown>) => void;
   isFlagged: boolean;
   onToggleFlag: () => void;
+  attemptId: string | null;
 }) {
   return (
     <Card className="overflow-hidden shadow-sm">
