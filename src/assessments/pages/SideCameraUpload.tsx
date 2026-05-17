@@ -298,33 +298,71 @@ export default function SideCameraUploadPage() {
     });
   };
 
-  const upload = async () => {
-    if (!pages.length) return;
-    setUploading(true);
-    setError(null);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+
+  const uploadOne = async (p: Page): Promise<{ ok: boolean; serverId?: string; error?: string }> => {
     try {
-      for (const p of pages) {
-        if (!p.dataUrl) continue; // already uploaded
-        const r = await fetch(`${FN_URL}?action=answer-upload`, {
-          method: "POST",
-          headers: { apikey: ANON, "Content-Type": "application/json", "x-pair-token": token },
-          body: JSON.stringify({ dataUrl: p.dataUrl, questionId, ordinal: p.ordinal }),
-        });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j?.error ?? "Upload failed");
-      }
-      setDone(true);
-      stopCamera();
+      const r = await fetch(`${FN_URL}?action=answer-upload`, {
+        method: "POST",
+        headers: { apikey: ANON, "Content-Type": "application/json", "x-pair-token": token },
+        body: JSON.stringify({ dataUrl: p.dataUrl, questionId, ordinal: p.ordinal }),
+      });
+      let j: { id?: string; error?: string } = {};
+      try { j = await r.json(); } catch { /* ignore */ }
+      if (!r.ok) return { ok: false, error: j?.error ?? `HTTP ${r.status}` };
+      return { ok: true, serverId: j?.id };
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploading(false);
-      setConfirmOpen(false);
+      return { ok: false, error: e instanceof Error ? e.message : "network" };
     }
   };
 
+  const runUpload = async (targets: Page[]) => {
+    if (!targets.length) return;
+    setUploading(true);
+    setError(null);
+    setProgress({ done: 0, total: targets.length });
+    let failures = 0;
+    let lastErr: string | null = null;
+    for (let i = 0; i < targets.length; i++) {
+      const p = targets[i];
+      setPages((prev) => prev.map((x) => (x.localId === p.localId ? { ...x, state: "uploading", errorMsg: undefined } : x)));
+      const res = await uploadOne(p);
+      setPages((prev) =>
+        prev.map((x) =>
+          x.localId === p.localId
+            ? res.ok
+              ? { ...x, uploaded: true, state: "uploaded", serverId: res.serverId ?? x.serverId, errorMsg: undefined }
+              : { ...x, state: "error", errorMsg: friendlyError(new Error(res.error ?? "")) }
+            : x
+        )
+      );
+      if (!res.ok) { failures++; lastErr = res.error ?? null; }
+      setProgress({ done: i + 1, total: targets.length });
+    }
+    setUploading(false);
+    setConfirmOpen(false);
+    if (failures === 0) {
+      setDone(true);
+      stopCamera();
+    } else {
+      setError(
+        failures === targets.length
+          ? friendlyError(new Error(lastErr ?? ""))
+          : `${failures} of ${targets.length} pages failed to upload. Tap Retry to try again.`
+      );
+    }
+  };
+
+  const upload = () => runUpload(pages.filter((p) => !p.uploaded));
+  const retryFailed = () => runUpload(pages.filter((p) => p.state === "error"));
+
   const counter = useMemo(
-    () => ({ total: pages.length, pending: pages.filter((p) => !p.uploaded).length }),
+    () => ({
+      total: pages.length,
+      pending: pages.filter((p) => !p.uploaded && p.state !== "error").length,
+      failed: pages.filter((p) => p.state === "error").length,
+      uploaded: pages.filter((p) => p.uploaded).length,
+    }),
     [pages]
   );
 
