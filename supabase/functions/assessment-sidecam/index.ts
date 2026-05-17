@@ -349,7 +349,7 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (a?.org_id) {
           const { data: mem } = await admin
-            .from("organization_members")
+            .from("org_members")
             .select("user_id")
             .eq("org_id", a.org_id)
             .eq("user_id", user.id)
