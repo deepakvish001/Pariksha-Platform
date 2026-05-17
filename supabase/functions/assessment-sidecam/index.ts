@@ -53,6 +53,46 @@ async function findPairing(token: string) {
   return data;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TOKEN_RE = /^[0-9a-f]{32,96}$/i; // hex pair_token (default 48), conservative bounds
+const MAX_DATAURL_BYTES = 10 * 1024 * 1024; // 10 MB raw string cap
+const MAX_ORDINAL = 50;
+const PAIR_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6h
+
+function isUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID_RE.test(v);
+}
+function isToken(v: unknown): v is string {
+  return typeof v === "string" && TOKEN_RE.test(v);
+}
+
+/**
+ * Verify a question is part of the assessment that this attempt belongs to.
+ * Prevents a phone holding a valid pair-token from uploading pages targeted
+ * at a question that does not exist in the current exam.
+ */
+async function questionInAttempt(attemptId: string, questionId: string): Promise<boolean> {
+  const { data: att } = await admin
+    .from("assessment_attempts")
+    .select("assessment_id")
+    .eq("id", attemptId)
+    .maybeSingle();
+  if (!att?.assessment_id) return false;
+  const { data: rows } = await admin
+    .from("section_questions")
+    .select("question_id, assessment_sections!inner(assessment_id)")
+    .eq("question_id", questionId)
+    .eq("assessment_sections.assessment_id", att.assessment_id)
+    .limit(1);
+  return !!(rows && rows.length);
+}
+
+function pairingFresh(p: { status: string; created_at: string }) {
+  if (p.status === "disconnected" || p.status === "expired") return false;
+  const age = Date.now() - new Date(p.created_at).getTime();
+  return age <= PAIR_MAX_AGE_MS;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
