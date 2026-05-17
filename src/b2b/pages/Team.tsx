@@ -116,6 +116,7 @@ export default function B2BTeam() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="proctor">Proctor</SelectItem>
                           <SelectItem value="recruiter">Recruiter</SelectItem>
                           <SelectItem value="viewer">Viewer</SelectItem>
                         </SelectContent>
