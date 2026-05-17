@@ -30,7 +30,7 @@ const STATUS_META: Record<SosStatus, { label: string; tone: string; icon: typeof
   open: { label: "Open", tone: "bg-red-500/15 text-red-500 border-red-500/30", icon: AlertOctagon },
   acknowledged: { label: "Acknowledged", tone: "bg-amber-500/15 text-amber-500 border-amber-500/30", icon: CheckCheck },
   resolved: { label: "Resolved", tone: "bg-green-500/15 text-green-500 border-green-500/30", icon: CheckCircle2 },
-  cancelled: { label: "Cancelled", tone: "bg-muted text-muted-foreground border-border", icon: Clock },
+  
 };
 
 function useSosHistory(attemptId?: string) {
