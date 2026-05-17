@@ -519,8 +519,8 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
-          {(["all", "events", "chat", "critical"] as const).map((f) => (
+        <div className="grid grid-cols-5 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
+          {(["all", "events", "chat", "critical", "pinned"] as const).map((f) => (
             <button
               key={f}
               type="button"
