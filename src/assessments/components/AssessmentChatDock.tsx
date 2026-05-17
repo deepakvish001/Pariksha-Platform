@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck, Circle } from "lucide-react";
+import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck, Circle, CheckCheck as MarkReadIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  markMessagesRead,
   sendChatMessage,
   useAssessmentChat,
   useAutoMarkRead,
   useAutoScrollRef,
   useChatPresence,
   useUnreadCount,
+  type AssessmentChatMessage,
   type ChatRole,
 } from "../hooks/useAssessmentChat";
 
@@ -75,7 +78,9 @@ export function AssessmentChatDock({
   const [open, setOpen] = useState(variant === "embedded");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   const { data: messages, isLoading } = useAssessmentChat(attemptId);
   const isPanelVisible = open || variant === "embedded";
@@ -130,6 +135,33 @@ export function AssessmentChatDock({
       });
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!attemptId || markingRead) return;
+    const unreadMsgs = (messages ?? []).filter(
+      (m) => m.sender_role !== viewerRole && m.sender_role !== "system" && !m.read_by_recipient
+    );
+    if (!unreadMsgs.length) return;
+    const ids = unreadMsgs.map((m) => m.id);
+    const nowIso = new Date().toISOString();
+    setMarkingRead(true);
+    qc.setQueryData<AssessmentChatMessage[]>(["assessment-chat", attemptId], (prev) =>
+      (prev ?? []).map((m) =>
+        ids.includes(m.id) ? { ...m, read_by_recipient: true, read_at: nowIso } : m
+      )
+    );
+    try {
+      await markMessagesRead(ids);
+      toast.success(`Marked ${ids.length} message${ids.length === 1 ? "" : "s"} as read`);
+    } catch (e) {
+      qc.invalidateQueries({ queryKey: ["assessment-chat", attemptId] });
+      toast.error("Couldn't mark as read", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setMarkingRead(false);
     }
   };
 
@@ -201,6 +233,24 @@ export function AssessmentChatDock({
             </p>
           </div>
         </div>
+        {unread > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[11px] gap-1"
+            onClick={handleMarkAllRead}
+            disabled={markingRead}
+            aria-label={`Mark ${unread} message${unread === 1 ? "" : "s"} as read`}
+            title="Mark all as read"
+          >
+            {markingRead ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <MarkReadIcon className="h-3 w-3" />
+            )}
+            <span className="hidden sm:inline">Mark read</span>
+          </Button>
+        )}
         {variant === "floating" && (
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)}>
             <X className="h-4 w-4" />
