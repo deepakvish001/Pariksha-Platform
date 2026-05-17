@@ -134,6 +134,19 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
 
   const highCount = findings.filter((f) => f.severity === "high" || f.severity === "critical").length;
 
+  // Defence-in-depth: refuse to render proctoring evidence to non-proctor roles
+  // even if a parent forgets to gate this component.
+  if (roleLoading) return null;
+  if (!canProctor) {
+    return (
+      <Card className="mb-4">
+        <CardContent className="p-4 text-xs text-muted-foreground">
+          You do not have permission to view proctoring evidence for this attempt.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
