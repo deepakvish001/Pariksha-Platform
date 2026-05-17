@@ -100,15 +100,15 @@ export function OrgShell({
               });
             })()}
           </nav>
-          <div className="p-3 border-t">
+          <div className="p-3 border-t shrink-0">
             <NavLink to="/learn" className="text-xs text-muted-foreground hover:text-foreground">
               ← Back to learning app
             </NavLink>
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0">
-          <header className="sticky top-0 z-10 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur-xl shadow-sm">
+        <main className="flex-1 min-w-0 flex flex-col h-screen">
+          <header className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur-xl shadow-sm">
             <div className="px-6 h-16 flex items-center justify-between gap-4">
               <h1 className="text-base sm:text-lg font-semibold tracking-tight truncate">
                 {title}
@@ -116,7 +116,7 @@ export function OrgShell({
               <div className="flex items-center gap-2 shrink-0">{actions}</div>
             </div>
           </header>
-          <div className="p-6">{children}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-6">{children}</div>
         </main>
       </div>
     </div>
