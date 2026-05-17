@@ -141,7 +141,11 @@ export function AssessmentChatDock({
   const handleMarkAllRead = async () => {
     if (!attemptId || markingRead) return;
     const unreadMsgs = (messages ?? []).filter(
-      (m) => m.sender_role !== viewerRole && m.sender_role !== "system" && !m.read_by_recipient
+      (m) =>
+        m.attempt_id === attemptId &&
+        m.sender_role !== viewerRole &&
+        m.sender_role !== "system" &&
+        !m.read_by_recipient
     );
     if (!unreadMsgs.length) return;
     const ids = unreadMsgs.map((m) => m.id);
@@ -153,7 +157,7 @@ export function AssessmentChatDock({
       )
     );
     try {
-      await markMessagesRead(ids);
+      await markMessagesRead(ids, { attemptId, viewerRole });
       toast.success(`Marked ${ids.length} message${ids.length === 1 ? "" : "s"} as read`);
     } catch (e) {
       qc.invalidateQueries({ queryKey: ["assessment-chat", attemptId] });
