@@ -128,7 +128,16 @@ export default function AssessmentManage() {
   const { data: assessment, isLoading } = useAssessment(id);
   const update = useUpdateAssessment();
   const { data: participants } = useLiveParticipants(id);
-  const { data: events } = useAssessmentActivity(id);
+  const {
+    data: eventsData,
+    fetchNextPage: fetchMoreEvents,
+    hasNextPage: hasMoreEvents,
+    isFetchingNextPage: loadingMoreEvents,
+  } = useAssessmentActivity(id);
+  const events = useMemo(
+    () => (eventsData?.pages ?? []).flat(),
+    [eventsData]
+  );
   const { data: invites } = useInvites(id);
   const { data: evidenceMap } = useAssessmentEvidence(id);
   const forceSubmit = useForceSubmitAttempt();
