@@ -33,26 +33,35 @@ export default function AttemptProctoringPanel({ attemptId }: { attemptId: strin
   const [snaps, setSnaps] = useState<Snap[]>([]);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [recordings, setRecordings] = useState<Recording[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
-    const [s, f, fd] = await Promise.all([
+    const [s, f, fd, rec] = await Promise.all([
       supabase.from("assessment_proctor_snapshots").select("id,source,storage_path,captured_at,reviewed")
         .eq("attempt_id", attemptId).order("captured_at", { ascending: false }).limit(36),
       supabase.from("assessment_side_camera_frames").select("id,storage_path,captured_at")
         .eq("attempt_id", attemptId).order("captured_at", { ascending: false }).limit(18),
       supabase.from("assessment_proctor_findings").select("id,snapshot_id,severity,finding,created_at")
         .eq("attempt_id", attemptId).order("created_at", { ascending: false }).limit(50),
+      supabase.from("assessment_proctor_recordings").select("id,kind,storage_path,started_at,ended_at,duration_ms,size_bytes")
+        .eq("attempt_id", attemptId).order("started_at", { ascending: false }).limit(30),
     ]);
     const snapRows = (s.data ?? []) as Snap[];
     const frameRows = (f.data ?? []) as Frame[];
+    const recRows = (rec.data ?? []) as Recording[];
     setSnaps(snapRows);
     setFrames(frameRows);
     setFindings((fd.data ?? []) as Finding[]);
-    const allPaths = [...snapRows.map((x) => x.storage_path), ...frameRows.map((x) => x.storage_path)];
+    setRecordings(recRows);
+    const allPaths = [
+      ...snapRows.map((x) => x.storage_path),
+      ...frameRows.map((x) => x.storage_path),
+      ...recRows.map((x) => x.storage_path),
+    ];
     setUrls(await signMany(allPaths));
     setLoading(false);
   };
@@ -64,6 +73,7 @@ export default function AttemptProctoringPanel({ attemptId }: { attemptId: strin
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_proctor_snapshots", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_side_camera_frames", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_proctor_findings", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "assessment_proctor_recordings", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
   }, [attemptId]);
