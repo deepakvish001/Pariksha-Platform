@@ -51,6 +51,8 @@ export default function B2BProctoring() {
   const [filter, setFilter] = useState<"all" | "flagged" | "high" | "live">("flagged");
   const [assessmentFilter, setAssessmentFilter] = useState<string>("all");
   const [inspectingId, setInspectingId] = useState<string | null>(null);
+  const [evidenceId, setEvidenceId] = useState<string | null>(null);
+  const [evidenceLabel, setEvidenceLabel] = useState<string>("");
 
   const refresh = async () => {
     if (!orgId) return;
