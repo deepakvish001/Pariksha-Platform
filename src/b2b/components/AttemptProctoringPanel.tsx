@@ -29,7 +29,10 @@ async function signMany(paths: string[]) {
   return map;
 }
 
-export default function AttemptProctoringPanel({ attemptId }: { attemptId: string }) {
+import { useCanProctor } from "../hooks/usePermissions";
+
+export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId: string; orgId?: string | null }) {
+  const { canProctor, isLoading: roleLoading } = useCanProctor(orgId);
   const [snaps, setSnaps] = useState<Snap[]>([]);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
