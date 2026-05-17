@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   // Load assessment (no embed — we re-fetch org separately to always get latest branding)
   const { data: assessment, error: aErr } = await admin
     .from("assessments")
-    .select("id, title, duration_min, org_id")
+    .select("id, title, duration_min, org_id, brand_color")
     .eq("id", assessmentId)
     .maybeSingle();
   if (aErr || !assessment) return json(404, { error: "assessment_not_found" });
