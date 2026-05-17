@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
+import { IntegrityExplanation } from "../components/IntegrityExplanation";
 
 const AUTO_REDIRECT_SECONDS = 10;
 
@@ -213,6 +214,10 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                 />
               )}
             </div>
+
+            {typeof attempt.integrity_score === "number" && (
+              <IntegrityExplanation score={attempt.integrity_score} />
+            )}
 
             {/* Next steps */}
             <div className="space-y-2">
