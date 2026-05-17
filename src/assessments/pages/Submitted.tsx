@@ -397,27 +397,42 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                 </>
               ) : (
                 <>
-                  <Button onClick={() => navigate("/assessments")}>
+                  <Button
+                    onClick={() => navigate("/assessments")}
+                    disabled={requireFeedback && !feedbackDone}
+                    title={requireFeedback && !feedbackDone ? "Please submit your feedback first" : undefined}
+                  >
                     Back to my assessments
                     <ArrowRight className="h-4 w-4 ml-1.5" />
                   </Button>
-                  <Button variant="outline" onClick={() => navigate("/dashboard")}>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/dashboard")}
+                    disabled={requireFeedback && !feedbackDone}
+                    title={requireFeedback && !feedbackDone ? "Please submit your feedback first" : undefined}
+                  >
                     Open dashboard
                     <ExternalLink className="h-4 w-4 ml-1.5" />
                   </Button>
                 </>
               )}
-              <Button variant="secondary" onClick={handleDownloadReceipt}>
-                <Download className="h-4 w-4 mr-1.5" />
-                Download receipt (PDF)
-              </Button>
+              {showResults && (
+                <Button variant="secondary" onClick={handleDownloadReceipt}>
+                  <Download className="h-4 w-4 mr-1.5" />
+                  Download receipt (PDF)
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <ResultsColorKey />
+        {!isPreview && (
+          <AssessmentFeedbackForm attemptId={attempt.id} assessmentId={assessment.id} />
+        )}
 
-        <SubmittedResultsBreakdown attemptId={attempt.id} />
+        {showResults && <ResultsColorKey />}
+
+        {showResults && <SubmittedResultsBreakdown attemptId={attempt.id} />}
 
 
         {!isPreview && <SupportLink attempt={attempt} assessment={assessment} />}
