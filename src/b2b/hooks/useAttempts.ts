@@ -13,6 +13,7 @@ export type AttemptRow = {
   score: number | null;
   integrity_score: number;
   status: "in_progress" | "submitted" | "auto_submitted" | "abandoned";
+  candidate_details: Record<string, unknown> | null;
   invite?: { email: string; name: string | null; external_id: string | null } | null;
 };
 
