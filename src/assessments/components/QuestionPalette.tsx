@@ -415,21 +415,25 @@ export function QuestionPalette({
           icon={<CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
           label={t("palette.legend.answered.label")}
           tip={t("palette.legend.answered.tip")}
+          count={answered}
         />
         <LegendRow
           icon={<CircleDot className="h-3 w-3 text-muted-foreground" />}
           label={t("palette.legend.visited.label")}
           tip={t("palette.legend.visited.tip")}
+          count={visited}
         />
         <LegendRow
           icon={<Circle className="h-3 w-3 text-muted-foreground" />}
           label={t("palette.legend.notVisited.label")}
           tip={t("palette.legend.notVisited.tip")}
+          count={notVisited}
         />
         <LegendRow
           icon={<Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />}
           label={t("palette.legend.flagged.label")}
           tip={t("palette.legend.flagged.tip")}
+          count={flagged}
         />
       </footer>
     </aside>
