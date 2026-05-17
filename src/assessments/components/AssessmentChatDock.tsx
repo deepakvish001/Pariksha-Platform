@@ -138,6 +138,33 @@ export function AssessmentChatDock({
     }
   };
 
+  const handleMarkAllRead = async () => {
+    if (!attemptId || markingRead) return;
+    const unreadMsgs = (messages ?? []).filter(
+      (m) => m.sender_role !== viewerRole && m.sender_role !== "system" && !m.read_by_recipient
+    );
+    if (!unreadMsgs.length) return;
+    const ids = unreadMsgs.map((m) => m.id);
+    const nowIso = new Date().toISOString();
+    setMarkingRead(true);
+    qc.setQueryData<AssessmentChatMessage[]>(["assessment-chat", attemptId], (prev) =>
+      (prev ?? []).map((m) =>
+        ids.includes(m.id) ? { ...m, read_by_recipient: true, read_at: nowIso } : m
+      )
+    );
+    try {
+      await markMessagesRead(ids);
+      toast.success(`Marked ${ids.length} message${ids.length === 1 ? "" : "s"} as read`);
+    } catch (e) {
+      qc.invalidateQueries({ queryKey: ["assessment-chat", attemptId] });
+      toast.error("Couldn't mark as read", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setMarkingRead(false);
+    }
+  };
+
   const Panel = (
     <div
       className={cn(
