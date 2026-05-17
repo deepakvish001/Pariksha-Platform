@@ -88,28 +88,36 @@ export function QuestionPalette({
                   if (!it) return null;
                   const active = i === currentIndex;
                   const dim = !passes(i);
+                  const status = getStatusLabel(it, active);
                   return (
-                    <button
-                      key={it.id}
-                      onClick={() => onJump(i)}
-                      aria-current={active ? "true" : undefined}
-                      className={cn(
-                        "relative h-8 rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
-                        dim && "opacity-30",
-                        active
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30"
-                          : it.answered
-                          ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                          : it.visited
-                          ? "border-dashed border-border bg-muted/30 text-muted-foreground"
-                          : "border-border bg-muted/40 text-muted-foreground"
-                      )}
-                    >
-                      {i + 1}
-                      {it.flagged && (
-                        <Flag className="absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500" />
-                      )}
-                    </button>
+                    <Tooltip key={it.id} delayDuration={150}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => onJump(i)}
+                          aria-current={active ? "true" : undefined}
+                          aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                          className={cn(
+                            "relative h-8 rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
+                            dim && "opacity-30",
+                            active
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30"
+                              : it.answered
+                              ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                              : it.visited
+                              ? "border-dashed border-border bg-muted/30 text-muted-foreground"
+                              : "border-border bg-muted/40 text-muted-foreground"
+                          )}
+                        >
+                          {i + 1}
+                          {it.flagged && (
+                            <Flag className="absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[240px]">
+                        <StatusTooltipBody index={i} item={it} status={status} />
+                      </TooltipContent>
+                    </Tooltip>
                   );
                 })}
               </div>
@@ -307,46 +315,55 @@ export function QuestionPalette({
                     const active = i === currentIndex;
                     const dim = !passes(i);
                     if (dim && filter !== "all") return null;
+                    const status = getStatusLabel(it, active);
                     return (
                       <li key={it.id}>
-                        <button
-                          onClick={() => onJump(i)}
-                          aria-current={active ? "true" : undefined}
-                          className={cn(
-                            "group w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors text-left",
-                            active
-                              ? "bg-primary/10 text-foreground ring-1 ring-primary/40"
-                              : "hover:bg-muted/60 text-foreground/80 hover:text-foreground"
-                          )}
-                        >
-                          {/* Status icon */}
-                          <StatusIcon
-                            answered={it.answered}
-                            visited={!!it.visited}
-                            active={active}
-                          />
-                          {/* Number */}
-                          <span
-                            className={cn(
-                              "tabular-nums font-semibold w-6 shrink-0 text-[11px]",
-                              active ? "text-primary" : "text-muted-foreground"
-                            )}
-                          >
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          {/* Label */}
-                          <span className="flex-1 truncate">
-                            Question {i + 1}
-                          </span>
-                          {/* Flag */}
-                          {it.flagged && (
-                            <Flag className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0" />
-                          )}
-                          {/* Active rail accent */}
-                          {active && (
-                            <span className="h-4 w-0.5 rounded-full bg-primary shrink-0" />
-                          )}
-                        </button>
+                        <Tooltip delayDuration={200}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => onJump(i)}
+                              aria-current={active ? "true" : undefined}
+                              aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                              className={cn(
+                                "group w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors text-left",
+                                active
+                                  ? "bg-primary/10 text-foreground ring-1 ring-primary/40"
+                                  : "hover:bg-muted/60 text-foreground/80 hover:text-foreground"
+                              )}
+                            >
+                              {/* Status icon */}
+                              <StatusIcon
+                                answered={it.answered}
+                                visited={!!it.visited}
+                                active={active}
+                              />
+                              {/* Number */}
+                              <span
+                                className={cn(
+                                  "tabular-nums font-semibold w-6 shrink-0 text-[11px]",
+                                  active ? "text-primary" : "text-muted-foreground"
+                                )}
+                              >
+                                {String(i + 1).padStart(2, "0")}
+                              </span>
+                              {/* Label */}
+                              <span className="flex-1 truncate">
+                                Question {i + 1}
+                              </span>
+                              {/* Flag */}
+                              {it.flagged && (
+                                <Flag className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0" />
+                              )}
+                              {/* Active rail accent */}
+                              {active && (
+                                <span className="h-4 w-0.5 rounded-full bg-primary shrink-0" />
+                              )}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-[260px]">
+                            <StatusTooltipBody index={i} item={it} status={status} />
+                          </TooltipContent>
+                        </Tooltip>
                       </li>
                     );
                   })}
@@ -359,10 +376,26 @@ export function QuestionPalette({
 
       {/* Legend footer */}
       <footer className="px-3 py-2 border-t border-border bg-muted/20 text-[10px] text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1">
-        <LegendRow icon={<CheckCircle2 className="h-3 w-3 text-emerald-500" />} label="Answered" />
-        <LegendRow icon={<CircleDot className="h-3 w-3 text-muted-foreground" />} label="Visited" />
-        <LegendRow icon={<Circle className="h-3 w-3 text-muted-foreground/60" />} label="Not visited" />
-        <LegendRow icon={<Flag className="h-3 w-3 fill-amber-500 text-amber-500" />} label="Flagged" />
+        <LegendRow
+          icon={<CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+          label="Answered"
+          tip="You've saved an answer for this question."
+        />
+        <LegendRow
+          icon={<CircleDot className="h-3 w-3 text-muted-foreground" />}
+          label="Visited"
+          tip="You opened this question but haven't submitted an answer yet."
+        />
+        <LegendRow
+          icon={<Circle className="h-3 w-3 text-muted-foreground/60" />}
+          label="Not visited"
+          tip="You haven't opened this question yet."
+        />
+        <LegendRow
+          icon={<Flag className="h-3 w-3 fill-amber-500 text-amber-500" />}
+          label="Flagged"
+          tip="Marked for review — come back to it before submitting."
+        />
       </footer>
     </aside>
   );
@@ -386,11 +419,104 @@ function StatusIcon({
   return <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />;
 }
 
-function LegendRow({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
+function LegendRow({
+  icon,
+  label,
+  tip,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  tip?: string;
+}) {
+  const content = (
+    <div className="flex items-center gap-1.5 cursor-help">
       {icon}
       <span>{label}</span>
+    </div>
+  );
+  if (!tip) return content;
+  return (
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] text-xs">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+interface StatusInfo {
+  label: string;
+  description: string;
+  swatchClass: string;
+}
+
+function getStatusLabel(
+  item: { answered: boolean; visited?: boolean; flagged: boolean },
+  active: boolean,
+): StatusInfo {
+  if (item.answered) {
+    return {
+      label: "Answered",
+      description: "You've saved an answer. You can still revisit and edit it.",
+      swatchClass: "bg-emerald-500",
+    };
+  }
+  if (active) {
+    return {
+      label: "Current",
+      description: "This is the question you're viewing right now.",
+      swatchClass: "bg-primary",
+    };
+  }
+  if (item.visited) {
+    return {
+      label: "Visited · not answered",
+      description: "You opened this question but haven't submitted an answer yet.",
+      swatchClass: "bg-muted-foreground",
+    };
+  }
+  return {
+    label: "Not visited",
+    description: "You haven't opened this question yet.",
+    swatchClass: "bg-muted-foreground/40",
+  };
+}
+
+function StatusTooltipBody({
+  index,
+  item,
+  status,
+}: {
+  index: number;
+  item: { title?: string; flagged: boolean };
+  status: StatusInfo;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs font-semibold leading-tight">
+        Q{index + 1}
+        {item.title ? (
+          <>
+            <span className="text-muted-foreground"> · </span>
+            <span className="font-normal">{item.title}</span>
+          </>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-1.5 text-[11px]">
+        <span className={cn("h-2 w-2 rounded-full", status.swatchClass)} />
+        <span className="font-medium">{status.label}</span>
+        {item.flagged && (
+          <>
+            <span className="opacity-50">·</span>
+            <Flag className="h-3 w-3 fill-amber-500 text-amber-500" />
+            <span>Flagged</span>
+          </>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground leading-snug">
+        {status.description}
+      </p>
     </div>
   );
 }
