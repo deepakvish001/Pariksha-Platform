@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   // Load assessment + org
   const { data: assessment, error: aErr } = await admin
     .from("assessments")
-    .select("id, title, org_id, organizations:org_id(id, name)")
+    .select("id, title, duration_min, org_id, organizations:org_id(id, name)")
     .eq("id", assessmentId)
     .maybeSingle();
   if (aErr || !assessment) return json(404, { error: "assessment_not_found" });
@@ -86,32 +86,107 @@ Deno.serve(async (req) => {
   if (!invites?.length) return json(200, { sent: 0, failed: 0, results: [] });
 
   const resend = new Resend(resendKey);
-  const subject = `You're invited: ${assessment.title}`;
+  const subject = `${orgName} invited you to "${assessment.title}"`;
   const results: { email: string; ok: boolean; error?: string }[] = [];
+  const duration = (assessment as any).duration_min as number | null;
+  const initials = orgName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0]?.toUpperCase() ?? "")
+    .join("") || "P";
 
   for (const inv of invites) {
     const link = `${APP_URL.replace(/\/+$/, "")}/assessments/join/${inv.token}`;
     const display = inv.name?.trim() || "there";
-    const html = `
-      <div style="font-family:Arial,sans-serif;background:#ffffff;padding:24px;color:#0a0a0a;">
-        <div style="max-width:560px;margin:0 auto;">
-          <h1 style="font-size:22px;margin:0 0 16px;">Hi ${escapeHtml(display)},</h1>
-          <p style="font-size:15px;line-height:1.5;margin:0 0 16px;">
-            <strong>${escapeHtml(orgName)}</strong> has invited you to take the assessment
-            <strong>${escapeHtml(assessment.title)}</strong>.
-          </p>
-          <p style="margin:0 0 24px;">
-            <a href="${link}" style="display:inline-block;background:#0a0a0a;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">
-              Start assessment
-            </a>
-          </p>
-          <p style="font-size:13px;color:#55575d;line-height:1.5;margin:0 0 8px;">
-            Or open this link in your browser:
-          </p>
-          <p style="font-size:12px;word-break:break-all;color:#3b6fa0;margin:0 0 24px;">${link}</p>
-          <p style="font-size:12px;color:#999;margin:0;">This invite is personal to ${escapeHtml(inv.email)}. Please don't share it.</p>
-        </div>
-      </div>`;
+    const preheader = `${orgName} invited you to take ${assessment.title}. Open this email to start.`;
+    const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>${escapeHtml(subject)}</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;-webkit-font-smoothing:antialiased;">
+    <div style="display:none;font-size:1px;color:#f4f5f7;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(preheader)}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f5f7;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,0.04),0 8px 24px rgba(15,23,42,0.06);">
+            <tr>
+              <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="vertical-align:middle;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
+                        <td style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:10px;width:40px;height:40px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:700;font-size:15px;letter-spacing:0.5px;">${escapeHtml(initials)}</td>
+                        <td style="padding-left:12px;color:#ffffff;font-size:15px;font-weight:600;vertical-align:middle;">${escapeHtml(orgName)}</td>
+                      </tr></table>
+                    </td>
+                    <td align="right" style="color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;vertical-align:middle;">Assessment Invite</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:36px 32px 8px;">
+                <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;font-weight:700;color:#0f172a;letter-spacing:-0.01em;">
+                  Hi ${escapeHtml(display)}, you're invited.
+                </h1>
+                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#475569;">
+                  <strong style="color:#0f172a;">${escapeHtml(orgName)}</strong> has invited you to complete an online assessment. When you're ready, click the button below to begin.
+                </p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin:0 0 28px;">
+                  <tr>
+                    <td style="padding:18px 20px;">
+                      <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:6px;">Assessment</div>
+                      <div style="font-size:17px;font-weight:600;color:#0f172a;line-height:1.35;">${escapeHtml(assessment.title)}</div>
+                      ${duration ? `<div style="margin-top:10px;font-size:13px;color:#475569;">⏱ Duration: <strong style="color:#0f172a;">${duration} minutes</strong></div>` : ""}
+                    </td>
+                  </tr>
+                </table>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px;">
+                  <tr>
+                    <td style="border-radius:10px;background:#0f172a;">
+                      <a href="${link}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;letter-spacing:0.2px;">
+                        Start assessment →
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 6px;font-size:12px;color:#64748b;">Or paste this link into your browser:</p>
+                <p style="margin:0 0 28px;font-size:12px;word-break:break-all;">
+                  <a href="${link}" style="color:#2563eb;text-decoration:none;">${link}</a>
+                </p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-top:1px solid #e2e8f0;margin:0 0 8px;">
+                  <tr><td style="padding-top:20px;">
+                    <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:#0f172a;">Before you begin</p>
+                    <ul style="margin:0;padding:0 0 0 18px;font-size:13px;color:#475569;line-height:1.65;">
+                      <li>Use a laptop or desktop with a stable internet connection.</li>
+                      <li>Allow camera &amp; microphone access if prompted.</li>
+                      <li>Find a quiet, well-lit space — you won't be able to pause once started.</li>
+                    </ul>
+                  </td></tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px 28px;border-top:1px solid #f1f5f9;">
+                <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.6;">
+                  This invite is personal to <strong style="color:#64748b;">${escapeHtml(inv.email)}</strong>. Please don't share or forward this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:11px;color:#94a3b8;">Sent by ${escapeHtml(orgName)} via Parikshaa · Secure online assessments</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+    const text = `Hi ${display},\n\n${orgName} has invited you to take the assessment "${assessment.title}".${duration ? `\nDuration: ${duration} minutes.` : ""}\n\nStart here: ${link}\n\nThis invite is personal to ${inv.email}. Please don't share it.`;
     const attemptAt = new Date().toISOString();
     try {
       const r = await resend.emails.send({
@@ -119,6 +194,7 @@ Deno.serve(async (req) => {
         to: [inv.email],
         subject,
         html,
+        text,
       });
       if ((r as any)?.error) {
         const msg = String((r as any).error?.message ?? (r as any).error);
