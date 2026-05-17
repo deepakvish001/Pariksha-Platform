@@ -48,6 +48,20 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
   // Tracks whether the stream has ever been connected, so the first transition
   // to "true" is announced as "live" and subsequent flips as reconnect.
   const seenRef = useRef<Record<string, boolean>>({});
+  // Pending debounce timers per stream key so a brief flap doesn't toast.
+  const pendingRef = useRef<Record<string, { timer: number; target: boolean }>>({});
+  // Last toast emitted per stream key — used for hard rate-limiting and dedup.
+  const lastToastRef = useRef<Record<string, { connected: boolean; at: number }>>({});
+
+  // Cleanup pending timers on unmount.
+  useEffect(() => {
+    return () => {
+      for (const k of Object.keys(pendingRef.current)) {
+        window.clearTimeout(pendingRef.current[k].timer);
+      }
+      pendingRef.current = {};
+    };
+  }, []);
 
   useEffect(() => {
     if (collapsed || attempts.length === 0) return;
@@ -68,23 +82,58 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
     return () => { cancelled = true; };
   }, [collapsed, attempts]);
 
+  // Debounce window before announcing a state change — absorbs WebRTC flaps
+  // that resolve within a couple of seconds (~3s).
+  const DEBOUNCE_MS = 3_000;
+  // Hard rate limit: at most one toast of the same state per key per 30s.
+  const COOLDOWN_MS = 30_000;
+
   const handleConn = useCallback(
     (attemptId: string, kind: Kind, candidateName: string, connected: boolean) => {
       const key = `${attemptId}:${kind}`;
       setStatus((s) => (s[key] === connected ? s : { ...s, [key]: connected }));
-      const seen = seenRef.current[key];
-      if (connected) {
-        if (seen) {
-          toast.success(`${candidateName} · ${KIND_LABEL[kind]} reconnected`);
-        } else {
-          toast(`${candidateName} · ${KIND_LABEL[kind]} live`, {
-            description: "Stream is now streaming.",
-          });
-          seenRef.current[key] = true;
-        }
-      } else if (seen) {
-        toast.error(`${candidateName} · ${KIND_LABEL[kind]} went offline`);
+
+      // If a flap reverses a pending toast before it fires, cancel it.
+      const pending = pendingRef.current[key];
+      if (pending) {
+        if (pending.target === connected) return; // already scheduled
+        window.clearTimeout(pending.timer);
+        delete pendingRef.current[key];
       }
+
+      const emit = () => {
+        delete pendingRef.current[key];
+        const last = lastToastRef.current[key];
+        const now = Date.now();
+        // Dedup + cooldown: skip if same state was toasted within COOLDOWN_MS.
+        if (last && last.connected === connected && now - last.at < COOLDOWN_MS) return;
+        lastToastRef.current[key] = { connected, at: now };
+
+        const seen = seenRef.current[key];
+        if (connected) {
+          if (seen) {
+            toast.success(`${candidateName} · ${KIND_LABEL[kind]} reconnected`, { id: `conn:${key}` });
+          } else {
+            toast(`${candidateName} · ${KIND_LABEL[kind]} live`, {
+              id: `conn:${key}`,
+              description: "Stream is now streaming.",
+            });
+            seenRef.current[key] = true;
+          }
+        } else if (seen) {
+          toast.error(`${candidateName} · ${KIND_LABEL[kind]} went offline`, { id: `conn:${key}` });
+        }
+      };
+
+      // Mark "first connect" immediately (no debounce on initial live so the
+      // count badge becomes consistent fast), but still rate-limit toast.
+      if (connected && !seenRef.current[key]) {
+        emit();
+        return;
+      }
+
+      const timer = window.setTimeout(emit, DEBOUNCE_MS);
+      pendingRef.current[key] = { timer, target: connected };
     },
     [],
   );
