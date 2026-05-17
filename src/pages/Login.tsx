@@ -285,6 +285,8 @@ const Login = () => {
             )}
           </Button>
         </form>
+        </>
+        )}
       </div>
 
       {/* Back to home - mobile only */}
