@@ -14,6 +14,10 @@ export type Invite = {
   status: InviteStatus;
   source: InviteSource;
   expires_at: string | null;
+  last_sent_at?: string | null;
+  last_send_attempt_at?: string | null;
+  last_send_error?: string | null;
+  send_count?: number | null;
   created_at: string;
   updated_at: string;
 };
