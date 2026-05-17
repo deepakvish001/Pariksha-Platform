@@ -249,7 +249,7 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                   icon={<Clock className="h-3.5 w-3.5" />}
                 />
               )}
-              {typeof attempt.integrity_score === "number" && (
+              {showResults && typeof attempt.integrity_score === "number" && (
                 <MetaTile
                   label="Integrity"
                   value={`${Math.round(attempt.integrity_score)}%`}
