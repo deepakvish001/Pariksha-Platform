@@ -1,93 +1,104 @@
-## What the PDF covers vs what we already have
+# Assessment Management — End to End
 
-I walked the PDF manual page-by-page and matched it against the current `src/assessments/*` code. Almost the entire flow is already built:
+Goal: turn the flat assessments list into a real management surface where each test has a clear schedule, a dedicated **Edit** path, and a dedicated **Manage / Live monitor** path showing who joined, who's in progress, who finished, and integrity signals — in real time.
 
-| Manual step (page) | Status in our app |
-|---|---|
-| Devices required, 2-device setup (p.2) | ✓ Preflight wizard explains Laptop + Phone |
-| OS × browser compatibility matrix (p.3) | ✓ `CompatibilityMatrix.tsx` |
-| Browser update guidance (p.4) | ✓ Inside `PlayerHelpSheet.tsx` |
-| Login (p.5–8) | ✓ Existing auth + `MyAssessments` |
-| Open Test (p.9) | ✓ `MyAssessments` → `Preflight` |
-| Allow cam/mic (p.10) | ✓ Preflight step "Permissions" |
-| Audio / webcam / mic self-test (p.11) | ✓ Preflight step "Audio / Video" |
-| "Proceed to test" gate (p.12) | ✓ Preflight summary dialog |
-| Connect to 3rd Eye + QR (p.13–18) | ✓ `SideCameraPairing.tsx` |
-| Phone placement / auto-rotate / DND (p.19–22) | ✓ Pairing instructions |
-| Proctor view (p.23) | ✓ Admin Side-Eye console |
-| Start test (p.24–25) | ✓ Preflight "Ready" → Player |
-| Answer MCQ (p.26) | ✓ Player |
-| **Descriptive Q answer-sheet upload via phone (p.27–36)** | **✗ Missing** |
-| **Laptop "Sync" tile to pull uploads (p.37–39)** | **✗ Missing** |
-| Jump-to navigation palette (p.41) | ✓ `QuestionPalette` |
-| Chat with proctor (p.42) | ✓ `AssessmentChatDock` |
-| General instructions modal (p.43) | ✓ `PlayerHelpSheet` |
-| Zoom in/out (p.44) | ✓ Player zoom controls |
-| SOS (p.45) | ✓ `PlayerSosButton` + dialog |
-| Test Summary before submit (p.46) | ✓ Player submit `AlertDialog` with Answered/Unanswered/Flagged + jump chips |
-| "Successfully submitted" screen (p.47) | ✓ `Submitted.tsx` |
-| Support contacts (p.48) | ✓ `SupportLink.tsx` + Help Sheet |
+Most of the underlying data already exists (`assessments`, `assessment_invites`, `assessment_attempts`, `attempt_events`, proctoring panel, scoring). This work is mostly UI composition + a new scheduling board + a live monitor view. No schema changes.
 
-So the **only meaningful gap** is the descriptive-answer phone-upload feature (PDF pages 27–39). Everything else already matches or exceeds the manual.
+---
 
-## What I'll build
+## 1. New Assessments Hub (`/b2b/assessments`)
 
-### 1. Backend (Lovable Cloud)
-Migration adding one table + RLS:
+Replace the flat list with a tabbed, status-segmented board built on glass cards (matching the new dashboard aesthetic).
+
+Tabs:
+- **Live now** — `status=published` and `now ∈ [starts_at, ends_at]` (or no window set).
+- **Upcoming / Scheduled** — `published` with `starts_at > now`.
+- **Drafts** — `status=draft`.
+- **Closed / Archived** — `ended_at < now` or `status=archived`.
+- **All**.
+
+Each card shows: title, status pill, schedule window (Opens in 3h / Live · closes in 42m / Closed 2d ago), duration, invited count, started/submitted counts, average integrity, two primary actions:
+- **Edit** → `/b2b/assessments/:id/edit` (existing Detail "Sections/Settings" experience)
+- **Manage** → `/b2b/assessments/:id/manage` (new live monitor, default landing)
+
+Secondary menu (kebab): Duplicate, Publish/Archive toggle, Copy join link, Delete.
+
+Top controls: search box, status filter chips, sort (start time / created / invites), "New assessment" button.
+
+## 2. Per-Assessment routes
+
+Split today's single `Detail.tsx` into two clearer destinations sharing the same data:
+
 ```text
-assessment_answer_uploads
-  id uuid pk
-  attempt_id uuid  -> attempts (owner only)
-  question_id uuid
-  storage_path text          -- in existing 'assessment-proctor' bucket
-  ordinal int                -- page order, 1..n
-  uploaded_at timestamptz default now()
-  unique (attempt_id, question_id, ordinal)
+/b2b/assessments/:id           → redirect to /manage
+/b2b/assessments/:id/manage    → Live monitor (default)
+/b2b/assessments/:id/edit      → Authoring (Sections, Invites, Settings, Proctoring config)
 ```
-RLS:
-- Owner of the attempt can `select` / `insert` / `delete` their own rows (delete only while attempt is in_progress).
-- Org proctors can `select` rows whose `attempt → assessment → org` they belong to (reuse existing `has_role`-style helper used by `ProctoringTriagePanel`).
-- No client `update`.
 
-Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.assessment_answer_uploads;`
+Both pages share a sticky header strip:
+- Title + status badge + schedule chip ("Live · closes 14:32")
+- Counters: Invited · Joined · In progress · Submitted · Avg integrity
+- Action buttons: Take preview · Publish/Archive · Copy join link · Switch view (Edit ↔ Manage)
 
-Storage: reuse existing `assessment-proctor` bucket, prefix `answers/{attempt_id}/{question_id}/{ordinal}.jpg`. The existing `assessment-sidecam` edge function already mints signed upload URLs — extend it with an `answer-upload` action that validates the pair token + attempt and returns a signed URL for that path.
+### 2a. Edit view (`/edit`)
+Reuses existing panels: **Sections & Questions**, **Invites**, **Settings** (schedule, duration, max attempts, proctoring config). Tabs trimmed of monitoring panels which now live in Manage.
 
-### 2. Mobile capture page — new
-`src/assessments/pages/SideCameraUpload.tsx` mounted at `/side-camera/:token/upload/:attemptId/:questionId`.
-- Reuse the existing pair-token check from `SideCamera.tsx`.
-- Camera capture (getUserMedia, environment-facing) → snap → thumbnail preview grid.
-- Drag-to-reorder with existing `@dnd-kit` (already in deps).
-- Per-page delete + retake.
-- "Upload" → signed-URL PUT for each page → insert row → confirmation dialog.
-- "Uploaded ✓" screen with page count.
+### 2b. Manage view (`/manage`) — new
+Realtime cockpit. Four panels:
 
-### 3. Laptop tile — Player subjective renderer
-Inside `Player.tsx` `if (question.type === "subjective") { … }`, render under the existing textarea:
-- A `GlassPanel` tile "Upload answer sheets from phone" with counter `N pages uploaded`, last-uploaded timestamp, and a `Sync` button.
-- Thumbnail strip of currently synced pages (signed download URLs) with click-to-zoom.
-- Subscribes to the realtime channel for `assessment_answer_uploads` filtered by `attempt_id=eq.{attemptId}` and refreshes on insert.
-- Persists the list of `storage_path`s into the existing answer JSON (`answers[qq.id].pages = [...]`) so `isAnswered` returns true when at least one page is uploaded, and grading + the submit summary stay accurate.
-- Stays hidden when the assessment's `proctoring_config.allow_phone_upload` is false (default true).
+1. **Live participants table** — one row per invite, joined with their latest attempt.
+   Columns: Name / email · Status (Not joined · Joined · In progress · Submitted · Auto-submitted · Abandoned) · Started · Elapsed (ticking) · Progress (answered / total) · Score · Integrity · Last activity · Actions (View attempt, Force submit, Resend invite, Remove).
+   Filters: status chips, search.
+2. **Activity feed** — last 50 `attempt_events` across the assessment (joined, tab-switch, copy-paste, fullscreen exit, submit). Color-coded by severity.
+3. **Integrity alerts** — attempts with integrity < 70 surfaced with reason summary; click → AttemptDetail.
+4. **Schedule & capacity strip** — opens-at / closes-at countdown, time remaining, # of concurrent in-progress users, peak concurrency today.
 
-### 4. Pairing → instruct mobile when subjective question is open
-The mobile Third Eye page (`SideCamera.tsx`) gains a small "Pending uploads" banner that deep-links into `SideCameraUpload` for whichever question the laptop currently has open. The laptop publishes the active `questionId` on the existing presence channel; phone subscribes.
+Realtime: subscribe to `assessment_attempts` and `attempt_events` filtered by `assessment_id` so the table and feed update without refresh.
 
-### 5. Tests
-- Vitest: helper that builds the answer JSON from upload rows + `isAnswered` returns true with ≥1 page.
-- Playwright: skipped here (camera access requires a real device); add a TODO note.
+## 3. Schedule helpers
 
-## Out of scope
+Add `src/b2b/lib/assessmentSchedule.ts` with pure helpers:
+- `getScheduleState(a)` → `'draft' | 'scheduled' | 'live' | 'closed' | 'archived'`
+- `formatWindow(a, now)` → human string ("Opens in 3h 12m", "Live · 42m left", "Closed 2d ago")
+- `bucketAssessments(list, now)` → `{ live, upcoming, drafts, closed }`
 
-- No changes to grading pipeline beyond surfacing uploaded page URLs.
-- AI proctoring (snapshot review) is **not** run against these answer-sheet images.
-- Existing flows (Preflight, SOS, chat, submit dialog, Submitted page, integrity score) are unchanged.
+Used by the hub board, the per-assessment header strip, and the dashboard "Upcoming assessments" widget.
 
-## Suggested order
+## 4. Hooks (new, thin wrappers — no schema changes)
 
-1. Migration + storage path + edge-fn `answer-upload` action.
-2. `SideCameraUpload.tsx` mobile page + route.
-3. Player subjective tile + realtime sync + `isAnswered` integration.
-4. Phone "pending upload" banner + presence wiring.
+`src/b2b/hooks/useAssessmentLive.ts`:
+- `useLiveParticipants(assessmentId)` — joins `assessment_invites` + latest `assessment_attempts` row per invite; subscribes to realtime.
+- `useAssessmentActivity(assessmentId, limit=50)` — pulls + subscribes to `attempt_events`.
+- `useForceSubmitAttempt()` — mutation calling existing submit RPC / status update.
+- `useResendInvite()` — re-trigger the existing invite send edge function.
 
-Want me to ship all four in one go, or stop after step 1 for review?
+## 5. Wiring
+
+- Update router (wherever `/b2b/assessments/:id` is mounted) to add `/edit` and `/manage` children + the redirect.
+- Replace card `onClick navigate(\`/b2b/assessments/${a.id}\`)` in `List.tsx` with the two-button design (Edit + Manage) and the schedule chip.
+- Dashboard's "Upcoming assessments" widget already added — link each row to `/manage` for consistency.
+
+## 6. Out of scope (call out explicitly)
+- No DB schema changes — `starts_at`, `ends_at`, `status`, `attempt_events`, integrity scoring all already exist.
+- No new edge functions — reuse existing invite/submit RPCs.
+- No changes to candidate-side player.
+
+---
+
+## Files to add
+- `src/b2b/lib/assessmentSchedule.ts`
+- `src/b2b/hooks/useAssessmentLive.ts`
+- `src/b2b/pages/assessments/Manage.tsx`
+- `src/b2b/pages/assessments/Edit.tsx` (thin wrapper that mounts the existing Sections/Invites/Settings panels extracted from `Detail.tsx`)
+- `src/b2b/components/assessments/ScheduleChip.tsx`
+- `src/b2b/components/assessments/AssessmentCard.tsx`
+- `src/b2b/components/assessments/LiveParticipantsTable.tsx`
+- `src/b2b/components/assessments/ActivityFeed.tsx`
+
+## Files to change
+- `src/b2b/pages/assessments/List.tsx` — new hub layout with tabs + cards.
+- `src/b2b/pages/assessments/Detail.tsx` — refactor into shared header + redirect to `/manage`; extract panels into reusable components.
+- Router config — add `/edit`, `/manage`, redirect.
+- Dashboard "Upcoming assessments" rows link to `/manage`.
+
+Confirm and I'll implement.

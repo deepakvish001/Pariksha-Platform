@@ -1,0 +1,433 @@
+import { useEffect, useMemo, useState } from "react";
+import { Navigate, useNavigate, useParams, Link } from "react-router-dom";
+import { OrgShell } from "../../layouts/OrgShell";
+import { useAssessment, useUpdateAssessment } from "../../hooks/useAssessments";
+import { useInvites, buildJoinUrl } from "../../hooks/useInvites";
+import {
+  useLiveParticipants,
+  useAssessmentActivity,
+  useForceSubmitAttempt,
+  type LiveParticipant,
+  type ParticipantStatus,
+} from "../../hooks/useAssessmentLive";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  ArrowLeft,
+  Pencil,
+  Send,
+  Archive,
+  Copy,
+  Play,
+  Activity,
+  ShieldAlert,
+  Users,
+  Search,
+  Eye,
+  StopCircle,
+  Clock,
+} from "lucide-react";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { formatWindow, getScheduleState } from "../../lib/assessmentSchedule";
+
+const STATUS_LABEL: Record<ParticipantStatus, string> = {
+  not_joined: "Not joined",
+  joined: "Joined",
+  in_progress: "In progress",
+  submitted: "Submitted",
+  auto_submitted: "Auto-submitted",
+  abandoned: "Abandoned",
+};
+
+const STATUS_COLOR: Record<ParticipantStatus, string> = {
+  not_joined: "bg-muted text-muted-foreground",
+  joined: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
+  in_progress: "bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse",
+  submitted: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+  auto_submitted: "bg-orange-500/15 text-orange-300 border border-orange-500/30",
+  abandoned: "bg-rose-500/15 text-rose-300 border border-rose-500/30",
+};
+
+function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl ${className}`}
+    >
+      <div className="pointer-events-none absolute -top-24 -right-20 h-56 w-56 rounded-full bg-[hsl(var(--primary))]/10 blur-3xl" />
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
+
+function Tick({ at }: { at: string | null }) {
+  const [, setT] = useState(0);
+  useEffect(() => {
+    const i = setInterval(() => setT((x) => x + 1), 1000);
+    return () => clearInterval(i);
+  }, []);
+  if (!at) return <span className="text-muted-foreground">—</span>;
+  const ms = Date.now() - new Date(at).getTime();
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  return <span className="tabular-nums">{h ? `${h}h ${m % 60}m` : `${m}m ${s % 60}s`}</span>;
+}
+
+export default function AssessmentManage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { data: assessment, isLoading } = useAssessment(id);
+  const update = useUpdateAssessment();
+  const { data: participants } = useLiveParticipants(id);
+  const { data: events } = useAssessmentActivity(id);
+  const { data: invites } = useInvites(id);
+  const forceSubmit = useForceSubmitAttempt();
+
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ParticipantStatus | "all">("all");
+
+  const counts = useMemo(() => {
+    const c = {
+      invited: participants?.length ?? 0,
+      joined: 0,
+      in_progress: 0,
+      submitted: 0,
+      avg_integrity: 0,
+    };
+    let intSum = 0;
+    let intN = 0;
+    for (const p of participants ?? []) {
+      if (p.status === "joined") c.joined += 1;
+      if (p.status === "in_progress") c.in_progress += 1;
+      if (p.status === "submitted" || p.status === "auto_submitted") c.submitted += 1;
+      if (p.integrity_score !== null) {
+        intSum += p.integrity_score;
+        intN += 1;
+      }
+    }
+    c.avg_integrity = intN ? Math.round(intSum / intN) : 100;
+    return c;
+  }, [participants]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (participants ?? []).filter((p) => {
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        p.email.toLowerCase().includes(q) ||
+        (p.name ?? "").toLowerCase().includes(q) ||
+        (p.external_id ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [participants, query, statusFilter]);
+
+  if (isLoading) return null;
+  if (!assessment) return <Navigate to="/b2b/assessments" replace />;
+
+  const state = getScheduleState(assessment);
+  const isPublished = assessment.status === "published";
+  const firstInvite = invites?.[0];
+
+  return (
+    <OrgShell
+      title={assessment.title}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/b2b/assessments")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Hub
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/b2b/assessments/${assessment.id}`)}>
+            <Pencil className="h-4 w-4 mr-1" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const { supabase } = await import("@/integrations/supabase/client");
+              const { data, error } = await supabase.rpc("start_preview_attempt", { _assessment: assessment.id });
+              if (error) return toast.error(error.message);
+              navigate(`/assessments/${(data as any).id}/play?preview=1`);
+            }}
+          >
+            <Play className="h-4 w-4 mr-1" /> Preview
+          </Button>
+          {firstInvite && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(buildJoinUrl(firstInvite.token));
+                toast.success("Join link copied");
+              }}
+            >
+              <Copy className="h-4 w-4 mr-1" /> Link
+            </Button>
+          )}
+          {!isPublished ? (
+            <Button
+              size="sm"
+              className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+              onClick={async () => {
+                await update.mutateAsync({ id: assessment.id, patch: { status: "published" } });
+                toast.success("Published");
+              }}
+            >
+              <Send className="h-4 w-4 mr-1" /> Publish
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                await update.mutateAsync({ id: assessment.id, patch: { status: "archived" } });
+                toast.success("Archived");
+              }}
+            >
+              <Archive className="h-4 w-4 mr-1" /> Archive
+            </Button>
+          )}
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        {/* Schedule strip */}
+        <GlassCard className="p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-[hsl(var(--primary))]" />
+              <span className="text-sm font-medium">{formatWindow(assessment)}</span>
+              <Badge variant="outline" className="text-[10px] uppercase">{state}</Badge>
+            </div>
+            <div className="ml-auto grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+              {[
+                ["Invited", counts.invited],
+                ["Joined", counts.joined],
+                ["In progress", counts.in_progress],
+                ["Submitted", counts.submitted],
+                ["Avg integrity", counts.avg_integrity],
+              ].map(([label, val]) => (
+                <div key={label as string} className="rounded-lg px-3 py-1.5 bg-white/[0.03] border border-white/5">
+                  <div className="text-muted-foreground">{label}</div>
+                  <div className="text-base font-semibold tabular-nums">{val as number}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </GlassCard>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Participants */}
+          <GlassCard className="lg:col-span-2 p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-[hsl(var(--primary))]" />
+                <h2 className="text-sm font-semibold">Live participants</h2>
+                <Badge variant="outline" className="text-[10px]">{filtered.length}</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search name, email, id…"
+                    className="h-8 pl-7 w-56 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {(["all", "in_progress", "joined", "submitted", "not_joined", "abandoned"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] border transition-colors ${
+                    statusFilter === s
+                      ? "bg-[hsl(var(--primary))]/15 border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))]"
+                      : "border-white/10 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {s === "all" ? "All" : STATUS_LABEL[s as ParticipantStatus]}
+                </button>
+              ))}
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                No candidates match the current filter.
+              </div>
+            ) : (
+              <div className="overflow-x-auto -mx-1 b2b-scroll b2b-scroll-slim">
+                <table className="w-full text-xs">
+                  <thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <tr className="border-b border-white/5">
+                      <th className="text-left font-medium py-2 px-2">Candidate</th>
+                      <th className="text-left font-medium py-2 px-2">Status</th>
+                      <th className="text-left font-medium py-2 px-2">Elapsed</th>
+                      <th className="text-left font-medium py-2 px-2">Score</th>
+                      <th className="text-left font-medium py-2 px-2">Integrity</th>
+                      <th className="text-right font-medium py-2 px-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filtered.map((p) => (
+                      <ParticipantRow
+                        key={p.invite_id}
+                        p={p}
+                        assessmentId={assessment.id}
+                        onForceSubmit={() =>
+                          p.attempt_id &&
+                          forceSubmit.mutate({ attempt_id: p.attempt_id, assessment_id: assessment.id })
+                        }
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </GlassCard>
+
+          {/* Activity feed */}
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="h-4 w-4 text-[hsl(var(--primary))]" />
+              <h2 className="text-sm font-semibold">Activity feed</h2>
+            </div>
+            <div className="space-y-2 max-h-[420px] overflow-y-auto b2b-scroll b2b-scroll-slim pr-1">
+              {(events ?? []).length === 0 && (
+                <div className="text-xs text-muted-foreground text-center py-6">No activity yet.</div>
+              )}
+              {(events ?? []).map((e) => (
+                <div key={e.id} className="rounded-md border border-white/5 bg-white/[0.02] px-2.5 py-1.5 text-[11px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium truncate">
+                      {e.candidate?.name ?? e.candidate?.email ?? "Candidate"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground capitalize">{e.kind.replace(/_/g, " ")}</div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Integrity alerts */}
+        <GlassCard className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldAlert className="h-4 w-4 text-amber-400" />
+            <h2 className="text-sm font-semibold">Integrity alerts</h2>
+          </div>
+          {(() => {
+            const alerts = (participants ?? []).filter(
+              (p) => p.integrity_score !== null && p.integrity_score < 70 && p.attempt_id
+            );
+            if (alerts.length === 0)
+              return <div className="text-xs text-muted-foreground py-3">All clear — no integrity violations flagged.</div>;
+            return (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {alerts.map((p) => (
+                  <Link
+                    key={p.invite_id}
+                    to={`/b2b/assessments/${assessment.id}/attempts/${p.attempt_id}`}
+                    className="rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs hover:border-amber-500/40 transition-colors"
+                  >
+                    <div className="font-medium truncate">{p.name ?? p.email}</div>
+                    <div className="text-amber-300/90">Integrity {p.integrity_score}</div>
+                  </Link>
+                ))}
+              </div>
+            );
+          })()}
+        </GlassCard>
+      </div>
+    </OrgShell>
+  );
+}
+
+function ParticipantRow({
+  p,
+  assessmentId,
+  onForceSubmit,
+}: {
+  p: LiveParticipant;
+  assessmentId: string;
+  onForceSubmit: () => void;
+}) {
+  return (
+    <tr className="hover:bg-white/[0.02]">
+      <td className="py-2.5 px-2 min-w-0">
+        <div className="font-medium truncate">{p.name ?? p.email}</div>
+        <div className="text-muted-foreground text-[10px] truncate">
+          {p.email}
+          {p.external_id ? ` · ${p.external_id}` : ""}
+        </div>
+      </td>
+      <td className="py-2.5 px-2">
+        <span className={`px-2 py-0.5 rounded-full text-[10px] ${STATUS_COLOR[p.status]}`}>
+          {STATUS_LABEL[p.status]}
+        </span>
+      </td>
+      <td className="py-2.5 px-2">
+        {p.status === "in_progress" ? (
+          <Tick at={p.started_at} />
+        ) : p.submitted_at && p.started_at ? (
+          <span className="text-muted-foreground tabular-nums">
+            {Math.round((new Date(p.submitted_at).getTime() - new Date(p.started_at).getTime()) / 60000)}m
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </td>
+      <td className="py-2.5 px-2 tabular-nums">
+        {p.score ?? <span className="text-muted-foreground">—</span>}
+      </td>
+      <td className="py-2.5 px-2 tabular-nums">
+        {p.integrity_score !== null ? (
+          <span
+            className={
+              p.integrity_score >= 80
+                ? "text-emerald-300"
+                : p.integrity_score >= 60
+                ? "text-amber-300"
+                : "text-rose-300"
+            }
+          >
+            {p.integrity_score}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </td>
+      <td className="py-2.5 px-2 text-right">
+        <div className="inline-flex items-center gap-1">
+          {p.attempt_id && (
+            <Link to={`/b2b/assessments/${assessmentId}/attempts/${p.attempt_id}`}>
+              <Button size="sm" variant="ghost" className="h-7 px-2">
+                <Eye className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          )}
+          {p.status === "in_progress" && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-rose-300 hover:text-rose-200"
+              onClick={() => {
+                if (confirm(`Force submit attempt for ${p.email}?`)) onForceSubmit();
+              }}
+            >
+              <StopCircle className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
