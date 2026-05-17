@@ -290,6 +290,15 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
           <Button size="sm" variant="ghost" onClick={refresh} disabled={loading}>
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={exportEvidence}
+            disabled={exporting || (snaps.length === 0 && frames.length === 0 && recordings.length === 0)}
+            title="Download all evidence (snapshots, side-cam, recordings) as ZIP"
+          >
+            <Download className="h-3 w-3 mr-1" /> {exporting ? "Exporting…" : "Export evidence"}
+          </Button>
           <Button size="sm" variant="outline" onClick={runReview} disabled={running || snaps.length === 0}>
             <Sparkles className="h-3 w-3 mr-1" /> {running ? "Reviewing…" : "Run AI review"}
           </Button>
