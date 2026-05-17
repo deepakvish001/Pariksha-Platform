@@ -3,8 +3,139 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, Camera, CheckCircle2, RefreshCw } from "lucide-react";
+import { Loader2, Upload, Camera, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+// ---- Image validation helpers ----
+interface CheckResult { ok: boolean; label: string; detail?: string }
+
+const ID_MIN_W = 480;
+const ID_MIN_H = 320;
+const ID_MIN_BYTES = 30 * 1024;
+const ID_MAX_BYTES = 5 * 1024 * 1024;
+
+const SELFIE_MIN_W = 320;
+const SELFIE_MIN_H = 240;
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("Could not read image"));
+    img.src = src;
+  });
+}
+
+async function validateIdPhoto(file: File): Promise<CheckResult[]> {
+  const checks: CheckResult[] = [];
+  checks.push({
+    ok: file.type.startsWith("image/"),
+    label: "Image file",
+    detail: file.type || "unknown",
+  });
+  checks.push({
+    ok: file.size >= ID_MIN_BYTES && file.size <= ID_MAX_BYTES,
+    label: "Size 30 KB – 5 MB",
+    detail: `${(file.size / 1024).toFixed(0)} KB`,
+  });
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await loadImage(url);
+    URL.revokeObjectURL(url);
+    const big = img.width >= ID_MIN_W && img.height >= ID_MIN_H;
+    const ratio = img.width / img.height;
+    checks.push({
+      ok: big,
+      label: `Min ${ID_MIN_W}×${ID_MIN_H}px`,
+      detail: `${img.width}×${img.height}`,
+    });
+    checks.push({
+      ok: ratio >= 1.0 && ratio <= 2.5,
+      label: "Landscape orientation",
+      detail: ratio.toFixed(2),
+    });
+  } catch {
+    checks.push({ ok: false, label: `Min ${ID_MIN_W}×${ID_MIN_H}px`, detail: "unreadable" });
+  }
+  return checks;
+}
+
+function analyzeSelfieFrame(video: HTMLVideoElement): {
+  checks: CheckResult[];
+  blob: Promise<Blob>;
+  dataUrl: string;
+} | null {
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(video, 0, 0, w, h);
+
+  // Sample center region for face heuristics
+  const sx = Math.floor(w * 0.25);
+  const sy = Math.floor(h * 0.15);
+  const sw = Math.floor(w * 0.5);
+  const sh = Math.floor(h * 0.7);
+  const data = ctx.getImageData(sx, sy, sw, sh).data;
+
+  let sum = 0;
+  let sumSq = 0;
+  let skin = 0;
+  const total = sw * sh;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    sum += lum;
+    sumSq += lum * lum;
+    // Simple skin-tone heuristic (RGB rule)
+    if (
+      r > 95 && g > 40 && b > 20 &&
+      r > g && r > b &&
+      Math.abs(r - g) > 15 &&
+      r - Math.min(g, b) > 15
+    ) {
+      skin++;
+    }
+  }
+  const mean = sum / total;
+  const variance = sumSq / total - mean * mean;
+  const skinRatio = skin / total;
+
+  const checks: CheckResult[] = [
+    {
+      ok: w >= SELFIE_MIN_W && h >= SELFIE_MIN_H,
+      label: `Min ${SELFIE_MIN_W}×${SELFIE_MIN_H}px`,
+      detail: `${w}×${h}`,
+    },
+    {
+      ok: mean >= 50 && mean <= 220,
+      label: "Lighting balanced",
+      detail: `lum ${mean.toFixed(0)}`,
+    },
+    {
+      ok: variance >= 250,
+      label: "Frame in focus",
+      detail: `σ² ${variance.toFixed(0)}`,
+    },
+    {
+      ok: skinRatio >= 0.05,
+      label: "Face visible in frame",
+      detail: `${(skinRatio * 100).toFixed(1)}%`,
+    },
+  ];
+
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+  const blob = new Promise<Blob>((res, rej) =>
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error("Capture failed"))), "image/jpeg", 0.85),
+  );
+  return { checks, blob, dataUrl };
+}
 
 export interface CandidateDetailsPayload {
   full_name: string;
@@ -52,7 +183,9 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [idPhotoUrl, setIdPhotoUrl] = useState<string | null>(null);
+  const [idChecks, setIdChecks] = useState<CheckResult[]>([]);
   const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
+  const [selfieChecks, setSelfieChecks] = useState<CheckResult[]>([]);
   const [selfieDataUrl, setSelfieDataUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -78,13 +211,16 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   const handleIdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setGlobalError("ID photo must be under 5 MB");
-      return;
-    }
     setBusy(true);
     setGlobalError(null);
+    setIdPhotoUrl(null);
     try {
+      const checks = await validateIdPhoto(file);
+      setIdChecks(checks);
+      if (checks.some((c) => !c.ok)) {
+        setGlobalError("ID photo failed validation. Please re-upload a clearer image.");
+        return;
+      }
       const path = await uploadFile(file, "id");
       setIdPhotoUrl(path);
     } catch (err) {
@@ -126,21 +262,21 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   const captureSelfie = async () => {
     if (!videoRef.current) return;
     setBusy(true);
+    setGlobalError(null);
+    setSelfieUrl(null);
     try {
-      const v = videoRef.current;
-      const canvas = document.createElement("canvas");
-      canvas.width = v.videoWidth || 480;
-      canvas.height = v.videoHeight || 360;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas unavailable");
-      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-      const blob: Blob = await new Promise((res, rej) =>
-        canvas.toBlob((b) => (b ? res(b) : rej(new Error("Capture failed"))), "image/jpeg", 0.85),
-      );
+      const result = analyzeSelfieFrame(videoRef.current);
+      if (!result) throw new Error("Capture failed");
+      setSelfieChecks(result.checks);
+      setSelfieDataUrl(result.dataUrl);
+      if (result.checks.some((c) => !c.ok)) {
+        setGlobalError("Selfie failed checks. Adjust lighting & face the camera, then retake.");
+        return;
+      }
+      const blob = await result.blob;
       const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
       const path = await uploadFile(file, "selfie");
       setSelfieUrl(path);
-      setSelfieDataUrl(canvas.toDataURL("image/jpeg", 0.7));
       stopCamera();
     } catch (err) {
       setGlobalError(err instanceof Error ? err.message : "Capture failed");
@@ -161,12 +297,14 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
       setErrors(fieldErrors);
       return;
     }
-    if (!idPhotoUrl) {
-      setGlobalError("Please upload your government ID photo");
+    const idOk = idPhotoUrl && idChecks.length > 0 && idChecks.every((c) => c.ok);
+    const selfieOk = selfieUrl && selfieChecks.length > 0 && selfieChecks.every((c) => c.ok);
+    if (!idOk) {
+      setGlobalError("Government ID photo must pass all validation checks");
       return;
     }
-    if (!selfieUrl) {
-      setGlobalError("Please capture a live selfie");
+    if (!selfieOk) {
+      setGlobalError("Live selfie must pass all validation checks");
       return;
     }
     setBusy(true);
@@ -272,9 +410,10 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
             disabled={busy}
             className="text-xs w-full file:mr-2 file:rounded file:border-0 file:bg-primary file:px-2 file:py-1 file:text-xs file:font-semibold file:text-primary-foreground"
           />
-          {idPhotoUrl && (
+          {idChecks.length > 0 && <ChecklistView checks={idChecks} />}
+          {idPhotoUrl && idChecks.every((c) => c.ok) && (
             <div className="text-[11px] text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Uploaded
+              <CheckCircle2 className="h-3 w-3" /> Verified & uploaded
             </div>
           )}
         </div>
@@ -284,24 +423,33 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
             <Camera className="h-3.5 w-3.5" /> Live selfie
           </div>
           {selfieDataUrl ? (
-            <div className="flex items-center gap-2">
-              <img
-                src={selfieDataUrl}
-                alt="Selfie preview"
-                className="h-16 w-16 rounded object-cover border border-emerald-500/40"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSelfieDataUrl(null);
-                  setSelfieUrl(null);
-                  startCamera();
-                }}
-                disabled={busy}
-              >
-                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retake
-              </Button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <img
+                  src={selfieDataUrl}
+                  alt="Selfie preview"
+                  className={
+                    "h-16 w-16 rounded object-cover border " +
+                    (selfieUrl && selfieChecks.every((c) => c.ok)
+                      ? "border-emerald-500/40"
+                      : "border-destructive/40")
+                  }
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelfieDataUrl(null);
+                    setSelfieUrl(null);
+                    setSelfieChecks([]);
+                    startCamera();
+                  }}
+                  disabled={busy}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retake
+                </Button>
+              </div>
+              {selfieChecks.length > 0 && <ChecklistView checks={selfieChecks} />}
             </div>
           ) : cameraOn ? (
             <div className="space-y-2">
@@ -334,7 +482,20 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         </div>
       )}
 
-      <Button onClick={handleSave} disabled={busy} size="sm" className="font-semibold">
+      <Button
+        onClick={handleSave}
+        disabled={
+          busy ||
+          !idPhotoUrl ||
+          !selfieUrl ||
+          idChecks.length === 0 ||
+          selfieChecks.length === 0 ||
+          idChecks.some((c) => !c.ok) ||
+          selfieChecks.some((c) => !c.ok)
+        }
+        size="sm"
+        className="font-semibold"
+      >
         {busy ? (
           <>
             <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Saving…
@@ -362,5 +523,31 @@ function Field({
       {children}
       {error && <div className="text-[11px] text-destructive">{error}</div>}
     </div>
+  );
+}
+
+function ChecklistView({ checks }: { checks: CheckResult[] }) {
+  return (
+    <ul className="space-y-0.5 text-[11px]">
+      {checks.map((c, i) => (
+        <li
+          key={i}
+          className={
+            "flex items-center gap-1.5 " +
+            (c.ok ? "text-emerald-700 dark:text-emerald-300" : "text-destructive")
+          }
+        >
+          {c.ok ? (
+            <CheckCircle2 className="h-3 w-3 shrink-0" />
+          ) : (
+            <XCircle className="h-3 w-3 shrink-0" />
+          )}
+          <span className="truncate">
+            {c.label}
+            {c.detail && <span className="opacity-60"> · {c.detail}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
