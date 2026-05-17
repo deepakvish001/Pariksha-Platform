@@ -96,6 +96,7 @@ export default function SideCameraPage() {
         audio: false,
       });
       streamRef.current = s;
+      setLiveStream(s);
       if (videoRef.current) {
         videoRef.current.srcObject = s;
         await videoRef.current.play().catch(() => {});
