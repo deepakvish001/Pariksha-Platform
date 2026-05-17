@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2, XCircle, Save, ChevronRight, Clock, Mail, Hash, User, FileText, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
+import SessionTimelinePlayer from "../../components/SessionTimelinePlayer";
 import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
 import { ProctorEventFeed } from "@/assessments/components/ProctorEventFeed";
 import AttemptSosHistoryPanel from "../../components/AttemptSosHistoryPanel";
@@ -244,6 +245,15 @@ export default function AttemptDetail() {
           )}
         </CardContent>
       </Card>
+
+      {canProctor && (
+        <SessionTimelinePlayer
+          attemptId={data.attempt.id}
+          attemptStartedAt={data.attempt.started_at}
+          orgId={org?.id}
+          markers={timeline}
+        />
+      )}
 
       {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} orgId={org?.id} />}
 
