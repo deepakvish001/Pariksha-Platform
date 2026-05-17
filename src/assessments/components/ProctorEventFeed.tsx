@@ -11,22 +11,30 @@ import {
   EyeOff,
   Flag,
   LifeBuoy,
+  Loader2,
   MessageSquare,
   Mic,
   MicOff,
   Pause,
   Play,
+  Plus,
   Save,
   ShieldAlert,
   ShieldCheck,
   Smartphone,
+  StickyNote,
+  Trash2,
   Wifi,
   WifiOff,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
+
 
 type Severity = "info" | "warn" | "critical" | "chat";
 
