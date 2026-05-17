@@ -137,6 +137,41 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
   const [pendingDelete, setPendingDelete] = useState<Page | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const downloadPage = async (p: Page): Promise<boolean> => {
+    if (!p?.url) return false;
+    try {
+      const res = await fetch(p.url);
+      const blob = await res.blob();
+      const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `answer-page-${String(p.ordinal).padStart(2, "0")}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const downloadAll = async () => {
+    if (downloadingAll || pages.length === 0) return;
+    setDownloadingAll(true);
+    try {
+      for (const p of pages) {
+        await downloadPage(p);
+        // small gap so browsers don't collapse/cancel rapid downloads
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -384,35 +419,33 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
             <span className="tabular-nums">
               Page {pages[previewIdx].ordinal} of {pages.length}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {pages[previewIdx].url && (
                 <>
                   <button
                     type="button"
                     onClick={async () => {
                       const p = pages[previewIdx];
-                      if (!p?.url) return;
-                      try {
-                        const res = await fetch(p.url);
-                        const blob = await res.blob();
-                        const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `answer-page-${String(p.ordinal).padStart(2, "0")}.${ext}`;
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        setTimeout(() => URL.revokeObjectURL(url), 1000);
-                      } catch {
-                        window.open(p.url, "_blank", "noopener,noreferrer");
-                      }
+                      const ok = await downloadPage(p);
+                      if (!ok && p?.url) window.open(p.url, "_blank", "noopener,noreferrer");
                     }}
                     className="inline-flex items-center gap-1 hover:underline"
                     aria-label={`Download page ${pages[previewIdx].ordinal}`}
                   >
                     <Download className="h-3.5 w-3.5" /> Download
                   </button>
+                  {pages.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={downloadAll}
+                      disabled={downloadingAll}
+                      className="inline-flex items-center gap-1 hover:underline disabled:opacity-60"
+                      aria-label={`Download all ${pages.length} pages`}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {downloadingAll ? `Downloading…` : `Download all (${pages.length})`}
+                    </button>
+                  )}
                   <a
                     href={pages[previewIdx].url ?? "#"}
                     target="_blank"
