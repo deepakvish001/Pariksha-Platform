@@ -89,6 +89,10 @@ Deno.serve(async (req) => {
   const subject = `${orgName} invited you to "${assessment.title}"`;
   const results: { email: string; ok: boolean; error?: string }[] = [];
   const duration = (assessment as any).duration_min as number | null;
+  const logoUrl = (assessment as any).organizations?.logo_url as string | null;
+  const rawBrand = ((assessment as any).organizations?.brand_color as string | null)?.trim() || "";
+  const brand = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(rawBrand) ? rawBrand : "#0f172a";
+  const brandDark = darken(brand, 0.18);
   const initials = orgName
     .split(/\s+/)
     .filter(Boolean)
