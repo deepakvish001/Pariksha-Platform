@@ -28,13 +28,20 @@ const BUCKET = "assessment-proctor";
 const KIND_ICON: Record<Kind, typeof Camera> = { webcam: Camera, screen: Monitor, sideeye: Smartphone };
 const KIND_LABEL: Record<Kind, string> = { webcam: "Webcam", screen: "Screen", sideeye: "Side cam" };
 
+interface Marker {
+  at: string;
+  label: string;
+  tone?: "ok" | "warn" | "info";
+}
+
 interface Props {
   attemptId: string;
   attemptStartedAt: string | null;
   orgId?: string | null;
+  markers?: Marker[];
 }
 
-export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, orgId }: Props) {
+export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, orgId, markers = [] }: Props) {
   const { canProctor, isLoading: roleLoading } = useCanProctor(orgId);
   const [chunksByKind, setChunksByKind] = useState<Record<Kind, Loaded[]>>({
     webcam: [], screen: [], sideeye: [],
@@ -239,15 +246,41 @@ export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, org
               <span className="text-[11px] tabular-nums text-muted-foreground">
                 {fmt(t)} / {fmt(duration)}
               </span>
-              <input
-                type="range"
-                min={0}
-                max={Math.max(1, duration)}
-                step={500}
-                value={t}
-                onChange={(e) => { setPlaying(false); setT(Number(e.target.value)); }}
-                className="flex-1 accent-primary"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(1, duration)}
+                  step={500}
+                  value={t}
+                  onChange={(e) => { setPlaying(false); setT(Number(e.target.value)); }}
+                  className="w-full accent-primary relative z-10"
+                />
+                {(() => {
+                  const anchor = attemptStartedAt ? new Date(attemptStartedAt).getTime() : null;
+                  if (!anchor || duration <= 0) return null;
+                  return (
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-full">
+                      {markers.map((m, i) => {
+                        const off = new Date(m.at).getTime() - anchor;
+                        if (off < 0 || off > duration) return null;
+                        const pct = (off / duration) * 100;
+                        const color = m.tone === "warn" ? "bg-amber-500" : m.tone === "ok" ? "bg-emerald-500" : "bg-sky-500";
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => { setPlaying(false); setT(off); }}
+                            title={`${m.label} — ${new Date(m.at).toLocaleTimeString()}`}
+                            className={`pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-2.5 w-0.5 ${color} hover:h-3 transition-all`}
+                            style={{ left: `${pct}%` }}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
 
             <p className="text-[10px] text-muted-foreground">
