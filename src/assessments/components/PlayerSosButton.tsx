@@ -141,6 +141,13 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Replay any SOS alerts that failed to deliver in a previous session
+  // (e.g. tab crashed while offline). Safe to call repeatedly.
+  useEffect(() => {
+    installSosQueueAutoflush();
+    void flushSosQueue();
+  }, []);
+
   const reset = () => {
     setStep("confirm");
     setIssue(QUICK_ISSUES[0]);
