@@ -5,10 +5,20 @@ export interface EditorPrefs {
   fontSize: number;
   tabSize: number;
   wordWrap: boolean;
+  /** Multiplier applied to question body text (1 = 100%). */
+  questionFontScale: number;
 }
 
 const KEY = "assess.editor.prefs";
-const DEFAULTS: EditorPrefs = { fontSize: 13, tabSize: 2, wordWrap: false };
+const DEFAULTS: EditorPrefs = {
+  fontSize: 13,
+  tabSize: 2,
+  wordWrap: false,
+  questionFontScale: 1,
+};
+
+/** Discrete zoom levels cycled by the A− / A+ buttons. */
+export const QUESTION_FONT_SCALES = [0.9, 1, 1.15, 1.3] as const;
 
 function read(): EditorPrefs {
   const raw = safeStorage.get(KEY);

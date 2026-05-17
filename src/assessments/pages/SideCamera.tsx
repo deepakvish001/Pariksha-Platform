@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, CheckCircle2, ShieldCheck, RotateCcw, WifiOff } from "lucide-react";
 import { useWebrtcStream } from "@/hooks/useWebrtcStream";
+import { SideEyeReadyCheck } from "@/assessments/components/SideEyeReadyCheck";
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assessment-sidecam`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -28,6 +29,7 @@ export default function SideCameraPage() {
   const [framesSent, setFramesSent] = useState(0);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+  const [ready, setReady] = useState(false);
 
   // Publish the rear-camera feed live to proctors via WebRTC, keyed by the
   // pairing token (same token already authenticates snapshot uploads).
@@ -242,10 +244,14 @@ export default function SideCameraPage() {
           )}
 
           {status !== "streaming" ? (
-            <Button onClick={start} className="w-full" disabled={status === "connecting"}>
-              <Camera className="h-4 w-4 mr-2" />
-              {status === "connecting" ? "Starting camera…" : "Start side camera"}
-            </Button>
+            !ready ? (
+              <SideEyeReadyCheck onReady={() => setReady(true)} buttonLabel="Continue" />
+            ) : (
+              <Button onClick={start} className="w-full" disabled={status === "connecting"}>
+                <Camera className="h-4 w-4 mr-2" />
+                {status === "connecting" ? "Starting camera…" : "Start side camera"}
+              </Button>
+            )
           ) : (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">

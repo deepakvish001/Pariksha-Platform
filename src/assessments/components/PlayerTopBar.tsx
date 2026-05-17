@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Clock, Maximize2, Send, ShieldCheck, Wand2, Loader2,
-  Wifi, WifiOff,
+  Wifi, WifiOff, Info, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PlayerSosButton } from "./PlayerSosButton";
@@ -25,6 +25,11 @@ interface Props {
   onSubmit: () => void;
   onFullscreen: () => void;
   onPrefillKey: () => void;
+  onShowInstructions?: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  canZoomIn?: boolean;
+  canZoomOut?: boolean;
 }
 
 export function PlayerTopBar({
@@ -43,6 +48,11 @@ export function PlayerTopBar({
   onSubmit,
   onFullscreen,
   onPrefillKey,
+  onShowInstructions,
+  onZoomIn,
+  onZoomOut,
+  canZoomIn = true,
+  canZoomOut = true,
 }: Props) {
   const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
   const hh = Math.floor(totalSec / 3600);
@@ -160,6 +170,60 @@ export function PlayerTopBar({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Enter fullscreen</TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Zoom controls */}
+            {onZoomOut && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onZoomOut}
+                    disabled={!canZoomOut}
+                    className="h-8 w-8 p-0 hidden sm:inline-flex"
+                    aria-label="Decrease question text size"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Smaller text</TooltipContent>
+              </Tooltip>
+            )}
+            {onZoomIn && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onZoomIn}
+                    disabled={!canZoomIn}
+                    className="h-8 w-8 p-0 hidden sm:inline-flex"
+                    aria-label="Increase question text size"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Larger text</TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* General instructions */}
+            {onShowInstructions && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onShowInstructions}
+                    className="h-8 w-8 p-0"
+                    aria-label="Show general instructions"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>General instructions</TooltipContent>
               </Tooltip>
             )}
 

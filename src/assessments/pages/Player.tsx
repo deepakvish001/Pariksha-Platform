@@ -20,6 +20,8 @@ import { useProctoring } from "../hooks/useProctoring";
 import { resolveProctoringConfig } from "../lib/proctoringConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerTopBar } from "../components/PlayerTopBar";
+import { GeneralInstructionsDialog } from "../components/GeneralInstructionsDialog";
+import { useEditorPrefs, QUESTION_FONT_SCALES } from "../hooks/useEditorPrefs";
 import { QuestionPalette } from "../components/QuestionPalette";
 import { AnswerUploadTile } from "../components/AnswerUploadTile";
 import { isAnswered as isAnsweredFn } from "../lib/isAnswered";
@@ -70,7 +72,22 @@ export default function Player() {
   const [submitted, setSubmitted] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const { prefs: editorPrefs, update: updateEditorPrefs } = useEditorPrefs();
+  const fontScale = editorPrefs.questionFontScale ?? 1;
+  const scaleIdx = QUESTION_FONT_SCALES.indexOf(fontScale as typeof QUESTION_FONT_SCALES[number]);
+  const safeScaleIdx = scaleIdx === -1 ? QUESTION_FONT_SCALES.indexOf(1) : scaleIdx;
+  const canZoomIn = safeScaleIdx < QUESTION_FONT_SCALES.length - 1;
+  const canZoomOut = safeScaleIdx > 0;
+  const zoomIn = () => {
+    if (!canZoomIn) return;
+    updateEditorPrefs({ questionFontScale: QUESTION_FONT_SCALES[safeScaleIdx + 1] });
+  };
+  const zoomOut = () => {
+    if (!canZoomOut) return;
+    updateEditorPrefs({ questionFontScale: QUESTION_FONT_SCALES[safeScaleIdx - 1] });
+  };
   const [paletteCollapsed, setPaletteCollapsed] = useState<boolean>(() => {
     return safeStorage.get("assess.palette.collapsed") === "1";
   });
@@ -534,6 +551,20 @@ export default function Player() {
         onSubmit={() => setConfirmOpen(true)}
         onFullscreen={requestFullscreen}
         onPrefillKey={prefillAnswerKey}
+        onShowInstructions={() => setInstructionsOpen(true)}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        canZoomIn={canZoomIn}
+        canZoomOut={canZoomOut}
+      />
+
+      <GeneralInstructionsDialog
+        open={instructionsOpen}
+        onOpenChange={setInstructionsOpen}
+        assessmentTitle={paper.assessment.title}
+        instructions={(paper.assessment as { instructions?: string | null }).instructions ?? null}
+        durationMin={paper.assessment.duration_min}
+        proctoring={proctoringEnabled}
       />
 
       <ViolationBanner
@@ -590,7 +621,7 @@ export default function Player() {
           </div>
         </aside>
 
-        <section className="min-w-0 w-full">
+        <section className="min-w-0 w-full" style={{ fontSize: `${fontScale * 100}%` }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={q?.id ?? "empty"}
