@@ -55,6 +55,7 @@ import {
   ChevronUp,
   Check,
   RotateCcw,
+  ExternalLink,
 } from "lucide-react";
 
 type SortKey = "name" | "status" | "elapsed" | "score" | "integrity";
@@ -446,6 +447,14 @@ export default function AssessmentManage() {
                         key={p.invite_id}
                         p={p}
                         assessmentId={assessment.id}
+                        detailHref={
+                          p.attempt_id
+                            ? paths.b2b.attempt(basePath, assessment, {
+                                id: p.attempt_id,
+                                slug: p.attempt_slug ?? null,
+                              })
+                            : null
+                        }
                         pending={forceSubmit.isPending}
                         evidence={p.attempt_id ? evidenceMap?.[p.attempt_id] : undefined}
                         canProctor={canProctor}
@@ -688,6 +697,7 @@ function ParticipantRow({
   assessmentId,
   onForceSubmit,
   onOpen,
+  detailHref,
   pending,
   evidence,
   canProctor,
@@ -696,6 +706,7 @@ function ParticipantRow({
   assessmentId: string;
   onForceSubmit: () => void;
   onOpen: () => void;
+  detailHref: string | null;
   pending?: boolean;
   evidence?: import("../../hooks/useAssessmentLive").EvidenceCounts;
   canProctor: boolean;
@@ -712,7 +723,22 @@ function ParticipantRow({
   return (
     <tr className="hover:bg-white/[0.02] cursor-pointer" onClick={onRowClick}>
       <td className="py-2.5 px-2 min-w-0">
-        <div className="font-medium truncate">{p.name ?? p.email}</div>
+        {detailHref ? (
+          <a
+            href={detailHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-row-action
+            onClick={(e) => e.stopPropagation()}
+            className="font-medium truncate hover:underline hover:text-primary inline-flex items-center gap-1"
+            title="Open full candidate details in a new tab"
+          >
+            {p.name ?? p.email}
+            <ExternalLink className="h-3 w-3 opacity-60" />
+          </a>
+        ) : (
+          <div className="font-medium truncate">{p.name ?? p.email}</div>
+        )}
         <div className="text-muted-foreground text-[10px] truncate">
           {p.email}
           {p.external_id ? ` · ${p.external_id}` : ""}
@@ -779,9 +805,27 @@ function ParticipantRow({
       )}
       <td className="py-2.5 px-2 text-right" data-row-action>
         <div className="inline-flex items-center gap-1">
-          <Button size="sm" variant="ghost" className="h-7 px-2" title="View details" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
+          <Button size="sm" variant="ghost" className="h-7 px-2" title="Quick view (drawer)" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
             <Eye className="h-3.5 w-3.5" />
           </Button>
+          {detailHref && (
+            <Button
+              asChild
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2"
+              title="Open full candidate page in new tab"
+            >
+              <a
+                href={detailHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </Button>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button

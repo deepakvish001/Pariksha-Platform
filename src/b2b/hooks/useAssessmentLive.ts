@@ -17,6 +17,7 @@ export type LiveParticipant = {
   external_id: string | null;
   invite_status: string;
   attempt_id: string | null;
+  attempt_slug: string | null;
   attempt_status: string | null;
   started_at: string | null;
   submitted_at: string | null;
@@ -60,7 +61,7 @@ export function useLiveParticipants(assessmentId?: string) {
           .eq("assessment_id", assessmentId!),
         supabase
           .from("assessment_attempts")
-          .select("id,invite_id,status,started_at,submitted_at,score,integrity_score")
+          .select("id,slug,invite_id,status,started_at,submitted_at,score,integrity_score")
           .eq("assessment_id", assessmentId!)
           .order("started_at", { ascending: false }),
       ]);
@@ -93,6 +94,7 @@ export function useLiveParticipants(assessmentId?: string) {
           external_id: i.external_id,
           invite_status: i.status,
           attempt_id: a?.id ?? null,
+          attempt_slug: a?.slug ?? null,
           attempt_status: a?.status ?? null,
           started_at: a?.started_at ?? null,
           submitted_at: a?.submitted_at ?? null,
