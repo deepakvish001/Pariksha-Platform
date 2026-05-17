@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, ShieldAlert } from "lucide-react";
-import { useOrgBasePath } from "../context/OrgContext";
+import { useOrgBasePath, useCurrentOrg } from "../context/OrgContext";
+import { useCanProctor } from "../hooks/usePermissions";
 import { B2BBackdrop } from "../components/B2BBackdrop";
 import "../theme.css";
 
