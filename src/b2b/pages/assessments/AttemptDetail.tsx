@@ -91,6 +91,8 @@ export default function AttemptDetail() {
 
       {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} />}
 
+      <AttemptFeedbackPanel attemptId={data.attempt.id} />
+
       {canProctor && <AttemptSosHistoryPanel attemptId={data.attempt.id} />}
 
       {canProctor && (
