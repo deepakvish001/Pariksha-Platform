@@ -220,7 +220,7 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
           )}
 
           {(() => {
-            const baseN = 2 + (requireScreen ? 1 : 0) + (requireSideEye ? 1 : 0);
+            const baseN = 3 + (requireScreen ? 1 : 0) + (requireSideEye ? 1 : 0);
             return (
               <>
                 <Step
