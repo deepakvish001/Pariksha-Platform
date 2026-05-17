@@ -62,14 +62,33 @@ export function AssessmentChatDock({
   const [open, setOpen] = useState(variant === "embedded");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const { user } = useAuth();
 
   const { data: messages, isLoading } = useAssessmentChat(attemptId);
   const isPanelVisible = open || variant === "embedded";
   const unread = useUnreadCount(messages, viewerRole);
   useAutoMarkRead(attemptId, messages, viewerRole, isPanelVisible);
-  const scrollRef = useAutoScrollRef<HTMLDivElement>(messages?.length ?? 0);
+  const { peer, sendTyping } = useChatPresence(attemptId, viewerRole, user?.id ?? null);
+  const scrollRef = useAutoScrollRef<HTMLDivElement>(
+    `${messages?.length ?? 0}:${peer.typing ? 1 : 0}`
+  );
 
   const ordered = useMemo(() => messages ?? [], [messages]);
+  const peerLabel = viewerRole === "candidate" ? "Proctor" : "Candidate";
+
+  // Stop signalling "typing" shortly after the user stops typing or sends.
+  const typingStopTimer = useRef<number | null>(null);
+  const signalTyping = (isTyping: boolean) => {
+    sendTyping(isTyping);
+    if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
+    if (isTyping) {
+      typingStopTimer.current = window.setTimeout(() => sendTyping(false), 3000);
+    }
+  };
+  useEffect(() => () => {
+    if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
+    sendTyping(false);
+  }, [sendTyping]);
 
   const handleSend = async () => {
     const body = draft.trim();
@@ -78,6 +97,8 @@ export function AssessmentChatDock({
     try {
       await sendChatMessage({ attemptId, role: viewerRole, body });
       setDraft("");
+      sendTyping(false);
+      if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
     } catch (e) {
       toast.error("Couldn't send message", {
         description: e instanceof Error ? e.message : "Try again in a moment.",
