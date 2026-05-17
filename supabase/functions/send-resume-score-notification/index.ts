@@ -20,6 +20,15 @@ interface ResumeScoreNotification {
   file_name: string;
 }
 
+function escapeHtml(s: string): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const getMilestoneInfo = (score: number): { reached: boolean; milestone: string; emoji: string } | null => {
   if (score >= 95) return { reached: true, milestone: "95+", emoji: "🏆" };
   if (score >= 90) return { reached: true, milestone: "90+", emoji: "🥇" };
