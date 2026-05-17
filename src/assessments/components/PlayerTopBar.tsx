@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Clock, Maximize2, Send, ShieldCheck, Wand2, Loader2,
-  Wifi, WifiOff,
+  Wifi, WifiOff, Info, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PlayerSosButton } from "./PlayerSosButton";
@@ -25,6 +25,11 @@ interface Props {
   onSubmit: () => void;
   onFullscreen: () => void;
   onPrefillKey: () => void;
+  onShowInstructions?: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  canZoomIn?: boolean;
+  canZoomOut?: boolean;
 }
 
 export function PlayerTopBar({
@@ -43,6 +48,11 @@ export function PlayerTopBar({
   onSubmit,
   onFullscreen,
   onPrefillKey,
+  onShowInstructions,
+  onZoomIn,
+  onZoomOut,
+  canZoomIn = true,
+  canZoomOut = true,
 }: Props) {
   const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
   const hh = Math.floor(totalSec / 3600);
