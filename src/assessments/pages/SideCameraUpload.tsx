@@ -22,7 +22,10 @@ import {
   Upload,
   WifiOff,
   GripVertical,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
   DndContext,
   closestCenter,
