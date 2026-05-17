@@ -44,11 +44,11 @@ export function OrgShell({
   const homeHref = isLegacy ? "/b2b/dashboard" : base;
 
   return (
-    <div className="theme-b2b relative min-h-screen overflow-hidden">
+    <div className="theme-b2b relative h-screen overflow-hidden">
       <B2BBackdrop variant="subtle" />
-      <div className="relative flex">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl min-h-screen sticky top-0">
-          <div className="px-5 py-5 border-b">
+      <div className="relative flex h-screen">
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl h-screen">
+          <div className="px-5 py-5 border-b shrink-0">
             <NavLink to={homeHref} className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">
                 P
