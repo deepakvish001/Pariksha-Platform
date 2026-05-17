@@ -157,7 +157,7 @@ export function resolveProctoringConfig(
       require_side_eye: false,
       require_face_detection: false,
       ai_review_interval_s: 0,
-    record_full_session: true,
+      record_full_session: false,
       events: {},
     };
   }
@@ -174,6 +174,7 @@ export function resolveProctoringConfig(
     allow_clipboard_in_inputs:
       r.allow_clipboard_in_inputs ?? preset.allow_clipboard_in_inputs,
     ai_review_interval_s: r.ai_review_interval_s ?? preset.ai_review_interval_s,
+    record_full_session: r.record_full_session ?? preset.record_full_session,
     events: { ...preset.events, ...(r.events ?? {}) },
   };
 }
