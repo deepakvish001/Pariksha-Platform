@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AttemptInspector } from "@/components/proctoring/AttemptInspector";
 import { OrgShell } from "../layouts/OrgShell";
 import { useCurrentOrg } from "../context/OrgContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertTriangle, ArrowRight, Camera, Monitor, RefreshCw, Search, ShieldAlert,
+  AlertTriangle, ArrowRight, Camera, ExternalLink, Monitor, RefreshCw, Search, ShieldAlert,
   Smartphone, ShieldCheck,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ export default function B2BProctoring() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "flagged" | "high" | "live">("flagged");
   const [assessmentFilter, setAssessmentFilter] = useState<string>("all");
+  const [inspectingId, setInspectingId] = useState<string | null>(null);
 
   const refresh = async () => {
     if (!orgId) return;
@@ -219,10 +221,11 @@ export default function B2BProctoring() {
                 const ev = snapCounts[a.id] ?? { wc: 0, sc: 0 };
                 const sd = sideCounts[a.id] ?? 0;
                 return (
-                  <Link
+                  <button
                     key={a.id}
-                    to={`/b2b/assessments/${a.assessment_id}/attempts/${a.id}`}
-                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-sm"
+                    type="button"
+                    onClick={() => setInspectingId(a.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-sm text-left"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{a.invite?.name ?? a.invite?.email ?? a.user_id.slice(0, 8)}</div>
@@ -245,14 +248,27 @@ export default function B2BProctoring() {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground w-16 text-right">{a.integrity_score}</div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Link>
+                    <Link
+                      to={`/b2b/assessments/${a.assessment_id}/attempts/${a.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Open full attempt page"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Link>
+                  </button>
                 );
               })}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <AttemptInspector
+        attemptId={inspectingId}
+        open={!!inspectingId}
+        onClose={() => setInspectingId(null)}
+      />
     </OrgShell>
   );
 }
