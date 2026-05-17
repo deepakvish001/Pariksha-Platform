@@ -51,6 +51,8 @@ const TYPES: { value: QuestionType; label: string }[] = [
   { value: "true_false", label: "True/False" },
   { value: "matching", label: "Matching" },
   { value: "short_answer", label: "Short answer" },
+  { value: "numerical", label: "Numerical" },
+  { value: "fill_blanks", label: "Fill in the blanks" },
 ];
 
 const FILTERS: { value: "all" | QuestionType; label: string }[] = [
