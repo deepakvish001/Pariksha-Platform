@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const ROLE_LABEL: Record<OrgMemberRole, string> = {
   owner: "Owner",
   admin: "Admin",
+  proctor: "Proctor",
   recruiter: "Recruiter",
   viewer: "Viewer",
 };
@@ -53,8 +54,8 @@ export default function B2BTeam() {
           <div className="font-medium">Manage who can access this organization</div>
           <p className="text-[hsl(var(--muted-foreground))] mt-0.5">
             New teammates join automatically when they sign up with your org link or are added by an admin via the
-            backend. Roles control what each person can do — owners and admins manage everything; recruiters can grade;
-            viewers see results only.
+            backend. Roles control what each person can do — owners and admins manage everything; proctors monitor
+            assessments and review evidence; recruiters can grade; viewers see results only.
           </p>
         </div>
       </div>
@@ -115,6 +116,7 @@ export default function B2BTeam() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="proctor">Proctor</SelectItem>
                           <SelectItem value="recruiter">Recruiter</SelectItem>
                           <SelectItem value="viewer">Viewer</SelectItem>
                         </SelectContent>

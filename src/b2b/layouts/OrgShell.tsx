@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, ShieldAlert } from "lucide-react";
-import { useOrgBasePath } from "../context/OrgContext";
+import { useOrgBasePath, useCurrentOrg } from "../context/OrgContext";
+import { useCanProctor } from "../hooks/usePermissions";
 import { B2BBackdrop } from "../components/B2BBackdrop";
 import "../theme.css";
 
@@ -16,26 +17,29 @@ export function OrgShell({
 }) {
   const { pathname } = useLocation();
   const base = useOrgBasePath();
+  const { org } = useCurrentOrg();
+  const { canProctor } = useCanProctor(org?.id);
 
-  // For legacy /b2b/*, show legacy nav. For slug routes, show slug-aware nav.
   const isLegacy = base === "/b2b";
-  const NAV = isLegacy
+  const NAV_ALL = isLegacy
     ? [
-        { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false },
-        { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false },
-        { to: "/b2b/proctoring", label: "Proctoring", icon: ShieldAlert, exact: false },
-        { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false },
-        { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false },
-        { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true },
+        { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false, requiresProctor: false },
+        { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false, requiresProctor: false },
+        { to: "/b2b/proctoring", label: "Proctoring", icon: ShieldAlert, exact: false, requiresProctor: true },
+        { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false, requiresProctor: false },
+        { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false, requiresProctor: false },
+        { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true, requiresProctor: false },
       ]
     : [
-        { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true },
-        { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false },
-        { to: `${base}/proctoring`, label: "Proctoring", icon: ShieldAlert, exact: false },
-        { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false },
-        { to: `${base}/team`, label: "Team", icon: Users, exact: false },
-        { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true },
+        { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true, requiresProctor: false },
+        { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false, requiresProctor: false },
+        { to: `${base}/proctoring`, label: "Proctoring", icon: ShieldAlert, exact: false, requiresProctor: true },
+        { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false, requiresProctor: false },
+        { to: `${base}/team`, label: "Team", icon: Users, exact: false, requiresProctor: false },
+        { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true, requiresProctor: false },
       ];
+
+  const NAV = NAV_ALL.filter((n) => !n.requiresProctor || canProctor);
 
   const homeHref = isLegacy ? "/b2b/dashboard" : base;
 

@@ -85,6 +85,53 @@ Deno.serve(async (req) => {
     }
   } catch { /* noop */ }
 
+  // ---- AuthZ: only service-role (cron) or org owner/admin/proctor may invoke ----
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "");
+  const isServiceCall = bearer && bearer === SERVICE_KEY;
+
+  if (!isServiceCall) {
+    // Resolve caller from JWT using anon client.
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const { data: who } = await userClient.auth.getUser();
+    const uid = who?.user?.id;
+    if (!uid) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Manual invocations must scope to one attempt so we can authorize.
+    if (!attemptFilter) {
+      return new Response(JSON.stringify({ error: "attempt_id is required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Look up the attempt's org and verify the caller has a proctor role there.
+    const { data: orgRow, error: orgErr } = await supabase
+      .rpc("attempt_assessment_org", { _attempt: attemptFilter });
+    if (orgErr || !orgRow) {
+      return new Response(JSON.stringify({ error: "Attempt not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: membership } = await supabase
+      .from("org_members")
+      .select("role")
+      .eq("org_id", orgRow as unknown as string)
+      .eq("user_id", uid)
+      .maybeSingle();
+    const role = (membership as any)?.role;
+    if (!role || !["owner", "admin", "proctor"].includes(role)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+
   // Pull a small batch of unreviewed snapshots
   let q = supabase
     .from("assessment_proctor_snapshots")

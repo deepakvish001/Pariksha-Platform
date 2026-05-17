@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AttemptInspector } from "@/components/proctoring/AttemptInspector";
 import { OrgShell } from "../layouts/OrgShell";
 import { useCurrentOrg } from "../context/OrgContext";
+import { useCanProctor } from "../hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -157,6 +158,39 @@ export default function B2BProctoring() {
 
   if (orgLoading) return <OrgShell title="Proctoring"><div /></OrgShell>;
   if (!org) return <OrgShell title="Proctoring"><div className="b2b-card p-6 text-sm">No organization found.</div></OrgShell>;
+
+  return <ProctoringContent
+    org={org} loading={loading} refresh={refresh} rows={rows} filtered={filtered}
+    summary={summary} assessmentOptions={assessmentOptions}
+    q={q} setQ={setQ} filter={filter} setFilter={setFilter}
+    assessmentFilter={assessmentFilter} setAssessmentFilter={setAssessmentFilter}
+    snapCounts={snapCounts} sideCounts={sideCounts}
+    inspectingId={inspectingId} setInspectingId={setInspectingId}
+  />;
+}
+
+function ProctoringContent(props: any) {
+  const { org, loading, refresh, filtered, summary, assessmentOptions,
+    q, setQ, filter, setFilter, assessmentFilter, setAssessmentFilter,
+    snapCounts, sideCounts, inspectingId, setInspectingId } = props;
+  const { canProctor, isLoading: permLoading } = useCanProctor(org.id);
+
+  if (permLoading) return <OrgShell title="Proctoring"><div className="b2b-card p-6 text-sm text-muted-foreground">Checking permissions…</div></OrgShell>;
+  if (!canProctor) {
+    return (
+      <OrgShell title="Proctoring">
+        <div className="b2b-card p-8 max-w-xl mx-auto text-center">
+          <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-amber-500" />
+          <h2 className="text-base font-semibold mb-1">Restricted area</h2>
+          <p className="text-sm text-muted-foreground">
+            Proctoring evidence and AI reviews are limited to organization owners,
+            admins, and members with the <span className="font-medium">Proctor</span> role.
+            Ask an admin to update your role from the Team page if you need access.
+          </p>
+        </div>
+      </OrgShell>
+    );
+  }
 
   return (
     <OrgShell title="Proctoring monitor">

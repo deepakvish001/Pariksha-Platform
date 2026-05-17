@@ -320,7 +320,7 @@ function SnapshotLightbox({ snapshots, index, onClose, onIndexChange }: {
 }
 
 // ---------- AI findings ----------
-function AIFindingsPanel({ attemptId }: { attemptId: string }) {
+function AIFindingsPanel({ attemptId, canRunReview = true }: { attemptId: string; canRunReview?: boolean }) {
   const [findings, setFindings] = useState<ProctorFinding[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [reviewing, setReviewing] = useState(false);
@@ -376,10 +376,12 @@ function AIFindingsPanel({ attemptId }: { attemptId: string }) {
               <Badge variant="outline" className="text-[10px]">{counts.low} low</Badge>
             </div>
           )}
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={runReview} disabled={reviewing}>
-            {reviewing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-            Run AI review
-          </Button>
+          {canRunReview ? (
+            <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={runReview} disabled={reviewing}>
+              {reviewing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+              Run AI review
+            </Button>
+          ) : null}
         </div>
       </div>
       {loading ? (
@@ -422,10 +424,12 @@ function AIFindingsPanel({ attemptId }: { attemptId: string }) {
 }
 
 // ---------- main inspector ----------
-export function AttemptInspector({ attemptId, open, onClose }: {
+export function AttemptInspector({ attemptId, open, onClose, canRunReview = true }: {
   attemptId: string | null;
   open: boolean;
   onClose: () => void;
+  /** Hide the "Run AI review" action for viewers without proctoring write access. */
+  canRunReview?: boolean;
 }) {
   const [attempt, setAttempt] = useState<AttemptRow | null>(null);
   const [events, setEvents] = useState<AttemptEvent[] | null>(null);
@@ -543,7 +547,7 @@ export function AttemptInspector({ attemptId, open, onClose }: {
                 )}
               </div>
 
-              <AIFindingsPanel attemptId={attempt.id} />
+              <AIFindingsPanel attemptId={attempt.id} canRunReview={canRunReview} />
             </div>
           )}
         </SheetContent>
