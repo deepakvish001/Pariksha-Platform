@@ -161,13 +161,7 @@ export function QuestionPalette({
         <nav className="flex-1 w-full overflow-y-auto mt-2 px-1 space-y-1">
           {items.map((it, i) => {
             const active = i === currentIndex;
-            const status = it.answered
-              ? "Answered"
-              : active
-              ? "Current"
-              : it.visited
-              ? "Visited"
-              : "Not visited";
+            const status = getStatusLabel(it, active, t);
             return (
               <Tooltip key={it.id} delayDuration={150}>
                 <TooltipTrigger asChild>
@@ -175,7 +169,7 @@ export function QuestionPalette({
                     type="button"
                     onClick={() => onJump(i)}
                     aria-current={active ? "true" : undefined}
-                    aria-label={`Question ${i + 1}${it.title ? `: ${it.title}` : ""} — ${status}${it.flagged ? ", flagged" : ""}`}
+                    aria-label={buildAriaLabel(t, i, it.title, status.label, it.flagged)}
                     className={cn(
                       "relative w-full h-7 rounded-md text-[10px] font-semibold tabular-nums grid place-items-center transition-colors",
                       active
@@ -192,24 +186,7 @@ export function QuestionPalette({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-[260px]">
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold leading-tight">
-                      Q{i + 1}
-                      {it.title ? <span className="text-muted-foreground"> · </span> : null}
-                      {it.title && <span className="font-normal">{it.title}</span>}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <StatusIcon answered={it.answered} visited={!!it.visited} active={active} />
-                      <span>{status}</span>
-                      {it.flagged && (
-                        <>
-                          <span className="opacity-50">·</span>
-                          <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
-                          <span>Flagged</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <StatusTooltipBody index={i} item={it} status={status} t={t} />
                 </TooltipContent>
               </Tooltip>
             );
