@@ -43,6 +43,15 @@ export function PlayerSosStatus({ attemptId }: Props) {
   const [sos, setSos] = useState<SosRow | null>(null);
   const [hidden, setHidden] = useState(false);
   const [tick, setTick] = useState(0);
+  const [queued, setQueued] = useState<QueuedSos[]>(() => getQueuedSos(attemptId));
+
+  // Mirror the local delivery queue so the pill can show "queued" / "failed"
+  // states the moment they happen — even before any DB row exists.
+  useEffect(() => {
+    return subscribeSosQueue((items) =>
+      setQueued(attemptId ? items.filter((i) => i.attempt_id === attemptId) : items)
+    );
+  }, [attemptId]);
 
   // Initial fetch + realtime subscription
   useEffect(() => {
