@@ -4,16 +4,20 @@ import userEvent from "@testing-library/user-event";
 
 // ---- Mock the Supabase client BEFORE the component import ----------------
 
-const invokeMock = vi.fn();
-const channelSub = { unsubscribe: vi.fn() };
-const channelMock = {
-  on: vi.fn().mockReturnThis(),
-  subscribe: vi.fn().mockReturnValue(channelSub),
-};
-const removeChannelMock = vi.fn();
-
-// Simulates the most recent pairing row lookup
-const pairTokenRow = { pair_token: "a".repeat(48) };
+const { invokeMock, channelMock, channelSub, removeChannelMock, pairTokenRow } = vi.hoisted(() => {
+  const channelSub = { unsubscribe: vi.fn() };
+  const channelMock = {
+    on: vi.fn().mockReturnThis(),
+    subscribe: vi.fn().mockReturnValue(channelSub),
+  };
+  return {
+    invokeMock: vi.fn(),
+    channelMock,
+    channelSub,
+    removeChannelMock: vi.fn(),
+    pairTokenRow: { pair_token: "a".repeat(48) },
+  };
+});
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
