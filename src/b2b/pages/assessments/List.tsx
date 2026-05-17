@@ -98,6 +98,31 @@ export default function B2BAssessmentsList() {
       }
     >
       <div className="space-y-4">
+        {flagged && flagged.length > 0 && (
+          <GlassCard className="p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+                <ShieldAlert className="h-3.5 w-3.5" /> Flagged across all assessments
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {flagged.map((f) => (
+                  <button
+                    key={f.attempt_id}
+                    onClick={() =>
+                      navigate(`/b2b/assessments/${f.assessment_id}/manage?attempt=${f.attempt_id}`)
+                    }
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] border border-amber-500/30 bg-amber-500/5 text-amber-200 hover:border-amber-500/60 transition-colors"
+                    title={`${f.assessment_title} · ${f.status}`}
+                  >
+                    <span className="font-medium truncate max-w-[140px]">{f.candidate}</span>
+                    <span className="opacity-70">·</span>
+                    <span className="tabular-nums">{f.integrity_score}%</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </GlassCard>
+        )}
         {/* Tabs */}
         <GlassCard className="p-2">
           <div className="flex flex-wrap items-center gap-1">
