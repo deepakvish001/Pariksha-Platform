@@ -47,26 +47,27 @@ export function OrgShell({
     <div className="theme-b2b relative h-screen overflow-hidden">
       <B2BBackdrop variant="subtle" />
       <div className="relative flex h-screen">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl h-screen">
-          <div className="px-5 py-5 border-b shrink-0">
-            <NavLink to={homeHref} className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">
+        <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-gradient-to-b from-[hsl(var(--card))]/80 to-[hsl(var(--card))]/40 backdrop-blur-xl h-screen">
+          <div className="px-5 py-5 border-b border-[hsl(var(--border))]/60 shrink-0">
+            <NavLink to={homeHref} className="flex items-center gap-2.5 group">
+              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary))]/70 text-[hsl(var(--primary-foreground))] grid place-items-center font-bold shadow-md shadow-[hsl(var(--primary))]/20 group-hover:scale-105 transition-transform">
                 P
               </div>
               <div className="leading-tight">
-                <div className="text-sm font-semibold">Parikshaa</div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Assessments
+                <div className="text-sm font-semibold tracking-tight">Parikshaa</div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  {org?.name ?? "Assessments"}
                 </div>
               </div>
             </NavLink>
           </div>
-          <nav className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1 scrollbar-thin">
+          <div className="px-5 pt-4 pb-1.5 shrink-0">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+              Workspace
+            </div>
+          </div>
+          <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1 scrollbar-thin">
             {(() => {
-              // Normalize pathname: lowercase + strip trailing slash so the
-              // active check never partially matches sibling routes (e.g.
-              // /b2b/proctoring vs /b2b/proctoring-archive) or breaks on
-              // trailing-slash variants.
               const current = (pathname || "/").replace(/\/+$/, "").toLowerCase() || "/";
               return NAV.map((n) => {
                 const target = n.to.replace(/\/+$/, "").toLowerCase() || "/";
@@ -74,34 +75,45 @@ export function OrgShell({
                   ? current === target
                   : current === target || current.startsWith(target + "/");
                 const Icon = n.icon;
-              return (
-                <NavLink
-                  key={n.to}
-                  to={n.to}
-                  end={n.exact}
-                  aria-current={active ? "page" : undefined}
-                  className={`group relative flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    active
-                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm"
-                      : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))] hover:text-[hsl(var(--foreground))]"
-                  }`}
-                >
-                  <Icon
-                    className={`h-4 w-4 shrink-0 transition-colors ${
+                return (
+                  <NavLink
+                    key={n.to}
+                    to={n.to}
+                    end={n.exact}
+                    aria-current={active ? "page" : undefined}
+                    className={`group relative flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       active
-                        ? "text-[hsl(var(--primary-foreground))]"
-                        : "text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))]"
+                        ? "bg-[hsl(var(--primary))]/12 text-[hsl(var(--primary))] shadow-sm ring-1 ring-[hsl(var(--primary))]/20"
+                        : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]/70 hover:text-[hsl(var(--foreground))]"
                     }`}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">{n.label}</span>
-                </NavLink>
-              );
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full transition-all ${
+                        active
+                          ? "bg-[hsl(var(--primary))] opacity-100"
+                          : "bg-transparent opacity-0 group-hover:bg-[hsl(var(--primary))]/40 group-hover:opacity-100"
+                      }`}
+                    />
+                    <Icon
+                      className={`h-4 w-4 shrink-0 transition-colors ${
+                        active
+                          ? "text-[hsl(var(--primary))]"
+                          : "text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))]"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{n.label}</span>
+                  </NavLink>
+                );
               });
             })()}
           </nav>
-          <div className="p-3 border-t shrink-0">
-            <NavLink to="/learn" className="text-xs text-muted-foreground hover:text-foreground">
+          <div className="p-3 border-t border-[hsl(var(--border))]/60 shrink-0">
+            <NavLink
+              to="/learn"
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--secondary))]/60 transition-colors"
+            >
               ← Back to learning app
             </NavLink>
           </div>
