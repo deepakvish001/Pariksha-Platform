@@ -605,6 +605,18 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
                   <div className="text-xs text-[hsl(var(--muted-foreground))] truncate">
                     {i.email}{i.external_id ? ` · ${i.external_id}` : ""}
                   </div>
+                  <div className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                    {i.last_sent_at ? (
+                      <>Last sent {new Date(i.last_sent_at).toLocaleString()}{i.send_count ? ` · ${i.send_count}×` : ""}</>
+                    ) : i.last_send_attempt_at ? (
+                      <span className="text-[hsl(var(--destructive))]">
+                        Send failed {new Date(i.last_send_attempt_at).toLocaleString()}
+                        {i.last_send_error ? ` — ${i.last_send_error}` : ""}
+                      </span>
+                    ) : (
+                      <span className="opacity-60">Not sent yet</span>
+                    )}
+                  </div>
                 </div>
                 <Badge variant={i.status === "pending" ? "secondary" : "default"}>{i.status}</Badge>
                 <Button
