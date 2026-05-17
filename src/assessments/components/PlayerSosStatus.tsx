@@ -122,26 +122,59 @@ export function PlayerSosStatus({ attemptId }: Props) {
     }
   }, [sos?.id, sos?.status]);
 
-  if (!attemptId || !sos || hidden) return null;
+  if (!attemptId || hidden) return null;
 
   void tick; // keep ESLint happy; tick triggers re-render only
 
   const since = (iso: string) => formatDistanceToNowStrict(new Date(iso), { addSuffix: true });
 
-  let icon = <Loader2 className="h-3.5 w-3.5 animate-spin" />;
-  let label = "SOS sent";
-  let detail = `Awaiting proctor • raised ${since(sos.created_at)}`;
-  let toneClasses =
-    "border-destructive/40 bg-destructive/10 text-destructive";
-  let pulse = true;
+  // Anything sitting in the local queue takes visual precedence — it means
+  // the candidate's last alert hasn't reached the proctor yet.
+  const latestQueued = queued[queued.length - 1] ?? null;
 
-  if (sos.status === "acknowledged" && sos.acknowledged_at) {
+  let icon: JSX.Element;
+  let label: string;
+  let detail: string;
+  let toneClasses: string;
+  let pulse = false;
+  let issueHeader: string;
+  let retry: (() => void) | null = null;
+
+  if (latestQueued && latestQueued.tries >= SOS_DELIVERY_FAILED_THRESHOLD) {
+    icon = <XCircle className="h-3.5 w-3.5" />;
+    label = "Delivery failed";
+    detail = `We couldn't reach the proctor after ${latestQueued.tries} tries${
+      latestQueued.lastError ? ` — ${latestQueued.lastError}` : ""
+    }. Please call support.`;
+    toneClasses = "border-destructive/50 bg-destructive/15 text-destructive";
+    issueHeader = latestQueued.issue;
+    retry = () => void flushSosQueue();
+  } else if (latestQueued) {
+    icon = <CloudOff className="h-3.5 w-3.5" />;
+    label = "SOS queued";
+    detail = `You're offline. We'll deliver this automatically on reconnect • saved ${since(
+      latestQueued.client_attempted_at
+    )}${latestQueued.tries > 0 ? ` • ${latestQueued.tries} retry attempts` : ""}`;
+    toneClasses = "border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-300";
+    pulse = true;
+    issueHeader = latestQueued.issue;
+    retry = () => void flushSosQueue();
+  } else if (!sos) {
+    return null;
+  } else if (sos.delivery_status === "failed") {
+    icon = <XCircle className="h-3.5 w-3.5" />;
+    label = "Delivery failed";
+    detail = sos.delivery_error
+      ? `Last error: ${sos.delivery_error}. Call support if you still need help.`
+      : "Delivery failed. Call support if you still need help.";
+    toneClasses = "border-destructive/50 bg-destructive/15 text-destructive";
+    issueHeader = sos.issue;
+  } else if (sos.status === "acknowledged" && sos.acknowledged_at) {
     icon = <LifeBuoy className="h-3.5 w-3.5" />;
     label = "Proctor on it";
     detail = `Acknowledged ${since(sos.acknowledged_at)} • help is coming`;
-    toneClasses =
-      "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
-    pulse = false;
+    toneClasses = "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    issueHeader = sos.issue;
   } else if (sos.status === "resolved" && sos.resolved_at) {
     icon = <CheckCircle2 className="h-3.5 w-3.5" />;
     label = "Resolved";
@@ -150,14 +183,21 @@ export function PlayerSosStatus({ attemptId }: Props) {
     }`;
     toneClasses =
       "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
-    pulse = false;
+    issueHeader = sos.issue;
   } else if (sos.status === "cancelled") {
     icon = <AlertTriangle className="h-3.5 w-3.5" />;
     label = "SOS cancelled";
     detail = "This alert was cancelled.";
-    toneClasses =
-      "border-muted-foreground/30 bg-muted/40 text-muted-foreground";
-    pulse = false;
+    toneClasses = "border-muted-foreground/30 bg-muted/40 text-muted-foreground";
+    issueHeader = sos.issue;
+  } else {
+    // status === "open"
+    icon = <Loader2 className="h-3.5 w-3.5 animate-spin" />;
+    label = "SOS sent";
+    detail = `Awaiting proctor • raised ${since(sos.created_at)}`;
+    toneClasses = "border-destructive/40 bg-destructive/10 text-destructive";
+    pulse = true;
+    issueHeader = sos.issue;
   }
 
   return (
