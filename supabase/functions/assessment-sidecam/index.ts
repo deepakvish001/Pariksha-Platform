@@ -401,8 +401,8 @@ Deno.serve(async (req) => {
       const user = await getUser(req);
       if (!user) return json({ error: "auth_required" }, 401);
       const { attemptId, questionId } = await req.json().catch(() => ({}));
-      if (!attemptId || !questionId)
-        return json({ error: "attemptId and questionId required" }, 400);
+      if (!isUuid(attemptId)) return json({ error: "invalid_attemptId" }, 400);
+      if (!isUuid(questionId)) return json({ error: "invalid_questionId" }, 400);
 
       // Authorization: candidate (own attempt) OR org member
       const { data: attempt } = await admin
@@ -411,6 +411,9 @@ Deno.serve(async (req) => {
         .eq("id", attemptId)
         .maybeSingle();
       if (!attempt) return json({ error: "not_found" }, 404);
+
+      const belongs = await questionInAttempt(attemptId, questionId);
+      if (!belongs) return json({ error: "question_not_in_attempt" }, 403);
 
       let allowed = attempt.user_id === user.id;
       if (!allowed) {
