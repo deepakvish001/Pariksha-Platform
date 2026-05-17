@@ -39,6 +39,8 @@ const KIND_LABEL: Record<Kind, string> = {
  * Tracks per-stream connection state and surfaces sonner toasts whenever a
  * stream drops or reconnects so the proctor doesn't miss outages.
  */
+const MUTE_STORAGE_KEY = "pariksha:live-proctor-toasts-muted";
+
 export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Props) {
   const { canProctor, isLoading: roleLoading } = useCanProctor(orgId);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
@@ -48,6 +50,19 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
   // Tracks whether the stream has ever been connected, so the first transition
   // to "true" is announced as "live" and subsequent flips as reconnect.
   const seenRef = useRef<Record<string, boolean>>({});
+  // Mute toggle — persists across reloads so a proctor doesn't have to
+  // re-silence on every page navigation. Counts stay visible regardless.
+  const [muted, setMuted] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(MUTE_STORAGE_KEY) === "1";
+  });
+  const mutedRef = useRef(muted);
+  useEffect(() => {
+    mutedRef.current = muted;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(MUTE_STORAGE_KEY, muted ? "1" : "0");
+    }
+  }, [muted]);
   // Pending debounce timers per stream key so a brief flap doesn't toast.
   const pendingRef = useRef<Record<string, { timer: number; target: boolean }>>({});
   // Last toast emitted per stream key — used for hard rate-limiting and dedup.
