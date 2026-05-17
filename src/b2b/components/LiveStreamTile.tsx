@@ -198,7 +198,14 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
             <Circle className="h-2 w-2 fill-current animate-pulse" /> REC
           </Badge>
         )}
-      </div>
+      {channelId && connected && lastSeenLabel && (
+        <div className="absolute bottom-1.5 left-1.5">
+          <Badge variant="secondary" className="text-[10px] h-5 bg-black/50 border-white/10 text-white/80">
+            Live since {lastSeenLabel}
+          </Badge>
+        </div>
+      )}
+    </div>
       {showRecBtn && (
         <div className="absolute bottom-1.5 right-1.5">
           {recording ? (
