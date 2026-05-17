@@ -28,6 +28,7 @@ import B2BDashboard from "@/b2b/pages/Dashboard";
 import B2BAssessmentsList from "@/b2b/pages/assessments/List";
 import B2BAssessmentNew from "@/b2b/pages/assessments/New";
 import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
+import B2BAssessmentManage from "@/b2b/pages/assessments/Manage";
 import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 import B2BProctoring from "@/b2b/pages/Proctoring";
@@ -269,6 +270,7 @@ const App = () => (
                 <Route path="/b2b/assessments" element={<ProtectedRoute><B2BAssessmentsList /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/new" element={<ProtectedRoute><B2BAssessmentNew /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id" element={<ProtectedRoute><B2BAssessmentDetail /></ProtectedRoute>} />
+                <Route path="/b2b/assessments/:id/manage" element={<ProtectedRoute><B2BAssessmentManage /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/attempts/:attemptId" element={<ProtectedRoute><B2BAttemptDetail /></ProtectedRoute>} />
                 <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
                 <Route path="/b2b/proctoring" element={<ProtectedRoute><B2BProctoring /></ProtectedRoute>} />
@@ -293,6 +295,7 @@ const App = () => (
                       <Route path="assessments" element={<B2BAssessmentsList />} />
                       <Route path="assessments/new" element={<B2BAssessmentNew />} />
                       <Route path="assessments/:id" element={<B2BAssessmentDetail />} />
+                      <Route path="assessments/:id/manage" element={<B2BAssessmentManage />} />
                       <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
                       <Route path="question-bank" element={<B2BQuestionBank />} />
                       <Route path="proctoring" element={<B2BProctoring />} />
