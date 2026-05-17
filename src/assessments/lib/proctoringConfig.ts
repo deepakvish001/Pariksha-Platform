@@ -53,6 +53,8 @@ export interface ProctoringConfig {
   allow_clipboard_in_inputs: boolean;
   /** AI snapshot review cadence in seconds (0 = disabled). */
   ai_review_interval_s: number;
+  /** Continuously record webcam + screen + side-cam to evidence storage for full session replay. */
+  record_full_session: boolean;
   events: Partial<Record<ProctoringEventKey, ProctoringEventRule>>;
 }
 
@@ -65,6 +67,7 @@ const PRESETS: Record<ProctoringConfig["strictness"], ProctoringConfig> = {
     require_face_detection: false,
     allow_clipboard_in_inputs: true,
     ai_review_interval_s: 0,
+    record_full_session: true,
     events: {
       tab_switch: { weight: 3, strike: true },
       window_blur: { weight: 2 },
@@ -85,6 +88,7 @@ const PRESETS: Record<ProctoringConfig["strictness"], ProctoringConfig> = {
     require_face_detection: true,
     allow_clipboard_in_inputs: true,
     ai_review_interval_s: 60,
+    record_full_session: true,
     events: {
       tab_switch: { weight: 5, strike: true },
       window_blur: { weight: 3 },
@@ -110,6 +114,7 @@ const PRESETS: Record<ProctoringConfig["strictness"], ProctoringConfig> = {
     require_face_detection: true,
     allow_clipboard_in_inputs: false,
     ai_review_interval_s: 30,
+    record_full_session: true,
     events: {
       tab_switch: { weight: 10, strike: true, autosubmit_after: 1 },
       window_blur: { weight: 5, strike: true },
@@ -152,6 +157,7 @@ export function resolveProctoringConfig(
       require_side_eye: false,
       require_face_detection: false,
       ai_review_interval_s: 0,
+      record_full_session: false,
       events: {},
     };
   }
@@ -168,6 +174,7 @@ export function resolveProctoringConfig(
     allow_clipboard_in_inputs:
       r.allow_clipboard_in_inputs ?? preset.allow_clipboard_in_inputs,
     ai_review_interval_s: r.ai_review_interval_s ?? preset.ai_review_interval_s,
+    record_full_session: r.record_full_session ?? preset.record_full_session,
     events: { ...preset.events, ...(r.events ?? {}) },
   };
 }

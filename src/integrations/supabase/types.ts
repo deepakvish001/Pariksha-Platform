@@ -986,6 +986,62 @@ export type Database = {
           },
         ]
       }
+      assessment_proctor_session_chunks: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          duration_ms: number
+          ended_at: string
+          id: string
+          kind: string
+          mime: string
+          seq: number
+          session_id: string
+          size_bytes: number
+          started_at: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          duration_ms: number
+          ended_at: string
+          id?: string
+          kind: string
+          mime?: string
+          seq: number
+          session_id: string
+          size_bytes?: number
+          started_at: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          duration_ms?: number
+          ended_at?: string
+          id?: string
+          kind?: string
+          mime?: string
+          seq?: number
+          session_id?: string
+          size_bytes?: number
+          started_at?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_proctor_session_chunks_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_proctor_snapshots: {
         Row: {
           attempt_id: string
