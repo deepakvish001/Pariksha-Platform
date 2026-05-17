@@ -308,6 +308,29 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "attempt_event_pins",
+          filter: `attempt_id=eq.${attemptId}`,
+        },
+        (payload) => {
+          setPins((prev) => {
+            if (payload.eventType === "INSERT") {
+              const row = payload.new as PinRow;
+              if (prev.some((p) => p.id === row.id)) return prev;
+              return [row, ...prev];
+            }
+            if (payload.eventType === "DELETE") {
+              const row = payload.old as Partial<PinRow>;
+              return prev.filter((p) => p.id !== row.id);
+            }
+            return prev;
+          });
+        }
+      )
       .subscribe();
 
     return () => {
