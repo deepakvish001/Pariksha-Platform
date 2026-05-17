@@ -316,6 +316,19 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
       return;
     }
 
+    // Queued offline → reassure the candidate. We'll auto-replay as soon
+    // as the connection comes back; no need to spam the email fallback.
+    if (result.queued) {
+      toast.warning("SOS queued — you're offline", {
+        description:
+          "We saved your alert. It will deliver to the proctor automatically the moment you're back online.",
+        duration: 10_000,
+      });
+      setOpen(false);
+      reset();
+      return;
+    }
+
     // Fallback chain: try email first, but always surface a phone-call
     // option as a guaranteed-reachable backup in case the device has no
     // mail client configured (mailto: silently no-ops on many machines).
