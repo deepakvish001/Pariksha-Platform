@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Camera, Monitor, Smartphone, CircleSlash, Circle, Square, Loader2 } from "lucide-react";
+import { formatDistanceToNowStrict } from "date-fns";
 import { useWebrtcStream } from "@/hooks/useWebrtcStream";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -63,9 +64,17 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
   });
 
   const prevConnRef = useRef<boolean>(false);
+  const [lastConnectedAt, setLastConnectedAt] = useState<number | null>(null);
+  // Tick every 30s so the "Xm ago" label stays fresh without spamming renders.
+  const [, setNow] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setNow((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
   useEffect(() => {
     if (prevConnRef.current !== connected) {
       prevConnRef.current = connected;
+      if (connected) setLastConnectedAt(Date.now());
       onConnectionChange?.(connected, connectionState);
     }
   }, [connected, connectionState, onConnectionChange]);
@@ -142,6 +151,9 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
 
   const Icon = ICONS[kind];
   const showRecBtn = !!attemptId && connected;
+  const lastSeenLabel = lastConnectedAt
+    ? formatDistanceToNowStrict(new Date(lastConnectedAt), { addSuffix: true })
+    : null;
 
   return (
     <div className={`relative aspect-video rounded-md overflow-hidden border border-[hsl(var(--border))] bg-black/60 ${className ?? ""}`}>
@@ -151,6 +163,9 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
         <div className="absolute inset-0 grid place-items-center text-muted-foreground text-[11px] gap-1.5 px-2 text-center">
           <CircleSlash className="h-4 w-4 mx-auto" />
           {channelId ? "Waiting for stream…" : "Not available"}
+          {lastSeenLabel && channelId && (
+            <span className="text-[10px] text-rose-300/80">Last connected {lastSeenLabel}</span>
+          )}
         </div>
       )}
       <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
@@ -183,7 +198,14 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
             <Circle className="h-2 w-2 fill-current animate-pulse" /> REC
           </Badge>
         )}
-      </div>
+      {channelId && connected && lastSeenLabel && (
+        <div className="absolute bottom-1.5 left-1.5">
+          <Badge variant="secondary" className="text-[10px] h-5 bg-black/50 border-white/10 text-white/80">
+            Live since {lastSeenLabel}
+          </Badge>
+        </div>
+      )}
+    </div>
       {showRecBtn && (
         <div className="absolute bottom-1.5 right-1.5">
           {recording ? (
