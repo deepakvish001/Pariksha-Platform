@@ -52,6 +52,7 @@ export default function SideCameraPage() {
   const stop = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setLiveStream(null);
     if (videoRef.current) videoRef.current.srcObject = null;
   };
 
