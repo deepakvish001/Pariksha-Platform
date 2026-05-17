@@ -124,17 +124,36 @@ function Tick({ at }: { at: string | null }) {
 export default function AssessmentManage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: assessment, isLoading } = useAssessment(id);
   const update = useUpdateAssessment();
   const { data: participants } = useLiveParticipants(id);
   const { data: events } = useAssessmentActivity(id);
   const { data: invites } = useInvites(id);
+  const { data: evidenceMap } = useAssessmentEvidence(id);
   const forceSubmit = useForceSubmitAttempt();
+  const { org } = useCurrentOrg();
+  const { canProctor } = useCanProctor(org?.id);
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ParticipantStatus | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("status");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [selectedInviteId, setSelectedInviteId] = useState<string | null>(null);
+  const [showRetention, setShowRetention] = useState(false);
+
+  // Open drawer from ?attempt= query param.
+  useEffect(() => {
+    const a = searchParams.get("attempt");
+    if (!a || !participants) return;
+    const p = participants.find((x) => x.attempt_id === a);
+    if (p) setSelectedInviteId(p.invite_id);
+  }, [searchParams, participants]);
+
+  const selectedParticipant = useMemo(
+    () => participants?.find((p) => p.invite_id === selectedInviteId) ?? null,
+    [participants, selectedInviteId]
+  );
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
