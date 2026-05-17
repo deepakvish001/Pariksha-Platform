@@ -222,6 +222,14 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
               <IntegrityExplanation score={attempt.integrity_score} />
             )}
 
+            {typeof attempt.integrity_score === "number" && (
+              <IntegrityTimeline
+                attemptId={attempt.id}
+                assessmentId={assessment.id}
+                finalScore={attempt.integrity_score}
+              />
+            )}
+
             {/* Next steps */}
             <div className="space-y-2">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
