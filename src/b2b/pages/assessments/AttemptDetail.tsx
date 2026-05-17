@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
+import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
 import { useCurrentOrg } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
 
