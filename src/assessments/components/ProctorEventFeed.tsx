@@ -76,6 +76,16 @@ interface NoteRow {
   updated_at: string;
 }
 
+interface PinRow {
+  id: string;
+  event_id: string;
+  attempt_id: string;
+  pinned_by: string;
+  pinned_by_name: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
 interface Props {
   attemptId: string;
   className?: string;
