@@ -436,6 +436,53 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     }
   };
 
+  const togglePin = async (eventId: string) => {
+    if (!currentUserId) {
+      toast.error("Sign in required to pin events");
+      return;
+    }
+    const existing = pinByEvent.get(eventId);
+    if (existing) {
+      const snapshot = pins;
+      setPins((prev) => prev.filter((p) => p.id !== existing.id));
+      const { error } = await supabase.from("attempt_event_pins").delete().eq("id", existing.id);
+      if (error) {
+        setPins(snapshot);
+        toast.error("Couldn't unpin", { description: error.message });
+      }
+      return;
+    }
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const optimistic: PinRow = {
+      id: tempId,
+      event_id: eventId,
+      attempt_id: attemptId,
+      pinned_by: currentUserId,
+      pinned_by_name: currentUserName,
+      reason: null,
+      created_at: new Date().toISOString(),
+    };
+    setPins((prev) => [optimistic, ...prev]);
+    const { data, error } = await supabase
+      .from("attempt_event_pins")
+      .insert({
+        event_id: eventId,
+        attempt_id: attemptId,
+        pinned_by: currentUserId,
+        pinned_by_name: currentUserName,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      setPins((prev) => prev.filter((p) => p.id !== tempId));
+      toast.error("Couldn't pin event", { description: error.message });
+      return;
+    }
+    setPins((prev) => {
+      const without = prev.filter((p) => p.id !== tempId && p.id !== data.id);
+      return [data as PinRow, ...without];
+    });
+  };
 
   return (
     <div className={cn("rounded-xl border border-border bg-card shadow-sm overflow-hidden", className)}>
