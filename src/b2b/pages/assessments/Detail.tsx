@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play, Activity } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play, Activity, Eye, Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
@@ -493,6 +494,13 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
   const [bulk, setBulk] = useState("");
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewSubject, setPreviewSubject] = useState<string>("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
 
   async function sendInvites(opts: { invite_ids?: string[]; only_pending?: boolean }) {
     const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
@@ -501,6 +509,50 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
     if (error) throw new Error(error.message ?? "Failed to send");
     await refetchInvites();
     return data as { sent: number; failed: number; results?: { email: string; ok: boolean; error?: string }[] };
+  }
+
+  async function openPreview() {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewHtml(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
+        body: { assessment_id: assessmentId, preview: true },
+      });
+      if (error) throw new Error(error.message ?? "Preview failed");
+      setPreviewHtml((data as any).html ?? "");
+      setPreviewSubject((data as any).subject ?? "");
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function sendTest() {
+    const addr = testEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+      toast.error("Enter a valid email address");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
+        body: { assessment_id: assessmentId, test_email: addr },
+      });
+      if (error) throw new Error(error.message ?? "Failed to send");
+      if ((data as any).ok) {
+        toast.success(`Test email sent to ${addr}`);
+        setTestOpen(false);
+      } else {
+        toast.error((data as any).error ?? "Failed to send test email");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSendingTest(false);
+    }
   }
 
   function parseRows(text: string) {
@@ -563,6 +615,84 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
           </Button>
         </div>
       </div>
+
+      <div className="b2b-card p-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs text-[hsl(var(--muted-foreground))]">
+          Invitation email · branded with your org logo &amp; color
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={openPreview}>
+            <Eye className="h-3.5 w-3.5 mr-1" /> Preview email
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setTestEmail((prev) => prev || "");
+              setTestOpen(true);
+            }}
+          >
+            <Mail className="h-3.5 w-3.5 mr-1" /> Send test email
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-2">
+            <DialogTitle>Invitation email preview</DialogTitle>
+            {previewSubject && (
+              <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="font-medium text-[hsl(var(--foreground))]">Subject:</span> {previewSubject}
+              </div>
+            )}
+          </DialogHeader>
+          <div className="h-[70vh] bg-[#f4f5f7] border-t border-[hsl(var(--border))]">
+            {previewLoading ? (
+              <div className="h-full grid place-items-center text-sm text-[hsl(var(--muted-foreground))]">
+                Rendering preview…
+              </div>
+            ) : (
+              <iframe
+                title="Email preview"
+                srcDoc={previewHtml ?? ""}
+                className="w-full h-full bg-white"
+                sandbox=""
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={testOpen} onOpenChange={setTestOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send a test email</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Sends a sample of this invitation email (with a placeholder join link) to the address you choose.
+            Nothing is recorded against your real invites.
+          </p>
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !sendingTest) sendTest();
+            }}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestOpen(false)} disabled={sendingTest}>
+              Cancel
+            </Button>
+            <Button onClick={sendTest} disabled={sendingTest || !testEmail.trim()}>
+              {sendingTest ? "Sending…" : "Send test"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {!invites?.length ? (
         <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
