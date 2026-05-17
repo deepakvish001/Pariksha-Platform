@@ -324,6 +324,9 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         .from("attempt_events")
         .insert({ attempt_id: attemptId, kind: "candidate_details_saved", payload: {} as never });
       onComplete({ ...(parsed.data as Omit<CandidateDetailsPayload, "id_photo_url" | "selfie_url">), id_photo_url: idPhotoUrl, selfie_url: selfieUrl });
+      toast.success("Saved ✓ Identity details verified", {
+        description: "You can now continue with the remaining checks.",
+      });
     } catch (err) {
       setGlobalError(err instanceof Error ? err.message : "Could not save details");
     } finally {
