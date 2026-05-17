@@ -497,30 +497,112 @@ export default function AssessmentManage() {
 
         {/* Integrity alerts */}
         <GlassCard className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ShieldAlert className="h-4 w-4 text-amber-400" />
-            <h2 className="text-sm font-semibold">Integrity alerts</h2>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-400" />
+              <h2 className="text-sm font-semibold">Integrity alerts</h2>
+            </div>
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showResolved}
+                onChange={(e) => setShowResolved(e.target.checked)}
+                className="h-3 w-3 accent-[hsl(var(--primary))]"
+              />
+              Show resolved
+            </label>
           </div>
           {(() => {
-            const alerts = (participants ?? []).filter(
-              (p) => p.integrity_score !== null && p.integrity_score < 70 && p.attempt_id
-            );
-            if (alerts.length === 0)
+            type AlertRow = {
+              p: LiveParticipant;
+              type: "low_integrity" | "findings_high" | "findings_med";
+              label: string;
+              detail: string;
+            };
+            const rows: AlertRow[] = [];
+            for (const p of participants ?? []) {
+              if (!p.attempt_id) continue;
+              if (p.integrity_score !== null && p.integrity_score < 70) {
+                rows.push({ p, type: "low_integrity", label: "Low integrity", detail: `Integrity ${p.integrity_score}` });
+              }
+              const ev = evidenceMap?.[p.attempt_id];
+              if (ev?.findings_high) {
+                rows.push({ p, type: "findings_high", label: "High-severity findings", detail: `${ev.findings_high} high` });
+              }
+              if (ev?.findings_med) {
+                rows.push({ p, type: "findings_med", label: "Medium-severity findings", detail: `${ev.findings_med} med` });
+              }
+            }
+            const visible = rows.filter((r) => showResolved || !isResolved(r.p.attempt_id!, r.type));
+            const resolvedCount = rows.filter((r) => isResolved(r.p.attempt_id!, r.type)).length;
+            if (rows.length === 0)
               return <div className="text-xs text-muted-foreground py-3">All clear — no integrity violations flagged.</div>;
+            if (visible.length === 0)
+              return (
+                <div className="text-xs text-muted-foreground py-3">
+                  All {resolvedCount} alert{resolvedCount === 1 ? "" : "s"} marked resolved. Toggle "Show resolved" to review.
+                </div>
+              );
             return (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {alerts.map((p) => (
-                  <button
-                    key={p.invite_id}
-                    type="button"
-                    onClick={() => setSelectedInviteId(p.invite_id)}
-                    className="text-left rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs hover:border-amber-500/40 transition-colors"
-                  >
-                    <div className="font-medium truncate">{p.name ?? p.email}</div>
-                    <div className="text-amber-300/90">Integrity {p.integrity_score}</div>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {visible.map((r) => {
+                    const resolved = isResolved(r.p.attempt_id!, r.type);
+                    return (
+                      <div
+                        key={`${r.p.invite_id}:${r.type}`}
+                        className={`rounded-md border px-3 py-2 text-xs transition-colors ${
+                          resolved
+                            ? "border-emerald-500/20 bg-emerald-500/5"
+                            : "border-amber-500/20 bg-amber-500/5 hover:border-amber-500/40"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInviteId(r.p.invite_id)}
+                          className="text-left w-full"
+                        >
+                          <div className="font-medium truncate">{r.p.name ?? r.p.email}</div>
+                          <div className={resolved ? "text-emerald-300/90" : "text-amber-300/90"}>
+                            {r.label} · {r.detail}
+                          </div>
+                        </button>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          {resolved ? (
+                            <>
+                              <span className="text-[10px] text-emerald-300/80 inline-flex items-center gap-1">
+                                <Check className="h-3 w-3" /> Resolved
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-[10px]"
+                                onClick={() => unmarkResolved(r.p.attempt_id!, r.type)}
+                              >
+                                <RotateCcw className="h-3 w-3 mr-1" /> Reopen
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-[10px] ml-auto"
+                              onClick={() => markResolved(r.p.attempt_id!, r.type, r.label)}
+                            >
+                              <Check className="h-3 w-3 mr-1" /> Mark resolved
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {resolvedCount > 0 && !showResolved && (
+                  <div className="mt-3 text-[11px] text-muted-foreground">
+                    {resolvedCount} resolved alert{resolvedCount === 1 ? "" : "s"} hidden.
+                  </div>
+                )}
+              </>
             );
           })()}
         </GlassCard>
