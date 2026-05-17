@@ -57,6 +57,18 @@ const Login = () => {
       return;
     }
 
+    // Check if MFA is required
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalData?.nextLevel === "aal2" && aalData.currentLevel === "aal1") {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totp = factors?.totp?.find((f) => f.status === "verified");
+      if (totp) {
+        setMfaStep({ factorId: totp.id });
+        setIsLoading(false);
+        return;
+      }
+    }
+
     toast({
       title: "Welcome back!",
       description: "You've successfully logged in.",
@@ -69,6 +81,34 @@ const Login = () => {
     navigate(dest, { replace: true });
 
     setIsLoading(false);
+  };
+
+  const handleMfaVerify = async () => {
+    if (!mfaStep || mfaCode.length !== 6) return;
+    setMfaVerifying(true);
+    const { data: challenge, error: chErr } = await supabase.auth.mfa.challenge({ factorId: mfaStep.factorId });
+    if (chErr || !challenge) {
+      toast({ variant: "destructive", title: "Challenge failed", description: chErr?.message });
+      setMfaVerifying(false);
+      return;
+    }
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfaStep.factorId,
+      challengeId: challenge.id,
+      code: mfaCode,
+    });
+    if (error) {
+      toast({ variant: "destructive", title: "Invalid code", description: error.message });
+      setMfaVerifying(false);
+      setMfaCode("");
+      return;
+    }
+    toast({ title: "Welcome back!" });
+    const { data: { user } } = await supabase.auth.getUser();
+    const dest = from ?? (user ? await getPostLoginPath(user.id) : "/learn");
+    try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
+    navigate(dest, { replace: true });
+    setMfaVerifying(false);
   };
 
   const handleGoogleSignIn = async () => {
