@@ -31,7 +31,7 @@ import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
 import B2BAssessmentManage from "@/b2b/pages/assessments/Manage";
 import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
-import B2BProctoring from "@/b2b/pages/Proctoring";
+
 import B2BTeam from "@/b2b/pages/Team";
 import B2BSettings from "@/b2b/pages/Settings";
 import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
