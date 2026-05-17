@@ -14,6 +14,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Pencil,
   Send,
@@ -279,10 +290,19 @@ export default function AssessmentManage() {
                         key={p.invite_id}
                         p={p}
                         assessmentId={assessment.id}
-                        onForceSubmit={() =>
-                          p.attempt_id &&
-                          forceSubmit.mutate({ attempt_id: p.attempt_id, assessment_id: assessment.id })
-                        }
+                        pending={forceSubmit.isPending}
+                        onForceSubmit={() => {
+                          if (!p.attempt_id) return;
+                          forceSubmit.mutate(
+                            { attempt_id: p.attempt_id, assessment_id: assessment.id },
+                            {
+                              onSuccess: () =>
+                                toast.success(`Force-submitted ${p.name ?? p.email}`),
+                              onError: (e: any) =>
+                                toast.error(e?.message ?? "Failed to force submit"),
+                            }
+                          );
+                        }}
                       />
                     ))}
                   </tbody>
@@ -355,11 +375,16 @@ function ParticipantRow({
   p,
   assessmentId,
   onForceSubmit,
+  pending,
 }: {
   p: LiveParticipant;
   assessmentId: string;
   onForceSubmit: () => void;
+  pending?: boolean;
 }) {
+  const canForceSubmit =
+    !!p.attempt_id && p.status !== "submitted" && p.status !== "auto_submitted";
+
   return (
     <tr className="hover:bg-white/[0.02]">
       <td className="py-2.5 px-2 min-w-0">
@@ -409,23 +434,44 @@ function ParticipantRow({
         <div className="inline-flex items-center gap-1">
           {p.attempt_id && (
             <Link to={`/b2b/assessments/${assessmentId}/attempts/${p.attempt_id}`}>
-              <Button size="sm" variant="ghost" className="h-7 px-2">
+              <Button size="sm" variant="ghost" className="h-7 px-2" title="View attempt">
                 <Eye className="h-3.5 w-3.5" />
               </Button>
             </Link>
           )}
-          {p.status === "in_progress" && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-rose-300 hover:text-rose-200"
-              onClick={() => {
-                if (confirm(`Force submit attempt for ${p.email}?`)) onForceSubmit();
-              }}
-            >
-              <StopCircle className="h-3.5 w-3.5" />
-            </Button>
-          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canForceSubmit || pending}
+                className="h-7 px-2 text-rose-300 hover:text-rose-200 disabled:opacity-40"
+                title={canForceSubmit ? "Force submit attempt" : "No active attempt"}
+              >
+                <StopCircle className="h-3.5 w-3.5 mr-1" />
+                <span className="text-[11px]">Force submit</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Force submit attempt?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will end <span className="font-medium">{p.name ?? p.email}</span>'s attempt
+                  immediately and mark it as auto-submitted. Their current answers will be scored.
+                  This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-rose-500/90 hover:bg-rose-500 text-white"
+                  onClick={onForceSubmit}
+                >
+                  Force submit
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </td>
     </tr>
