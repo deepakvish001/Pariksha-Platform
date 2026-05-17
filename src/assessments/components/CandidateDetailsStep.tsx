@@ -423,24 +423,33 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
             <Camera className="h-3.5 w-3.5" /> Live selfie
           </div>
           {selfieDataUrl ? (
-            <div className="flex items-center gap-2">
-              <img
-                src={selfieDataUrl}
-                alt="Selfie preview"
-                className="h-16 w-16 rounded object-cover border border-emerald-500/40"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSelfieDataUrl(null);
-                  setSelfieUrl(null);
-                  startCamera();
-                }}
-                disabled={busy}
-              >
-                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retake
-              </Button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <img
+                  src={selfieDataUrl}
+                  alt="Selfie preview"
+                  className={
+                    "h-16 w-16 rounded object-cover border " +
+                    (selfieUrl && selfieChecks.every((c) => c.ok)
+                      ? "border-emerald-500/40"
+                      : "border-destructive/40")
+                  }
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelfieDataUrl(null);
+                    setSelfieUrl(null);
+                    setSelfieChecks([]);
+                    startCamera();
+                  }}
+                  disabled={busy}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retake
+                </Button>
+              </div>
+              {selfieChecks.length > 0 && <ChecklistView checks={selfieChecks} />}
             </div>
           ) : cameraOn ? (
             <div className="space-y-2">
