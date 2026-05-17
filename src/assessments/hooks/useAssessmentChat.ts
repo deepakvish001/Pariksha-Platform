@@ -210,6 +210,20 @@ const TYPING_BROADCAST_THROTTLE_MS = 1500;
 // the peer's typing indicator off/on.
 const TYPING_STOP_DEBOUNCE_MS = 600;
 
+// Presence heartbeat defaults. The heartbeat re-tracks the peer's presence
+// payload at a steady interval; if we miss `staleAfterMs` without an update,
+// we treat the peer as offline so "Last seen" advances when the tab closes
+// without a clean unmount (browser kill, OS sleep, network drop, etc.).
+const DEFAULT_PRESENCE_HEARTBEAT_MS = 15_000;
+const DEFAULT_PRESENCE_STALE_MS = 45_000; // ~3 missed beats
+
+export interface ChatPresenceOptions {
+  /** How often to re-broadcast our presence. Defaults to 15s. */
+  heartbeatMs?: number;
+  /** Mark peer offline if no heartbeat is seen within this window. Defaults to 45s. */
+  staleAfterMs?: number;
+}
+
 /**
  * Presence + typing indicators for an attempt's chat.
  * Uses Supabase Realtime presence (online/last-seen) and broadcast (typing).
@@ -217,8 +231,15 @@ const TYPING_STOP_DEBOUNCE_MS = 600;
 export function useChatPresence(
   attemptId: string | null | undefined,
   viewerRole: "candidate" | "proctor",
-  viewerUserId: string | null | undefined
+  viewerUserId: string | null | undefined,
+  options: ChatPresenceOptions = {}
 ) {
+  const heartbeatMs = Math.max(2_000, options.heartbeatMs ?? DEFAULT_PRESENCE_HEARTBEAT_MS);
+  const staleAfterMs = Math.max(
+    heartbeatMs * 2,
+    options.staleAfterMs ?? DEFAULT_PRESENCE_STALE_MS
+  );
+
   const [peer, setPeer] = useState<ChatPresenceState>({
     online: false,
     lastSeen: null,
@@ -232,6 +253,10 @@ export function useChatPresence(
   // Pending trailing-broadcast timers, so the final state isn't dropped.
   const trailingTrueTimerRef = useRef<number | null>(null);
   const stopDebounceTimerRef = useRef<number | null>(null);
+  // Heartbeat + staleness bookkeeping.
+  const heartbeatTimerRef = useRef<number | null>(null);
+  const staleCheckTimerRef = useRef<number | null>(null);
+  const peerLastBeatRef = useRef<number | null>(null);
   const peerRole = viewerRole === "candidate" ? "proctor" : "candidate";
 
   useEffect(() => {
