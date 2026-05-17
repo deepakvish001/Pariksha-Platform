@@ -292,6 +292,36 @@ export default function B2BSettings() {
           </div>
         )}
       </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-2">
+            <DialogTitle>Invitation email preview</DialogTitle>
+            {previewSubject && (
+              <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="font-medium text-[hsl(var(--foreground))]">Subject:</span> {previewSubject}
+              </div>
+            )}
+            <div className="text-[11px] text-[hsl(var(--muted-foreground))]">
+              Sample candidate &amp; assessment shown — your real invites use the candidate's name and assessment details.
+            </div>
+          </DialogHeader>
+          <div className="h-[70vh] bg-[#f4f5f7] border-t border-[hsl(var(--border))]">
+            {previewLoading ? (
+              <div className="h-full grid place-items-center text-sm text-[hsl(var(--muted-foreground))]">
+                Rendering preview…
+              </div>
+            ) : (
+              <iframe
+                title="Email preview"
+                srcDoc={previewHtml ?? ""}
+                className="w-full h-full bg-white"
+                sandbox=""
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </OrgShell>
   );
 }
