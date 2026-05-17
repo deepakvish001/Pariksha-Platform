@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
            continue;
          }
  
-         const userName = userNames.get(user.user_id) || email.split("@")[0];
+         const userName = escapeHtml(userNames.get(user.user_id) || email.split("@")[0]);
  
          // Calculate stats
          const totalQuizzes = quizResults.length;
