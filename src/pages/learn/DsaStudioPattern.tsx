@@ -73,7 +73,7 @@ export default function DsaStudioPattern() {
 
         {/* Open Graph */}
         <meta property="og:type" content="article" />
-        <meta property="og:site_name" content="Byteskill" />
+        <meta property="og:site_name" content="Parikshaa" />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={description} />
         <meta property="og:url" content={canonical} />
