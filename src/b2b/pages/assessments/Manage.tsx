@@ -12,8 +12,9 @@ import {
   type ParticipantStatus,
 } from "../../hooks/useAssessmentLive";
 import { useCanProctor } from "../../hooks/usePermissions";
-import { useCurrentOrg } from "../../context/OrgContext";
+import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
 import ParticipantDetailDrawer from "../../components/ParticipantDetailDrawer";
+import { paths } from "@/lib/routing/paths";
 import { RetentionCard } from "@/components/proctoring/RetentionCard";
 import { LiveProctorWall } from "../../components/LiveProctorWall";
 import { Button } from "@/components/ui/button";
