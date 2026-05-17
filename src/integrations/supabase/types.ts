@@ -927,6 +927,53 @@ export type Database = {
           },
         ]
       }
+      assessment_proctor_recordings: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          duration_ms: number | null
+          ended_at: string | null
+          id: string
+          kind: string
+          recorded_by: string | null
+          size_bytes: number | null
+          started_at: string
+          storage_path: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          kind: string
+          recorded_by?: string | null
+          size_bytes?: number | null
+          started_at?: string
+          storage_path: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          kind?: string
+          recorded_by?: string | null
+          size_bytes?: number | null
+          started_at?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_proctor_recordings_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_proctor_snapshots: {
         Row: {
           attempt_id: string
