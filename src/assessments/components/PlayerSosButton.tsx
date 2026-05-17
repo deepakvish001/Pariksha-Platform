@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { enqueueSos, flushSosQueue, installSosQueueAutoflush } from "@/assessments/lib/sosDeliveryQueue";
 
+const MAX_PER_ATTEMPT = 5;
+const COOLDOWN_MS = 60_000;
 
 const SUPPORT_EMAIL = "support@parikshaa.app";
 const SUPPORT_PHONE = "+91 80000 00000";
@@ -140,6 +142,9 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
   const [issue, setIssue] = useState<string>(QUICK_ISSUES[0]);
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
   // Replay any SOS alerts that failed to deliver in a previous session
   // (e.g. tab crashed while offline). Safe to call repeatedly.
@@ -147,6 +152,56 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
     installSosQueueAutoflush();
     void flushSosQueue();
   }, []);
+
+  // Tick once per second while a cooldown is active so the countdown
+  // label updates live without re-querying the database.
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [cooldownUntil]);
+
+  // Pull the latest SOS state (last timestamp + total count) so the
+  // countdown reflects reality even on first mount or after a refresh.
+  const refreshRateLimit = async () => {
+    if (!attemptId) return;
+    try {
+      const { data, error } = await supabase
+        .from("assessment_sos_events")
+        .select("created_at")
+        .eq("attempt_id", attemptId)
+        .order("created_at", { ascending: false })
+        .limit(MAX_PER_ATTEMPT);
+      if (error) return;
+      setTotalCount(data?.length ?? 0);
+      const last = data?.[0];
+      if (last) {
+        const until = new Date(last.created_at).getTime() + COOLDOWN_MS;
+        setCooldownUntil(until > Date.now() ? until : null);
+      } else {
+        setCooldownUntil(null);
+      }
+    } catch {
+      /* best-effort */
+    }
+  };
+
+  useEffect(() => {
+    void refreshRateLimit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attemptId]);
+
+  useEffect(() => {
+    if (open) void refreshRateLimit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const remainingMs = cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
+  const remainingSec = Math.ceil(remainingMs / 1000);
+  const inCooldown = remainingMs > 0;
+  const maxedOut = totalCount >= MAX_PER_ATTEMPT;
+  const blocked = inCooldown || maxedOut;
+
 
   const reset = () => {
     setStep("confirm");
@@ -197,8 +252,6 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
         .limit(5);
       if (recentErr) console.warn("SOS rate-limit lookup failed", recentErr);
 
-      const MAX_PER_ATTEMPT = 5;
-      const COOLDOWN_MS = 60_000;
       if (recent) {
         if (recent.length >= MAX_PER_ATTEMPT) {
           return {
@@ -300,6 +353,10 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
     setSending(false);
 
     if (result.ok) {
+      // Start a fresh cooldown window so the countdown begins immediately
+      // without waiting for the next refresh tick.
+      setCooldownUntil(Date.now() + COOLDOWN_MS);
+      setTotalCount((c) => c + 1);
       toast.success("Proctor notified", {
         description: "A proctor has been alerted and will respond in chat shortly.",
       });
@@ -310,6 +367,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
 
     // Rate limited → don't spam email fallback, just warn and stay on the dialog.
     if (result.rateLimited) {
+      void refreshRateLimit();
       toast.warning("SOS not sent", {
         description: result.error ?? "Please wait before raising another alert.",
       });
@@ -387,9 +445,20 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           >
             <LifeBuoy className="h-4 w-4" />
             {!compact && <span className="hidden sm:inline ml-1.5">SOS</span>}
+            {!compact && inCooldown && (
+              <span className="hidden sm:inline ml-1.5 tabular-nums text-[11px] font-mono opacity-80">
+                {remainingSec}s
+              </span>
+            )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Emergency help — your test stays safe</TooltipContent>
+        <TooltipContent>
+          {maxedOut
+            ? `SOS limit reached (${MAX_PER_ATTEMPT}). Call support instead.`
+            : inCooldown
+              ? `Proctor already alerted — you can resend in ${remainingSec}s`
+              : "Emergency help — your test stays safe"}
+        </TooltipContent>
       </Tooltip>
 
       <Dialog
@@ -479,6 +548,17 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
             </div>
           ) : (
             <div className="space-y-3">
+              {blocked && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                >
+                  {maxedOut
+                    ? `You've reached the limit of ${MAX_PER_ATTEMPT} SOS alerts for this attempt. Use Call or WhatsApp above for further help.`
+                    : `Proctor already alerted. You can resend in ${remainingSec}s.`}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                   What's the issue?
@@ -521,15 +601,21 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
                 <Button
                   variant="destructive"
                   onClick={sendSos}
-                  disabled={sending}
-                  className="font-semibold"
+                  disabled={sending || blocked}
+                  className="font-semibold tabular-nums"
                 >
                   {sending ? (
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                   ) : (
                     <Send className="h-4 w-4 mr-1.5" />
                   )}
-                  {sending ? "Notifying proctor…" : "Send SOS"}
+                  {sending
+                    ? "Notifying proctor…"
+                    : maxedOut
+                      ? `Limit reached (${MAX_PER_ATTEMPT}/${MAX_PER_ATTEMPT})`
+                      : inCooldown
+                        ? `Resend in ${remainingSec}s`
+                        : "Send SOS"}
                 </Button>
               </DialogFooter>
             </div>
