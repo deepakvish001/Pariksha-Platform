@@ -50,6 +50,8 @@ export function useAssessmentChat(attemptId: string | null | undefined) {
         },
         (payload) => {
           const msg = payload.new as AssessmentChatMessage;
+          // Defensive: ignore stray events from other attempts/threads
+          if (!msg || msg.attempt_id !== attemptId) return;
           qc.setQueryData<AssessmentChatMessage[]>(KEY(attemptId), (prev) => {
             const list = prev ?? [];
             if (list.some((m) => m.id === msg.id)) return list;
@@ -67,9 +69,13 @@ export function useAssessmentChat(attemptId: string | null | undefined) {
         },
         (payload) => {
           const msg = payload.new as AssessmentChatMessage;
+          if (!msg || msg.attempt_id !== attemptId) return;
           qc.setQueryData<AssessmentChatMessage[]>(KEY(attemptId), (prev) => {
             const list = prev ?? [];
-            return list.map((m) => (m.id === msg.id ? { ...m, ...msg } : m));
+            // Only patch rows that belong to this thread
+            return list.map((m) =>
+              m.id === msg.id && m.attempt_id === attemptId ? { ...m, ...msg } : m
+            );
           });
         }
       )
