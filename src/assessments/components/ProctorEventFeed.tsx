@@ -578,21 +578,57 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
             });
             const eventId = e.source === "event" ? e.key.slice(2) : null;
             const eventNotes = eventId ? notesByEvent.get(eventId) ?? [] : [];
+            const pin = eventId ? pinByEvent.get(eventId) ?? null : null;
+            const isPinned = !!pin;
             return (
               <div
                 key={e.key}
                 className={cn(
                   "flex items-start gap-2 rounded-md border px-2.5 py-2 text-xs",
-                  SEVERITY_STYLES[e.severity]
+                  SEVERITY_STYLES[e.severity],
+                  isPinned && "ring-1 ring-amber-500/50 border-amber-500/50"
                 )}
               >
                 <Icon className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", ICON_STYLES[e.severity])} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold leading-tight truncate">{e.label}</span>
+                    {isPinned && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Pin className="h-3 w-3 text-amber-600 dark:text-amber-400 fill-amber-500/30 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Pinned{pin?.pinned_by_name ? ` by ${pin.pinned_by_name}` : ""}
+                          {" · "}
+                          {formatRelative(pin!.created_at)}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <span className="ml-auto text-[10px] tabular-nums text-muted-foreground shrink-0">
                       {time}
                     </span>
+                    {eventId && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => togglePin(eventId)}
+                            className={cn(
+                              "shrink-0 rounded p-0.5 transition-colors",
+                              isPinned
+                                ? "text-amber-600 dark:text-amber-400 hover:text-amber-700"
+                                : "text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
+                            )}
+                            aria-pressed={isPinned}
+                            aria-label={isPinned ? "Unpin event" : "Pin event"}
+                          >
+                            {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{isPinned ? "Unpin" : "Pin for review"}</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                   {e.detail && (
                     <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug whitespace-pre-wrap break-words">
