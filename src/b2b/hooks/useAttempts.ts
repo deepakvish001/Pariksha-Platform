@@ -34,7 +34,7 @@ export function useAttempts(assessmentId?: string) {
 
 export type AttemptDetail = {
   attempt: AttemptRow;
-  assessment: { id: string; title: string; duration_min: number };
+  assessment: { id: string; slug: string | null; title: string; duration_min: number };
   answers: Array<{
     id: string;
     question_id: string;
