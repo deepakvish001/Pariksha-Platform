@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useAttemptDetail, useGradeAnswer, useFinalizeAttemptScore, useAttemptEvents } from "../../hooks/useAttempts";
 import { useAssessment } from "../../hooks/useAssessments";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Save, ChevronRight, Clock, Mail, Hash, User, FileText, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
 import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
