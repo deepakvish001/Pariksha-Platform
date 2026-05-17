@@ -357,6 +357,12 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
           {type === "short_answer" && (
             <p className="text-xs text-[hsl(var(--muted-foreground))]">Add accepted answer variants from the editor after creating.</p>
           )}
+          {type === "numerical" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Set the expected number, tolerance, and unit from the editor after creating.</p>
+          )}
+          {type === "fill_blanks" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Use <code>{`{{1}}`}</code>, <code>{`{{2}}`}</code>… placeholders in the prompt and define each blank's answer in the editor.</p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
@@ -367,7 +373,9 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
               const meta: Record<string, unknown> =
                 type === "matching" ? { pairs: [] } :
                 type === "short_answer" ? { accepted: [], case_sensitive: false, max_length: 200 } :
-                type === "true_false" ? { correct: true } : {};
+                type === "true_false" ? { correct: true } :
+                type === "numerical" ? { expected: "", tolerance: 0, unit: "" } :
+                type === "fill_blanks" ? { blanks: [] } : {};
               const q = await create.mutateAsync({
                 org_id: orgId,
                 type,
