@@ -1,14 +1,31 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertOctagon, CheckCheck, CheckCircle2, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertOctagon,
+  CheckCheck,
+  CheckCircle2,
+  Loader2,
+  Search,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 type SosStatus = "open" | "acknowledged" | "resolved";
+type StatusFilter = "all" | SosStatus;
+type TimeFilter = "all" | "24h" | "7d" | "30d";
 
 type SosRow = {
   id: string;
@@ -30,7 +47,12 @@ const STATUS_META: Record<SosStatus, { label: string; tone: string; icon: typeof
   open: { label: "Open", tone: "bg-red-500/15 text-red-500 border-red-500/30", icon: AlertOctagon },
   acknowledged: { label: "Acknowledged", tone: "bg-amber-500/15 text-amber-500 border-amber-500/30", icon: CheckCheck },
   resolved: { label: "Resolved", tone: "bg-green-500/15 text-green-500 border-green-500/30", icon: CheckCircle2 },
-  
+};
+
+const TIME_WINDOW_MS: Record<Exclude<TimeFilter, "all">, number> = {
+  "24h": 24 * 60 * 60 * 1000,
+  "7d": 7 * 24 * 60 * 60 * 1000,
+  "30d": 30 * 24 * 60 * 60 * 1000,
 };
 
 function useSosHistory(attemptId?: string) {
@@ -45,6 +67,26 @@ function useSosHistory(attemptId?: string) {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as SosRow[];
+    },
+  });
+}
+
+function useProctorProfiles(ids: string[]) {
+  const key = useMemo(() => [...new Set(ids)].sort(), [ids]);
+  return useQuery({
+    queryKey: ["b2b", "proctor-profiles", key],
+    enabled: key.length > 0,
+    queryFn: async (): Promise<Record<string, string>> => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", key);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const row of data ?? []) {
+        if (row.user_id) map[row.user_id] = row.full_name ?? "";
+      }
+      return map;
     },
   });
 }
@@ -74,10 +116,19 @@ function useUpdateSos(attemptId?: string) {
   });
 }
 
+function shortId(id: string) {
+  return id.slice(0, 6);
+}
+
 export default function AttemptSosHistoryPanel({ attemptId }: { attemptId: string }) {
   const { data = [], isLoading } = useSosHistory(attemptId);
   const update = useUpdateSos(attemptId);
   const qc = useQueryClient();
+
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [proctor, setProctor] = useState<string>("all"); // "all" | "unassigned" | user_id
+  const [time, setTime] = useState<TimeFilter>("all");
+  const [search, setSearch] = useState("");
 
   // Realtime: re-fetch on any change to this attempt's SOS rows
   useEffect(() => {
@@ -95,7 +146,44 @@ export default function AttemptSosHistoryPanel({ attemptId }: { attemptId: strin
     };
   }, [attemptId, qc]);
 
+  const proctorIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of data) {
+      if (r.acknowledged_by) s.add(r.acknowledged_by);
+      if (r.resolved_by) s.add(r.resolved_by);
+    }
+    return [...s];
+  }, [data]);
+  const { data: proctorNames = {} } = useProctorProfiles(proctorIds);
+  const labelFor = (id: string) => proctorNames[id]?.trim() || `Proctor ${shortId(id)}`;
+
+  const filtered = useMemo(() => {
+    const now = Date.now();
+    const cutoff = time === "all" ? 0 : now - TIME_WINDOW_MS[time];
+    const q = search.trim().toLowerCase();
+
+    return data.filter((r) => {
+      if (status !== "all" && r.status !== status) return false;
+
+      if (proctor === "unassigned") {
+        if (r.acknowledged_by || r.resolved_by) return false;
+      } else if (proctor !== "all") {
+        if (r.acknowledged_by !== proctor && r.resolved_by !== proctor) return false;
+      }
+
+      if (cutoff && new Date(r.created_at).getTime() < cutoff) return false;
+
+      if (q) {
+        const hay = `${r.issue} ${r.notes ?? ""} ${r.resolution_note ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [data, status, proctor, time, search]);
+
   const openCount = data.filter((r) => r.status === "open").length;
+  const hasActiveFilters =
+    status !== "all" || proctor !== "all" || time !== "all" || search.trim() !== "";
 
   return (
     <Card className="mb-4">
@@ -109,9 +197,77 @@ export default function AttemptSosHistoryPanel({ attemptId }: { attemptId: strin
             </Badge>
           )}
         </CardTitle>
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">{data.length} total</span>
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {filtered.length}
+          {hasActiveFilters ? ` of ${data.length}` : ""} shown
+        </span>
       </CardHeader>
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-3">
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search issue, notes…"
+              className="h-8 pl-7 text-xs"
+            />
+          </div>
+          <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+            <SelectTrigger className="h-8 w-[130px] text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="acknowledged">Acknowledged</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={proctor} onValueChange={setProctor}>
+            <SelectTrigger className="h-8 w-[160px] text-xs">
+              <SelectValue placeholder="Proctor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All proctors</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {proctorIds.map((id) => (
+                <SelectItem key={id} value={id}>
+                  {labelFor(id)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={time} onValueChange={(v) => setTime(v as TimeFilter)}>
+            <SelectTrigger className="h-8 w-[120px] text-xs">
+              <SelectValue placeholder="Time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All time</SelectItem>
+              <SelectItem value="24h">Last 24 hours</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-xs"
+              onClick={() => {
+                setStatus("all");
+                setProctor("all");
+                setTime("all");
+                setSearch("");
+              }}
+            >
+              <X className="h-3 w-3 mr-1" /> Clear
+            </Button>
+          )}
+        </div>
+
+        {/* List */}
         {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
             <Loader2 className="h-3 w-3 animate-spin" /> Loading…
@@ -120,9 +276,13 @@ export default function AttemptSosHistoryPanel({ attemptId }: { attemptId: strin
           <div className="text-sm text-[hsl(var(--muted-foreground))] py-2">
             No SOS alerts from this candidate.
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-sm text-[hsl(var(--muted-foreground))] py-2">
+            No alerts match the current filters.
+          </div>
         ) : (
           <ul className="space-y-2">
-            {data.map((r) => {
+            {filtered.map((r) => {
               const meta = STATUS_META[r.status];
               const Icon = meta.icon;
               const canAck = r.status === "open";
@@ -159,12 +319,14 @@ export default function AttemptSosHistoryPanel({ attemptId }: { attemptId: strin
                           <span>
                             Acknowledged{" "}
                             {formatDistanceToNow(new Date(r.acknowledged_at), { addSuffix: true })}
+                            {r.acknowledged_by && ` by ${labelFor(r.acknowledged_by)}`}
                           </span>
                         )}
                         {r.resolved_at && (
                           <span>
                             Resolved{" "}
                             {formatDistanceToNow(new Date(r.resolved_at), { addSuffix: true })}
+                            {r.resolved_by && ` by ${labelFor(r.resolved_by)}`}
                           </span>
                         )}
                       </div>
