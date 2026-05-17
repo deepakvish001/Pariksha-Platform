@@ -1114,6 +1114,7 @@ export type Database = {
           attempt_id: string
           auto_score: number | null
           created_at: string
+          grader_comment: string | null
           id: string
           manual_score: number | null
           question_id: string
@@ -1125,6 +1126,7 @@ export type Database = {
           attempt_id: string
           auto_score?: number | null
           created_at?: string
+          grader_comment?: string | null
           id?: string
           manual_score?: number | null
           question_id: string
@@ -1136,6 +1138,7 @@ export type Database = {
           attempt_id?: string
           auto_score?: number | null
           created_at?: string
+          grader_comment?: string | null
           id?: string
           manual_score?: number | null
           question_id?: string
@@ -8302,6 +8305,7 @@ export type Database = {
         Returns: Json
       }
       get_attempt_paper: { Args: { _attempt: string }; Returns: Json }
+      get_attempt_results: { Args: { _attempt: string }; Returns: Json }
       get_b2b_dashboard_stats: {
         Args: { _org_id: string; _window_days?: number }
         Returns: Json
