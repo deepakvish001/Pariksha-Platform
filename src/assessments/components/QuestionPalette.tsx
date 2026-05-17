@@ -110,7 +110,7 @@ export function QuestionPalette({
                         >
                           {i + 1}
                           {it.flagged && (
-                            <Flag className="absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500" />
+                            <Flag className="absolute -top-1 -right-1 h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
                           )}
                         </button>
                       </TooltipTrigger>
@@ -184,7 +184,7 @@ export function QuestionPalette({
                   >
                     {i + 1}
                     {it.flagged && (
-                      <Flag className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 fill-amber-500 text-amber-500" />
+                      <Flag className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
                     )}
                   </button>
                 </TooltipTrigger>
@@ -201,7 +201,7 @@ export function QuestionPalette({
                       {it.flagged && (
                         <>
                           <span className="opacity-50">·</span>
-                          <Flag className="h-3 w-3 fill-amber-500 text-amber-500" />
+                          <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
                           <span>Flagged</span>
                         </>
                       )}
@@ -352,7 +352,7 @@ export function QuestionPalette({
                               </span>
                               {/* Flag */}
                               {it.flagged && (
-                                <Flag className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0" />
+                                <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 shrink-0" />
                               )}
                               {/* Active rail accent */}
                               {active && (
@@ -411,12 +411,12 @@ function StatusIcon({
   active: boolean;
 }) {
   if (answered)
-    return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />;
+    return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />;
   if (active)
     return <CircleDot className="h-3.5 w-3.5 text-primary shrink-0" />;
   if (visited)
     return <CircleDot className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-  return <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />;
+  return <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
 }
 
 function LegendRow({
@@ -509,7 +509,7 @@ function StatusTooltipBody({
         {item.flagged && (
           <>
             <span className="opacity-50">·</span>
-            <Flag className="h-3 w-3 fill-amber-500 text-amber-500" />
+            <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
             <span>Flagged</span>
           </>
         )}
