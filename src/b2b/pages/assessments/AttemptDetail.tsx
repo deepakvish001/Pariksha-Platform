@@ -12,6 +12,7 @@ import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
 import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
 import { ProctorEventFeed } from "@/assessments/components/ProctorEventFeed";
 import AttemptSosHistoryPanel from "../../components/AttemptSosHistoryPanel";
+import { AttemptFeedbackPanel } from "../../components/AttemptFeedbackPanel";
 import { useCurrentOrg } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
 
