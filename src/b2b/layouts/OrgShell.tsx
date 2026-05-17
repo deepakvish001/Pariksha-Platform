@@ -177,25 +177,38 @@ export function OrgShell({
         </Sheet>
 
         <main className="flex-1 min-w-0 flex flex-col h-screen">
-          <header className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur-xl shadow-sm">
-            <div className="px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden -ml-1"
-                  onClick={() => setMobileOpen(true)}
-                  aria-label="Open navigation menu"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-                <h1 className="text-base sm:text-lg font-semibold tracking-tight truncate">
-                  {title}
-                </h1>
+          <header className="shrink-0 border-b border-[hsl(var(--border))]/70 bg-[hsl(var(--background))]/85 backdrop-blur-xl shadow-[0_1px_0_0_hsl(var(--border)/0.4)]">
+            <div className="px-4 sm:px-6 lg:px-8 h-16 sm:h-[68px] flex items-center gap-3 sm:gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden -ml-1 h-9 w-9"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                <div className="min-w-0 flex-1">
+                  <div className="hidden sm:block text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70 leading-none mb-1">
+                    {orgName}
+                  </div>
+                  <h1 className="text-[15px] sm:text-lg lg:text-xl font-semibold tracking-tight leading-tight truncate text-[hsl(var(--foreground))]">
+                    {title}
+                  </h1>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">{actions}</div>
+
+              {actions ? (
+                <div className="flex items-center gap-2 shrink-0 pl-3 sm:pl-4 sm:border-l sm:border-[hsl(var(--border))]/60 [&_button]:h-9 [&_a]:h-9">
+                  {actions}
+                </div>
+              ) : null}
             </div>
           </header>
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">{children}</div>
+        </main>
           <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">{children}</div>
         </main>
       </div>
