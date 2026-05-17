@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, ShieldCheck, X, Loader2, User } from "lucide-react";
+import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   sendChatMessage,
   useAssessmentChat,
+  useAutoMarkRead,
   useAutoScrollRef,
   useUnreadCount,
   type ChatRole,
@@ -40,7 +41,9 @@ export function AssessmentChatDock({
   const [sending, setSending] = useState(false);
 
   const { data: messages, isLoading } = useAssessmentChat(attemptId);
-  const unread = useUnreadCount(messages, viewerRole, open || variant === "embedded");
+  const isPanelVisible = open || variant === "embedded";
+  const unread = useUnreadCount(messages, viewerRole);
+  useAutoMarkRead(attemptId, messages, viewerRole, isPanelVisible);
   const scrollRef = useAutoScrollRef<HTMLDivElement>(messages?.length ?? 0);
 
   const ordered = useMemo(() => messages ?? [], [messages]);
@@ -142,6 +145,29 @@ export function AssessmentChatDock({
                 >
                   {m.body}
                 </div>
+                {mine && !sys && (
+                  <div
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground px-1"
+                    aria-label={m.read_by_recipient ? "Read" : "Sent"}
+                    title={
+                      m.read_by_recipient && m.read_at
+                        ? `Read ${timeLabel(m.read_at)}`
+                        : "Sent"
+                    }
+                  >
+                    {m.read_by_recipient ? (
+                      <>
+                        <CheckCheck className="h-3 w-3 text-primary" />
+                        <span className="text-primary">Read</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3 w-3" />
+                        <span>Sent</span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })

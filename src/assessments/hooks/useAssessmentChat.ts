@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -11,6 +11,7 @@ export interface AssessmentChatMessage {
   sender_role: ChatRole;
   body: string;
   read_by_recipient: boolean;
+  read_at: string | null;
   created_at: string;
 }
 
@@ -55,6 +56,22 @@ export function useAssessmentChat(attemptId: string | null | undefined) {
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "assessment_chat_messages",
+          filter: `attempt_id=eq.${attemptId}`,
+        },
+        (payload) => {
+          const msg = payload.new as AssessmentChatMessage;
+          qc.setQueryData<AssessmentChatMessage[]>(KEY(attemptId), (prev) => {
+            const list = prev ?? [];
+            return list.map((m) => (m.id === msg.id ? { ...m, ...msg } : m));
+          });
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -83,21 +100,54 @@ export async function sendChatMessage(opts: {
   if (error) throw error;
 }
 
+export async function markMessagesRead(ids: string[]) {
+  if (!ids.length) return;
+  const { error } = await supabase
+    .from("assessment_chat_messages")
+    .update({ read_by_recipient: true, read_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("read_by_recipient", false);
+  if (error) throw error;
+}
+
 export function useUnreadCount(
+  messages: AssessmentChatMessage[] | undefined,
+  viewerRole: "candidate" | "proctor"
+) {
+  return useMemo(() => {
+    if (!messages) return 0;
+    return messages.filter(
+      (m) => m.sender_role !== viewerRole && m.sender_role !== "system" && !m.read_by_recipient
+    ).length;
+  }, [messages, viewerRole]);
+}
+
+/** Auto-marks incoming messages as read while the panel is open/visible. */
+export function useAutoMarkRead(
+  attemptId: string | null | undefined,
   messages: AssessmentChatMessage[] | undefined,
   viewerRole: "candidate" | "proctor",
   isOpen: boolean
 ) {
-  const [seenAt, setSeenAt] = useState<number>(() => Date.now());
+  const qc = useQueryClient();
   useEffect(() => {
-    if (isOpen) setSeenAt(Date.now());
-  }, [isOpen]);
-  return useMemo(() => {
-    if (!messages) return 0;
-    return messages.filter(
-      (m) => m.sender_role !== viewerRole && new Date(m.created_at).getTime() > seenAt
-    ).length;
-  }, [messages, viewerRole, seenAt]);
+    if (!attemptId || !isOpen || !messages?.length) return;
+    const unread = messages.filter(
+      (m) => m.sender_role !== viewerRole && m.sender_role !== "system" && !m.read_by_recipient
+    );
+    if (!unread.length) return;
+    const ids = unread.map((m) => m.id);
+    const nowIso = new Date().toISOString();
+    // optimistic update
+    qc.setQueryData<AssessmentChatMessage[]>(KEY(attemptId), (prev) =>
+      (prev ?? []).map((m) =>
+        ids.includes(m.id) ? { ...m, read_by_recipient: true, read_at: nowIso } : m
+      )
+    );
+    markMessagesRead(ids).catch(() => {
+      // revert silently on failure; realtime/refetch will reconcile
+    });
+  }, [attemptId, messages, viewerRole, isOpen, qc]);
 }
 
 export function useAutoScrollRef<T extends HTMLElement>(

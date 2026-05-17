@@ -701,6 +701,7 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          read_at: string | null
           read_by_recipient: boolean
           sender_role: string
           sender_user_id: string
@@ -710,6 +711,7 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          read_at?: string | null
           read_by_recipient?: boolean
           sender_role: string
           sender_user_id: string
@@ -719,6 +721,7 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          read_at?: string | null
           read_by_recipient?: boolean
           sender_role?: string
           sender_user_id?: string
