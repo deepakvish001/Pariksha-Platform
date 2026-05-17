@@ -261,6 +261,33 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
           setChats((prev) => [...prev, payload.new as ChatRow]);
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "attempt_event_notes",
+          filter: `attempt_id=eq.${attemptId}`,
+        },
+        (payload) => {
+          setNotes((prev) => {
+            if (payload.eventType === "INSERT") {
+              const row = payload.new as NoteRow;
+              if (prev.some((n) => n.id === row.id)) return prev;
+              return [...prev, row];
+            }
+            if (payload.eventType === "UPDATE") {
+              const row = payload.new as NoteRow;
+              return prev.map((n) => (n.id === row.id ? row : n));
+            }
+            if (payload.eventType === "DELETE") {
+              const row = payload.old as Partial<NoteRow>;
+              return prev.filter((n) => n.id !== row.id);
+            }
+            return prev;
+          });
+        }
+      )
       .subscribe();
 
     return () => {
