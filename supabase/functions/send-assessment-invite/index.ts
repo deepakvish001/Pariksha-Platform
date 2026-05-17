@@ -46,10 +46,52 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = await req.json(); } catch { return json(400, { error: "invalid_json" }); }
   const assessmentId: string | undefined = body?.assessment_id;
+  const orgIdParam: string | undefined = typeof body?.org_id === "string" ? body.org_id : undefined;
   const inviteIds: string[] | undefined = Array.isArray(body?.invite_ids) ? body.invite_ids : undefined;
   const onlyPending: boolean = !!body?.only_pending;
   const previewOnly: boolean = !!body?.preview;
   const testEmail: string | undefined = typeof body?.test_email === "string" ? body.test_email.trim() : undefined;
+
+  // Org-only preview: lets Settings render a sample invite using just the org's
+  // branding (no assessment required). Returns rendered HTML; no DB writes.
+  if (previewOnly && !assessmentId && orgIdParam) {
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { data: org, error: oErr } = await admin
+      .from("organizations")
+      .select("id, name, logo_url, brand_color, owner_id, updated_at")
+      .eq("id", orgIdParam)
+      .maybeSingle();
+    if (oErr || !org) return json(404, { error: "org_not_found" });
+
+    const { data: member } = await admin
+      .from("org_members")
+      .select("user_id")
+      .eq("org_id", orgIdParam)
+      .eq("user_id", callerId)
+      .maybeSingle();
+    if (!member && org.owner_id !== callerId) return json(403, { error: "forbidden" });
+
+    const rawLogo = (org.logo_url as string | null) ?? null;
+    const logoVersion = org.updated_at
+      ? new Date(org.updated_at as string).getTime().toString()
+      : Date.now().toString();
+    const logoUrl = rawLogo
+      ? `${rawLogo}${rawLogo.includes("?") ? "&" : "?"}v=${logoVersion}`
+      : null;
+
+    const rendered = renderInviteEmail({
+      orgName: (org.name as string) ?? "Your organization",
+      logoUrl,
+      brandColor: (org.brand_color as string | null) ?? null,
+      title: "Sample assessment — Frontend Engineer",
+      durationMin: 60,
+      recipientName: "Sample Candidate",
+      recipientEmail: "candidate@example.com",
+      joinUrl: `${APP_URL.replace(/\/+$/, "")}/assessments/join/PREVIEW-TOKEN`,
+    });
+    return json(200, { preview: true, ...rendered });
+  }
+
   if (!assessmentId) return json(400, { error: "missing_assessment_id" });
 
   const admin = createClient(supabaseUrl, serviceKey);

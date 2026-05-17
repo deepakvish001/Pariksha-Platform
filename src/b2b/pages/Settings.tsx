@@ -8,7 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, GraduationCap, Copy, AlertTriangle, Save } from "lucide-react";
+import { Building2, GraduationCap, Copy, AlertTriangle, Save, Eye } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -23,6 +29,10 @@ export default function B2BSettings() {
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [brandColor, setBrandColor] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewSubject, setPreviewSubject] = useState<string>("");
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -100,6 +110,27 @@ export default function B2BSettings() {
     toast.success("Organization deleted");
     qc.invalidateQueries({ queryKey: ["b2b", "orgs"] });
     navigate("/b2b/onboarding", { replace: true });
+  };
+
+  const openPreview = async () => {
+    if (!org) return;
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewHtml(null);
+    setPreviewSubject("");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
+        body: { org_id: org.id, preview: true },
+      });
+      if (error) throw new Error(error.message ?? "Preview failed");
+      setPreviewHtml((data as { html?: string }).html ?? "");
+      setPreviewSubject((data as { subject?: string }).subject ?? "");
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   const TypeIcon = org.type === "college" ? GraduationCap : Building2;
@@ -199,6 +230,16 @@ export default function B2BSettings() {
               <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
                 Used for the header and call-to-action in invitation emails. Accepts <span className="font-mono">#RGB</span> or <span className="font-mono">#RRGGBB</span>.
               </p>
+              <div className="mt-2">
+                <Button type="button" variant="outline" size="sm" onClick={openPreview}>
+                  <Eye className="h-3.5 w-3.5 mr-1.5" /> Preview invitation email
+                </Button>
+                {dirty && (
+                  <span className="ml-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+                    Save changes first to preview with the latest values.
+                  </span>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -251,6 +292,36 @@ export default function B2BSettings() {
           </div>
         )}
       </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-2">
+            <DialogTitle>Invitation email preview</DialogTitle>
+            {previewSubject && (
+              <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                <span className="font-medium text-[hsl(var(--foreground))]">Subject:</span> {previewSubject}
+              </div>
+            )}
+            <div className="text-[11px] text-[hsl(var(--muted-foreground))]">
+              Sample candidate &amp; assessment shown — your real invites use the candidate's name and assessment details.
+            </div>
+          </DialogHeader>
+          <div className="h-[70vh] bg-[#f4f5f7] border-t border-[hsl(var(--border))]">
+            {previewLoading ? (
+              <div className="h-full grid place-items-center text-sm text-[hsl(var(--muted-foreground))]">
+                Rendering preview…
+              </div>
+            ) : (
+              <iframe
+                title="Email preview"
+                srcDoc={previewHtml ?? ""}
+                className="w-full h-full bg-white"
+                sandbox=""
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </OrgShell>
   );
 }
