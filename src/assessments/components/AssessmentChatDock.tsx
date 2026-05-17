@@ -193,6 +193,12 @@ export function AssessmentChatDock({
                 <span>{lastSeenLabel(peer.lastSeen)}</span>
               )}
             </p>
+            <p
+              className="text-[10px] leading-tight truncate text-muted-foreground"
+              title={peerLastReadAt ? new Date(peerLastReadAt).toLocaleString() : undefined}
+            >
+              {lastReadLabel(peerLastReadAt)}
+            </p>
           </div>
         </div>
         {variant === "floating" && (
