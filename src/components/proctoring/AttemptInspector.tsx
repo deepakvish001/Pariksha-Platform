@@ -320,7 +320,7 @@ function SnapshotLightbox({ snapshots, index, onClose, onIndexChange }: {
 }
 
 // ---------- AI findings ----------
-function AIFindingsPanel({ attemptId }: { attemptId: string }) {
+function AIFindingsPanel({ attemptId, canRunReview = true }: { attemptId: string; canRunReview?: boolean }) {
   const [findings, setFindings] = useState<ProctorFinding[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [reviewing, setReviewing] = useState(false);
