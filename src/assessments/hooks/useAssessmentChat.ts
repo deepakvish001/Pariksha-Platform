@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 export type ChatRole = "candidate" | "proctor" | "system";
 
@@ -160,4 +161,134 @@ export function useAutoScrollRef<T extends HTMLElement>(
     el.scrollTop = el.scrollHeight;
   }, [dep]);
   return ref;
+}
+
+export interface ChatPresenceState {
+  online: boolean;
+  lastSeen: number | null;
+  typing: boolean;
+}
+
+interface PresencePayload {
+  role: "candidate" | "proctor";
+  user_id: string;
+  online_at: string;
+}
+
+interface TypingPayload {
+  role: "candidate" | "proctor";
+  user_id: string;
+  typing: boolean;
+  at: number;
+}
+
+const TYPING_TIMEOUT_MS = 4000;
+const TYPING_BROADCAST_THROTTLE_MS = 1500;
+
+/**
+ * Presence + typing indicators for an attempt's chat.
+ * Uses Supabase Realtime presence (online/last-seen) and broadcast (typing).
+ */
+export function useChatPresence(
+  attemptId: string | null | undefined,
+  viewerRole: "candidate" | "proctor",
+  viewerUserId: string | null | undefined
+) {
+  const [peer, setPeer] = useState<ChatPresenceState>({
+    online: false,
+    lastSeen: null,
+    typing: false,
+  });
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const typingTimerRef = useRef<number | null>(null);
+  const lastBroadcastRef = useRef<number>(0);
+  const peerRole = viewerRole === "candidate" ? "proctor" : "candidate";
+
+  useEffect(() => {
+    if (!attemptId || !viewerUserId) return;
+    const channel = supabase.channel(`chat-presence:${attemptId}`, {
+      config: { presence: { key: viewerUserId } },
+    });
+    channelRef.current = channel;
+
+    const updateFromPresence = () => {
+      const state = channel.presenceState() as Record<string, PresencePayload[]>;
+      let online = false;
+      let lastSeen: number | null = null;
+      for (const entries of Object.values(state)) {
+        for (const entry of entries) {
+          if (entry.role === peerRole && entry.user_id !== viewerUserId) {
+            online = true;
+            const t = Date.parse(entry.online_at);
+            if (!Number.isNaN(t) && (lastSeen === null || t > lastSeen)) lastSeen = t;
+          }
+        }
+      }
+      setPeer((prev) => ({
+        ...prev,
+        online,
+        lastSeen: online ? Date.now() : prev.lastSeen,
+        typing: online ? prev.typing : false,
+      }));
+    };
+
+    channel
+      .on("presence", { event: "sync" }, updateFromPresence)
+      .on("presence", { event: "join" }, updateFromPresence)
+      .on("presence", { event: "leave" }, () => {
+        updateFromPresence();
+        setPeer((prev) => ({ ...prev, lastSeen: Date.now() }));
+      })
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        const p = payload as TypingPayload;
+        if (!p || p.role !== peerRole || p.user_id === viewerUserId) return;
+        if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+        if (p.typing) {
+          setPeer((prev) => ({ ...prev, typing: true }));
+          typingTimerRef.current = window.setTimeout(() => {
+            setPeer((prev) => ({ ...prev, typing: false }));
+          }, TYPING_TIMEOUT_MS);
+        } else {
+          setPeer((prev) => ({ ...prev, typing: false }));
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({
+            role: viewerRole,
+            user_id: viewerUserId,
+            online_at: new Date().toISOString(),
+          } satisfies PresencePayload);
+        }
+      });
+
+    return () => {
+      if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+  }, [attemptId, viewerRole, viewerUserId, peerRole]);
+
+  const sendTyping = useCallback(
+    (typing: boolean) => {
+      const channel = channelRef.current;
+      if (!channel || !viewerUserId) return;
+      const now = Date.now();
+      if (typing && now - lastBroadcastRef.current < TYPING_BROADCAST_THROTTLE_MS) return;
+      lastBroadcastRef.current = now;
+      channel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: {
+          role: viewerRole,
+          user_id: viewerUserId,
+          typing,
+          at: now,
+        } satisfies TypingPayload,
+      });
+    },
+    [viewerRole, viewerUserId]
+  );
+
+  return { peer, sendTyping };
 }

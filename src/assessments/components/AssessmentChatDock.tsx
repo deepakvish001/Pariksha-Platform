@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck } from "lucide-react";
+import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   sendChatMessage,
   useAssessmentChat,
   useAutoMarkRead,
   useAutoScrollRef,
+  useChatPresence,
   useUnreadCount,
   type ChatRole,
 } from "../hooks/useAssessmentChat";
@@ -30,6 +32,27 @@ function roleLabel(role: ChatRole) {
   return role === "proctor" ? "Proctor" : role === "system" ? "System" : "You";
 }
 
+function lastSeenLabel(ts: number | null) {
+  if (!ts) return "Offline";
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return "Active just now";
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `Last seen ${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Last seen ${hrs}h ago`;
+  return `Last seen ${new Date(ts).toLocaleString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function TypingDots() {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label="Typing">
+      <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.2s]" />
+      <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.1s]" />
+      <span className="h-1 w-1 rounded-full bg-current animate-bounce" />
+    </span>
+  );
+}
+
 export function AssessmentChatDock({
   attemptId,
   viewerRole,
@@ -39,14 +62,33 @@ export function AssessmentChatDock({
   const [open, setOpen] = useState(variant === "embedded");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const { user } = useAuth();
 
   const { data: messages, isLoading } = useAssessmentChat(attemptId);
   const isPanelVisible = open || variant === "embedded";
   const unread = useUnreadCount(messages, viewerRole);
   useAutoMarkRead(attemptId, messages, viewerRole, isPanelVisible);
-  const scrollRef = useAutoScrollRef<HTMLDivElement>(messages?.length ?? 0);
+  const { peer, sendTyping } = useChatPresence(attemptId, viewerRole, user?.id ?? null);
+  const scrollRef = useAutoScrollRef<HTMLDivElement>(
+    `${messages?.length ?? 0}:${peer.typing ? 1 : 0}`
+  );
 
   const ordered = useMemo(() => messages ?? [], [messages]);
+  const peerLabel = viewerRole === "candidate" ? "Proctor" : "Candidate";
+
+  // Stop signalling "typing" shortly after the user stops typing or sends.
+  const typingStopTimer = useRef<number | null>(null);
+  const signalTyping = (isTyping: boolean) => {
+    sendTyping(isTyping);
+    if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
+    if (isTyping) {
+      typingStopTimer.current = window.setTimeout(() => sendTyping(false), 3000);
+    }
+  };
+  useEffect(() => () => {
+    if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
+    sendTyping(false);
+  }, [sendTyping]);
 
   const handleSend = async () => {
     const body = draft.trim();
@@ -55,6 +97,8 @@ export function AssessmentChatDock({
     try {
       await sendChatMessage({ attemptId, role: viewerRole, body });
       setDraft("");
+      sendTyping(false);
+      if (typingStopTimer.current) window.clearTimeout(typingStopTimer.current);
     } catch (e) {
       toast.error("Couldn't send message", {
         description: e instanceof Error ? e.message : "Try again in a moment.",
@@ -76,15 +120,43 @@ export function AssessmentChatDock({
     >
       <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="h-7 w-7 rounded-md bg-primary/15 text-primary grid place-items-center shrink-0">
+          <div className="relative h-7 w-7 rounded-md bg-primary/15 text-primary grid place-items-center shrink-0">
             <ShieldCheck className="h-3.5 w-3.5" />
+            <Circle
+              className={cn(
+                "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card",
+                peer.online
+                  ? "fill-emerald-500 text-emerald-500"
+                  : "fill-muted-foreground/60 text-muted-foreground/60"
+              )}
+              aria-hidden
+            />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold leading-tight truncate">
               {viewerRole === "candidate" ? "Chat with proctor" : "Candidate chat"}
             </p>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground leading-tight">
-              {ordered.length} {ordered.length === 1 ? "message" : "messages"} · live
+            <p
+              className={cn(
+                "text-[10px] leading-tight truncate flex items-center gap-1",
+                peer.typing
+                  ? "text-primary"
+                  : peer.online
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-muted-foreground"
+              )}
+              aria-live="polite"
+            >
+              {peer.typing ? (
+                <>
+                  <TypingDots />
+                  <span>{peerLabel} is typing…</span>
+                </>
+              ) : peer.online ? (
+                <span>{peerLabel} online</span>
+              ) : (
+                <span>{lastSeenLabel(peer.lastSeen)}</span>
+              )}
             </p>
           </div>
         </div>
@@ -172,13 +244,25 @@ export function AssessmentChatDock({
             );
           })
         )}
+        {peer.typing && ordered.length > 0 && (
+          <div className="flex items-start" aria-live="polite">
+            <div className="max-w-[85%] rounded-lg px-3 py-2 bg-muted text-muted-foreground border border-border inline-flex items-center gap-1.5 text-xs">
+              <TypingDots />
+              <span>{peerLabel} is typing…</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-border p-2 bg-card">
         <div className="flex items-end gap-2">
           <Textarea
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft(v);
+              signalTyping(v.trim().length > 0);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
