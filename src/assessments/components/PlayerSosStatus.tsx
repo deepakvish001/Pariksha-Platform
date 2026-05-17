@@ -203,28 +203,36 @@ export function PlayerSosStatus({ attemptId }: Props) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div
+        <button
+          type="button"
+          onClick={retry ?? undefined}
           role="status"
           aria-live="polite"
           aria-atomic="true"
           className={cn(
             "hidden sm:flex items-center gap-1.5 h-8 px-2 rounded-md border text-[11px] font-medium",
-            toneClasses
+            toneClasses,
+            retry && "cursor-pointer hover:brightness-110"
           )}
         >
-          <span className={cn("relative flex items-center justify-center", pulse && "")}>
+          <span className="relative flex items-center justify-center">
             {pulse && (
-              <span className="absolute inline-flex h-3.5 w-3.5 rounded-full bg-destructive/40 animate-ping" />
+              <span className="absolute inline-flex h-3.5 w-3.5 rounded-full bg-current opacity-30 animate-ping" />
             )}
             <span className="relative">{icon}</span>
           </span>
           <span className="leading-none">{label}</span>
-        </div>
+        </button>
       </TooltipTrigger>
       <TooltipContent>
         <div className="max-w-xs text-xs">
-          <div className="font-semibold mb-0.5">{sos.issue}</div>
+          <div className="font-semibold mb-0.5">{issueHeader}</div>
           <div className="text-muted-foreground">{detail}</div>
+          {retry && (
+            <div className="mt-1 text-[10px] text-muted-foreground italic">
+              Click pill to retry delivery now.
+            </div>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>
