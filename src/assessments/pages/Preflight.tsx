@@ -24,6 +24,12 @@ import {
   detectEnvironment,
 } from "@/assessments/components/CompatibilityMatrix";
 import { SideCameraPairing } from "@/assessments/components/SideCameraPairing";
+import {
+  PreflightSummaryDialog,
+  SUMMARY_ICONS,
+  type SummaryCheck,
+  type CheckState,
+} from "@/assessments/components/PreflightSummaryDialog";
 import "@/b2b/theme.css";
 
 type StepState = "pending" | "active" | "passed" | "failed";
