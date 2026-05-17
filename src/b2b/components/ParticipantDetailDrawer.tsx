@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ExternalLink, Eye, ShieldAlert, Activity as ActivityIcon, ListChecks,
-  Camera, Monitor, Smartphone, Copy, StopCircle, LifeBuoy, User,
+  Camera, Monitor, Smartphone, Copy, StopCircle, LifeBuoy, User, Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
