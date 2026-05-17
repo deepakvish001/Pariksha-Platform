@@ -82,7 +82,7 @@ export function useAttemptDetail(attemptIdOrSlug?: string, assessmentId?: string
         .select(
           "id, question_id, answer, auto_score, manual_score, question:questions(id,type,title,body_md,language,points,meta, mcq_options(id,body,is_correct,order_index), question_test_cases(input,expected_output,is_hidden,order_index))"
         )
-        .eq("attempt_id", attemptId!);
+        .eq("attempt_id", (attempt as any).id);
       if (e2) throw e2;
 
       const a: any = attempt;
