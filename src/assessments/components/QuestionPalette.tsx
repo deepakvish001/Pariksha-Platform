@@ -257,7 +257,7 @@ export function QuestionPalette({
       </header>
 
       {/* Filter row (sticky-ish above scroll area) */}
-      <div className="px-3 pt-2.5 pb-2 border-b border-border">
+      <div className="px-3 pt-2.5 pb-2 border-b border-border space-y-1.5">
         <div className="grid grid-cols-3 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
           {(["all", "unanswered", "flagged"] as const).map((f) => {
             const count = f === "all" ? items.length : f === "unanswered" ? unanswered : flagged;
@@ -279,6 +279,50 @@ export function QuestionPalette({
             );
           })}
         </div>
+        {filter === "flagged" && (
+          <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground leading-snug px-0.5">
+            <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 shrink-0 mt-px" />
+            <span className="flex-1">
+              Showing only questions you marked with the{" "}
+              <span className="font-medium text-foreground">Flag for review</span> button. They
+              appear here with an amber flag corner badge — visit them again before submitting.
+            </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="What is a flagged question?"
+                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-px"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="end" className="w-64 p-3 text-xs space-y-2">
+                <div className="font-semibold text-sm">About flagged questions</div>
+                <p className="text-muted-foreground leading-snug">
+                  Flagging is a personal bookmark — it never affects your score or what the
+                  recruiter sees.
+                </p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li className="flex gap-1.5">
+                    <span className="text-foreground">•</span>
+                    Use the flag button on any question to mark it.
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-foreground">•</span>
+                    Flagged items show an amber{" "}
+                    <Flag className="inline h-2.5 w-2.5 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 align-baseline" />{" "}
+                    badge in the navigator.
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-foreground">•</span>
+                    Switch this filter to <em>Flagged</em> to jump between them.
+                  </li>
+                </ul>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </div>
 
       {/* Scrollable list of questions, grouped by section */}
