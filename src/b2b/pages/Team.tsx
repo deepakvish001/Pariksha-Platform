@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const ROLE_LABEL: Record<OrgMemberRole, string> = {
   owner: "Owner",
   admin: "Admin",
+  proctor: "Proctor",
   recruiter: "Recruiter",
   viewer: "Viewer",
 };
