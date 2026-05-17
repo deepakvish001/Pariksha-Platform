@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useAssessment, useUpdateAssessment } from "../../hooks/useAssessments";
 import { useInvites, buildJoinUrl } from "../../hooks/useInvites";
