@@ -125,10 +125,12 @@ function Tick({ at }: { at: string | null }) {
 }
 
 export default function AssessmentManage() {
-  const { id } = useParams();
+  const { id: idOrSlug } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: assessment, isLoading } = useAssessment(id);
+  const { org } = useCurrentOrg();
+  const { data: assessment, isLoading } = useAssessment(idOrSlug, org?.id);
+  const id = assessment?.id;
   const update = useUpdateAssessment();
   const { data: participants } = useLiveParticipants(id);
   const {
