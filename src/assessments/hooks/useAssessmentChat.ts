@@ -187,7 +187,14 @@ export function useAutoScrollRef<T extends HTMLElement>(
 export interface ChatPresenceState {
   online: boolean;
   lastSeen: number | null;
+  /**
+   * True when the opposite role is currently typing.
+   * Kept for back-compat — prefer `typingByRole` when you need to
+   * distinguish proctor vs candidate explicitly.
+   */
   typing: boolean;
+  /** Per-role typing flags, so the UI can label who is typing. */
+  typingByRole: { candidate: boolean; proctor: boolean };
 }
 
 interface PresencePayload {
