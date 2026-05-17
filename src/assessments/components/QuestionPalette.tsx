@@ -45,6 +45,8 @@ export function QuestionPalette({
   const { t } = useTranslation();
   const answered = items.filter((i) => i.answered).length;
   const flagged = items.filter((i) => i.flagged).length;
+  const visited = items.filter((i) => !i.answered && i.visited).length;
+  const notVisited = items.filter((i) => !i.answered && !i.visited).length;
   const unanswered = items.length - answered;
   const compact = variant === "compact";
 
@@ -413,21 +415,25 @@ export function QuestionPalette({
           icon={<CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
           label={t("palette.legend.answered.label")}
           tip={t("palette.legend.answered.tip")}
+          count={answered}
         />
         <LegendRow
           icon={<CircleDot className="h-3 w-3 text-muted-foreground" />}
           label={t("palette.legend.visited.label")}
           tip={t("palette.legend.visited.tip")}
+          count={visited}
         />
         <LegendRow
           icon={<Circle className="h-3 w-3 text-muted-foreground" />}
           label={t("palette.legend.notVisited.label")}
           tip={t("palette.legend.notVisited.tip")}
+          count={notVisited}
         />
         <LegendRow
           icon={<Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />}
           label={t("palette.legend.flagged.label")}
           tip={t("palette.legend.flagged.tip")}
+          count={flagged}
         />
       </footer>
     </aside>
@@ -456,15 +462,25 @@ function LegendRow({
   icon,
   label,
   tip,
+  count,
 }: {
   icon: React.ReactNode;
   label: string;
   tip?: string;
+  count?: number;
 }) {
   const content = (
-    <div className="flex items-center gap-1.5 cursor-help">
+    <div className="flex items-center gap-1.5 cursor-help min-w-0">
       {icon}
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
+      {typeof count === "number" && (
+        <span
+          className="ml-auto tabular-nums font-semibold text-foreground/80"
+          aria-label={`${count} ${label}`}
+        >
+          {count}
+        </span>
+      )}
     </div>
   );
   if (!tip) return content;
