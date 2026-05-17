@@ -331,11 +331,11 @@ export default function AssessmentManage() {
                 <table className="w-full text-xs">
                   <thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
                     <tr className="border-b border-white/5">
-                      <th className="text-left font-medium py-2 px-2">Candidate</th>
-                      <th className="text-left font-medium py-2 px-2">Status</th>
-                      <th className="text-left font-medium py-2 px-2">Elapsed</th>
-                      <th className="text-left font-medium py-2 px-2">Score</th>
-                      <th className="text-left font-medium py-2 px-2">Integrity</th>
+                      <SortTh label="Candidate" k="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Elapsed" k="elapsed" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Score" k="score" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      <SortTh label="Integrity" k="integrity" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       <th className="text-right font-medium py-2 px-2">Actions</th>
                     </tr>
                   </thead>
