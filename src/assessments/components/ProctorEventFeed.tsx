@@ -472,6 +472,8 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
               minute: "2-digit",
               second: "2-digit",
             });
+            const eventId = e.source === "event" ? e.key.slice(2) : null;
+            const eventNotes = eventId ? notesByEvent.get(eventId) ?? [] : [];
             return (
               <div
                 key={e.key}
@@ -492,6 +494,15 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
                     <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug whitespace-pre-wrap break-words">
                       {e.detail}
                     </div>
+                  )}
+                  {eventId && (
+                    <EventNotesThread
+                      notes={eventNotes}
+                      currentUserId={currentUserId}
+                      canAdd={!!currentUserId}
+                      onAdd={(body) => addNote(eventId, body)}
+                      onDelete={deleteNote}
+                    />
                   )}
                 </div>
               </div>
