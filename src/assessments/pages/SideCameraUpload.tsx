@@ -230,6 +230,7 @@ export default function SideCameraUploadPage() {
               dataUrl: "",
               ordinal: p.ordinal,
               uploaded: true,
+              state: "uploaded" as const,
             }))
           );
         }
