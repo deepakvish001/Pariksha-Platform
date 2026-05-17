@@ -278,7 +278,7 @@ export default function ParticipantDetailDrawer({
                   {participant.status === "in_progress" && (
                     <LiveProctorThreeEye attemptId={attemptId} />
                   )}
-                  <AttemptProctoringPanel attemptId={attemptId} />
+                  <AttemptProctoringPanel attemptId={attemptId} orgId={orgId} />
                 </TabsContent>
               )}
 
