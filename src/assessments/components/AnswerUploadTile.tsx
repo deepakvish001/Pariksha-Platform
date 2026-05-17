@@ -138,6 +138,8 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadAllDone, setDownloadAllDone] = useState(0);
+  const [downloadAllTotal, setDownloadAllTotal] = useState(0);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const extFromMime = (mime: string | null | undefined): string | null => {
@@ -212,11 +214,16 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
   const downloadAll = async () => {
     if (downloadingAll || pages.length === 0) return;
     setDownloadingAll(true);
+    setDownloadAllDone(0);
+    setDownloadAllTotal(pages.length);
     try {
+      let i = 0;
       for (const p of pages) {
         await downloadPage(p);
+        i += 1;
+        setDownloadAllDone(i);
         // small gap so browsers don't collapse/cancel rapid downloads
-        await new Promise((r) => setTimeout(r, 250));
+        if (i < pages.length) await new Promise((r) => setTimeout(r, 250));
       }
     } finally {
       setDownloadingAll(false);
@@ -514,7 +521,9 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
                       ) : (
                         <Download className="h-3.5 w-3.5" />
                       )}
-                      {downloadingAll ? `Downloading…` : `Download all (${pages.length})`}
+                      {downloadingAll
+                        ? `Downloading ${downloadAllDone}/${downloadAllTotal}…`
+                        : `Download all (${pages.length})`}
                     </button>
                   )}
                   <a
@@ -537,6 +546,29 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
               </button>
             </div>
           </div>
+          {downloadingAll && downloadAllTotal > 0 && (
+            <div
+              className="px-4 pb-2"
+              onClick={(e) => e.stopPropagation()}
+              role="status"
+              aria-live="polite"
+              aria-label={`Downloading page ${downloadAllDone} of ${downloadAllTotal}`}
+            >
+              <div className="flex items-center justify-between text-[11px] text-white/80 tabular-nums mb-1">
+                <span className="inline-flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Downloading {downloadAllDone} of {downloadAllTotal}
+                </span>
+                <span>{Math.round((downloadAllDone / downloadAllTotal) * 100)}%</span>
+              </div>
+              <div className="h-1 w-full rounded bg-white/15 overflow-hidden">
+                <div
+                  className="h-full bg-white/80 transition-all duration-300 ease-out"
+                  style={{ width: `${(downloadAllDone / downloadAllTotal) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
           <div
             className="flex-1 grid place-items-center p-4 relative"
             onClick={(e) => e.stopPropagation()}
