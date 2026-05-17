@@ -262,21 +262,21 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   const captureSelfie = async () => {
     if (!videoRef.current) return;
     setBusy(true);
+    setGlobalError(null);
+    setSelfieUrl(null);
     try {
-      const v = videoRef.current;
-      const canvas = document.createElement("canvas");
-      canvas.width = v.videoWidth || 480;
-      canvas.height = v.videoHeight || 360;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas unavailable");
-      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-      const blob: Blob = await new Promise((res, rej) =>
-        canvas.toBlob((b) => (b ? res(b) : rej(new Error("Capture failed"))), "image/jpeg", 0.85),
-      );
+      const result = analyzeSelfieFrame(videoRef.current);
+      if (!result) throw new Error("Capture failed");
+      setSelfieChecks(result.checks);
+      setSelfieDataUrl(result.dataUrl);
+      if (result.checks.some((c) => !c.ok)) {
+        setGlobalError("Selfie failed checks. Adjust lighting & face the camera, then retake.");
+        return;
+      }
+      const blob = await result.blob;
       const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
       const path = await uploadFile(file, "selfie");
       setSelfieUrl(path);
-      setSelfieDataUrl(canvas.toDataURL("image/jpeg", 0.7));
       stopCamera();
     } catch (err) {
       setGlobalError(err instanceof Error ? err.message : "Capture failed");
