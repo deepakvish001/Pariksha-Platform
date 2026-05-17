@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useAttemptDetail, useGradeAnswer, useFinalizeAttemptScore, useAttemptEvents } from "../../hooks/useAttempts";
 import { useAssessment } from "../../hooks/useAssessments";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Save, ChevronRight, Clock, Mail, Hash, User, FileText, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
 import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
@@ -58,38 +58,138 @@ export default function AttemptDetail() {
   }
 
   const cand = data.attempt.invite;
+  const cd = (data.attempt.candidate_details ?? {}) as Record<string, unknown>;
+  const candName =
+    (cd.fullName as string) || (cd.name as string) || cand?.name || (cd.email as string) || cand?.email || "Candidate";
+  const candEmail = (cd.email as string) || cand?.email || "";
+  const candExternalId = (cd.externalId as string) || (cd.studentId as string) || cand?.external_id || "";
+  const candPhone = (cd.phone as string) || "";
+
+  const assessmentSeg = assessment.slug ?? assessment.id;
+  const attemptSeg = data.attempt.slug ?? data.attempt.id;
+
+  const startedAt = data.attempt.started_at ? new Date(data.attempt.started_at) : null;
+  const submittedAt = data.attempt.submitted_at ? new Date(data.attempt.submitted_at) : null;
+  const durationMin =
+    startedAt && submittedAt
+      ? Math.max(0, Math.round((submittedAt.getTime() - startedAt.getTime()) / 60000))
+      : null;
+
+  // Build a unified, sorted timeline from start/submit + recorded attempt_events.
+  const timeline = useMemo(() => {
+    const items: { at: string; label: string; tone?: "ok" | "warn" | "info" }[] = [];
+    if (startedAt) items.push({ at: startedAt.toISOString(), label: "Attempt started", tone: "info" });
+    for (const ev of (events ?? []) as Array<{ id: string; kind: string; payload: unknown; created_at: string }>) {
+      const k = ev.kind ?? "event";
+      const friendly = k.replace(/_/g, " ");
+      const isWarn = /violation|warning|tab|focus|copy|paste|left|away|exit/i.test(k);
+      items.push({ at: ev.created_at, label: friendly, tone: isWarn ? "warn" : "info" });
+    }
+    if (submittedAt) {
+      const finalLabel = data.attempt.status === "auto_submitted" ? "Auto-submitted" : "Submitted";
+      items.push({ at: submittedAt.toISOString(), label: finalLabel, tone: "ok" });
+    }
+    return items.sort((a, b) => +new Date(a.at) - +new Date(b.at));
+  }, [events, startedAt, submittedAt, data.attempt.status]);
 
   return (
     <OrgShell
-      title={`Attempt — ${cand?.name ?? cand?.email ?? "Candidate"}`}
+      title={`${candName} — ${assessment.title}`}
       actions={
         <Button variant="ghost" size="sm" onClick={() => navigate(paths.b2b.assessment(basePath, assessment))}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
       }
     >
+      {/* In-page breadcrumb with names + URL slugs */}
+      <nav
+        aria-label="Candidate breadcrumb"
+        className="mb-3 flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
+      >
+        <Link to={paths.b2b.assessmentsList(basePath)} className="hover:text-foreground">
+          Assessments
+        </Link>
+        <ChevronRight className="h-3 w-3 opacity-60" />
+        <Link
+          to={paths.b2b.assessment(basePath, assessment)}
+          className="hover:text-foreground inline-flex items-baseline gap-1"
+          title={`/assessments/${assessmentSeg}`}
+        >
+          <span className="font-medium text-foreground/90">{assessment.title}</span>
+          <code className="text-[10px] opacity-60">/{assessmentSeg}</code>
+        </Link>
+        <ChevronRight className="h-3 w-3 opacity-60" />
+        <Link
+          to={paths.b2b.assessment(basePath, assessment) + "/attempts"}
+          className="hover:text-foreground"
+        >
+          Attempts
+        </Link>
+        <ChevronRight className="h-3 w-3 opacity-60" />
+        <span className="inline-flex items-baseline gap-1">
+          <span className="font-medium text-foreground">{candName}</span>
+          <code className="text-[10px] opacity-60">/{attemptSeg}</code>
+        </span>
+      </nav>
+
       <div className="grid md:grid-cols-3 gap-4 mb-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Candidate</CardTitle></CardHeader>
-          <CardContent className="text-sm">
-            <div className="font-medium">{cand?.name ?? "—"}</div>
-            <div className="text-[hsl(var(--muted-foreground))] truncate">{cand?.email}</div>
-            {cand?.external_id && <div className="text-xs">ID: {cand.external_id}</div>}
-          </CardContent>
-        </Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Status</CardTitle></CardHeader>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5" /> Candidate profile
+            </CardTitle>
+          </CardHeader>
           <CardContent className="text-sm space-y-1">
-            <Badge>{data.attempt.status}</Badge>
-            {data.attempt.submitted_at && (
-              <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                Submitted {new Date(data.attempt.submitted_at).toLocaleString()}
+            <div className="font-medium">{candName}</div>
+            {candEmail && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                <Mail className="h-3 w-3 shrink-0" /> {candEmail}
               </div>
             )}
-            <div className="text-xs">Integrity: {data.attempt.integrity_score}</div>
+            {candExternalId && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                <Hash className="h-3 w-3 shrink-0" /> {candExternalId}
+              </div>
+            )}
+            {candPhone && (
+              <div className="text-xs text-muted-foreground truncate">{candPhone}</div>
+            )}
           </CardContent>
         </Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Score</CardTitle></CardHeader>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" /> Assessment
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-1">
+            <div className="font-medium truncate" title={assessment.title}>{assessment.title}</div>
+            <div className="text-xs text-muted-foreground">Duration: {assessment.duration_min} min</div>
+            <div className="text-xs text-muted-foreground">Questions: {data.answers.length}</div>
+            <div className="text-[10px] text-muted-foreground/80 truncate">
+              <code>/{assessmentSeg}/attempts/{attemptSeg}</code>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" /> Status & score
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-2xl font-semibold">{totals.earned} <span className="text-sm text-[hsl(var(--muted-foreground))]">/ {totals.max}</span></div>
+            <div className="flex items-center gap-2">
+              <Badge>{data.attempt.status}</Badge>
+              <span className="text-xs text-muted-foreground">
+                Integrity: <b className="text-foreground">{data.attempt.integrity_score}</b>
+              </span>
+            </div>
+            <div className="text-2xl font-semibold leading-none">
+              {totals.earned}
+              <span className="text-sm text-muted-foreground"> / {totals.max}</span>
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -103,6 +203,47 @@ export default function AttemptDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Attempt timeline */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" /> Attempt timeline
+            {durationMin !== null && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                ({durationMin} min total)
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {timeline.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No timeline events recorded yet.</p>
+          ) : (
+            <ol className="relative border-l border-[hsl(var(--border))] ml-2 space-y-2 max-h-72 overflow-auto">
+              {timeline.map((t, i) => (
+                <li key={i} className="ml-3 pl-2 py-0.5">
+                  <span
+                    className={`absolute -left-1.5 mt-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-background ${
+                      t.tone === "ok"
+                        ? "bg-emerald-500"
+                        : t.tone === "warn"
+                        ? "bg-amber-500"
+                        : "bg-sky-500"
+                    }`}
+                  />
+                  <div className="flex items-baseline justify-between gap-3 text-xs">
+                    <span className="font-medium capitalize">{t.label}</span>
+                    <time className="text-muted-foreground tabular-nums">
+                      {new Date(t.at).toLocaleString()}
+                    </time>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </CardContent>
+      </Card>
 
       {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} orgId={org?.id} />}
 
