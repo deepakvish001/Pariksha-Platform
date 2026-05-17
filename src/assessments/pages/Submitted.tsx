@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
+import { ResultsColorKey } from "../components/ResultsColorKey";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
 import { IntegrityExplanation } from "../components/IntegrityExplanation";
 import { SupportLink } from "../components/SupportLink";
