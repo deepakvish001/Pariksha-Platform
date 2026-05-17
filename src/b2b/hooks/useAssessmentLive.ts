@@ -125,12 +125,7 @@ export function useAssessmentActivity(assessmentId?: string, pageSize = 40) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "attempt_events" },
-        () =>
-          qc.invalidateQueries({
-            queryKey,
-            // Only refetch the most recent page; preserve already-loaded older pages.
-            refetchPage: (_p, idx) => idx === 0,
-          })
+        () => qc.invalidateQueries({ queryKey })
       )
       .subscribe();
     return () => {
@@ -138,11 +133,11 @@ export function useAssessmentActivity(assessmentId?: string, pageSize = 40) {
     };
   }, [assessmentId, qc, pageSize]);
 
-  return useInfiniteQuery({
+  return useInfiniteQuery<LiveEvent[], Error, LiveEvent[], typeof queryKey, string | null>({
     queryKey,
     enabled: !!assessmentId,
     refetchInterval: 20_000,
-    initialPageParam: null as string | null,
+    initialPageParam: null,
     getNextPageParam: (lastPage) =>
       lastPage.length < pageSize ? undefined : lastPage[lastPage.length - 1].created_at,
     queryFn: async ({ pageParam }): Promise<LiveEvent[]> => {
