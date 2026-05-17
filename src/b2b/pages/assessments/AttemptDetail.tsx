@@ -10,6 +10,7 @@ import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
 import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
+import { ProctorEventFeed } from "@/assessments/components/ProctorEventFeed";
 import { useCurrentOrg } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
 
