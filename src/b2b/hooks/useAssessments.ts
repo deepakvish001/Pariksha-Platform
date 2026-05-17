@@ -39,16 +39,25 @@ export function useAssessments(orgId?: string) {
   });
 }
 
-export function useAssessment(id?: string) {
+/**
+ * Look up an assessment by either its UUID or its slug. The route param
+ * accepts either, so the caller does not need to know which it has.
+ * Pass `orgId` for an extra guard when the slug is scoped to the org.
+ */
+export function useAssessment(idOrSlug?: string, orgId?: string) {
   return useQuery({
-    queryKey: ["b2b", "assessment", id],
-    enabled: !!id,
+    queryKey: ["b2b", "assessment", idOrSlug, orgId ?? null],
+    enabled: !!idOrSlug,
     queryFn: async (): Promise<Assessment | null> => {
-      const { data, error } = await supabase
-        .from("assessments")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
+      const key = idOrSlug!;
+      let query = supabase.from("assessments").select("*");
+      if (isUuid(key)) {
+        query = query.eq("id", key);
+      } else {
+        query = query.eq("slug", key);
+        if (orgId) query = query.eq("org_id", orgId);
+      }
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
       return (data ?? null) as Assessment | null;
     },
