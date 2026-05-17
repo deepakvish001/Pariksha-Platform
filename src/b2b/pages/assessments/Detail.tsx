@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
@@ -64,6 +64,9 @@ export default function AssessmentDetail() {
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/b2b/assessments")}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/b2b/assessments/${assessment.id}/manage`)}>
+            <Activity className="h-4 w-4 mr-1" /> Live monitor
           </Button>
           <Badge variant={isPublished ? "default" : "secondary"}>{assessment.status}</Badge>
           <Button
