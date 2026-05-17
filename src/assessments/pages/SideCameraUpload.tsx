@@ -102,14 +102,19 @@ function SortablePage({
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
+  const borderCls =
+    page.state === "error"
+      ? "border-destructive/60"
+      : page.state === "uploading"
+      ? "border-primary/60"
+      : page.uploaded
+      ? "border-emerald-500/50"
+      : "border-border";
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(
-        "relative rounded-md overflow-hidden border bg-card",
-        page.uploaded ? "border-emerald-500/50" : "border-border"
-      )}
+      className={cn("relative rounded-md overflow-hidden border bg-card", borderCls)}
     >
       <button
         type="button"
@@ -141,7 +146,17 @@ function SortablePage({
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
-      {page.uploaded && (
+      {page.state === "uploading" && (
+        <span className="absolute bottom-1 right-1 inline-flex items-center gap-1 bg-primary/90 text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">
+          <Loader2 className="h-3 w-3 animate-spin" /> Uploading
+        </span>
+      )}
+      {page.state === "error" && (
+        <span className="absolute bottom-1 right-1 inline-flex items-center gap-1 bg-destructive/90 text-white text-[10px] px-1.5 py-0.5 rounded">
+          <AlertTriangle className="h-3 w-3" /> Failed
+        </span>
+      )}
+      {page.uploaded && page.state !== "uploading" && (
         <span className="absolute bottom-1 right-1 inline-flex items-center gap-1 bg-emerald-600/90 text-white text-[10px] px-1.5 py-0.5 rounded">
           <CheckCircle2 className="h-3 w-3" /> Synced
         </span>
