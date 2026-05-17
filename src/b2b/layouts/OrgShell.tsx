@@ -51,7 +51,7 @@ function SidebarBody({
           Workspace
         </div>
       </div>
-      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1 scrollbar-thin">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1 b2b-scroll b2b-scroll-slim">
         {nav.map((n) => {
           const target = n.to.replace(/\/+$/, "").toLowerCase() || "/";
           const active = n.exact
