@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, LifeBuoy, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CloudOff, LifeBuoy, Loader2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNowStrict } from "date-fns";
+import {
+  flushSosQueue,
+  getQueuedSos,
+  subscribeSosQueue,
+  SOS_DELIVERY_FAILED_THRESHOLD,
+  type QueuedSos,
+} from "@/assessments/lib/sosDeliveryQueue";
 
 type SosStatus = "open" | "acknowledged" | "resolved" | "cancelled";
+type DeliveryStatus = "queued" | "sent" | "failed";
 
 interface SosRow {
   id: string;
