@@ -17,6 +17,7 @@ export default function AssessmentNew() {
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState(60);
   const [proctoring, setProctoring] = useState(false);
+  const [showResults, setShowResults] = useState(true);
   const create = useCreateAssessment();
 
   if (isLoading) return null;
