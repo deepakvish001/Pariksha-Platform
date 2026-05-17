@@ -548,6 +548,17 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
             </div>
           ) : (
             <div className="space-y-3">
+              {blocked && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                >
+                  {maxedOut
+                    ? `You've reached the limit of ${MAX_PER_ATTEMPT} SOS alerts for this attempt. Use Call or WhatsApp above for further help.`
+                    : `Proctor already alerted. You can resend in ${remainingSec}s.`}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                   What's the issue?
