@@ -487,7 +487,7 @@ function SettingsPanel({
 }
 
 function InvitesPanel({ assessmentId }: { assessmentId: string }) {
-  const { data: invites } = useInvites(assessmentId);
+  const { data: invites, refetch: refetchInvites } = useInvites(assessmentId);
   const create = useCreateInvites();
   const del = useDeleteInvite();
   const [bulk, setBulk] = useState("");
@@ -499,6 +499,7 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
       body: { assessment_id: assessmentId, ...opts },
     });
     if (error) throw new Error(error.message ?? "Failed to send");
+    await refetchInvites();
     return data as { sent: number; failed: number; results?: { email: string; ok: boolean; error?: string }[] };
   }
 
