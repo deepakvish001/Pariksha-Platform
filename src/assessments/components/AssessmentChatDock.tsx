@@ -111,6 +111,23 @@ export function AssessmentChatDock({
       ? `${typingRoles[0] === "proctor" ? "Proctor" : "Candidate"} is typing…`
       : "Proctor and Candidate are typing…";
 
+  // Separate announcements for presence vs typing so screen readers don't
+  // re-read the online status on every typing toggle and vice versa.
+  const presenceAnnouncement = useMemo(() => {
+    if (peer.online) return `${peerLabel} is online.`;
+    if (peer.lastSeen) {
+      return `${peerLabel} went offline. ${lastSeenLabel(peer.lastSeen)}.`;
+    }
+    return `${peerLabel} is offline.`;
+  }, [peer.online, peer.lastSeen, peerLabel]);
+  const typingAnnouncement = useMemo(() => {
+    if (!anyTyping) return "";
+    if (typingRoles.length === 1) {
+      return `${typingRoles[0] === "proctor" ? "Proctor" : "Candidate"} is typing.`;
+    }
+    return "Proctor and candidate are typing.";
+  }, [anyTyping, typingRoles]);
+
   // Most recent moment the peer read one of our messages.
   const peerLastReadAt = useMemo(() => {
     let latest = 0;
