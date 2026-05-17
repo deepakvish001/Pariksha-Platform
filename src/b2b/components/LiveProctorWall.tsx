@@ -125,6 +125,12 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
         lastToastRef.current[key] = { connected, at: now };
 
         const seen = seenRef.current[key];
+        // Always mark first-connect as seen so subsequent flaps fire reconnect
+        // / offline toasts once the user un-mutes.
+        if (connected && !seen) seenRef.current[key] = true;
+        // Muted: keep counts/badges accurate but skip the visible toast.
+        if (mutedRef.current) return;
+
         if (connected) {
           if (seen) {
             toast.success(`${candidateName} · ${KIND_LABEL[kind]} reconnected`, { id: `conn:${key}` });
@@ -133,7 +139,6 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
               id: `conn:${key}`,
               description: "Stream is now streaming.",
             });
-            seenRef.current[key] = true;
           }
         } else if (seen) {
           toast.error(`${candidateName} · ${KIND_LABEL[kind]} went offline`, { id: `conn:${key}` });
