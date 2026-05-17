@@ -339,14 +339,23 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     };
   }, [attemptId]);
 
+  const pinByEvent = useMemo(() => {
+    const map = new Map<string, PinRow>();
+    for (const p of pins) map.set(p.event_id, p);
+    return map;
+  }, [pins]);
+
   const merged = useMemo<FeedEntry[]>(() => {
     const all = [...events.map(describeEvent), ...chats.map(describeChat)];
     all.sort((a, b) => a.ts - b.ts);
     if (filter === "events") return all.filter((e) => e.source === "event");
     if (filter === "chat") return all.filter((e) => e.source === "chat");
     if (filter === "critical") return all.filter((e) => e.severity === "critical" || e.severity === "warn");
+    if (filter === "pinned") {
+      return all.filter((e) => e.source === "event" && pinByEvent.has(e.key.slice(2)));
+    }
     return all;
-  }, [events, chats, filter]);
+  }, [events, chats, filter, pinByEvent]);
 
   useEffect(() => {
     if (!autoscroll) return;
