@@ -50,6 +50,7 @@ export default function AssessmentDetail() {
   const { data: assessment, isLoading } = useAssessment(id);
   const update = useUpdateAssessment();
   const del = useDeleteAssessment();
+  const { canProctor } = useCanProctor(assessment?.org_id);
 
   if (isLoading) return null;
   if (!assessment) return <Navigate to="/b2b/assessments" replace />;
