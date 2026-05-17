@@ -104,7 +104,26 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
   const navigate = useNavigate();
 
   // Results visibility — admin-controlled per assessment. Recruiter preview always sees everything.
-  const showResults = isPreview ? true : assessment.show_results_to_candidate !== false;
+  // Fetch the flag directly since the paper RPC does not return it.
+  const [showResults, setShowResults] = useState<boolean>(
+    isPreview ? true : assessment.show_results_to_candidate !== false,
+  );
+  useEffect(() => {
+    if (isPreview) return;
+    if (typeof assessment.show_results_to_candidate === "boolean") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("assessments")
+        .select("show_results_to_candidate")
+        .eq("id", assessment.id)
+        .maybeSingle();
+      if (!cancelled && data) setShowResults(data.show_results_to_candidate !== false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [assessment.id, assessment.show_results_to_candidate, isPreview]);
   const requireFeedback = !isPreview && !showResults;
 
   // Track if candidate has submitted feedback (gates leaving the page when results are hidden)
