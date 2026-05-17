@@ -445,9 +445,20 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           >
             <LifeBuoy className="h-4 w-4" />
             {!compact && <span className="hidden sm:inline ml-1.5">SOS</span>}
+            {!compact && inCooldown && (
+              <span className="hidden sm:inline ml-1.5 tabular-nums text-[11px] font-mono opacity-80">
+                {remainingSec}s
+              </span>
+            )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Emergency help — your test stays safe</TooltipContent>
+        <TooltipContent>
+          {maxedOut
+            ? `SOS limit reached (${MAX_PER_ATTEMPT}). Call support instead.`
+            : inCooldown
+              ? `Proctor already alerted — you can resend in ${remainingSec}s`
+              : "Emergency help — your test stays safe"}
+        </TooltipContent>
       </Tooltip>
 
       <Dialog
