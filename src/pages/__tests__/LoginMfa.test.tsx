@@ -46,6 +46,10 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth },
 }));
 
+vi.mock("@/components/AuthLayout", () => ({
+  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 // Stub InputOTP so we can drive the OTP value with a plain input
 vi.mock("@/components/ui/input-otp", () => {
   const InputOTP = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
