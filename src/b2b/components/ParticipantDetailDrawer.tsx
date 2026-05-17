@@ -23,7 +23,7 @@ import {
 
 const EMPTY: EvidenceCounts = { webcam: 0, screen: 0, side_cam: 0, findings_high: 0, findings_med: 0 };
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Compact 3-tile live view for a single attempt. */
 function LiveProctorThreeEye({ attemptId }: { attemptId: string }) {
