@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
   const branding = {
     orgName: (org.name as string) ?? "Your organization",
     logoUrl,
-    brandColor: (org.brand_color as string | null) ?? null,
+    // Per-assessment override wins; fall back to the org default.
+    brandColor: ((assessment as any).brand_color as string | null) ?? ((org.brand_color as string | null) ?? null),
     title: assessment.title as string,
     durationMin: (assessment as any).duration_min as number | null,
   };
