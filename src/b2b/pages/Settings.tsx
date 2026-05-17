@@ -112,6 +112,27 @@ export default function B2BSettings() {
     navigate("/b2b/onboarding", { replace: true });
   };
 
+  const openPreview = async () => {
+    if (!org) return;
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewHtml(null);
+    setPreviewSubject("");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
+        body: { org_id: org.id, preview: true },
+      });
+      if (error) throw new Error(error.message ?? "Preview failed");
+      setPreviewHtml((data as { html?: string }).html ?? "");
+      setPreviewSubject((data as { subject?: string }).subject ?? "");
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const TypeIcon = org.type === "college" ? GraduationCap : Building2;
 
   return (
