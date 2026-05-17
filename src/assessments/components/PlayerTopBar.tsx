@@ -27,6 +27,7 @@ interface Props {
 
 export function PlayerTopBar({
   title,
+  attemptId,
   answered,
   flagged,
   total,
