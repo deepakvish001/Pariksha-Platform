@@ -266,25 +266,58 @@ export function useChatPresence(
     });
     channelRef.current = channel;
 
+    const trackPresence = () => {
+      try {
+        void channel.track({
+          role: viewerRole,
+          user_id: viewerUserId,
+          online_at: new Date().toISOString(),
+        } satisfies PresencePayload);
+      } catch {
+        // best-effort: track may fail before subscribe
+      }
+    };
+
     const updateFromPresence = () => {
       const state = channel.presenceState() as Record<string, PresencePayload[]>;
       let online = false;
-      let lastSeen: number | null = null;
+      let latestBeat: number | null = null;
       for (const entries of Object.values(state)) {
         for (const entry of entries) {
           if (entry.role === peerRole && entry.user_id !== viewerUserId) {
             online = true;
             const t = Date.parse(entry.online_at);
-            if (!Number.isNaN(t) && (lastSeen === null || t > lastSeen)) lastSeen = t;
+            if (!Number.isNaN(t) && (latestBeat === null || t > latestBeat)) latestBeat = t;
           }
         }
+      }
+      // Track the freshest beat we've seen from the peer for stale detection.
+      if (latestBeat !== null) {
+        peerLastBeatRef.current =
+          peerLastBeatRef.current === null
+            ? latestBeat
+            : Math.max(peerLastBeatRef.current, latestBeat);
       }
       setPeer((prev) => ({
         ...prev,
         online,
-        lastSeen: online ? Date.now() : prev.lastSeen,
+        lastSeen: online ? Date.now() : peerLastBeatRef.current ?? prev.lastSeen,
         typing: online ? prev.typing : false,
       }));
+    };
+
+    // Periodically mark the peer offline if their heartbeat goes stale.
+    // Runs locally — independent of presence events — so we react to closed
+    // tabs / killed browsers without waiting for the realtime "leave" event.
+    const runStaleCheck = () => {
+      const lastBeat = peerLastBeatRef.current;
+      if (lastBeat === null) return;
+      if (Date.now() - lastBeat <= staleAfterMs) return;
+      setPeer((prev) =>
+        prev.online
+          ? { ...prev, online: false, typing: false, lastSeen: lastBeat }
+          : prev
+      );
     };
 
     channel
@@ -292,7 +325,12 @@ export function useChatPresence(
       .on("presence", { event: "join" }, updateFromPresence)
       .on("presence", { event: "leave" }, () => {
         updateFromPresence();
-        setPeer((prev) => ({ ...prev, lastSeen: Date.now() }));
+        setPeer((prev) => ({
+          ...prev,
+          online: false,
+          typing: false,
+          lastSeen: peerLastBeatRef.current ?? Date.now(),
+        }));
       })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
         const p = payload as TypingPayload;
@@ -309,26 +347,63 @@ export function useChatPresence(
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await channel.track({
-            role: viewerRole,
-            user_id: viewerUserId,
-            online_at: new Date().toISOString(),
-          } satisfies PresencePayload);
+          trackPresence();
+          // Start heartbeat + stale checker once we're actually subscribed.
+          if (heartbeatTimerRef.current) window.clearInterval(heartbeatTimerRef.current);
+          heartbeatTimerRef.current = window.setInterval(trackPresence, heartbeatMs);
+          if (staleCheckTimerRef.current) window.clearInterval(staleCheckTimerRef.current);
+          staleCheckTimerRef.current = window.setInterval(
+            runStaleCheck,
+            Math.max(1_000, Math.floor(heartbeatMs / 2))
+          );
         }
       });
 
+    // On tab close / navigation, eagerly untrack so the peer sees a clean
+    // "leave" instead of waiting for the stale-timeout to expire.
+    const handleUnload = () => {
+      try {
+        void channel.untrack();
+        supabase.removeChannel(channel);
+      } catch {
+        // ignore — page is going away
+      }
+    };
+    // `pagehide` is the modern reliable counterpart to `unload` for bfcache.
+    window.addEventListener("pagehide", handleUnload);
+    window.addEventListener("beforeunload", handleUnload);
+    // If the tab becomes visible again, re-track immediately so "Last seen"
+    // updates without waiting a full heartbeat interval.
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") trackPresence();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
+      window.removeEventListener("pagehide", handleUnload);
+      window.removeEventListener("beforeunload", handleUnload);
+      document.removeEventListener("visibilitychange", handleVisibility);
       if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
       if (trailingTrueTimerRef.current) window.clearTimeout(trailingTrueTimerRef.current);
       if (stopDebounceTimerRef.current) window.clearTimeout(stopDebounceTimerRef.current);
+      if (heartbeatTimerRef.current) window.clearInterval(heartbeatTimerRef.current);
+      if (staleCheckTimerRef.current) window.clearInterval(staleCheckTimerRef.current);
       trailingTrueTimerRef.current = null;
       stopDebounceTimerRef.current = null;
+      heartbeatTimerRef.current = null;
+      staleCheckTimerRef.current = null;
+      peerLastBeatRef.current = null;
       lastSentTypingRef.current = false;
       lastBroadcastRef.current = 0;
+      try {
+        void channel.untrack();
+      } catch {
+        // ignore
+      }
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [attemptId, viewerRole, viewerUserId, peerRole]);
+  }, [attemptId, viewerRole, viewerUserId, peerRole, heartbeatMs, staleAfterMs]);
 
   const sendTyping = useCallback(
     (typing: boolean) => {
