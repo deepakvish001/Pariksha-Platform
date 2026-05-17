@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AttemptInspector } from "@/components/proctoring/AttemptInspector";
 import { OrgShell } from "../layouts/OrgShell";
 import { useCurrentOrg } from "../context/OrgContext";
+import { useCanProctor } from "../hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
