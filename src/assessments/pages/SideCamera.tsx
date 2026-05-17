@@ -29,6 +29,7 @@ export default function SideCameraPage() {
   const [framesSent, setFramesSent] = useState(0);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+  const [ready, setReady] = useState(false);
 
   // Publish the rear-camera feed live to proctors via WebRTC, keyed by the
   // pairing token (same token already authenticates snapshot uploads).
