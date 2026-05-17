@@ -252,8 +252,6 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
         .limit(5);
       if (recentErr) console.warn("SOS rate-limit lookup failed", recentErr);
 
-      const MAX_PER_ATTEMPT = 5;
-      const COOLDOWN_MS = 60_000;
       if (recent) {
         if (recent.length >= MAX_PER_ATTEMPT) {
           return {
