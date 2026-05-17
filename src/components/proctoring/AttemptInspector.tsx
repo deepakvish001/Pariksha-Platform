@@ -436,8 +436,15 @@ export function AttemptInspector({ attemptId, open, onClose, canRunReview = true
   const [loading, setLoading] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
+  // Reset per-attempt state immediately whenever the selected attempt changes
+  // (including switching from one open attempt straight to another) so the
+  // timeline, snapshots, and lightbox never show stale evidence while the
+  // next fetch is in flight.
   useEffect(() => {
-    if (!attemptId) { setAttempt(null); setEvents(null); return; }
+    setAttempt(null);
+    setEvents(null);
+    setLightboxIdx(null);
+    if (!attemptId) { setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     (async () => {
@@ -547,7 +554,7 @@ export function AttemptInspector({ attemptId, open, onClose, canRunReview = true
                 )}
               </div>
 
-              <AIFindingsPanel attemptId={attempt.id} canRunReview={canRunReview} />
+              <AIFindingsPanel key={attempt.id} attemptId={attempt.id} canRunReview={canRunReview} />
             </div>
           )}
         </SheetContent>
