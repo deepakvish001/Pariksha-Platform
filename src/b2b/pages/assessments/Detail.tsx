@@ -35,6 +35,8 @@ import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
 import { useCanProctor } from "../../hooks/usePermissions";
+import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
+import { paths } from "@/lib/routing/paths";
 import { ShieldAlert } from "lucide-react";
 
 const TYPE_LABEL: Record<string, string> = {
