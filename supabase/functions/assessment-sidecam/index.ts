@@ -214,6 +214,174 @@ Deno.serve(async (req) => {
       return json({ ok: true, path });
     }
 
+    // ---- ANSWER-UPLOAD (phone uploads descriptive answer-sheet page) ----
+    if (action === "answer-upload") {
+      const token = req.headers.get("x-pair-token") ?? url.searchParams.get("token") ?? "";
+      if (!token) return json({ error: "token required" }, 400);
+      const p = await findPairing(token);
+      if (!p) return json({ error: "not_found" }, 404);
+      if (p.status === "disconnected" || p.status === "expired")
+        return json({ error: "pairing_closed" }, 410);
+
+      const body = await req.json().catch(() => null) as
+        | { dataUrl?: string; questionId?: string; ordinal?: number }
+        | null;
+      const dataUrl = body?.dataUrl;
+      const questionId = body?.questionId;
+      const ordinal = Number(body?.ordinal);
+      if (!dataUrl || !dataUrl.startsWith("data:image/"))
+        return json({ error: "dataUrl required" }, 400);
+      if (!questionId) return json({ error: "questionId required" }, 400);
+      if (!Number.isFinite(ordinal) || ordinal < 1)
+        return json({ error: "ordinal required" }, 400);
+
+      // Verify attempt is still in progress
+      const { data: attempt } = await admin
+        .from("assessment_attempts")
+        .select("status")
+        .eq("id", p.attempt_id)
+        .maybeSingle();
+      if (!attempt) return json({ error: "attempt_not_found" }, 404);
+      if (attempt.status !== "in_progress")
+        return json({ error: "attempt_closed" }, 410);
+
+      const comma = dataUrl.indexOf(",");
+      const b64 = dataUrl.slice(comma + 1);
+      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+
+      const path = `answers/${p.attempt_id}/${questionId}/${ordinal}-${Date.now()}.jpg`;
+      const { error: upErr } = await admin.storage
+        .from(BUCKET)
+        .upload(path, bin, { contentType: "image/jpeg", upsert: false });
+      if (upErr) return json({ error: upErr.message }, 500);
+
+      // Replace any existing row for that (attempt, question, ordinal)
+      await admin
+        .from("assessment_answer_uploads")
+        .delete()
+        .eq("attempt_id", p.attempt_id)
+        .eq("question_id", questionId)
+        .eq("ordinal", ordinal);
+
+      const { data: row, error: insErr } = await admin
+        .from("assessment_answer_uploads")
+        .insert({
+          attempt_id: p.attempt_id,
+          question_id: questionId,
+          storage_path: path,
+          ordinal,
+        })
+        .select("*")
+        .single();
+      if (insErr) return json({ error: insErr.message }, 500);
+
+      // Keep pairing fresh
+      await admin
+        .from("assessment_side_camera_pairings")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", p.id);
+
+      return json({ ok: true, path, id: row.id });
+    }
+
+    // ---- ANSWER-LIST (phone lists already-uploaded pages for a question) -
+    if (action === "answer-list") {
+      const token = req.headers.get("x-pair-token") ?? url.searchParams.get("token") ?? "";
+      const questionId = url.searchParams.get("questionId") ?? "";
+      if (!token) return json({ error: "token required" }, 400);
+      if (!questionId) return json({ error: "questionId required" }, 400);
+      const p = await findPairing(token);
+      if (!p) return json({ error: "not_found" }, 404);
+
+      const { data: rows } = await admin
+        .from("assessment_answer_uploads")
+        .select("id, ordinal, storage_path, uploaded_at")
+        .eq("attempt_id", p.attempt_id)
+        .eq("question_id", questionId)
+        .order("ordinal", { ascending: true });
+      return json({ pages: rows ?? [] });
+    }
+
+    // ---- ANSWER-DELETE (phone removes a page before final upload) -------
+    if (action === "answer-delete") {
+      const token = req.headers.get("x-pair-token") ?? url.searchParams.get("token") ?? "";
+      if (!token) return json({ error: "token required" }, 400);
+      const p = await findPairing(token);
+      if (!p) return json({ error: "not_found" }, 404);
+      const body = await req.json().catch(() => null) as { id?: string } | null;
+      if (!body?.id) return json({ error: "id required" }, 400);
+
+      const { data: row } = await admin
+        .from("assessment_answer_uploads")
+        .select("id, attempt_id, storage_path")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!row || row.attempt_id !== p.attempt_id)
+        return json({ error: "not_found" }, 404);
+
+      await admin.storage.from(BUCKET).remove([row.storage_path]);
+      await admin.from("assessment_answer_uploads").delete().eq("id", body.id);
+      return json({ ok: true });
+    }
+
+    // ---- ANSWER-SIGN (laptop or proctor requests signed read URLs) ------
+    if (action === "answer-sign") {
+      const user = await getUser(req);
+      if (!user) return json({ error: "auth_required" }, 401);
+      const { attemptId, questionId } = await req.json().catch(() => ({}));
+      if (!attemptId || !questionId)
+        return json({ error: "attemptId and questionId required" }, 400);
+
+      // Authorization: candidate (own attempt) OR org member
+      const { data: attempt } = await admin
+        .from("assessment_attempts")
+        .select("id, user_id, assessment_id")
+        .eq("id", attemptId)
+        .maybeSingle();
+      if (!attempt) return json({ error: "not_found" }, 404);
+
+      let allowed = attempt.user_id === user.id;
+      if (!allowed) {
+        const { data: a } = await admin
+          .from("assessments")
+          .select("org_id")
+          .eq("id", attempt.assessment_id)
+          .maybeSingle();
+        if (a?.org_id) {
+          const { data: mem } = await admin
+            .from("org_members")
+            .select("user_id")
+            .eq("org_id", a.org_id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          allowed = !!mem;
+        }
+      }
+      if (!allowed) return json({ error: "forbidden" }, 403);
+
+      const { data: rows } = await admin
+        .from("assessment_answer_uploads")
+        .select("id, ordinal, storage_path, uploaded_at")
+        .eq("attempt_id", attemptId)
+        .eq("question_id", questionId)
+        .order("ordinal", { ascending: true });
+
+      const pages: Array<{ id: string; ordinal: number; url: string | null; storage_path: string; uploaded_at: string }> = [];
+      for (const r of rows ?? []) {
+        const { data: signed } = await admin.storage
+          .from(BUCKET)
+          .createSignedUrl(r.storage_path, 60 * 60);
+        pages.push({
+          id: r.id,
+          ordinal: r.ordinal,
+          storage_path: r.storage_path,
+          uploaded_at: r.uploaded_at,
+          url: signed?.signedUrl ?? null,
+        });
+      }
+      return json({ pages });
+    }
+
     return json({ error: "unknown action" }, 400);
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);

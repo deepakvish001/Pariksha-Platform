@@ -1,115 +1,93 @@
-## Goal
+## What the PDF covers vs what we already have
 
-Recreate the polished, step-by-step student exam experience shown in the SRM/CodeTantra manual on top of our existing Parikshaa assessments + Side Eye stack. The manual's strength is *guidance* — every screen tells the student exactly what to do next, with visuals. We'll mirror that flow with our deep-black/amber theme.
+I walked the PDF manual page-by-page and matched it against the current `src/assessments/*` code. Almost the entire flow is already built:
 
-We already have most building blocks (`Lobby`, `Player`, `SideCamera`, `SideCameraPairing`, `WebcamPip`, `useProctoring`, `assessment-sidecam` edge fn). The work is mostly **UX polish + a few missing screens (env check, descriptive-answer mobile upload, submit summary)** — not new backend.
+| Manual step (page) | Status in our app |
+|---|---|
+| Devices required, 2-device setup (p.2) | ✓ Preflight wizard explains Laptop + Phone |
+| OS × browser compatibility matrix (p.3) | ✓ `CompatibilityMatrix.tsx` |
+| Browser update guidance (p.4) | ✓ Inside `PlayerHelpSheet.tsx` |
+| Login (p.5–8) | ✓ Existing auth + `MyAssessments` |
+| Open Test (p.9) | ✓ `MyAssessments` → `Preflight` |
+| Allow cam/mic (p.10) | ✓ Preflight step "Permissions" |
+| Audio / webcam / mic self-test (p.11) | ✓ Preflight step "Audio / Video" |
+| "Proceed to test" gate (p.12) | ✓ Preflight summary dialog |
+| Connect to 3rd Eye + QR (p.13–18) | ✓ `SideCameraPairing.tsx` |
+| Phone placement / auto-rotate / DND (p.19–22) | ✓ Pairing instructions |
+| Proctor view (p.23) | ✓ Admin Side-Eye console |
+| Start test (p.24–25) | ✓ Preflight "Ready" → Player |
+| Answer MCQ (p.26) | ✓ Player |
+| **Descriptive Q answer-sheet upload via phone (p.27–36)** | **✗ Missing** |
+| **Laptop "Sync" tile to pull uploads (p.37–39)** | **✗ Missing** |
+| Jump-to navigation palette (p.41) | ✓ `QuestionPalette` |
+| Chat with proctor (p.42) | ✓ `AssessmentChatDock` |
+| General instructions modal (p.43) | ✓ `PlayerHelpSheet` |
+| Zoom in/out (p.44) | ✓ Player zoom controls |
+| SOS (p.45) | ✓ `PlayerSosButton` + dialog |
+| Test Summary before submit (p.46) | ✓ Player submit `AlertDialog` with Answered/Unanswered/Flagged + jump chips |
+| "Successfully submitted" screen (p.47) | ✓ `Submitted.tsx` |
+| Support contacts (p.48) | ✓ `SupportLink.tsx` + Help Sheet |
 
----
+So the **only meaningful gap** is the descriptive-answer phone-upload feature (PDF pages 27–39). Everything else already matches or exceeds the manual.
 
-## Flow we'll build (mapped to manual steps)
+## What I'll build
 
+### 1. Backend (Lovable Cloud)
+Migration adding one table + RLS:
 ```text
-Login → My Assessments → [Open Test] → Pre-flight Wizard ──┐
-                                                            │
-  ┌─ Step 1  Device & browser check (auto-detect)           │
-  ├─ Step 2  Permissions: cam + mic + screen (Allow chain)  │
-  ├─ Step 3  Audio/Webcam/Mic self-test (Play / Yes)        │
-  ├─ Step 4  Pair Third Eye (QR → mobile)                   │
-  │           └─ mobile: login → Third Eye → Allow camera   │
-  │                    → place phone → "Connected" pulse    │
-  └─ Step 5  Proctor ready → [Start Test] unlocks           │
-                                                            ▼
-                                                  ┌── In-Test Shell ──┐
-                                                  │  Top: timer, SOS  │
-                                                  │  Left: palette    │
-                                                  │  Center: question │
-                                                  │  Right: chat dock │
-                                                  │  Bottom: nav      │
-                                                  └───────┬───────────┘
-                                                          │
-                              Descriptive Q → "Upload from phone" tile
-                                  └─ phone: capture pages → reorder
-                                     → upload → laptop "Sync" → preview
-                                                          │
-                                                Finish → Summary modal
-                                                       → Confirmation screen
+assessment_answer_uploads
+  id uuid pk
+  attempt_id uuid  -> attempts (owner only)
+  question_id uuid
+  storage_path text          -- in existing 'assessment-proctor' bucket
+  ordinal int                -- page order, 1..n
+  uploaded_at timestamptz default now()
+  unique (attempt_id, question_id, ordinal)
 ```
+RLS:
+- Owner of the attempt can `select` / `insert` / `delete` their own rows (delete only while attempt is in_progress).
+- Org proctors can `select` rows whose `attempt → assessment → org` they belong to (reuse existing `has_role`-style helper used by `ProctoringTriagePanel`).
+- No client `update`.
 
----
+Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.assessment_answer_uploads;`
 
-## Screens & components to add / refine
+Storage: reuse existing `assessment-proctor` bucket, prefix `answers/{attempt_id}/{question_id}/{ordinal}.jpg`. The existing `assessment-sidecam` edge function already mints signed upload URLs — extend it with an `answer-upload` action that validates the pair token + attempt and returns a signed URL for that path.
 
-### 1. Pre-flight Wizard (`src/assessments/pages/Preflight.tsx`, new)
-Replaces the current ad-hoc Lobby allow-prompts. Single fullscreen page, 5 numbered steps in a left rail (like the manual's "Step 01… Step 15"), big preview on the right.
-- **Step cards** with states: `pending / active / passed / failed`, semantic amber active ring.
-- Auto-detect: OS, browser, version; show the manual's OS×browser compatibility matrix with our row highlighted ✓.
-- Webcam preview tile + audio meter (reuse `WebcamPip`).
-- "Proceed to test" stays disabled until all steps pass and Third Eye is paired.
+### 2. Mobile capture page — new
+`src/assessments/pages/SideCameraUpload.tsx` mounted at `/side-camera/:token/upload/:attemptId/:questionId`.
+- Reuse the existing pair-token check from `SideCamera.tsx`.
+- Camera capture (getUserMedia, environment-facing) → snap → thumbnail preview grid.
+- Drag-to-reorder with existing `@dnd-kit` (already in deps).
+- Per-page delete + retake.
+- "Upload" → signed-URL PUT for each page → insert row → confirmation dialog.
+- "Uploaded ✓" screen with page count.
 
-### 2. Third Eye Pairing — restyled (`SideCameraPairing.tsx`)
-- Replace the current minimal QR card with a two-pane layout: left = QR + numbered phone instructions ("Open camera, place 3–4 ft to your side, landscape"); right = live phone preview thumbnail once connected with a green "Connected" pulse.
-- Mobile side (`SideCamera.tsx`): add the manual's placement diagram, auto-rotate / DND reminder, and a "Connected — keep this screen on" confirmation page.
+### 3. Laptop tile — Player subjective renderer
+Inside `Player.tsx` `if (question.type === "subjective") { … }`, render under the existing textarea:
+- A `GlassPanel` tile "Upload answer sheets from phone" with counter `N pages uploaded`, last-uploaded timestamp, and a `Sync` button.
+- Thumbnail strip of currently synced pages (signed download URLs) with click-to-zoom.
+- Subscribes to the realtime channel for `assessment_answer_uploads` filtered by `attempt_id=eq.{attemptId}` and refreshes on insert.
+- Persists the list of `storage_path`s into the existing answer JSON (`answers[qq.id].pages = [...]`) so `isAnswered` returns true when at least one page is uploaded, and grading + the submit summary stay accurate.
+- Stays hidden when the assessment's `proctoring_config.allow_phone_upload` is false (default true).
 
-### 3. In-Test Shell polish (`Player.tsx`, `PlayerTopBar`, `PlayerBottomBar`, `QuestionPalette`)
-- **Top bar**: countdown chip (color shifts red < 5 min), candidate name + photo, network/proctor status dots, **SOS** button (opens a dialog like manual p.45 with preset reasons).
-- **Palette** (left): grid of question numbers with legend (Answered / Marked / Not visited / Current) matching manual p.41. Sticky, collapsible on narrow screens.
-- **Chat with Proctor** dock (right): floating green chat FAB → slide-over panel, unread badge.
-- **Zoom controls** + **General Instructions** modal accessible from top-right (matches p.43–44).
+### 4. Pairing → instruct mobile when subjective question is open
+The mobile Third Eye page (`SideCamera.tsx`) gains a small "Pending uploads" banner that deep-links into `SideCameraUpload` for whichever question the laptop currently has open. The laptop publishes the active `questionId` on the existing presence channel; phone subscribes.
 
-### 4. Descriptive answer upload (the big missing piece)
-New mobile route `src/assessments/pages/SideCameraUpload.tsx` (or extend `SideCamera.tsx`):
-- On laptop, descriptive questions show an **"Upload answer sheets from phone"** tile with a counter ("0 / N pages uploaded") and a **Sync** button.
-- On phone Third Eye: tap **Upload for Q3** → camera capture sheet by sheet → preview grid → drag-to-reorder (use existing `@dnd-kit`) → **Upload** with confirmation dialog → "Uploaded ✓".
-- Laptop polls / realtime-subscribes; **Sync** pulls signed thumbnails into the question's answer slot.
+### 5. Tests
+- Vitest: helper that builds the answer JSON from upload rows + `isAnswered` returns true with ≥1 page.
+- Playwright: skipped here (camera access requires a real device); add a TODO note.
 
-Storage: reuse `assessment-proctor` bucket with a new prefix `answers/{attempt_id}/{question_id}/{n}.jpg`; new table `assessment_answer_uploads (attempt_id, question_id, storage_path, ordinal, uploaded_at)` with strict RLS (attempt owner + org proctors only). Existing `assessment-sidecam` edge fn handles signed upload URLs.
+## Out of scope
 
-### 5. Submit flow
-- **Test Summary modal** before submit: table of Answered / Marked / Not answered counts per section, matches manual p.46.
-- **Confirmation screen** (`Submitted.tsx`): big check, "Congratulations! You have successfully submitted." + attempt id, proctor disconnect, support contact block (email/phone from org settings).
+- No changes to grading pipeline beyond surfacing uploaded page URLs.
+- AI proctoring (snapshot review) is **not** run against these answer-sheet images.
+- Existing flows (Preflight, SOS, chat, submit dialog, Submitted page, integrity score) are unchanged.
 
-### 6. Help & Support
-- Persistent `?` button in top bar opens `PlayerHelpSheet` with the manual's troubleshooting tree (browser update, mic not detected, phone disconnected, re-pair Third Eye) and org support contacts.
+## Suggested order
 
----
+1. Migration + storage path + edge-fn `answer-upload` action.
+2. `SideCameraUpload.tsx` mobile page + route.
+3. Player subjective tile + realtime sync + `isAnswered` integration.
+4. Phone "pending upload" banner + presence wiring.
 
-## Visual language
-
-Stay 100% on the existing B2B theme (`.theme-b2b`, deep black + amber primary, glassmorphism cards). No new tokens. Use:
-- `GlassPanel` for every wizard step card and the chat dock.
-- Numbered step circles: 32px, `bg-primary text-primary-foreground` when active, `bg-secondary` when pending, `bg-emerald-500` when passed.
-- Subtle framer-motion fade+slide between wizard steps (200ms, ease-out) — same vocabulary as the rest of the app.
-- All copy short and instructional, matching the manual's tone ("Click on **Allow** to continue").
-
----
-
-## Technical notes
-
-- **No new auth.** Mobile pairs via existing signed pair-token in `contest-sideeye-pair` style; reuse `assessment-sidecam` edge function for upload URLs (already deployed).
-- **Realtime sync** for phone→laptop uses the existing `assessment_side_camera_frames` channel pattern; add a sibling channel for `assessment_answer_uploads`.
-- **RLS**: new `assessment_answer_uploads` table — owner can insert/select own rows, proctors of the org can select via `has_role`/`useCanProctor` server equivalent, no updates/deletes from clients.
-- **Routes added**:
-  - `/assessments/:id/preflight`
-  - `/assessments/:id/submitted`
-  - `/side-camera/:token/upload/:questionId` (mobile)
-- **Files added**: `Preflight.tsx`, `Submitted.tsx`, `SideCameraUpload.tsx`, `PreflightStep.tsx`, `SosDialog.tsx`, `ProctorChatDock.tsx`, `TestSummaryDialog.tsx`, `CompatibilityMatrix.tsx`.
-- **Files refined**: `Lobby.tsx` (becomes a thin shell that redirects into Preflight), `Player.tsx` (mount chat dock + summary dialog), `SideCameraPairing.tsx`, `SideCamera.tsx`, `PlayerTopBar.tsx`, `PlayerBottomBar.tsx`, `QuestionPalette.tsx`.
-
----
-
-## Out of scope (call out explicitly)
-
-- No changes to grading, question authoring, or org admin screens.
-- No new AI proctoring rules — existing `assessment-snapshot-review` keeps running on the new uploads only if you want; otherwise answer uploads are excluded from AI review.
-- No native mobile app — phone side stays a PWA-friendly web page like today.
-
----
-
-## Suggested build order
-
-1. Preflight wizard + compatibility matrix + restyled pairing  (biggest UX win, no schema)
-2. In-test shell polish: palette legend, SOS dialog, chat dock, summary modal, submitted screen
-3. Descriptive answer upload (new table + mobile capture/reorder + laptop sync tile)
-4. Help sheet content pass + final QA on mobile breakpoints
-
-Shall I proceed with step 1 first, or do you want all four batched into one go?
+Want me to ship all four in one go, or stop after step 1 for review?

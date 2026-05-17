@@ -623,6 +623,48 @@ export type Database = {
           },
         ]
       }
+      assessment_answer_uploads: {
+        Row: {
+          attempt_id: string
+          id: string
+          ordinal: number
+          question_id: string
+          storage_path: string
+          uploaded_at: string
+        }
+        Insert: {
+          attempt_id: string
+          id?: string
+          ordinal: number
+          question_id: string
+          storage_path: string
+          uploaded_at?: string
+        }
+        Update: {
+          attempt_id?: string
+          id?: string
+          ordinal?: number
+          question_id?: string
+          storage_path?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_answer_uploads_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_answer_uploads_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_attempts: {
         Row: {
           assessment_id: string

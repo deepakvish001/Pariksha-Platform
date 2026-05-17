@@ -21,6 +21,7 @@ import { resolveProctoringConfig } from "../lib/proctoringConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerTopBar } from "../components/PlayerTopBar";
 import { QuestionPalette } from "../components/QuestionPalette";
+import { AnswerUploadTile } from "../components/AnswerUploadTile";
 import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
@@ -350,7 +351,11 @@ export default function Player() {
     if (!a) return false;
     if (qq.type === "mcq" || qq.type === "true_false")
       return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
-    if (qq.type === "subjective") return typeof a.text === "string" && (a.text as string).trim().length > 0;
+    if (qq.type === "subjective") {
+      const hasText = typeof a.text === "string" && (a.text as string).trim().length > 0;
+      const hasPages = Array.isArray(a.pages) && (a.pages as unknown[]).length > 0;
+      return hasText || hasPages;
+    }
     if (qq.type === "short_answer") return typeof a.text === "string" && (a.text as string).trim().length > 0;
     if (qq.type === "sql") return typeof a.query === "string" && (a.query as string).trim().length > 0;
     if (qq.type === "coding") return typeof a.code === "string" && (a.code as string).trim().length > 0;
@@ -591,6 +596,7 @@ export default function Player() {
                     onChange={(v) => setQuestionAnswer(q.id, v)}
                     isFlagged={isFlagged}
                     onToggleFlag={toggleFlag}
+                    attemptId={attemptId ?? null}
                   />
                 )
               ) : (
@@ -733,7 +739,7 @@ function ChipList({ label, questions, tone, onJump }: {
 }
 
 function ChoiceQuestionCard({
-  question, index, total, value, onChange, isFlagged, onToggleFlag,
+  question, index, total, value, onChange, isFlagged, onToggleFlag, attemptId,
 }: {
   question: PaperQuestion;
   index: number; total: number;
@@ -741,6 +747,7 @@ function ChoiceQuestionCard({
   onChange: (v: Record<string, unknown>) => void;
   isFlagged: boolean;
   onToggleFlag: () => void;
+  attemptId: string | null;
 }) {
   return (
     <Card className="overflow-hidden shadow-sm">
@@ -771,18 +778,19 @@ function ChoiceQuestionCard({
         )}
       </div>
       <CardContent className="space-y-4 pt-5">
-        <QuestionInput question={question} value={value} onChange={onChange} />
+        <QuestionInput question={question} value={value} onChange={onChange} attemptId={attemptId} />
       </CardContent>
     </Card>
   );
 }
 
 function QuestionInput({
-  question, value, onChange,
+  question, value, onChange, attemptId,
 }: {
   question: PaperQuestion;
   value: Record<string, unknown> | undefined;
   onChange: (v: Record<string, unknown>) => void;
+  attemptId: string | null;
 }) {
   if (question.type === "mcq") {
     const selected = new Set<string>(((value?.selected as string[]) ?? []));
@@ -835,19 +843,37 @@ function QuestionInput({
   if (question.type === "subjective") {
     const text = (value?.text as string) ?? "";
     const words = text.trim().split(/\s+/).filter(Boolean).length;
+    const pages = Array.isArray(value?.pages) ? (value!.pages as Array<{ id: string }>) : [];
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Textarea
           rows={10}
           placeholder="Type your answer here…"
           value={text}
-          onChange={(e) => onChange({ text: e.target.value })}
+          onChange={(e) => onChange({ ...(value ?? {}), text: e.target.value })}
           className="resize-y min-h-[220px] text-sm leading-relaxed"
         />
         <div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
           <span>{words} {words === 1 ? "word" : "words"}</span>
           <span>{text.length} characters</span>
         </div>
+        {attemptId && (
+          <AnswerUploadTile
+            attemptId={attemptId}
+            questionId={question.id}
+            onPagesChange={(next) =>
+              onChange({
+                ...(value ?? {}),
+                pages: next.map((p) => ({ id: p.id, ordinal: p.ordinal, storage_path: p.storage_path })),
+              })
+            }
+          />
+        )}
+        {pages.length > 0 && (
+          <p className="text-[10px] text-emerald-600">
+            {pages.length} uploaded page{pages.length === 1 ? "" : "s"} attached to this answer.
+          </p>
+        )}
       </div>
     );
   }
