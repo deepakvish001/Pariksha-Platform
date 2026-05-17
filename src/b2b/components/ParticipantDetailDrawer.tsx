@@ -12,6 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AttemptProctoringPanel from "./AttemptProctoringPanel";
+import { LiveStreamTile } from "./LiveStreamTile";
 import AttemptSosHistoryPanel from "./AttemptSosHistoryPanel";
 import type { LiveParticipant, EvidenceCounts } from "../hooks/useAssessmentLive";
 import {
