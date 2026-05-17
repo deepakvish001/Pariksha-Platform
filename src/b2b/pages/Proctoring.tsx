@@ -319,6 +319,10 @@ function ProctoringContent(props: any) {
         </CardContent>
       </Card>
 
+      <div className="mt-4">
+        <RetentionCard />
+      </div>
+
       <AttemptInspector
         attemptId={inspectingId}
         open={!!inspectingId}
