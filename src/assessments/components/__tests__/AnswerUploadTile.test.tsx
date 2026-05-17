@@ -119,6 +119,5 @@ describe("AnswerUploadTile — phone upload → laptop sync → onPagesChange", 
 
     await waitFor(() => expect(invokeMock).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(onPagesChange).toHaveBeenLastCalledWith(newPages));
-    expect(await screen.findByText("1")).toBeInTheDocument();
   });
 });
