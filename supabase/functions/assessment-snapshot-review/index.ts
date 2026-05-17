@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     }
     // Look up the attempt's org and verify the caller has a proctor role there.
     const { data: orgRow, error: orgErr } = await supabase
-      .rpc("attempt_assessment_org", { _attempt_id: attemptFilter });
+      .rpc("attempt_assessment_org", { _attempt: attemptFilter });
     if (orgErr || !orgRow) {
       return new Response(JSON.stringify({ error: "Attempt not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
