@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, CheckCircle2, ShieldCheck, RotateCcw, WifiOff } from "lucide-react";
+import { useWebrtcStream } from "@/hooks/useWebrtcStream";
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assessment-sidecam`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
