@@ -514,18 +514,30 @@ function ParticipantRow({
   p,
   assessmentId,
   onForceSubmit,
+  onOpen,
   pending,
+  evidence,
+  canProctor,
 }: {
   p: LiveParticipant;
   assessmentId: string;
   onForceSubmit: () => void;
+  onOpen: () => void;
   pending?: boolean;
+  evidence?: import("../../hooks/useAssessmentLive").EvidenceCounts;
+  canProctor: boolean;
 }) {
   const canForceSubmit =
     !!p.attempt_id && p.status !== "submitted" && p.status !== "auto_submitted";
+  const ev = evidence;
+  const onRowClick = (e: React.MouseEvent) => {
+    // Avoid triggering on action button clicks
+    if ((e.target as HTMLElement).closest("[data-row-action]")) return;
+    onOpen();
+  };
 
   return (
-    <tr className="hover:bg-white/[0.02]">
+    <tr className="hover:bg-white/[0.02] cursor-pointer" onClick={onRowClick}>
       <td className="py-2.5 px-2 min-w-0">
         <div className="font-medium truncate">{p.name ?? p.email}</div>
         <div className="text-muted-foreground text-[10px] truncate">
@@ -569,15 +581,34 @@ function ParticipantRow({
           <span className="text-muted-foreground">—</span>
         )}
       </td>
-      <td className="py-2.5 px-2 text-right">
-        <div className="inline-flex items-center gap-1">
-          {p.attempt_id && (
-            <Link to={`/b2b/assessments/${assessmentId}/attempts/${p.attempt_id}`}>
-              <Button size="sm" variant="ghost" className="h-7 px-2" title="View attempt">
-                <Eye className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
+      {canProctor && (
+        <td className="py-2.5 px-2">
+          {ev ? (
+            <div className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span className="inline-flex items-center gap-0.5"><Camera className="h-3 w-3" />{ev.webcam}</span>
+              <span className="inline-flex items-center gap-0.5"><Monitor className="h-3 w-3" />{ev.screen}</span>
+              <span className="inline-flex items-center gap-0.5"><Smartphone className="h-3 w-3" />{ev.side_cam}</span>
+              {ev.findings_high > 0 && (
+                <span className="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                  {ev.findings_high} high
+                </span>
+              )}
+              {ev.findings_med > 0 && ev.findings_high === 0 && (
+                <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  {ev.findings_med} med
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
           )}
+        </td>
+      )}
+      <td className="py-2.5 px-2 text-right" data-row-action>
+        <div className="inline-flex items-center gap-1">
+          <Button size="sm" variant="ghost" className="h-7 px-2" title="View details" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
