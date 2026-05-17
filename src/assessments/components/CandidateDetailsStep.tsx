@@ -297,12 +297,14 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
       setErrors(fieldErrors);
       return;
     }
-    if (!idPhotoUrl) {
-      setGlobalError("Please upload your government ID photo");
+    const idOk = idPhotoUrl && idChecks.length > 0 && idChecks.every((c) => c.ok);
+    const selfieOk = selfieUrl && selfieChecks.length > 0 && selfieChecks.every((c) => c.ok);
+    if (!idOk) {
+      setGlobalError("Government ID photo must pass all validation checks");
       return;
     }
-    if (!selfieUrl) {
-      setGlobalError("Please capture a live selfie");
+    if (!selfieOk) {
+      setGlobalError("Live selfie must pass all validation checks");
       return;
     }
     setBusy(true);
