@@ -153,7 +153,7 @@ export default function B2BProctoring() {
     return { total: rows.length, live, flagged, high };
   }, [rows]);
 
-  if (orgLoading) return <OrgShell title="Proctoring" />;
+  if (orgLoading) return <OrgShell title="Proctoring"><div /></OrgShell>;
   if (!org) return <OrgShell title="Proctoring"><div className="b2b-card p-6 text-sm">No organization found.</div></OrgShell>;
 
   return (
