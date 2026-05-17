@@ -103,20 +103,56 @@ function MetaTile({
 export function Submitted({ attempt, assessment, isPreview }: Props) {
   const navigate = useNavigate();
 
-  // Optional auto-redirect to dashboard after submission
-  const [autoRedirect, setAutoRedirect] = useState(!isPreview);
+  // Results visibility — admin-controlled per assessment. Recruiter preview always sees everything.
+  const showResults = isPreview ? true : assessment.show_results_to_candidate !== false;
+  const requireFeedback = !isPreview && !showResults;
+
+  // Track if candidate has submitted feedback (gates leaving the page when results are hidden)
+  const [feedbackDone, setFeedbackDone] = useState(false);
+  useEffect(() => {
+    if (!requireFeedback) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("assessment_feedback")
+        .select("id")
+        .eq("attempt_id", attempt.id)
+        .maybeSingle();
+      if (!cancelled && data) setFeedbackDone(true);
+    })();
+    // Re-check every 2s so the action buttons unlock once feedback is submitted.
+    const t = setInterval(async () => {
+      const { data } = await supabase
+        .from("assessment_feedback")
+        .select("id")
+        .eq("attempt_id", attempt.id)
+        .maybeSingle();
+      if (data) {
+        setFeedbackDone(true);
+        clearInterval(t);
+      }
+    }, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [attempt.id, requireFeedback]);
+
+  // Optional auto-redirect to dashboard after submission — disabled when feedback is required.
+  const [autoRedirect, setAutoRedirect] = useState(!isPreview && !requireFeedback);
   const [secondsLeft, setSecondsLeft] = useState(AUTO_REDIRECT_SECONDS);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (!autoRedirect || paused) return;
+    if (requireFeedback && !feedbackDone) return;
     if (secondsLeft <= 0) {
       navigate("/dashboard");
       return;
     }
     const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [autoRedirect, paused, secondsLeft, navigate]);
+  }, [autoRedirect, paused, secondsLeft, navigate, requireFeedback, feedbackDone]);
 
   const cancelAutoRedirect = () => {
     setAutoRedirect(false);
@@ -124,7 +160,7 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
     setPaused(false);
   };
 
-  const hasScore = typeof attempt.score === "number";
+  const hasScore = typeof attempt.score === "number" && showResults;
   const submittedAt = formatDateTime(attempt.submitted_at);
   const elapsed = formatDuration(attempt.started_at, attempt.submitted_at);
 
