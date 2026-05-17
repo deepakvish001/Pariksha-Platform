@@ -152,6 +152,27 @@ export function OrgShell({
     ? pathname.slice(baseTrim.length).replace(/^\/+|\/+$/g, "")
     : "";
   const segments = rest ? rest.split("/") : [];
+
+  // Locate the assessment + attempt segments (if any) so we can resolve
+  // their UUID/slug to a real human label rather than "#ea972d".
+  const assessmentsIdx = segments.indexOf("assessments");
+  const assessmentSeg =
+    assessmentsIdx >= 0 &&
+    segments[assessmentsIdx + 1] &&
+    segments[assessmentsIdx + 1] !== "new"
+      ? segments[assessmentsIdx + 1]
+      : undefined;
+  const attemptsIdx = segments.indexOf("attempts");
+  const attemptSeg =
+    attemptsIdx > 0 && segments[attemptsIdx + 1] ? segments[attemptsIdx + 1] : undefined;
+
+  const { data: assessmentLabel } = useEntityLabel("assessment", assessmentSeg, {
+    orgId: org?.id,
+  });
+  const { data: attemptLabel } = useEntityLabel("attempt", attemptSeg, {
+    assessmentId: undefined, // assessment id not yet resolved from slug — best-effort lookup
+  });
+
   const humanize = (s: string) =>
     decodeURIComponent(s)
       .replace(/[-_]+/g, " ")
@@ -161,7 +182,9 @@ export function OrgShell({
       (n) => n.to.replace(/\/+$/, "").toLowerCase() === fullPath.toLowerCase(),
     );
     if (match) return match.label;
-    // UUID-ish? show short hash
+    if (seg === assessmentSeg && assessmentLabel) return assessmentLabel;
+    if (seg === attemptSeg && attemptLabel) return attemptLabel;
+    // UUID-ish fallback while the lookup is in flight
     if (/^[0-9a-f]{8}-[0-9a-f-]+$/i.test(seg)) return `#${seg.slice(0, 6)}`;
     return humanize(seg);
   };
