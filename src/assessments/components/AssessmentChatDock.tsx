@@ -216,7 +216,7 @@ export function AssessmentChatDock({
       <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2 min-w-0">
           <div className="relative h-7 w-7 rounded-md bg-primary/15 text-primary grid place-items-center shrink-0">
-            <ShieldCheck className="h-3.5 w-3.5" />
+            <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
             <Circle
               className={cn(
                 "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card",
@@ -224,8 +224,13 @@ export function AssessmentChatDock({
                   ? "fill-emerald-500 text-emerald-500"
                   : "fill-muted-foreground/60 text-muted-foreground/60"
               )}
-              aria-hidden
+              aria-hidden="true"
             />
+            {/* Static label for AT — dynamic changes are announced via the
+                dedicated live region below. */}
+            <span className="sr-only">
+              {peer.online ? `${peerLabel} online` : `${peerLabel} offline`}
+            </span>
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold leading-tight truncate flex items-center gap-1.5">
@@ -241,6 +246,9 @@ export function AssessmentChatDock({
                 </span>
               )}
             </p>
+            {/* Visible status — decorative; the sr-only live regions below
+                handle screen-reader announcements so presence and typing
+                changes don't re-announce each other. */}
             <p
               className={cn(
                 "text-[10px] leading-tight truncate flex items-center gap-1",
@@ -250,7 +258,7 @@ export function AssessmentChatDock({
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-muted-foreground"
               )}
-              aria-live="polite"
+              aria-hidden="true"
             >
               {anyTyping ? (
                 <>
