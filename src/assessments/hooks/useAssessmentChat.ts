@@ -251,9 +251,14 @@ export function useChatPresence(
     online: false,
     lastSeen: null,
     typing: false,
+    typingByRole: { candidate: false, proctor: false },
   });
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const typingTimerRef = useRef<number | null>(null);
+  // Per-role typing auto-clear timers.
+  const typingTimersRef = useRef<{
+    candidate: number | null;
+    proctor: number | null;
+  }>({ candidate: null, proctor: null });
   const lastBroadcastRef = useRef<number>(0);
   // Last typing value we actually broadcast — used to dedupe.
   const lastSentTypingRef = useRef<boolean>(false);
