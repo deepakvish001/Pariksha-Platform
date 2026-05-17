@@ -53,6 +53,7 @@ import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
 import StudentPreflight from "@/assessments/pages/Preflight";
 import StudentPlayer from "@/assessments/pages/Player";
+import IntegrityPolicy from "@/assessments/pages/IntegrityPolicy";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
