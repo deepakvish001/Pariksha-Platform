@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
 import { AssessmentProctoringConfig } from "../../components/AssessmentProctoringConfig";
+import ProctoringTriagePanel from "../../components/ProctoringTriagePanel";
 import type { ProctoringConfig } from "@/assessments/lib/proctoringConfig";
 import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
@@ -106,6 +107,7 @@ export default function AssessmentDetail() {
           <TabsTrigger value="sections">Sections & Questions</TabsTrigger>
           <TabsTrigger value="invites">Invites</TabsTrigger>
           <TabsTrigger value="results">Results</TabsTrigger>
+          <TabsTrigger value="proctoring">Proctoring</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -117,6 +119,9 @@ export default function AssessmentDetail() {
         </TabsContent>
         <TabsContent value="results">
           <ResultsPanel assessmentId={assessment.id} />
+        </TabsContent>
+        <TabsContent value="proctoring">
+          <ProctoringTriagePanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="insights">
           <InsightsPanel assessmentId={assessment.id} />
