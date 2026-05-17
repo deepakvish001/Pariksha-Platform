@@ -34,6 +34,7 @@ export default function AssessmentNew() {
         description: description.trim() || undefined,
         duration_min: duration,
         proctoring_enabled: proctoring,
+        show_results_to_candidate: showResults,
       });
       toast.success("Assessment created");
       navigate(`/b2b/assessments/${a.id}`);
