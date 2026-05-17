@@ -94,6 +94,7 @@ export function useLiveParticipants(assessmentId?: string) {
           external_id: i.external_id,
           invite_status: i.status,
           attempt_id: a?.id ?? null,
+          attempt_slug: a?.slug ?? null,
           attempt_status: a?.status ?? null,
           started_at: a?.started_at ?? null,
           submitted_at: a?.submitted_at ?? null,
