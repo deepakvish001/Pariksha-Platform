@@ -353,6 +353,10 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
     setSending(false);
 
     if (result.ok) {
+      // Start a fresh cooldown window so the countdown begins immediately
+      // without waiting for the next refresh tick.
+      setCooldownUntil(Date.now() + COOLDOWN_MS);
+      setTotalCount((c) => c + 1);
       toast.success("Proctor notified", {
         description: "A proctor has been alerted and will respond in chat shortly.",
       });
@@ -363,6 +367,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
 
     // Rate limited → don't spam email fallback, just warn and stay on the dialog.
     if (result.rateLimited) {
+      void refreshRateLimit();
       toast.warning("SOS not sent", {
         description: result.error ?? "Please wait before raising another alert.",
       });
