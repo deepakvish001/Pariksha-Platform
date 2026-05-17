@@ -63,7 +63,7 @@ export default function B2BSettings() {
   const onSave = async () => {
     if (!canEdit || !dirty) return;
     if (!isValidBrand) {
-      toast.error(brandValidation.error ?? "Brand color must be a hex value like #1F6FEB");
+      toast.error(brandValidation.ok ? "Brand color is invalid" : brandValidation.error);
       return;
     }
     setSaving(true);
