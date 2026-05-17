@@ -599,3 +599,33 @@ function ChecklistView({ checks }: { checks: CheckResult[] }) {
     </ul>
   );
 }
+
+function StatusRow({
+  ok,
+  pending,
+  label,
+  hint,
+}: {
+  ok: boolean;
+  pending: boolean;
+  label: string;
+  hint?: string;
+}) {
+  const tone = ok
+    ? "text-emerald-700 dark:text-emerald-300"
+    : pending
+      ? "text-muted-foreground"
+      : "text-destructive";
+  const Icon = ok ? CheckCircle2 : pending ? Loader2 : XCircle;
+  return (
+    <div className={"flex items-start gap-1.5 text-xs " + tone}>
+      <Icon
+        className={"h-3.5 w-3.5 shrink-0 mt-0.5 " + (pending && !ok ? "opacity-60" : "")}
+      />
+      <div className="min-w-0">
+        <div className="font-medium leading-tight">{label}</div>
+        {hint && <div className="text-[11px] opacity-80 leading-snug">{hint}</div>}
+      </div>
+    </div>
+  );
+}
