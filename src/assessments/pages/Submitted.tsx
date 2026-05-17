@@ -227,6 +227,9 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
           </CardContent>
         </Card>
 
+        <SubmittedResultsBreakdown attemptId={attempt.id} />
+
+
         {!isPreview && (
           <div className="text-xs text-muted-foreground text-center">
             Issue with your submission? Reach support at{" "}
