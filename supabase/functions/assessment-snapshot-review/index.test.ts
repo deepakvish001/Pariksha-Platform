@@ -54,7 +54,7 @@ async function createOutsiderSession(): Promise<string> {
   if (error) throw new Error(`signUp failed: ${error.message}`);
   const token = data.session?.access_token;
   if (!token) throw new Error("signUp returned no session (email confirmation enabled?)");
-  await client.auth.signOut().catch(() => {});
+  // Do NOT signOut — that invalidates the JWT we just minted.
   return token;
 }
 
