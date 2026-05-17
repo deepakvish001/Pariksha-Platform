@@ -16,6 +16,8 @@ import {
   Mic,
   MicOff,
   Pause,
+  Pin,
+  PinOff,
   Play,
   Plus,
   Save,
