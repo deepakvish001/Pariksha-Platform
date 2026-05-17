@@ -182,8 +182,8 @@ export default function B2BSettings() {
                   className="font-mono"
                 />
               </div>
-              {!isValidBrand ? (
-                <p className="mt-1 text-[11px] text-destructive">{brandValidation.error}</p>
+              {brandValidation.ok !== true ? (
+                <p className="mt-1 text-[11px] text-destructive">{(brandValidation as { ok: false; error: string }).error}</p>
               ) : brandPreview ? (
                 <div className="mt-1 flex items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
                   <span
