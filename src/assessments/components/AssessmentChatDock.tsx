@@ -88,7 +88,7 @@ export function AssessmentChatDock({
   useAutoMarkRead(attemptId, messages, viewerRole, isPanelVisible);
   const { peer, sendTyping } = useChatPresence(attemptId, viewerRole, user?.id ?? null);
   const scrollRef = useAutoScrollRef<HTMLDivElement>(
-    `${messages?.length ?? 0}:${peer.typing ? 1 : 0}`
+    `${messages?.length ?? 0}:${peer.typingByRole?.candidate ? 1 : 0}:${peer.typingByRole?.proctor ? 1 : 0}`
   );
 
   const ordered = useMemo(() => messages ?? [], [messages]);
