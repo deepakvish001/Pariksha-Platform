@@ -13,8 +13,9 @@ import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock"
 import { ProctorEventFeed } from "@/assessments/components/ProctorEventFeed";
 import AttemptSosHistoryPanel from "../../components/AttemptSosHistoryPanel";
 import { AttemptFeedbackPanel } from "../../components/AttemptFeedbackPanel";
-import { useCurrentOrg } from "../../context/OrgContext";
+import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
+import { paths } from "@/lib/routing/paths";
 
 export default function AttemptDetail() {
   const { id, attemptId } = useParams();
