@@ -23,7 +23,7 @@ import {
 
 const EMPTY: EvidenceCounts = { webcam: 0, screen: 0, side_cam: 0, findings_high: 0, findings_med: 0 };
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Compact 3-tile live view for a single attempt. */
 function LiveProctorThreeEye({ attemptId }: { attemptId: string }) {
@@ -114,6 +114,40 @@ export default function ParticipantDetailDrawer({
   const attemptId = participant?.attempt_id ?? undefined;
   const { data: timeline } = useAttemptTimeline(attemptId);
   const { data: answers } = useAttemptAnswers(attemptId);
+
+  // Controlled tab state so we can auto-switch as the candidate's status changes
+  // (e.g. polling detects they just started or just submitted while the drawer is open).
+  const status = participant?.status;
+  const isLive = status === "in_progress";
+  const [tab, setTab] = useState<string>(() =>
+    canProctor && isLive ? "live" : "activity",
+  );
+  const prevStatusRef = useRef<string | undefined>(status);
+  useEffect(() => {
+    if (!open || !status) return;
+    const prev = prevStatusRef.current;
+    // Candidate just started → jump to live feed.
+    if (canProctor && status === "in_progress" && prev !== "in_progress") {
+      setTab("live");
+    }
+    // Candidate just stopped (submitted/auto/abandoned) → leave live, show activity.
+    if (
+      tab === "live" &&
+      status !== "in_progress" &&
+      prev === "in_progress"
+    ) {
+      setTab("activity");
+    }
+    prevStatusRef.current = status;
+  }, [status, open, canProctor, tab]);
+
+  // When a new participant is selected, reset tab to a sensible default.
+  const inviteKey = participant?.invite_id ?? null;
+  useEffect(() => {
+    if (!inviteKey) return;
+    setTab(canProctor && isLive ? "live" : "activity");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteKey]);
 
   if (!participant) return null;
   const canForce = !!attemptId && participant.status !== "submitted" && participant.status !== "auto_submitted";
@@ -217,7 +251,8 @@ export default function ParticipantDetailDrawer({
             </div>
           ) : (
             <Tabs
-              defaultValue={canProctor && participant.status === "in_progress" ? "live" : "activity"}
+              value={tab}
+              onValueChange={setTab}
               className="w-full"
             >
               <TabsList className="flex flex-wrap h-auto bg-white/[0.03] border border-white/5">
