@@ -43,7 +43,18 @@ function lastSeenLabel(ts: number | null) {
   return `Last seen ${new Date(ts).toLocaleString([], { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-function TypingDots() {
+function lastReadLabel(ts: number | null) {
+  if (!ts) return "No reads yet";
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return "Last read just now";
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `Last read ${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Last read ${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `Last read ${days}d ago`;
+  return `Last read ${new Date(ts).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+}
   return (
     <span className="inline-flex items-center gap-0.5" aria-label="Typing">
       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.2s]" />
