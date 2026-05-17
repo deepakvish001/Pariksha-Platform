@@ -546,11 +546,11 @@ Deno.serve(async (req) => {
 
       // Two-pass update to dodge unique constraint
       let neg = -1;
-      for (const id of body.orderedIds) {
+      for (const id of body!.orderedIds) {
         await admin.from("assessment_answer_uploads").update({ ordinal: neg-- }).eq("id", id);
       }
       let n = 1;
-      for (const id of body.orderedIds) {
+      for (const id of body!.orderedIds) {
         await admin.from("assessment_answer_uploads").update({ ordinal: n++ }).eq("id", id);
       }
       return json({ ok: true });
