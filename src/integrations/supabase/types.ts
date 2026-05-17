@@ -1174,6 +1174,47 @@ export type Database = {
           },
         ]
       }
+      attempt_event_notes: {
+        Row: {
+          attempt_id: string
+          author_id: string
+          author_name: string | null
+          body: string
+          created_at: string
+          event_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_id: string
+          author_id: string
+          author_name?: string | null
+          body: string
+          created_at?: string
+          event_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_id?: string
+          author_id?: string
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_event_notes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "attempt_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attempt_events: {
         Row: {
           attempt_id: string
