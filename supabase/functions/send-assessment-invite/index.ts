@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
         to: [inv.email],
         subject,
         html,
+        text,
       });
       if ((r as any)?.error) {
         const msg = String((r as any).error?.message ?? (r as any).error);
