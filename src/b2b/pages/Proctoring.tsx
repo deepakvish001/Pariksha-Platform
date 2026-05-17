@@ -178,7 +178,8 @@ export default function B2BProctoring() {
 function ProctoringContent(props: any) {
   const { org, loading, refresh, filtered, summary, assessmentOptions,
     q, setQ, filter, setFilter, assessmentFilter, setAssessmentFilter,
-    snapCounts, sideCounts, inspectingId, setInspectingId } = props;
+    snapCounts, sideCounts, inspectingId, setInspectingId,
+    evidenceId, setEvidenceId, evidenceLabel, setEvidenceLabel } = props;
   const { canProctor, isLoading: permLoading } = useCanProctor(org.id);
 
   if (permLoading) return <OrgShell title="Proctoring"><div className="b2b-card p-6 text-sm text-muted-foreground">Checking permissions…</div></OrgShell>;
