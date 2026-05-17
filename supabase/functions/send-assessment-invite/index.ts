@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
   // Load invites
   let q = admin
     .from("assessment_invites")
-    .select("id, email, name, token, status")
+    .select("id, email, name, token, status, send_count")
     .eq("assessment_id", assessmentId);
   if (inviteIds && inviteIds.length) q = q.in("id", inviteIds);
   if (onlyPending) q = q.eq("status", "pending");
