@@ -30,6 +30,7 @@ import B2BAssessmentNew from "@/b2b/pages/assessments/New";
 import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
 import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
+import B2BProctoring from "@/b2b/pages/Proctoring";
 import B2BTeam from "@/b2b/pages/Team";
 import B2BSettings from "@/b2b/pages/Settings";
 import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
@@ -267,6 +268,7 @@ const App = () => (
                 <Route path="/b2b/assessments/:id" element={<ProtectedRoute><B2BAssessmentDetail /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/attempts/:attemptId" element={<ProtectedRoute><B2BAttemptDetail /></ProtectedRoute>} />
                 <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
+                <Route path="/b2b/proctoring" element={<ProtectedRoute><B2BProctoring /></ProtectedRoute>} />
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
                 <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
                 <Route path="/b2b/insights/feedback" element={<ProtectedRoute><B2BInsightsFeedback /></ProtectedRoute>} />
@@ -290,6 +292,7 @@ const App = () => (
                       <Route path="assessments/:id" element={<B2BAssessmentDetail />} />
                       <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
                       <Route path="question-bank" element={<B2BQuestionBank />} />
+                      <Route path="proctoring" element={<B2BProctoring />} />
                       <Route path="team" element={<B2BTeam />} />
                       <Route path="settings" element={<B2BSettings />} />
                       <Route path="insights/feedback" element={<B2BInsightsFeedback />} />
