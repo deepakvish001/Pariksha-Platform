@@ -30,9 +30,13 @@ interface Props {
  * Looks up the side-camera pairing token for each attempt so the Third Eye
  * tile can subscribe to the candidate's mobile broadcast channel.
  */
-export function LiveProctorWall({ attempts, defaultCollapsed = true }: Props) {
+export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Props) {
+  const { canProctor, isLoading: roleLoading } = useCanProctor(orgId);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [tokens, setTokens] = useState<Record<string, string | null>>({});
+
+  if (roleLoading) return null;
+  if (!canProctor) return null;
 
   useEffect(() => {
     if (collapsed || attempts.length === 0) return;
