@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   // Load assessment (no embed — we re-fetch org separately to always get latest branding)
   const { data: assessment, error: aErr } = await admin
     .from("assessments")
-    .select("id, title, duration_min, org_id")
+    .select("id, title, duration_min, org_id, brand_color")
     .eq("id", assessmentId)
     .maybeSingle();
   if (aErr || !assessment) return json(404, { error: "assessment_not_found" });
@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
   const branding = {
     orgName: (org.name as string) ?? "Your organization",
     logoUrl,
-    brandColor: (org.brand_color as string | null) ?? null,
+    // Per-assessment override wins; fall back to the org default.
+    brandColor: ((assessment as any).brand_color as string | null) ?? ((org.brand_color as string | null) ?? null),
     title: assessment.title as string,
     durationMin: (assessment as any).duration_min as number | null,
   };

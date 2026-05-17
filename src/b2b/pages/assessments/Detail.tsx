@@ -322,6 +322,12 @@ function SettingsPanel({
   const [showResults, setShowResults] = useState<boolean>(assessment.show_results_to_candidate !== false);
   const [startsAt, setStartsAt] = useState(toLocalInput(assessment.starts_at));
   const [endsAt, setEndsAt] = useState(toLocalInput(assessment.ends_at));
+  const [brandColor, setBrandColor] = useState<string>(
+    typeof assessment.brand_color === "string" ? assessment.brand_color : ""
+  );
+  const normalizedBrand = brandColor.trim();
+  const isValidBrand =
+    normalizedBrand === "" || /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalizedBrand);
 
   const now = Date.now();
   const startMs = startsAt ? new Date(startsAt).getTime() : null;
@@ -456,10 +462,45 @@ function SettingsPanel({
         </button>
       </div>
 
+      <div className="border-t pt-4 space-y-2">
+        <div className="text-sm font-medium">Brand color override</div>
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          Optional. When set, this color is used for the invitation email of this assessment instead of your organization's default.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalizedBrand) ? normalizedBrand : "#0f172a"}
+            onChange={(e) => setBrandColor(e.target.value)}
+            className="h-9 w-12 rounded border border-[hsl(var(--border))] bg-transparent p-0.5 cursor-pointer"
+            aria-label="Pick brand color"
+          />
+          <Input
+            value={brandColor}
+            onChange={(e) => setBrandColor(e.target.value)}
+            placeholder="#0f172a (leave empty to use org default)"
+            className="max-w-xs font-mono text-sm"
+          />
+          {normalizedBrand && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setBrandColor("")}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+        {!isValidBrand && (
+          <p className="text-xs text-destructive">Use a hex color like #1e40af or leave empty.</p>
+        )}
+      </div>
+
       <div className="flex gap-2 pt-2 border-t">
         <Button
           className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-          disabled={!!windowError}
+          disabled={!!windowError || !isValidBrand}
           onClick={async () => {
             await update.mutateAsync({
               id: assessment.id,
@@ -472,6 +513,7 @@ function SettingsPanel({
                 show_results_to_candidate: showResults,
                 starts_at: fromLocalInput(startsAt),
                 ends_at: fromLocalInput(endsAt),
+                brand_color: normalizedBrand === "" ? null : normalizedBrand,
               },
             });
             toast.success("Saved");

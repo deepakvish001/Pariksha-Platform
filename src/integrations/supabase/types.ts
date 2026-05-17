@@ -1286,6 +1286,7 @@ export type Database = {
       }
       assessments: {
         Row: {
+          brand_color: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -1304,6 +1305,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand_color?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -1322,6 +1324,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand_color?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
