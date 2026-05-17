@@ -145,6 +145,29 @@ export function AssessmentChatDock({
                 >
                   {m.body}
                 </div>
+                {mine && !sys && (
+                  <div
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground px-1"
+                    aria-label={m.read_by_recipient ? "Read" : "Sent"}
+                    title={
+                      m.read_by_recipient && m.read_at
+                        ? `Read ${timeLabel(m.read_at)}`
+                        : "Sent"
+                    }
+                  >
+                    {m.read_by_recipient ? (
+                      <>
+                        <CheckCheck className="h-3 w-3 text-primary" />
+                        <span className="text-primary">Read</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3 w-3" />
+                        <span>Sent</span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })
