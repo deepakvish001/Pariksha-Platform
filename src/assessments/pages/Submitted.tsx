@@ -25,6 +25,7 @@ import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdo
 import { ResultsColorKey } from "../components/ResultsColorKey";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
 import { IntegrityExplanation } from "../components/IntegrityExplanation";
+import { IntegrityFactorSummary } from "../components/IntegrityFactorSummary";
 import { IntegrityTimeline } from "../components/IntegrityTimeline";
 import { SupportLink } from "../components/SupportLink";
 
