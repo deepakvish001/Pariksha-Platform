@@ -62,8 +62,8 @@ export default function B2BSettings() {
 
   const onSave = async () => {
     if (!canEdit || !dirty) return;
-    if (!brandValidation.ok) {
-      toast.error(brandValidation.error);
+    if (brandValidation.ok !== true) {
+      toast.error((brandValidation as { ok: false; error: string }).error);
       return;
     }
     setSaving(true);
