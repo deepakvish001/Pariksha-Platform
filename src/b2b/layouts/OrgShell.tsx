@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, ShieldAlert } from "lucide-react";
 import { useOrgBasePath } from "../context/OrgContext";
 import { B2BBackdrop } from "../components/B2BBackdrop";
 import "../theme.css";
@@ -23,6 +23,7 @@ export function OrgShell({
     ? [
         { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false },
         { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false },
+        { to: "/b2b/proctoring", label: "Proctoring", icon: ShieldAlert, exact: false },
         { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false },
         { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false },
         { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true },
@@ -30,6 +31,7 @@ export function OrgShell({
     : [
         { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true },
         { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false },
+        { to: `${base}/proctoring`, label: "Proctoring", icon: ShieldAlert, exact: false },
         { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false },
         { to: `${base}/team`, label: "Team", icon: Users, exact: false },
         { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true },
