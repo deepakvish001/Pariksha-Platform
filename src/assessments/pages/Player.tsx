@@ -351,7 +351,11 @@ export default function Player() {
     if (!a) return false;
     if (qq.type === "mcq" || qq.type === "true_false")
       return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
-    if (qq.type === "subjective") return typeof a.text === "string" && (a.text as string).trim().length > 0;
+    if (qq.type === "subjective") {
+      const hasText = typeof a.text === "string" && (a.text as string).trim().length > 0;
+      const hasPages = Array.isArray(a.pages) && (a.pages as unknown[]).length > 0;
+      return hasText || hasPages;
+    }
     if (qq.type === "short_answer") return typeof a.text === "string" && (a.text as string).trim().length > 0;
     if (qq.type === "sql") return typeof a.query === "string" && (a.query as string).trim().length > 0;
     if (qq.type === "coding") return typeof a.code === "string" && (a.code as string).trim().length > 0;
