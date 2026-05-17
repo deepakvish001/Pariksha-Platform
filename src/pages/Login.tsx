@@ -11,6 +11,7 @@ import AuthLayout from "@/components/AuthLayout";
 import { getPostLoginPath } from "@/lib/postLoginRedirect";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const Login = () => {
   const [email, setEmail] = useState("");
