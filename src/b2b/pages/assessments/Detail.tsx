@@ -529,7 +529,9 @@ function SettingsPanel({
   );
 }
 
-function InvitesPanel({ assessmentId }: { assessmentId: string }) {
+import { InvitesPanel } from "../../components/invites/InvitesPanel";
+export { InvitesPanel };
+
   const { data: invites, refetch: refetchInvites } = useInvites(assessmentId);
   const create = useCreateInvites();
   const del = useDeleteInvite();
