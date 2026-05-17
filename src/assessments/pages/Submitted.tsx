@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,16 +8,23 @@ import {
   Download,
   ExternalLink,
   Mail,
+  Pause,
+  Play,
   Sparkles,
   Trophy,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
+
+const AUTO_REDIRECT_SECONDS = 10;
 
 interface Attempt {
   id: string;
