@@ -133,8 +133,18 @@ export function AssessmentChatDock({
             />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold leading-tight truncate">
-              {viewerRole === "candidate" ? "Chat with proctor" : "Candidate chat"}
+            <p className="text-sm font-semibold leading-tight truncate flex items-center gap-1.5">
+              <span className="truncate">
+                {viewerRole === "candidate" ? "Chat with proctor" : "Candidate chat"}
+              </span>
+              {unread > 0 && (
+                <span
+                  className="h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center shrink-0"
+                  aria-label={`${unread} unread message${unread === 1 ? "" : "s"}`}
+                >
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
             </p>
             <p
               className={cn(
