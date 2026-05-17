@@ -525,3 +525,29 @@ function Field({
     </div>
   );
 }
+
+function ChecklistView({ checks }: { checks: CheckResult[] }) {
+  return (
+    <ul className="space-y-0.5 text-[11px]">
+      {checks.map((c, i) => (
+        <li
+          key={i}
+          className={
+            "flex items-center gap-1.5 " +
+            (c.ok ? "text-emerald-700 dark:text-emerald-300" : "text-destructive")
+          }
+        >
+          {c.ok ? (
+            <CheckCircle2 className="h-3 w-3 shrink-0" />
+          ) : (
+            <XCircle className="h-3 w-3 shrink-0" />
+          )}
+          <span className="truncate">
+            {c.label}
+            {c.detail && <span className="opacity-60"> · {c.detail}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
