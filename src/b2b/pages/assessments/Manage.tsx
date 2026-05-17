@@ -722,7 +722,22 @@ function ParticipantRow({
   return (
     <tr className="hover:bg-white/[0.02] cursor-pointer" onClick={onRowClick}>
       <td className="py-2.5 px-2 min-w-0">
-        <div className="font-medium truncate">{p.name ?? p.email}</div>
+        {detailHref ? (
+          <a
+            href={detailHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-row-action
+            onClick={(e) => e.stopPropagation()}
+            className="font-medium truncate hover:underline hover:text-primary inline-flex items-center gap-1"
+            title="Open full candidate details in a new tab"
+          >
+            {p.name ?? p.email}
+            <ExternalLink className="h-3 w-3 opacity-60" />
+          </a>
+        ) : (
+          <div className="font-medium truncate">{p.name ?? p.email}</div>
+        )}
         <div className="text-muted-foreground text-[10px] truncate">
           {p.email}
           {p.external_id ? ` · ${p.external_id}` : ""}
