@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import AttemptProctoringPanel from "@/b2b/components/AttemptProctoringPanel";
 import { AttemptInspector } from "@/components/proctoring/AttemptInspector";
 import { OrgShell } from "../layouts/OrgShell";
 import { useCurrentOrg } from "../context/OrgContext";
