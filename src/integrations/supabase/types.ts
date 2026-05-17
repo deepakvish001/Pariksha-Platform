@@ -857,6 +857,8 @@ export type Database = {
           last_send_error: string | null
           last_sent_at: string | null
           name: string | null
+          reminder_sent_at: string | null
+          scheduled_send_at: string | null
           send_count: number
           source: Database["public"]["Enums"]["invite_source"]
           status: Database["public"]["Enums"]["invite_status"]
@@ -875,6 +877,8 @@ export type Database = {
           last_send_error?: string | null
           last_sent_at?: string | null
           name?: string | null
+          reminder_sent_at?: string | null
+          scheduled_send_at?: string | null
           send_count?: number
           source?: Database["public"]["Enums"]["invite_source"]
           status?: Database["public"]["Enums"]["invite_status"]
@@ -893,6 +897,8 @@ export type Database = {
           last_send_error?: string | null
           last_sent_at?: string | null
           name?: string | null
+          reminder_sent_at?: string | null
+          scheduled_send_at?: string | null
           send_count?: number
           source?: Database["public"]["Enums"]["invite_source"]
           status?: Database["public"]["Enums"]["invite_status"]
@@ -1286,6 +1292,8 @@ export type Database = {
       }
       assessments: {
         Row: {
+          auto_reminder_after_days: number
+          auto_reminder_enabled: boolean
           brand_color: string | null
           created_at: string
           created_by: string
@@ -1305,6 +1313,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_reminder_after_days?: number
+          auto_reminder_enabled?: boolean
           brand_color?: string | null
           created_at?: string
           created_by?: string
@@ -1324,6 +1334,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_reminder_after_days?: number
+          auto_reminder_enabled?: boolean
           brand_color?: string | null
           created_at?: string
           created_by?: string
