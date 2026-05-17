@@ -133,7 +133,7 @@ export function useAssessmentActivity(assessmentId?: string, pageSize = 40) {
     };
   }, [assessmentId, qc, pageSize]);
 
-  return useInfiniteQuery<LiveEvent[], Error, LiveEvent[], typeof queryKey, string | null>({
+  return useInfiniteQuery<LiveEvent[], Error, { pages: LiveEvent[][]; pageParams: (string | null)[] }, typeof queryKey, string | null>({
     queryKey,
     enabled: !!assessmentId,
     refetchInterval: 20_000,
