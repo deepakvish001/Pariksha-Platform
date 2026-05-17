@@ -299,34 +299,62 @@ export default function SideCameraUploadPage() {
   };
 
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const cancelRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const uploadOne = async (p: Page): Promise<{ ok: boolean; serverId?: string; error?: string }> => {
+  const uploadOne = async (
+    p: Page,
+    signal: AbortSignal,
+  ): Promise<{ ok: boolean; serverId?: string; error?: string; aborted?: boolean }> => {
     try {
       const r = await fetch(`${FN_URL}?action=answer-upload`, {
         method: "POST",
         headers: { apikey: ANON, "Content-Type": "application/json", "x-pair-token": token },
         body: JSON.stringify({ dataUrl: p.dataUrl, questionId, ordinal: p.ordinal }),
+        signal,
       });
       let j: { id?: string; error?: string } = {};
       try { j = await r.json(); } catch { /* ignore */ }
       if (!r.ok) return { ok: false, error: j?.error ?? `HTTP ${r.status}` };
       return { ok: true, serverId: j?.id };
     } catch (e) {
+      if (signal.aborted || (e instanceof DOMException && e.name === "AbortError")) {
+        return { ok: false, aborted: true, error: "cancelled" };
+      }
       return { ok: false, error: e instanceof Error ? e.message : "network" };
     }
   };
 
+  const cancelUpload = () => {
+    if (!uploading) return;
+    cancelRef.current = true;
+    abortRef.current?.abort();
+  };
+
   const runUpload = async (targets: Page[]) => {
     if (!targets.length) return;
+    cancelRef.current = false;
     setUploading(true);
     setError(null);
+    setConfirmOpen(false);
     setProgress({ done: 0, total: targets.length });
     let failures = 0;
     let lastErr: string | null = null;
+    let cancelled = false;
+    let completed = 0;
     for (let i = 0; i < targets.length; i++) {
+      if (cancelRef.current) { cancelled = true; break; }
       const p = targets[i];
       setPages((prev) => prev.map((x) => (x.localId === p.localId ? { ...x, state: "uploading", errorMsg: undefined } : x)));
-      const res = await uploadOne(p);
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+      const res = await uploadOne(p, ctrl.signal);
+      abortRef.current = null;
+      if (res.aborted) {
+        setPages((prev) => prev.map((x) => (x.localId === p.localId ? { ...x, state: "pending", errorMsg: undefined } : x)));
+        cancelled = true;
+        break;
+      }
       setPages((prev) =>
         prev.map((x) =>
           x.localId === p.localId
@@ -337,10 +365,25 @@ export default function SideCameraUploadPage() {
         )
       );
       if (!res.ok) { failures++; lastErr = res.error ?? null; }
-      setProgress({ done: i + 1, total: targets.length });
+      completed = i + 1;
+      setProgress({ done: completed, total: targets.length });
+    }
+    // Reset any remaining "uploading" markers if we bailed early
+    if (cancelled) {
+      setPages((prev) => prev.map((x) => (x.state === "uploading" ? { ...x, state: "pending" } : x)));
     }
     setUploading(false);
-    setConfirmOpen(false);
+    cancelRef.current = false;
+    if (cancelled) {
+      const uploadedNow = targets.slice(0, completed).filter((_, i) => {
+        const t = targets[i];
+        return t && (t as Page); // placeholder; we use completed count below
+      }).length;
+      setError(
+        `Upload cancelled. ${uploadedNow || completed} of ${targets.length} page${targets.length === 1 ? "" : "s"} uploaded. The rest are kept as drafts.`
+      );
+      return;
+    }
     if (failures === 0) {
       setDone(true);
       stopCamera();
