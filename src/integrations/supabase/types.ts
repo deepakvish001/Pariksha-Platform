@@ -695,6 +695,44 @@ export type Database = {
           },
         ]
       }
+      assessment_chat_messages: {
+        Row: {
+          attempt_id: string
+          body: string
+          created_at: string
+          id: string
+          read_by_recipient: boolean
+          sender_role: string
+          sender_user_id: string
+        }
+        Insert: {
+          attempt_id: string
+          body: string
+          created_at?: string
+          id?: string
+          read_by_recipient?: boolean
+          sender_role: string
+          sender_user_id: string
+        }
+        Update: {
+          attempt_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          read_by_recipient?: boolean
+          sender_role?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_chat_messages_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_invites: {
         Row: {
           assessment_id: string
