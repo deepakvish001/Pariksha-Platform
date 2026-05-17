@@ -446,6 +446,14 @@ export default function AssessmentManage() {
                         key={p.invite_id}
                         p={p}
                         assessmentId={assessment.id}
+                        detailHref={
+                          p.attempt_id
+                            ? paths.b2b.attempt(basePath, assessment, {
+                                id: p.attempt_id,
+                                slug: p.attempt_slug ?? null,
+                              })
+                            : null
+                        }
                         pending={forceSubmit.isPending}
                         evidence={p.attempt_id ? evidenceMap?.[p.attempt_id] : undefined}
                         canProctor={canProctor}
