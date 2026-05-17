@@ -50,6 +50,40 @@ const CAPTURE_WIDTH = 1280;
 const CAPTURE_HEIGHT = 1700; // portrait A4-ish
 const JPEG_QUALITY = 0.78;
 
+// Must stay in sync with edge fn MAX_DATAURL_BYTES (10 MB)
+const MAX_DATAURL_BYTES = 10 * 1024 * 1024;
+const MIN_IMAGE_DIM = 320;
+const MAX_PAGES = 50;
+const TOKEN_RE = /^[a-f0-9]{16,128}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function dataUrlByteSize(dataUrl: string): number {
+  const i = dataUrl.indexOf(",");
+  if (i < 0) return dataUrl.length;
+  const b64 = dataUrl.slice(i + 1);
+  const padding = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
+  return Math.floor((b64.length * 3) / 4) - padding;
+}
+
+function validateDataUrl(dataUrl: string): string | null {
+  if (!dataUrl.startsWith("data:image/")) return "Captured image is invalid. Try recapturing.";
+  const size = dataUrlByteSize(dataUrl);
+  if (size > MAX_DATAURL_BYTES) {
+    return `This page is ${(size / 1024 / 1024).toFixed(1)} MB, over the 10 MB limit. Retake with less zoom.`;
+  }
+  return null;
+}
+
+function validateSession(token: string, questionId: string): string | null {
+  if (!token || !TOKEN_RE.test(token)) {
+    return "Your phone session link is invalid. Re-scan the QR code from your laptop.";
+  }
+  if (!questionId || !UUID_RE.test(questionId)) {
+    return "Question link is invalid. Re-open the upload from your laptop.";
+  }
+  return null;
+}
+
 type UploadState = "pending" | "uploading" | "uploaded" | "error";
 
 type Page = {
@@ -207,6 +241,8 @@ export default function SideCameraUploadPage() {
   };
 
   useEffect(() => {
+    const sessionErr = validateSession(token, questionId);
+    if (sessionErr) { setError(sessionErr); return; }
     startCamera();
     return () => stopCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,13 +277,31 @@ export default function SideCameraUploadPage() {
   }, [token, questionId]);
 
   const capture = () => {
+    const sessionErr = validateSession(token, questionId);
+    if (sessionErr) { setError(sessionErr); return; }
+    if (pages.length >= MAX_PAGES) {
+      setError(`You can attach at most ${MAX_PAGES} pages per answer. Remove some first.`);
+      return;
+    }
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < 2) return;
+    if (!video || !canvas || video.readyState < 2) {
+      setError("Camera isn't ready yet. Give it a moment and try again.");
+      return;
+    }
+    if (
+      !video.videoWidth ||
+      !video.videoHeight ||
+      video.videoWidth < MIN_IMAGE_DIM ||
+      video.videoHeight < MIN_IMAGE_DIM
+    ) {
+      setError(`Camera resolution is too low (min ${MIN_IMAGE_DIM}px). Try a different camera.`);
+      return;
+    }
     canvas.width = CAPTURE_WIDTH;
     canvas.height = CAPTURE_HEIGHT;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) { setError("Couldn't access the canvas to capture this page."); return; }
     // letterbox fit
     const vr = video.videoWidth / video.videoHeight;
     const cr = CAPTURE_WIDTH / CAPTURE_HEIGHT;
@@ -263,6 +317,9 @@ export default function SideCameraUploadPage() {
     ctx.fillRect(0, 0, CAPTURE_WIDTH, CAPTURE_HEIGHT);
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, CAPTURE_WIDTH, CAPTURE_HEIGHT);
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+    const imgErr = validateDataUrl(dataUrl);
+    if (imgErr) { setError(imgErr); return; }
+    setError(null);
     setPages((prev) => [
       ...prev,
       { localId: uid(), dataUrl, ordinal: prev.length + 1, uploaded: false, state: "pending" as const },
@@ -333,6 +390,31 @@ export default function SideCameraUploadPage() {
 
   const runUpload = async (targets: Page[]) => {
     if (!targets.length) return;
+    const sessionErr = validateSession(token, questionId);
+    if (sessionErr) { setError(sessionErr); setConfirmOpen(false); return; }
+    // Pre-flight: validate every page before we burn any bandwidth.
+    const invalid: { localId: string; reason: string }[] = [];
+    for (const p of targets) {
+      const reason = validateDataUrl(p.dataUrl);
+      if (reason) invalid.push({ localId: p.localId, reason });
+    }
+    if (invalid.length) {
+      const bad = new Set(invalid.map((x) => x.localId));
+      setPages((prev) =>
+        prev.map((x) =>
+          bad.has(x.localId)
+            ? { ...x, state: "error", errorMsg: invalid.find((i) => i.localId === x.localId)!.reason }
+            : x
+        )
+      );
+      setError(
+        invalid.length === targets.length
+          ? invalid[0].reason
+          : `${invalid.length} of ${targets.length} pages can't be uploaded: ${invalid[0].reason}`
+      );
+      setConfirmOpen(false);
+      return;
+    }
     cancelRef.current = false;
     setUploading(true);
     setError(null);
