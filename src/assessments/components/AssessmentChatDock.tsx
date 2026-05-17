@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck, Circle } from "lucide-react";
+import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck, Circle, CheckCheck as MarkReadIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  markMessagesRead,
   sendChatMessage,
   useAssessmentChat,
   useAutoMarkRead,
   useAutoScrollRef,
   useChatPresence,
   useUnreadCount,
+  type AssessmentChatMessage,
   type ChatRole,
 } from "../hooks/useAssessmentChat";
 
