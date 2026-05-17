@@ -183,7 +183,9 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [idPhotoUrl, setIdPhotoUrl] = useState<string | null>(null);
+  const [idChecks, setIdChecks] = useState<CheckResult[]>([]);
   const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
+  const [selfieChecks, setSelfieChecks] = useState<CheckResult[]>([]);
   const [selfieDataUrl, setSelfieDataUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
