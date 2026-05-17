@@ -94,6 +94,21 @@ export function AssessmentChatDock({
   const ordered = useMemo(() => messages ?? [], [messages]);
   const peerLabel = viewerRole === "candidate" ? "Proctor" : "Candidate";
 
+  // Per-role typing — every role except the viewer's own.
+  const typingRoles = useMemo(() => {
+    const out: Array<"candidate" | "proctor"> = [];
+    if (viewerRole !== "candidate" && peer.typingByRole?.candidate) out.push("candidate");
+    if (viewerRole !== "proctor" && peer.typingByRole?.proctor) out.push("proctor");
+    return out;
+  }, [peer.typingByRole, viewerRole]);
+  const anyTyping = typingRoles.length > 0;
+  const typingLabel =
+    typingRoles.length === 0
+      ? ""
+      : typingRoles.length === 1
+      ? `${typingRoles[0] === "proctor" ? "Proctor" : "Candidate"} is typing…`
+      : "Proctor and Candidate are typing…";
+
   // Most recent moment the peer read one of our messages.
   const peerLastReadAt = useMemo(() => {
     let latest = 0;
