@@ -377,7 +377,7 @@ export function QuestionPalette({
       {/* Legend footer */}
       <footer className="px-3 py-2 border-t border-border bg-muted/20 text-[10px] text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1">
         <LegendRow
-          icon={<CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+          icon={<CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
           label="Answered"
           tip="You've saved an answer for this question."
         />
@@ -387,12 +387,12 @@ export function QuestionPalette({
           tip="You opened this question but haven't submitted an answer yet."
         />
         <LegendRow
-          icon={<Circle className="h-3 w-3 text-muted-foreground/60" />}
+          icon={<Circle className="h-3 w-3 text-muted-foreground" />}
           label="Not visited"
           tip="You haven't opened this question yet."
         />
         <LegendRow
-          icon={<Flag className="h-3 w-3 fill-amber-500 text-amber-500" />}
+          icon={<Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />}
           label="Flagged"
           tip="Marked for review — come back to it before submitting."
         />
