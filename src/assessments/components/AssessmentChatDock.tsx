@@ -211,8 +211,16 @@ export function AssessmentChatDock({
         className
       )}
       role="region"
-      aria-label="Proctor chat"
+      aria-label={viewerRole === "candidate" ? "Chat with proctor" : "Candidate chat"}
     >
+      {/* Dedicated live regions so screen readers announce presence and
+          typing changes independently, without re-reading the other state. */}
+      <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {presenceAnnouncement}
+      </span>
+      <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {typingAnnouncement}
+      </span>
       <header className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2 min-w-0">
           <div className="relative h-7 w-7 rounded-md bg-primary/15 text-primary grid place-items-center shrink-0">
