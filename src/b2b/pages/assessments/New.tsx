@@ -17,6 +17,7 @@ export default function AssessmentNew() {
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState(60);
   const [proctoring, setProctoring] = useState(false);
+  const [showResults, setShowResults] = useState(true);
   const create = useCreateAssessment();
 
   if (isLoading) return null;
@@ -33,6 +34,7 @@ export default function AssessmentNew() {
         description: description.trim() || undefined,
         duration_min: duration,
         proctoring_enabled: proctoring,
+        show_results_to_candidate: showResults,
       });
       toast.success("Assessment created");
       navigate(`/b2b/assessments/${a.id}`);
@@ -81,6 +83,15 @@ export default function AssessmentNew() {
           <div className="flex items-center gap-3 pt-6">
             <Switch id="proctor" checked={proctoring} onCheckedChange={setProctoring} />
             <Label htmlFor="proctor" className="cursor-pointer">Enable basic proctoring</Label>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/30 p-3">
+          <Switch id="show-results" checked={showResults} onCheckedChange={setShowResults} className="mt-0.5" />
+          <div className="flex-1">
+            <Label htmlFor="show-results" className="cursor-pointer">Show results to candidate</Label>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+              When off, candidates only see a submission confirmation and a feedback form — no score, per-question breakdown, integrity report, or receipt PDF.
+            </p>
           </div>
         </div>
         <div className="flex gap-2 pt-2">

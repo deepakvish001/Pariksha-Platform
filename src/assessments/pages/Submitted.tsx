@@ -28,6 +28,8 @@ import { IntegrityExplanation } from "../components/IntegrityExplanation";
 import { IntegrityFactorSummary } from "../components/IntegrityFactorSummary";
 import { IntegrityTimeline } from "../components/IntegrityTimeline";
 import { SupportLink } from "../components/SupportLink";
+import { AssessmentFeedbackForm } from "../components/AssessmentFeedbackForm";
+import { supabase } from "@/integrations/supabase/client";
 
 const AUTO_REDIRECT_SECONDS = 10;
 
@@ -44,6 +46,7 @@ interface Assessment {
   id: string;
   title: string;
   duration_min?: number | null;
+  show_results_to_candidate?: boolean | null;
 }
 
 interface Props {
@@ -100,20 +103,75 @@ function MetaTile({
 export function Submitted({ attempt, assessment, isPreview }: Props) {
   const navigate = useNavigate();
 
-  // Optional auto-redirect to dashboard after submission
-  const [autoRedirect, setAutoRedirect] = useState(!isPreview);
+  // Results visibility — admin-controlled per assessment. Recruiter preview always sees everything.
+  // Fetch the flag directly since the paper RPC does not return it.
+  const [showResults, setShowResults] = useState<boolean>(
+    isPreview ? true : assessment.show_results_to_candidate !== false,
+  );
+  useEffect(() => {
+    if (isPreview) return;
+    if (typeof assessment.show_results_to_candidate === "boolean") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("assessments")
+        .select("show_results_to_candidate")
+        .eq("id", assessment.id)
+        .maybeSingle();
+      if (!cancelled && data) setShowResults(data.show_results_to_candidate !== false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [assessment.id, assessment.show_results_to_candidate, isPreview]);
+  const requireFeedback = !isPreview && !showResults;
+
+  // Track if candidate has submitted feedback (gates leaving the page when results are hidden)
+  const [feedbackDone, setFeedbackDone] = useState(false);
+  useEffect(() => {
+    if (!requireFeedback) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("assessment_feedback")
+        .select("id")
+        .eq("attempt_id", attempt.id)
+        .maybeSingle();
+      if (!cancelled && data) setFeedbackDone(true);
+    })();
+    // Re-check every 2s so the action buttons unlock once feedback is submitted.
+    const t = setInterval(async () => {
+      const { data } = await supabase
+        .from("assessment_feedback")
+        .select("id")
+        .eq("attempt_id", attempt.id)
+        .maybeSingle();
+      if (data) {
+        setFeedbackDone(true);
+        clearInterval(t);
+      }
+    }, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [attempt.id, requireFeedback]);
+
+  // Optional auto-redirect to dashboard after submission — disabled when feedback is required.
+  const [autoRedirect, setAutoRedirect] = useState(!isPreview && !requireFeedback);
   const [secondsLeft, setSecondsLeft] = useState(AUTO_REDIRECT_SECONDS);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (!autoRedirect || paused) return;
+    if (requireFeedback && !feedbackDone) return;
     if (secondsLeft <= 0) {
       navigate("/dashboard");
       return;
     }
     const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [autoRedirect, paused, secondsLeft, navigate]);
+  }, [autoRedirect, paused, secondsLeft, navigate, requireFeedback, feedbackDone]);
 
   const cancelAutoRedirect = () => {
     setAutoRedirect(false);
@@ -121,7 +179,7 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
     setPaused(false);
   };
 
-  const hasScore = typeof attempt.score === "number";
+  const hasScore = typeof attempt.score === "number" && showResults;
   const submittedAt = formatDateTime(attempt.submitted_at);
   const elapsed = formatDuration(attempt.started_at, attempt.submitted_at);
 
@@ -210,7 +268,7 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                   icon={<Clock className="h-3.5 w-3.5" />}
                 />
               )}
-              {typeof attempt.integrity_score === "number" && (
+              {showResults && typeof attempt.integrity_score === "number" && (
                 <MetaTile
                   label="Integrity"
                   value={`${Math.round(attempt.integrity_score)}%`}
@@ -219,18 +277,18 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
               )}
             </div>
 
-            {typeof attempt.integrity_score === "number" && (
+            {showResults && typeof attempt.integrity_score === "number" && (
               <IntegrityExplanation score={attempt.integrity_score} />
             )}
 
-            {typeof attempt.integrity_score === "number" && (
+            {showResults && typeof attempt.integrity_score === "number" && (
               <IntegrityFactorSummary
                 attemptId={attempt.id}
                 assessmentId={assessment.id}
               />
             )}
 
-            {typeof attempt.integrity_score === "number" && (
+            {showResults && typeof attempt.integrity_score === "number" && (
               <IntegrityTimeline
                 attemptId={attempt.id}
                 assessmentId={assessment.id}
@@ -358,27 +416,42 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                 </>
               ) : (
                 <>
-                  <Button onClick={() => navigate("/assessments")}>
+                  <Button
+                    onClick={() => navigate("/assessments")}
+                    disabled={requireFeedback && !feedbackDone}
+                    title={requireFeedback && !feedbackDone ? "Please submit your feedback first" : undefined}
+                  >
                     Back to my assessments
                     <ArrowRight className="h-4 w-4 ml-1.5" />
                   </Button>
-                  <Button variant="outline" onClick={() => navigate("/dashboard")}>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/dashboard")}
+                    disabled={requireFeedback && !feedbackDone}
+                    title={requireFeedback && !feedbackDone ? "Please submit your feedback first" : undefined}
+                  >
                     Open dashboard
                     <ExternalLink className="h-4 w-4 ml-1.5" />
                   </Button>
                 </>
               )}
-              <Button variant="secondary" onClick={handleDownloadReceipt}>
-                <Download className="h-4 w-4 mr-1.5" />
-                Download receipt (PDF)
-              </Button>
+              {showResults && (
+                <Button variant="secondary" onClick={handleDownloadReceipt}>
+                  <Download className="h-4 w-4 mr-1.5" />
+                  Download receipt (PDF)
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <ResultsColorKey />
+        {!isPreview && (
+          <AssessmentFeedbackForm attemptId={attempt.id} assessmentId={assessment.id} />
+        )}
 
-        <SubmittedResultsBreakdown attemptId={attempt.id} />
+        {showResults && <ResultsColorKey />}
+
+        {showResults && <SubmittedResultsBreakdown attemptId={attempt.id} />}
 
 
         {!isPreview && <SupportLink attempt={attempt} assessment={assessment} />}
