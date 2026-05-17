@@ -658,6 +658,7 @@ export default function AssessmentManage() {
         assessmentId={assessment.id}
         evidence={selectedParticipant?.attempt_id ? evidenceMap?.[selectedParticipant.attempt_id] : undefined}
         canProctor={canProctor}
+        orgId={org?.id}
         forceSubmitPending={forceSubmit.isPending}
         onForceSubmit={(p) => {
           if (!p.attempt_id) return;
