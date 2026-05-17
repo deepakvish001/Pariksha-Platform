@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveStreamTile } from "./LiveStreamTile";
+import { useCanProctor } from "../hooks/usePermissions";
 
 export interface LiveProctorAttempt {
   attempt_id: string;
@@ -13,6 +14,13 @@ export interface LiveProctorAttempt {
 
 interface Props {
   attempts: LiveProctorAttempt[];
+  /**
+   * Org id used to verify the viewer has a proctor-capable role
+   * (owner / admin / proctor). Required for defence-in-depth — the
+   * component refuses to render any live tiles otherwise, even if a
+   * caller forgets to gate it.
+   */
+  orgId?: string | null;
   /** Default collapsed when there are many live candidates. */
   defaultCollapsed?: boolean;
 }
