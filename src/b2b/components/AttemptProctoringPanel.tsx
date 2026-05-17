@@ -186,12 +186,19 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
       const screenFolder = root.folder("screen")!;
       const sideeyeFolder = root.folder("sideeye")!;
       const recFolder = root.folder("recordings")!;
+      const sessionRoot = root.folder("session-recording")!;
+      const sessionWebcam = sessionRoot.folder("webcam")!;
+      const sessionScreen = sessionRoot.folder("screen")!;
+      const sessionSideeye = sessionRoot.folder("sideeye")!;
 
-      const [w, sc, se, rc] = await Promise.all([
+      const [w, sc, se, rc, chW, chS, chE] = await Promise.all([
         downloadInto(webcamFolder, allSnaps.filter((x) => x.source === "webcam")),
         downloadInto(screenFolder, allSnaps.filter((x) => x.source === "screen")),
         downloadInto(sideeyeFolder, allFrames),
         downloadInto(recFolder, allRecs),
+        downloadInto(sessionWebcam, allChunks.filter((x) => x.kind === "webcam")),
+        downloadInto(sessionScreen, allChunks.filter((x) => x.kind === "screen")),
+        downloadInto(sessionSideeye, allChunks.filter((x) => x.kind === "sideeye")),
       ]);
 
       root.file("findings.json", JSON.stringify(allFindings, null, 2));
@@ -206,12 +213,14 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
               screen: allSnaps.filter((x) => x.source === "screen").length,
               sideeye: allFrames.length,
               recordings: allRecs.length,
+              session_chunks: allChunks.length,
               findings: allFindings.length,
             },
-            results: { webcam: w, screen: sc, sideeye: se, recordings: rc },
+            results: { webcam: w, screen: sc, sideeye: se, recordings: rc, session: { webcam: chW, screen: chS, sideeye: chE } },
             snapshots: allSnaps,
             frames: allFrames,
             recordings: allRecs,
+            session_chunks: allChunks,
           },
           null,
           2,
@@ -228,8 +237,8 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
 
-      const total = w.ok + sc.ok + se.ok + rc.ok;
-      const failed = w.fail + sc.fail + se.fail + rc.fail;
+      const total = w.ok + sc.ok + se.ok + rc.ok + chW.ok + chS.ok + chE.ok;
+      const failed = w.fail + sc.fail + se.fail + rc.fail + chW.fail + chS.fail + chE.fail;
       toast.success(
         failed
           ? `Exported ${total} files (${failed} failed)`
