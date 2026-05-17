@@ -1,7 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type QuestionType = "coding" | "mcq" | "sql" | "subjective" | "true_false" | "matching" | "short_answer";
+export type QuestionType =
+  | "coding"
+  | "mcq"
+  | "sql"
+  | "subjective"
+  | "true_false"
+  | "matching"
+  | "short_answer"
+  | "numerical"
+  | "fill_blanks";
 
 export type Question = {
   id: string;

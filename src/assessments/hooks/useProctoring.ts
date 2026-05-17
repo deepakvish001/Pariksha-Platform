@@ -162,6 +162,34 @@ export function useProctoring(
     if (!enabled || !attemptId) return;
     log("attempt_start");
 
+    // Capture coarse geolocation at session start (best-effort, consent-gated by browser).
+    // Stored on assessment_attempts.start_geo for proctoring playback.
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            await supabase
+              .from("assessment_attempts")
+              .update({
+                start_geo: {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                  accuracy_m: pos.coords.accuracy,
+                  ts: new Date().toISOString(),
+                } as never,
+              })
+              .eq("id", attemptId);
+          } catch {
+            /* ignore */
+          }
+        },
+        () => {
+          /* user denied or unavailable — non-blocking */
+        },
+        { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 }
+      );
+    }
+
     const onVisibility = () =>
       log(document.hidden ? "visibility_hidden" : "visibility_visible");
     const onBlur = () => log("window_blur");

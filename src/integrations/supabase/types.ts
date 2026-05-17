@@ -681,6 +681,7 @@ export type Database = {
           selfie_url: string | null
           sideeye_required: boolean
           slug: string | null
+          start_geo: Json | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -703,6 +704,7 @@ export type Database = {
           selfie_url?: string | null
           sideeye_required?: boolean
           slug?: string | null
+          start_geo?: Json | null
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
           submitted_at?: string | null
@@ -725,6 +727,7 @@ export type Database = {
           selfie_url?: string | null
           sideeye_required?: boolean
           slug?: string | null
+          start_geo?: Json | null
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
           submitted_at?: string | null
@@ -8498,6 +8501,7 @@ export type Database = {
           selfie_url: string | null
           sideeye_required: boolean
           slug: string | null
+          start_geo: Json | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -8955,6 +8959,7 @@ export type Database = {
           selfie_url: string | null
           sideeye_required: boolean
           slug: string | null
+          start_geo: Json | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -8986,6 +8991,7 @@ export type Database = {
           selfie_url: string | null
           sideeye_required: boolean
           slug: string | null
+          start_geo: Json | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -9041,6 +9047,8 @@ export type Database = {
         | "true_false"
         | "matching"
         | "short_answer"
+        | "numerical"
+        | "fill_blanks"
       sos_delivery_status: "queued" | "sent" | "failed"
       sos_status: "open" | "acknowledged" | "resolved"
       study_year:
@@ -9213,6 +9221,8 @@ export const Constants = {
         "true_false",
         "matching",
         "short_answer",
+        "numerical",
+        "fill_blanks",
       ],
       sos_delivery_status: ["queued", "sent", "failed"],
       sos_status: ["open", "acknowledged", "resolved"],

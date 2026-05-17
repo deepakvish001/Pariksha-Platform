@@ -986,6 +986,47 @@ function QuestionInput({
   if (question.type === "matching") {
     return <MatchingInput question={question} value={value} onChange={onChange} />;
   }
+  if (question.type === "numerical") {
+    const meta = (question.meta as { unit?: string } | null) ?? {};
+    const v = (value?.value as string) ?? "";
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          type="number"
+          step="any"
+          inputMode="decimal"
+          placeholder="Enter a number"
+          value={v}
+          onChange={(e) => onChange({ value: e.target.value })}
+          className="h-11 text-sm max-w-xs"
+        />
+        {meta.unit && <span className="text-sm text-muted-foreground">{meta.unit}</span>}
+      </div>
+    );
+  }
+  if (question.type === "fill_blanks") {
+    const meta = (question.meta as { blanks?: { id: string }[] } | null) ?? {};
+    const blanks = meta.blanks ?? [];
+    const current = (value?.blanks as Record<string, string>) ?? {};
+    if (blanks.length === 0) {
+      return <p className="text-xs text-muted-foreground italic">This question has no blanks defined yet.</p>;
+    }
+    return (
+      <div className="space-y-2">
+        {blanks.map((b) => (
+          <div key={b.id} className="flex items-center gap-2">
+            <span className="text-xs font-mono text-muted-foreground w-12 shrink-0">{`{{${b.id}}}`}</span>
+            <Input
+              value={current[b.id] ?? ""}
+              onChange={(e) => onChange({ blanks: { ...current, [b.id]: e.target.value } })}
+              placeholder={`Answer for blank ${b.id}`}
+              className="h-10 text-sm"
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
   return null;
 }
 

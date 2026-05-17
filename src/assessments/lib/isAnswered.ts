@@ -30,5 +30,13 @@ export function isAnswered(
     const pairs = (a.pairs as Record<string, string>) ?? {};
     return Object.values(pairs).some((v) => v && v.trim().length > 0);
   }
+  if (qq.type === "numerical") {
+    const v = a.value;
+    return typeof v === "string" ? v.trim().length > 0 : typeof v === "number";
+  }
+  if (qq.type === "fill_blanks") {
+    const blanks = (a.blanks as Record<string, string>) ?? {};
+    return Object.values(blanks).some((v) => v && v.trim().length > 0);
+  }
   return false;
 }
