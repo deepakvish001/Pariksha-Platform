@@ -419,35 +419,33 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
             <span className="tabular-nums">
               Page {pages[previewIdx].ordinal} of {pages.length}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {pages[previewIdx].url && (
                 <>
                   <button
                     type="button"
                     onClick={async () => {
                       const p = pages[previewIdx];
-                      if (!p?.url) return;
-                      try {
-                        const res = await fetch(p.url);
-                        const blob = await res.blob();
-                        const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `answer-page-${String(p.ordinal).padStart(2, "0")}.${ext}`;
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        setTimeout(() => URL.revokeObjectURL(url), 1000);
-                      } catch {
-                        window.open(p.url, "_blank", "noopener,noreferrer");
-                      }
+                      const ok = await downloadPage(p);
+                      if (!ok && p?.url) window.open(p.url, "_blank", "noopener,noreferrer");
                     }}
                     className="inline-flex items-center gap-1 hover:underline"
                     aria-label={`Download page ${pages[previewIdx].ordinal}`}
                   >
                     <Download className="h-3.5 w-3.5" /> Download
                   </button>
+                  {pages.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={downloadAll}
+                      disabled={downloadingAll}
+                      className="inline-flex items-center gap-1 hover:underline disabled:opacity-60"
+                      aria-label={`Download all ${pages.length} pages`}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {downloadingAll ? `Downloading…` : `Download all (${pages.length})`}
+                    </button>
+                  )}
                   <a
                     href={pages[previewIdx].url ?? "#"}
                     target="_blank"
