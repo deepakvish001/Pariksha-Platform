@@ -41,7 +41,9 @@ export function AssessmentChatDock({
   const [sending, setSending] = useState(false);
 
   const { data: messages, isLoading } = useAssessmentChat(attemptId);
-  const unread = useUnreadCount(messages, viewerRole, open || variant === "embedded");
+  const isPanelVisible = open || variant === "embedded";
+  const unread = useUnreadCount(messages, viewerRole);
+  useAutoMarkRead(attemptId, messages, viewerRole, isPanelVisible);
   const scrollRef = useAutoScrollRef<HTMLDivElement>(messages?.length ?? 0);
 
   const ordered = useMemo(() => messages ?? [], [messages]);
