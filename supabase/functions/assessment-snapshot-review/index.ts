@@ -91,13 +91,20 @@ Deno.serve(async (req) => {
   const isServiceCall = bearer && bearer === SERVICE_KEY;
 
   if (!isServiceCall) {
-    // Resolve caller from JWT using anon client.
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
+    if (!bearer) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Resolve caller from JWT directly against the auth API. We avoid the
+    // supabase-js client's session storage path so this works in stateless
+    // edge invocations.
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${bearer}`, apikey: anonKey },
     });
-    const { data: who } = await userClient.auth.getUser();
-    const uid = who?.user?.id;
+    const userJson: any = await userRes.json().catch(() => ({}));
+    const uid = userRes.ok ? userJson?.id : null;
     if (!uid) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
