@@ -5,9 +5,11 @@ import {
   Wifi, WifiOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PlayerSosButton } from "./PlayerSosButton";
 
 interface Props {
   title: string;
+  attemptId?: string | null;
   answered: number;
   flagged: number;
   total: number;
@@ -25,6 +27,7 @@ interface Props {
 
 export function PlayerTopBar({
   title,
+  attemptId,
   answered,
   flagged,
   total,
@@ -157,6 +160,9 @@ export function PlayerTopBar({
                 <TooltipContent>Enter fullscreen</TooltipContent>
               </Tooltip>
             )}
+
+            {/* SOS */}
+            <PlayerSosButton attemptId={attemptId} assessmentTitle={title} />
 
             {/* Timer */}
             {TimerChip}

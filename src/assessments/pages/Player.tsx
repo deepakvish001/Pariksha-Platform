@@ -516,6 +516,7 @@ export default function Player() {
     <div className="theme-b2b min-h-screen flex flex-col bg-background select-none">
       <PlayerTopBar
         title={paper.assessment.title}
+        attemptId={attemptId}
         answered={answeredCount}
         flagged={flaggedCount}
         total={totalQ}
