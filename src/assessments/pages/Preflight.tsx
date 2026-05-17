@@ -24,6 +24,12 @@ import {
   detectEnvironment,
 } from "@/assessments/components/CompatibilityMatrix";
 import { SideCameraPairing } from "@/assessments/components/SideCameraPairing";
+import {
+  PreflightSummaryDialog,
+  SUMMARY_ICONS,
+  type SummaryCheck,
+  type CheckState,
+} from "@/assessments/components/PreflightSummaryDialog";
 import "@/b2b/theme.css";
 
 type StepState = "pending" | "active" | "passed" | "failed";
@@ -452,6 +458,8 @@ export default function Preflight() {
   const [current, setCurrent] = useState(0);
   const [stateById, setStateById] = useState<Record<string, StepState>>({});
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const env = useMemo(() => detectEnvironment(), []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["attempt", attemptId],
@@ -505,6 +513,58 @@ export default function Preflight() {
   const onStart = () => {
     navigate(`/assessments/${attemptId}/play`);
   };
+
+  // Build the summary rows shown in the confirmation modal.
+  const toCheckState = (id: string): CheckState => {
+    const s = stateById[id];
+    if (s === "passed") return "passed";
+    if (s === "failed") return "failed";
+    return "pending";
+  };
+  const summaryChecks: SummaryCheck[] = useMemo(() => {
+    const rows: SummaryCheck[] = [
+      {
+        id: "device",
+        label: "Device & browser",
+        detail: `${env.os} · ${env.browser}`,
+        state: toCheckState("device"),
+        icon: SUMMARY_ICONS.device,
+      },
+      {
+        id: "permissions",
+        label: "Camera & microphone permission",
+        detail: stream ? "Allowed" : "Not granted yet",
+        state: toCheckState("permissions"),
+        icon: SUMMARY_ICONS.permissions,
+      },
+      {
+        id: "av",
+        label: "Audio / video self-test",
+        detail: "Webcam preview and mic meter responding",
+        state: toCheckState("av"),
+        icon: SUMMARY_ICONS.av,
+      },
+    ];
+    rows.push(
+      needsThirdEye
+        ? {
+            id: "thirdeye",
+            label: "Third Eye (side camera)",
+            detail: "Phone paired and streaming",
+            state: toCheckState("thirdeye"),
+            icon: SUMMARY_ICONS.thirdeye,
+          }
+        : {
+            id: "thirdeye",
+            label: "Third Eye (side camera)",
+            detail: "Not required for this assessment",
+            state: "skipped",
+            icon: SUMMARY_ICONS.thirdeye,
+          },
+    );
+    return rows;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateById, stream, env.os, env.browser, needsThirdEye]);
 
   if (isLoading) {
     return (
@@ -593,7 +653,7 @@ export default function Preflight() {
                   <ReadyStep
                     title={a.title ?? "Assessment"}
                     durationMin={a.duration_min}
-                    onStart={onStart}
+                    onStart={() => setSummaryOpen(true)}
                   />
                 )}
               </div>
@@ -621,6 +681,16 @@ export default function Preflight() {
           </div>
         </section>
       </main>
+
+      <PreflightSummaryDialog
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        title={a.title ?? "Assessment"}
+        durationMin={a.duration_min}
+        environment={{ os: env.os, browser: env.browser }}
+        checks={summaryChecks}
+        onStart={onStart}
+      />
     </div>
   );
 }
