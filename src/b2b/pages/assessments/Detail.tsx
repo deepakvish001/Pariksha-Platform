@@ -494,6 +494,13 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
   const [bulk, setBulk] = useState("");
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewSubject, setPreviewSubject] = useState<string>("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
 
   async function sendInvites(opts: { invite_ids?: string[]; only_pending?: boolean }) {
     const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
@@ -502,6 +509,50 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
     if (error) throw new Error(error.message ?? "Failed to send");
     await refetchInvites();
     return data as { sent: number; failed: number; results?: { email: string; ok: boolean; error?: string }[] };
+  }
+
+  async function openPreview() {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewHtml(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
+        body: { assessment_id: assessmentId, preview: true },
+      });
+      if (error) throw new Error(error.message ?? "Preview failed");
+      setPreviewHtml((data as any).html ?? "");
+      setPreviewSubject((data as any).subject ?? "");
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function sendTest() {
+    const addr = testEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+      toast.error("Enter a valid email address");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
+        body: { assessment_id: assessmentId, test_email: addr },
+      });
+      if (error) throw new Error(error.message ?? "Failed to send");
+      if ((data as any).ok) {
+        toast.success(`Test email sent to ${addr}`);
+        setTestOpen(false);
+      } else {
+        toast.error((data as any).error ?? "Failed to send test email");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSendingTest(false);
+    }
   }
 
   function parseRows(text: string) {
