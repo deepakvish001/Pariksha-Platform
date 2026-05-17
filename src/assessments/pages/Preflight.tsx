@@ -1,0 +1,626 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Camera,
+  CheckCircle2,
+  ChevronRight,
+  Loader2,
+  Mic,
+  Monitor,
+  ShieldCheck,
+  Smartphone,
+  Volume2,
+  XCircle,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  CompatibilityMatrix,
+  detectEnvironment,
+} from "@/assessments/components/CompatibilityMatrix";
+import { SideCameraPairing } from "@/assessments/components/SideCameraPairing";
+import "@/b2b/theme.css";
+
+type StepState = "pending" | "active" | "passed" | "failed";
+
+interface StepDef {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: typeof Camera;
+}
+
+const STEPS: StepDef[] = [
+  { id: "device", title: "Device check", subtitle: "Browser & OS", icon: Monitor },
+  { id: "permissions", title: "Permissions", subtitle: "Camera & microphone", icon: ShieldCheck },
+  { id: "av", title: "Audio / Video", subtitle: "Self-test", icon: Volume2 },
+  { id: "thirdeye", title: "Third Eye", subtitle: "Pair your phone", icon: Smartphone },
+  { id: "ready", title: "Ready", subtitle: "Start the test", icon: CheckCircle2 },
+];
+
+function StepRail({
+  current,
+  stateById,
+}: {
+  current: number;
+  stateById: Record<string, StepState>;
+}) {
+  return (
+    <ol className="space-y-1">
+      {STEPS.map((s, i) => {
+        const state = i === current ? "active" : stateById[s.id] ?? "pending";
+        const Icon = s.icon;
+        return (
+          <li key={s.id}>
+            <div
+              className={cn(
+                "flex items-start gap-3 px-3 py-2.5 rounded-md transition-colors",
+                state === "active" &&
+                  "bg-[hsl(var(--primary))]/10 ring-1 ring-inset ring-[hsl(var(--primary))]/40",
+              )}
+            >
+              <div
+                className={cn(
+                  "mt-0.5 h-7 w-7 shrink-0 rounded-full grid place-items-center text-xs font-semibold",
+                  state === "passed"
+                    ? "bg-emerald-500 text-white"
+                    : state === "failed"
+                    ? "bg-destructive text-destructive-foreground"
+                    : state === "active"
+                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                    : "bg-[hsl(var(--secondary))] text-muted-foreground",
+                )}
+              >
+                {state === "passed" ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : state === "failed" ? (
+                  <XCircle className="h-4 w-4" />
+                ) : (
+                  i + 1
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium leading-snug flex items-center gap-2">
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate">{s.title}</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground truncate">
+                  {s.subtitle}
+                </div>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function StepShell({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="space-y-4"
+    >
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        )}
+      </div>
+      {children}
+    </motion.div>
+  );
+}
+
+/* ──────────────────────── Step 1: Device ──────────────────────── */
+function DeviceStep({ onPass, onFail }: { onPass: () => void; onFail: () => void }) {
+  const env = useMemo(() => detectEnvironment(), []);
+  useEffect(() => {
+    if (env.supported) onPass();
+    else onFail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [env.supported]);
+
+  return (
+    <StepShell
+      title="Let's check your device"
+      description="We've auto-detected your operating system and browser. Make sure your browser is updated to the latest version."
+    >
+      <CompatibilityMatrix os={env.os} browser={env.browser} />
+      <div
+        className={cn(
+          "rounded-lg border px-4 py-3 text-sm flex items-start gap-3",
+          env.supported
+            ? "border-emerald-500/40 bg-emerald-500/10"
+            : "border-destructive/40 bg-destructive/10",
+        )}
+      >
+        {env.supported ? (
+          <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
+        ) : (
+          <XCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+        )}
+        <div className="min-w-0">
+          <div className="font-medium">
+            {env.supported
+              ? "Your browser is supported."
+              : "Your browser may not be supported."}
+          </div>
+          <div className="text-muted-foreground text-xs mt-0.5">
+            Detected: {env.os} · {env.browser}. We recommend the latest Chrome or
+            Edge on desktop, and Chrome on Android / Safari on iOS.
+          </div>
+        </div>
+      </div>
+    </StepShell>
+  );
+}
+
+/* ─────────────────── Step 2: Permissions ─────────────────── */
+function PermissionsStep({
+  onPass,
+  onStream,
+  stream,
+}: {
+  onPass: () => void;
+  onStream: (s: MediaStream | null) => void;
+  stream: MediaStream | null;
+}) {
+  const [requesting, setRequesting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [granted, setGranted] = useState(!!stream);
+
+  const request = async () => {
+    setRequesting(true);
+    setError(null);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: true,
+      });
+      onStream(s);
+      setGranted(true);
+      onPass();
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Camera & microphone access was denied.",
+      );
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  return (
+    <StepShell
+      title="Grant camera & microphone access"
+      description="Your browser will ask you to allow camera and microphone. Click Allow on every prompt — these are used by the proctor for the duration of the test only."
+    >
+      <ol className="space-y-2 text-sm">
+        {[
+          "Click the Allow button below to trigger your browser's permission dialog.",
+          "Choose Allow for both Camera and Microphone in the popup.",
+          "Once granted, the green check will appear on the next step.",
+        ].map((line, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 px-3 py-2"
+          >
+            <span className="h-5 w-5 rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center text-[11px] font-semibold shrink-0">
+              {i + 1}
+            </span>
+            <span className="text-muted-foreground">{line}</span>
+          </li>
+        ))}
+      </ol>
+
+      {!granted ? (
+        <Button onClick={request} disabled={requesting}>
+          {requesting ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <ShieldCheck className="h-4 w-4 mr-2" />
+          )}
+          {requesting ? "Requesting…" : "Allow camera & microphone"}
+        </Button>
+      ) : (
+        <div className="inline-flex items-center gap-2 rounded-md bg-emerald-500/10 border border-emerald-500/40 px-3 py-2 text-sm text-emerald-600">
+          <CheckCircle2 className="h-4 w-4" /> Permissions granted
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+          <div className="text-xs mt-1 text-destructive/80">
+            Open your browser site settings and reset camera/microphone permissions
+            for this page, then try again.
+          </div>
+        </div>
+      )}
+    </StepShell>
+  );
+}
+
+/* ─────────────────── Step 3: Audio / Video ─────────────────── */
+function AvStep({
+  stream,
+  onPass,
+}: {
+  stream: MediaStream | null;
+  onPass: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [level, setLevel] = useState(0);
+  const [audioOk, setAudioOk] = useState(false);
+  const [videoOk, setVideoOk] = useState(false);
+
+  useEffect(() => {
+    if (!stream || !videoRef.current) return;
+    videoRef.current.srcObject = stream;
+    videoRef.current.play().catch(() => {});
+    const track = stream.getVideoTracks()[0];
+    if (track && track.readyState === "live") setVideoOk(true);
+  }, [stream]);
+
+  // Audio meter
+  useEffect(() => {
+    if (!stream) return;
+    const AudioCtx =
+      (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
+        .AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const src = ctx.createMediaStreamSource(stream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    let raf = 0;
+    const tick = () => {
+      analyser.getByteTimeDomainData(data);
+      let peak = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = Math.abs(data[i] - 128) / 128;
+        if (v > peak) peak = v;
+      }
+      setLevel(peak);
+      if (peak > 0.08) setAudioOk(true);
+      raf = window.requestAnimationFrame(tick);
+    };
+    tick();
+    return () => {
+      window.cancelAnimationFrame(raf);
+      ctx.close().catch(() => {});
+    };
+  }, [stream]);
+
+  useEffect(() => {
+    if (audioOk && videoOk) onPass();
+  }, [audioOk, videoOk, onPass]);
+
+  return (
+    <StepShell
+      title="Test your audio and video"
+      description="Confirm your webcam preview is visible and speak to see the microphone meter respond."
+    >
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="rounded-lg border border-[hsl(var(--border))] overflow-hidden bg-black aspect-video relative">
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            autoPlay
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute top-2 left-2 inline-flex items-center gap-1.5 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full">
+            <Camera className="h-3 w-3" />
+            Webcam preview
+          </div>
+          {videoOk && (
+            <div className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 bg-emerald-500/90 text-white text-[10px] px-2 py-1 rounded-full">
+              <CheckCircle2 className="h-3 w-3" /> OK
+            </div>
+          )}
+        </div>
+        <div className="rounded-lg border border-[hsl(var(--border))] p-4 flex flex-col justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Mic className="h-4 w-4" />
+            Microphone meter
+            {audioOk && (
+              <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-600">
+                <CheckCircle2 className="h-3 w-3" /> Detected
+              </span>
+            )}
+          </div>
+          <div className="h-3 w-full rounded-full bg-[hsl(var(--secondary))] overflow-hidden mt-3">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-[hsl(var(--primary))] transition-[width] duration-75"
+              style={{ width: `${Math.min(100, Math.round(level * 220))}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Say "hello" — the bar should move. If it stays flat, check your system
+            input device.
+          </p>
+        </div>
+      </div>
+    </StepShell>
+  );
+}
+
+/* ─────────────────── Step 4: Third Eye ─────────────────── */
+function ThirdEyeStep({
+  attemptId,
+  onPass,
+}: {
+  attemptId: string;
+  onPass: () => void;
+}) {
+  return (
+    <StepShell
+      title="Pair your phone as Third Eye"
+      description="Your phone acts as a side camera so the proctor can see your workspace. Scan the QR with your phone and follow the on-screen steps."
+    >
+      <div className="grid lg:grid-cols-[1fr_1.1fr] gap-4">
+        <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-4">
+          <SideCameraPairing attemptId={attemptId} onPaired={onPass} />
+        </div>
+        <ol className="space-y-2 text-sm">
+          {[
+            "Open the camera app on your phone and scan the QR shown here.",
+            "Sign in or continue as guest, then tap Allow when asked for camera access.",
+            "Place the phone in landscape, 3–4 feet to your side, so it can see your desk and hands.",
+            "Turn on Auto-Rotate and Do Not Disturb so the phone doesn't sleep or interrupt.",
+            "Wait for the green Connected indicator before continuing.",
+          ].map((line, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 px-3 py-2"
+            >
+              <span className="h-5 w-5 rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center text-[11px] font-semibold shrink-0">
+                {i + 1}
+              </span>
+              <span className="text-muted-foreground">{line}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </StepShell>
+  );
+}
+
+/* ─────────────────── Step 5: Ready ─────────────────── */
+function ReadyStep({
+  title,
+  durationMin,
+  onStart,
+}: {
+  title: string;
+  durationMin?: number;
+  onStart: () => void;
+}) {
+  return (
+    <StepShell
+      title="You're all set"
+      description="Everything checks out. Take a deep breath — once you click Start test, the timer cannot be paused."
+    >
+      <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-5 flex items-start gap-4">
+        <div className="h-12 w-12 rounded-full bg-emerald-500/20 grid place-items-center shrink-0">
+          <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+        </div>
+        <div className="min-w-0">
+          <div className="font-semibold">{title}</div>
+          <div className="text-sm text-muted-foreground mt-1">
+            Duration: <strong className="text-foreground">{durationMin ?? "—"} min</strong>
+            {" · "}Third Eye paired{" · "}Camera & mic ready
+          </div>
+        </div>
+      </div>
+      <Button size="lg" onClick={onStart} className="w-full sm:w-auto">
+        Start test
+        <ArrowRight className="h-4 w-4 ml-2" />
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        Do not close this tab, lock your phone, or switch apps during the test.
+      </p>
+    </StepShell>
+  );
+}
+
+/* ──────────────────────── Page ──────────────────────── */
+export default function Preflight() {
+  const { attemptId = "" } = useParams();
+  const navigate = useNavigate();
+  const [current, setCurrent] = useState(0);
+  const [stateById, setStateById] = useState<Record<string, StepState>>({});
+  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["attempt", attemptId],
+    enabled: !!attemptId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assessment_attempts")
+        .select(
+          "*, assessment:assessments(id,title,duration_min,proctoring_enabled,starts_at,ends_at,status)",
+        )
+        .eq("id", attemptId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Clean up the temporary preflight stream when leaving — the player
+  // requests its own fresh stream so we don't hold the camera here.
+  useEffect(() => {
+    return () => {
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [stream]);
+
+  const a = (data?.assessment ?? null) as
+    | { title?: string; duration_min?: number; proctoring_enabled?: boolean }
+    | null;
+  const needsThirdEye = !!a?.proctoring_enabled;
+
+  // If proctoring is off, drop the Third Eye step from the rail entirely.
+  const activeSteps = useMemo(
+    () => STEPS.filter((s) => (s.id === "thirdeye" ? needsThirdEye : true)),
+    [needsThirdEye],
+  );
+
+  const markCurrent = (state: StepState) => {
+    const id = activeSteps[current]?.id;
+    if (!id) return;
+    setStateById((prev) =>
+      prev[id] === state ? prev : { ...prev, [id]: state },
+    );
+  };
+
+  const passCurrent = () => markCurrent("passed");
+  const failCurrent = () => markCurrent("failed");
+
+  const goNext = () => setCurrent((c) => Math.min(activeSteps.length - 1, c + 1));
+  const goBack = () => setCurrent((c) => Math.max(0, c - 1));
+
+  const onStart = () => {
+    navigate(`/assessments/${attemptId}/play`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
+  if (!data || !a) {
+    return (
+      <div className="min-h-screen grid place-items-center p-6 text-sm text-muted-foreground">
+        Attempt not found.
+      </div>
+    );
+  }
+
+  const currentId = activeSteps[current]?.id;
+  const canAdvance = stateById[currentId] === "passed";
+
+  return (
+    <div className="theme-b2b min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      {/* Header */}
+      <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold text-sm">
+              P
+            </div>
+            <div className="leading-tight min-w-0">
+              <div className="text-sm font-semibold truncate">
+                {a.title ?? "Assessment"}
+              </div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Pre-flight check
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/assessments")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Exit
+          </Button>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 grid lg:grid-cols-[260px_1fr] gap-6 lg:gap-10">
+        {/* Step rail */}
+        <aside className="lg:sticky lg:top-20 lg:self-start">
+          <StepRail
+            current={current}
+            stateById={activeSteps.reduce<Record<string, StepState>>(
+              (acc, s, i) => {
+                acc[s.id] =
+                  i === current ? "active" : stateById[s.id] ?? "pending";
+                return acc;
+              },
+              {},
+            )}
+          />
+        </aside>
+
+        {/* Step body */}
+        <section className="space-y-6">
+          <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 sm:p-8 shadow-[0_10px_30px_-12px_hsl(0_0%_0%/0.5)]">
+            <AnimatePresence mode="wait">
+              <div key={currentId}>
+                {currentId === "device" && (
+                  <DeviceStep onPass={passCurrent} onFail={failCurrent} />
+                )}
+                {currentId === "permissions" && (
+                  <PermissionsStep
+                    stream={stream}
+                    onStream={setStream}
+                    onPass={passCurrent}
+                  />
+                )}
+                {currentId === "av" && (
+                  <AvStep stream={stream} onPass={passCurrent} />
+                )}
+                {currentId === "thirdeye" && (
+                  <ThirdEyeStep attemptId={attemptId} onPass={passCurrent} />
+                )}
+                {currentId === "ready" && (
+                  <ReadyStep
+                    title={a.title ?? "Assessment"}
+                    durationMin={a.duration_min}
+                    onStart={onStart}
+                  />
+                )}
+              </div>
+            </AnimatePresence>
+          </div>
+
+          {/* Footer nav */}
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="ghost"
+              onClick={goBack}
+              disabled={current === 0}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
+            </Button>
+            <div className="text-xs text-muted-foreground">
+              Step {current + 1} of {activeSteps.length}
+            </div>
+            {currentId !== "ready" && (
+              <Button onClick={goNext} disabled={!canAdvance}>
+                Continue
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

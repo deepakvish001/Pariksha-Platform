@@ -51,6 +51,7 @@ import StudentJoin from "@/assessments/pages/Join";
 import StudentSideCamera from "@/assessments/pages/SideCamera";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
+import StudentPreflight from "@/assessments/pages/Preflight";
 import StudentPlayer from "@/assessments/pages/Player";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -305,6 +306,7 @@ const App = () => (
                 <Route path="/assessments/sidecam/:token" element={<StudentSideCamera />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
+                <Route path="/assessments/:attemptId/preflight" element={<ProtectedRoute><StudentPreflight /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/play" element={<ProtectedRoute><StudentPlayer /></ProtectedRoute>} />
 
                 <Route path="/shared/:shareCode" element={<SharedFolder />} />
