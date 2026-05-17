@@ -281,12 +281,44 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
       return;
     }
 
-    // Fallback: open email so the candidate still gets help.
-    toast.error("Couldn't reach proctor — opening email backup", {
-      description: result.error ?? "Please send the email so support can call back.",
-    });
-    const url = `mailto:${SUPPORT_EMAIL}?subject=${buildSubject()}&body=${buildBody()}`;
-    window.location.href = url;
+    // Fallback chain: try email first, but always surface a phone-call
+    // option as a guaranteed-reachable backup in case the device has no
+    // mail client configured (mailto: silently no-ops on many machines).
+    const mailUrl = `mailto:${SUPPORT_EMAIL}?subject=${buildSubject()}&body=${buildBody()}`;
+    const telUrl = `tel:${SUPPORT_PHONE_DIGITS}`;
+
+    let mailOpened = false;
+    try {
+      // Hidden anchor + click → works even when popups are blocked, and
+      // doesn't navigate the test page away like window.location.href does.
+      const a = document.createElement("a");
+      a.href = mailUrl;
+      a.rel = "noopener";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      mailOpened = true;
+    } catch {
+      mailOpened = false;
+    }
+
+    toast.error(
+      mailOpened ? "Couldn't reach proctor — email backup opened" : "Couldn't reach proctor",
+      {
+        description: mailOpened
+          ? `If the email didn't open, call support directly at ${SUPPORT_PHONE}.`
+          : `Email backup didn't open. Call support at ${SUPPORT_PHONE} to get help now.`,
+        duration: 15_000,
+        action: {
+          label: "Call support",
+          onClick: () => {
+            window.location.href = telUrl;
+          },
+        },
+      }
+    );
+
     setOpen(false);
     reset();
   };
