@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -9,6 +10,7 @@ import {
   Users,
   Wifi,
   Lightbulb,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
