@@ -170,6 +170,8 @@ export default function B2BProctoring() {
     assessmentFilter={assessmentFilter} setAssessmentFilter={setAssessmentFilter}
     snapCounts={snapCounts} sideCounts={sideCounts}
     inspectingId={inspectingId} setInspectingId={setInspectingId}
+    evidenceId={evidenceId} setEvidenceId={setEvidenceId}
+    evidenceLabel={evidenceLabel} setEvidenceLabel={setEvidenceLabel}
   />;
 }
 
