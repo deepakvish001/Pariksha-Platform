@@ -46,6 +46,11 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Camera,
+  Monitor,
+  Smartphone,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 type SortKey = "name" | "status" | "elapsed" | "score" | "integrity";
