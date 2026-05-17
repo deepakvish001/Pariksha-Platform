@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, LifeBuoy, Loader2, Mail, MessageCircle, MessageSquare, Phone, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
