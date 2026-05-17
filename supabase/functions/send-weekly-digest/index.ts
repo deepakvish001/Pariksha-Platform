@@ -207,7 +207,7 @@ const handler = async (req: Request): Promise<Response> => {
               ${achievementsThisWeek.map(a => `
                 <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
                   <span style="font-size: 20px;">🎖️</span>
-                  <span style="font-weight: 500;">${a.achievement_id.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                  <span style="font-weight: 500;">${escapeHtml(String(a.achievement_id ?? "").replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()))}</span>
                 </div>
               `).join('')}
             </div>
