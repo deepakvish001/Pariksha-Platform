@@ -222,7 +222,7 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     let cancelled = false;
 
     (async () => {
-      const [evtRes, chatRes, noteRes] = await Promise.all([
+      const [evtRes, chatRes, noteRes, pinRes] = await Promise.all([
         supabase
           .from("attempt_events")
           .select("id, kind, payload, created_at")
@@ -241,11 +241,18 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
           .eq("attempt_id", attemptId)
           .order("created_at", { ascending: true })
           .limit(1000),
+        supabase
+          .from("attempt_event_pins")
+          .select("*")
+          .eq("attempt_id", attemptId)
+          .order("created_at", { ascending: false })
+          .limit(500),
       ]);
       if (cancelled) return;
       if (evtRes.data) setEvents(evtRes.data as EventRow[]);
       if (chatRes.data) setChats(chatRes.data as ChatRow[]);
       if (noteRes.data) setNotes(noteRes.data as NoteRow[]);
+      if (pinRes.data) setPins(pinRes.data as PinRow[]);
     })();
 
     const channel = supabase
