@@ -453,7 +453,7 @@ function IntegrityAlertsWidget({
             variant="ghost"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => navigate(`${basePath}/proctoring`)}
+            onClick={() => navigate(`${basePath}/assessments`)}
           >
             Review <ChevronRight className="ml-0.5 h-3.5 w-3.5" />
           </Button>
