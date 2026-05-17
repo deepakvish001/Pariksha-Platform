@@ -209,6 +209,53 @@ export default function AttemptProctoringPanel({ attemptId }: { attemptId: strin
             </div>
           </div>
         )}
+
+        {recordings.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+              <Video className="h-3 w-3" /> Recorded clips ({recordings.length})
+            </p>
+            <div className="space-y-2">
+              {recordings.map((r) => {
+                const url = urls[r.storage_path];
+                const Icon = r.kind === "screen" ? Monitor : r.kind === "sideeye" ? Smartphone : Camera;
+                const secs = r.duration_ms ? Math.round(r.duration_ms / 1000) : 0;
+                const mb = r.size_bytes ? (r.size_bytes / 1_048_576).toFixed(1) : null;
+                return (
+                  <div key={r.id} className="rounded-md border border-[hsl(var(--border))] p-2 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-medium capitalize">{r.kind}</span>
+                      <Badge variant="outline" className="text-[10px] h-5">{Math.floor(secs / 60)}m {secs % 60}s</Badge>
+                      {mb && <span className="text-muted-foreground">{mb} MB</span>}
+                      <span className="ml-auto text-muted-foreground">{new Date(r.started_at).toLocaleString()}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-1.5"
+                        onClick={async () => {
+                          const { error } = await supabase.from("assessment_proctor_recordings").delete().eq("id", r.id);
+                          if (error) toast.error(error.message);
+                          else {
+                            await supabase.storage.from(BUCKET).remove([r.storage_path]).catch(() => { /* noop */ });
+                            void refresh();
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {url ? (
+                      <video src={url} controls preload="metadata" className="w-full max-h-72 rounded bg-black" />
+                    ) : (
+                      <div className="h-24 grid place-items-center text-[10px] text-muted-foreground">Loading…</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
