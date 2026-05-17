@@ -680,6 +680,7 @@ export type Database = {
           screen_extended: boolean
           selfie_url: string | null
           sideeye_required: boolean
+          slug: string | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -701,6 +702,7 @@ export type Database = {
           screen_extended?: boolean
           selfie_url?: string | null
           sideeye_required?: boolean
+          slug?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
           submitted_at?: string | null
@@ -722,6 +724,7 @@ export type Database = {
           screen_extended?: boolean
           selfie_url?: string | null
           sideeye_required?: boolean
+          slug?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
           submitted_at?: string | null
@@ -1226,6 +1229,7 @@ export type Database = {
           proctoring_config: Json
           proctoring_enabled: boolean
           show_results_to_candidate: boolean
+          slug: string | null
           starts_at: string | null
           status: Database["public"]["Enums"]["assessment_status"]
           title: string
@@ -1243,6 +1247,7 @@ export type Database = {
           proctoring_config?: Json
           proctoring_enabled?: boolean
           show_results_to_candidate?: boolean
+          slug?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
           title: string
@@ -1260,6 +1265,7 @@ export type Database = {
           proctoring_config?: Json
           proctoring_enabled?: boolean
           show_results_to_candidate?: boolean
+          slug?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
           title?: string
@@ -8405,6 +8411,7 @@ export type Database = {
           screen_extended: boolean
           selfie_url: string | null
           sideeye_required: boolean
+          slug: string | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -8785,6 +8792,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      next_unique_slug: {
+        Args: {
+          base: string
+          scope_col: string
+          scope_table: string
+          scope_val: string
+        }
+        Returns: string
+      }
       notify_admins: {
         Args: { _data?: Json; _message: string; _title: string; _type?: string }
         Returns: undefined
@@ -8820,6 +8836,7 @@ export type Database = {
           side_camera_count: number
         }[]
       }
+      slugify: { Args: { input: string }; Returns: string }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
       solo_finalize_session: { Args: { _session_id: string }; Returns: Json }
       solo_record_attempt: {
@@ -8851,6 +8868,7 @@ export type Database = {
           screen_extended: boolean
           selfie_url: string | null
           sideeye_required: boolean
+          slug: string | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -8881,6 +8899,7 @@ export type Database = {
           screen_extended: boolean
           selfie_url: string | null
           sideeye_required: boolean
+          slug: string | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
