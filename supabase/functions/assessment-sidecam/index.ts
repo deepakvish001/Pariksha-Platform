@@ -511,27 +511,37 @@ Deno.serve(async (req) => {
         questionId?: string;
         orderedIds?: string[];
       } | null;
-      if (!body?.attemptId || !body?.questionId || !Array.isArray(body?.orderedIds))
-        return json({ error: "attemptId, questionId, orderedIds required" }, 400);
+      if (!isUuid(body?.attemptId)) return json({ error: "invalid_attemptId" }, 400);
+      if (!isUuid(body?.questionId)) return json({ error: "invalid_questionId" }, 400);
+      if (!Array.isArray(body?.orderedIds) || body!.orderedIds.length === 0 ||
+          body!.orderedIds.length > 200 ||
+          body!.orderedIds.some((id) => !isUuid(id)))
+        return json({ error: "invalid_orderedIds" }, 400);
+      // Reject duplicates
+      if (new Set(body!.orderedIds).size !== body!.orderedIds.length)
+        return json({ error: "duplicate_ids" }, 400);
 
       const { data: attempt } = await admin
         .from("assessment_attempts")
         .select("id, user_id, status")
-        .eq("id", body.attemptId)
+        .eq("id", body!.attemptId!)
         .maybeSingle();
       if (!attempt || attempt.user_id !== user.id) return json({ error: "forbidden" }, 403);
       if (attempt.status !== "in_progress")
         return json({ error: "attempt_not_in_progress" }, 409);
 
+      const belongs = await questionInAttempt(body!.attemptId!, body!.questionId!);
+      if (!belongs) return json({ error: "question_not_in_attempt" }, 403);
+
       // Verify every id belongs to this attempt+question
       const { data: rows } = await admin
         .from("assessment_answer_uploads")
         .select("id")
-        .eq("attempt_id", body.attemptId)
-        .eq("question_id", body.questionId);
+        .eq("attempt_id", body!.attemptId!)
+        .eq("question_id", body!.questionId!);
       const valid = new Set((rows ?? []).map((r) => r.id));
-      if (body.orderedIds.length !== valid.size ||
-          body.orderedIds.some((id) => !valid.has(id)))
+      if (body!.orderedIds.length !== valid.size ||
+          body!.orderedIds.some((id) => !valid.has(id)))
         return json({ error: "id_mismatch" }, 400);
 
       // Two-pass update to dodge unique constraint
