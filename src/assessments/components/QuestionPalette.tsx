@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot, HelpCircle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -41,6 +42,7 @@ export function QuestionPalette({
   collapsed: collapsedRail = false,
   onToggleCollapsed,
 }: Props) {
+  const { t } = useTranslation();
   const answered = items.filter((i) => i.answered).length;
   const flagged = items.filter((i) => i.flagged).length;
   const unanswered = items.length - answered;
@@ -69,7 +71,7 @@ export function QuestionPalette({
     return (
       <div className="rounded-lg border border-border bg-card p-2.5">
         <div className="flex items-center justify-between mb-2 text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">Questions</span>
+          <span className="font-semibold text-foreground">{t("palette.header.title")}</span>
           <span className="tabular-nums">
             {answered}/{items.length}
           </span>
@@ -89,14 +91,14 @@ export function QuestionPalette({
                   if (!it) return null;
                   const active = i === currentIndex;
                   const dim = !passes(i);
-                  const status = getStatusLabel(it, active);
+                  const status = getStatusLabel(it, active, t);
                   return (
                     <Tooltip key={it.id} delayDuration={150}>
                       <TooltipTrigger asChild>
                         <button
                           onClick={() => onJump(i)}
                           aria-current={active ? "true" : undefined}
-                          aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                          aria-label={buildAriaLabel(t, i, undefined, status.label, it.flagged)}
                           className={cn(
                             "relative h-8 rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
                             dim && "opacity-30",
@@ -116,7 +118,7 @@ export function QuestionPalette({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[240px]">
-                        <StatusTooltipBody index={i} item={it} status={status} />
+                        <StatusTooltipBody index={i} item={it} status={status} t={t} />
                       </TooltipContent>
                     </Tooltip>
                   );
@@ -138,14 +140,14 @@ export function QuestionPalette({
   if (collapsedRail) {
     return (
       <aside
-        aria-label="Question navigator (collapsed)"
+        aria-label={t("palette.header.expand")}
         className="flex flex-col items-center rounded-xl border border-border bg-card shadow-sm overflow-hidden max-h-[calc(100vh-9rem)] sticky top-20 w-[56px] py-2"
       >
         <button
           type="button"
           onClick={onToggleCollapsed}
-          aria-label="Expand question palette"
-          title="Expand (])"
+          aria-label={t("palette.header.expand")}
+          title={t("palette.header.expandTitle")}
           className="h-9 w-9 grid place-items-center rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
         >
           <PanelLeftOpen className="h-4 w-4" />
@@ -159,13 +161,7 @@ export function QuestionPalette({
         <nav className="flex-1 w-full overflow-y-auto mt-2 px-1 space-y-1">
           {items.map((it, i) => {
             const active = i === currentIndex;
-            const status = it.answered
-              ? "Answered"
-              : active
-              ? "Current"
-              : it.visited
-              ? "Visited"
-              : "Not visited";
+            const status = getStatusLabel(it, active, t);
             return (
               <Tooltip key={it.id} delayDuration={150}>
                 <TooltipTrigger asChild>
@@ -173,7 +169,7 @@ export function QuestionPalette({
                     type="button"
                     onClick={() => onJump(i)}
                     aria-current={active ? "true" : undefined}
-                    aria-label={`Question ${i + 1}${it.title ? `: ${it.title}` : ""} — ${status}${it.flagged ? ", flagged" : ""}`}
+                    aria-label={buildAriaLabel(t, i, it.title, status.label, it.flagged)}
                     className={cn(
                       "relative w-full h-7 rounded-md text-[10px] font-semibold tabular-nums grid place-items-center transition-colors",
                       active
@@ -190,24 +186,7 @@ export function QuestionPalette({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-[260px]">
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold leading-tight">
-                      Q{i + 1}
-                      {it.title ? <span className="text-muted-foreground"> · </span> : null}
-                      {it.title && <span className="font-normal">{it.title}</span>}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <StatusIcon answered={it.answered} visited={!!it.visited} active={active} />
-                      <span>{status}</span>
-                      {it.flagged && (
-                        <>
-                          <span className="opacity-50">·</span>
-                          <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
-                          <span>Flagged</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <StatusTooltipBody index={i} item={it} status={status} t={t} />
                 </TooltipContent>
               </Tooltip>
             );
@@ -219,23 +198,23 @@ export function QuestionPalette({
 
   return (
     <aside
-      aria-label="Question navigator"
+      aria-label={t("palette.header.title")}
       className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden max-h-[calc(100vh-9rem)] sticky top-20"
     >
       {/* Header: progress */}
       <header className="px-3 py-3 border-b border-border bg-muted/30">
         <div className="flex items-center justify-between text-xs mb-2 gap-2">
-          <span className="font-semibold tracking-tight">Questions</span>
+          <span className="font-semibold tracking-tight">{t("palette.header.title")}</span>
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground tabular-nums">
-              {answered}/{items.length} · {pct}%
+              {t("palette.header.progress", { answered, total: items.length, pct })}
             </span>
             {onToggleCollapsed && (
               <button
                 type="button"
                 onClick={onToggleCollapsed}
-                aria-label="Collapse question palette"
-                title="Collapse (])"
+                aria-label={t("palette.header.collapse")}
+                title={t("palette.header.collapseTitle")}
                 className="h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               >
                 <PanelLeftClose className="h-3.5 w-3.5" />
@@ -250,9 +229,9 @@ export function QuestionPalette({
           />
         </div>
         <div className="grid grid-cols-3 gap-1.5 mt-3">
-          <StatPill label="Done" value={answered} tone="emerald" />
-          <StatPill label="Left" value={unanswered} tone={unanswered > 0 ? "amber" : "muted"} />
-          <StatPill label="Flag" value={flagged} tone={flagged > 0 ? "amber" : "muted"} />
+          <StatPill label={t("palette.stats.done")} value={answered} tone="emerald" />
+          <StatPill label={t("palette.stats.left")} value={unanswered} tone={unanswered > 0 ? "amber" : "muted"} />
+          <StatPill label={t("palette.stats.flag")} value={flagged} tone={flagged > 0 ? "amber" : "muted"} />
         </div>
       </header>
 
@@ -273,7 +252,7 @@ export function QuestionPalette({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span>{f}</span>
+                <span>{t(`palette.filters.${f}` as const)}</span>
                 <span className="tabular-nums opacity-60">{count}</span>
               </button>
             );
@@ -283,40 +262,49 @@ export function QuestionPalette({
           <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground leading-snug px-0.5">
             <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 shrink-0 mt-px" />
             <span className="flex-1">
-              Showing only questions you marked with the{" "}
-              <span className="font-medium text-foreground">Flag for review</span> button. They
-              appear here with an amber flag corner badge — visit them again before submitting.
+              {t("palette.flaggedHint.intro")}{" "}
+              <span className="font-medium text-foreground">
+                {t("palette.flaggedHint.action")}
+              </span>{" "}
+              {t("palette.flaggedHint.outro")}
             </span>
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  aria-label="What is a flagged question?"
+                  aria-label={t("palette.flaggedHint.ariaHelp")}
                   className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-px"
                 >
                   <HelpCircle className="h-3 w-3" />
                 </button>
               </PopoverTrigger>
               <PopoverContent side="bottom" align="end" className="w-64 p-3 text-xs space-y-2">
-                <div className="font-semibold text-sm">About flagged questions</div>
+                <div className="font-semibold text-sm">
+                  {t("palette.flaggedHint.popover.title")}
+                </div>
                 <p className="text-muted-foreground leading-snug">
-                  Flagging is a personal bookmark — it never affects your score or what the
-                  recruiter sees.
+                  {t("palette.flaggedHint.popover.body")}
                 </p>
                 <ul className="space-y-1 text-muted-foreground">
                   <li className="flex gap-1.5">
                     <span className="text-foreground">•</span>
-                    Use the flag button on any question to mark it.
+                    {t("palette.flaggedHint.popover.bullet1")}
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-foreground">•</span>
-                    Flagged items show an amber{" "}
-                    <Flag className="inline h-2.5 w-2.5 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 align-baseline" />{" "}
-                    badge in the navigator.
+                    <span>
+                      {t("palette.flaggedHint.popover.bullet2Prefix")}{" "}
+                      <Flag className="inline h-2.5 w-2.5 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 align-baseline" />{" "}
+                      {t("palette.flaggedHint.popover.bullet2Suffix")}
+                    </span>
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-foreground">•</span>
-                    Switch this filter to <em>Flagged</em> to jump between them.
+                    <span>
+                      {t("palette.flaggedHint.popover.bullet3Prefix")}{" "}
+                      <em>{t("palette.flaggedHint.popover.bullet3Em")}</em>{" "}
+                      {t("palette.flaggedHint.popover.bullet3Suffix")}
+                    </span>
                   </li>
                 </ul>
               </PopoverContent>
@@ -360,7 +348,7 @@ export function QuestionPalette({
                     const active = i === currentIndex;
                     const dim = !passes(i);
                     if (dim && filter !== "all") return null;
-                    const status = getStatusLabel(it, active);
+                    const status = getStatusLabel(it, active, t);
                     return (
                       <li key={it.id}>
                         <Tooltip delayDuration={200}>
@@ -368,7 +356,7 @@ export function QuestionPalette({
                             <button
                               onClick={() => onJump(i)}
                               aria-current={active ? "true" : undefined}
-                              aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                              aria-label={buildAriaLabel(t, i, it.title, status.label, it.flagged)}
                               className={cn(
                                 "group w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors text-left",
                                 active
@@ -393,7 +381,7 @@ export function QuestionPalette({
                               </span>
                               {/* Label */}
                               <span className="flex-1 truncate">
-                                Question {i + 1}
+                                {t("palette.questionLabel", { n: i + 1 })}
                               </span>
                               {/* Flag */}
                               {it.flagged && (
@@ -406,7 +394,7 @@ export function QuestionPalette({
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-[260px]">
-                            <StatusTooltipBody index={i} item={it} status={status} />
+                            <StatusTooltipBody index={i} item={it} status={status} t={t} />
                           </TooltipContent>
                         </Tooltip>
                       </li>
@@ -423,23 +411,23 @@ export function QuestionPalette({
       <footer className="px-3 py-2 border-t border-border bg-muted/20 text-[10px] text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1">
         <LegendRow
           icon={<CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
-          label="Answered"
-          tip="You've saved an answer for this question."
+          label={t("palette.legend.answered.label")}
+          tip={t("palette.legend.answered.tip")}
         />
         <LegendRow
           icon={<CircleDot className="h-3 w-3 text-muted-foreground" />}
-          label="Visited"
-          tip="You opened this question but haven't submitted an answer yet."
+          label={t("palette.legend.visited.label")}
+          tip={t("palette.legend.visited.tip")}
         />
         <LegendRow
           icon={<Circle className="h-3 w-3 text-muted-foreground" />}
-          label="Not visited"
-          tip="You haven't opened this question yet."
+          label={t("palette.legend.notVisited.label")}
+          tip={t("palette.legend.notVisited.tip")}
         />
         <LegendRow
           icon={<Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />}
-          label="Flagged"
-          tip="Marked for review — come back to it before submitting."
+          label={t("palette.legend.flagged.label")}
+          tip={t("palette.legend.flagged.tip")}
         />
       </footer>
     </aside>
@@ -496,51 +484,71 @@ interface StatusInfo {
   swatchClass: string;
 }
 
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
 function getStatusLabel(
   item: { answered: boolean; visited?: boolean; flagged: boolean },
   active: boolean,
+  t: TFn,
 ): StatusInfo {
   if (item.answered) {
     return {
-      label: "Answered",
-      description: "You've saved an answer. You can still revisit and edit it.",
+      label: t("palette.status.answered.label"),
+      description: t("palette.status.answered.description"),
       swatchClass: "bg-emerald-500",
     };
   }
   if (active) {
     return {
-      label: "Current",
-      description: "This is the question you're viewing right now.",
+      label: t("palette.status.current.label"),
+      description: t("palette.status.current.description"),
       swatchClass: "bg-primary",
     };
   }
   if (item.visited) {
     return {
-      label: "Visited · not answered",
-      description: "You opened this question but haven't submitted an answer yet.",
+      label: t("palette.status.visited.label"),
+      description: t("palette.status.visited.description"),
       swatchClass: "bg-muted-foreground",
     };
   }
   return {
-    label: "Not visited",
-    description: "You haven't opened this question yet.",
+    label: t("palette.status.notVisited.label"),
+    description: t("palette.status.notVisited.description"),
     swatchClass: "bg-muted-foreground/40",
   };
+}
+
+function buildAriaLabel(
+  t: TFn,
+  index: number,
+  title: string | undefined,
+  statusLabel: string,
+  flagged: boolean,
+): string {
+  return t("palette.ariaQuestion", {
+    n: index + 1,
+    title: title ? `${t("palette.ariaQuestionTitlePrefix")}${title}` : "",
+    status: statusLabel,
+    flaggedSuffix: flagged ? t("palette.ariaFlaggedSuffix") : "",
+  });
 }
 
 function StatusTooltipBody({
   index,
   item,
   status,
+  t,
 }: {
   index: number;
   item: { title?: string; flagged: boolean };
   status: StatusInfo;
+  t: TFn;
 }) {
   return (
     <div className="space-y-1.5">
       <div className="text-xs font-semibold leading-tight">
-        Q{index + 1}
+        {t("palette.qShort", { n: index + 1 })}
         {item.title ? (
           <>
             <span className="text-muted-foreground"> · </span>
@@ -555,7 +563,7 @@ function StatusTooltipBody({
           <>
             <span className="opacity-50">·</span>
             <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
-            <span>Flagged</span>
+            <span>{t("palette.flaggedShort")}</span>
           </>
         )}
       </div>

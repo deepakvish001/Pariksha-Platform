@@ -1,0 +1,80 @@
+{
+  "palette": {
+    "header": {
+      "title": "Questions",
+      "progress": "{{answered}}/{{total}} · {{pct}}%",
+      "collapse": "Collapse question palette",
+      "collapseTitle": "Collapse (])",
+      "expand": "Expand question palette",
+      "expandTitle": "Expand (])"
+    },
+    "stats": {
+      "done": "Done",
+      "left": "Left",
+      "flag": "Flag"
+    },
+    "filters": {
+      "all": "all",
+      "unanswered": "unanswered",
+      "flagged": "flagged"
+    },
+    "flaggedHint": {
+      "intro": "Showing only questions you marked with the",
+      "action": "Flag for review",
+      "outro": "button. They appear here with an amber flag corner badge — visit them again before submitting.",
+      "ariaHelp": "What is a flagged question?",
+      "popover": {
+        "title": "About flagged questions",
+        "body": "Flagging is a personal bookmark — it never affects your score or what the recruiter sees.",
+        "bullet1": "Use the flag button on any question to mark it.",
+        "bullet2Prefix": "Flagged items show an amber",
+        "bullet2Suffix": "badge in the navigator.",
+        "bullet3Prefix": "Switch this filter to",
+        "bullet3Em": "Flagged",
+        "bullet3Suffix": "to jump between them."
+      }
+    },
+    "legend": {
+      "answered": {
+        "label": "Answered",
+        "tip": "You've saved an answer for this question."
+      },
+      "visited": {
+        "label": "Visited",
+        "tip": "You opened this question but haven't submitted an answer yet."
+      },
+      "notVisited": {
+        "label": "Not visited",
+        "tip": "You haven't opened this question yet."
+      },
+      "flagged": {
+        "label": "Flagged",
+        "tip": "Marked for review — come back to it before submitting."
+      }
+    },
+    "status": {
+      "answered": {
+        "label": "Answered",
+        "description": "You've saved an answer. You can still revisit and edit it."
+      },
+      "current": {
+        "label": "Current",
+        "description": "This is the question you're viewing right now."
+      },
+      "visited": {
+        "label": "Visited · not answered",
+        "description": "You opened this question but haven't submitted an answer yet."
+      },
+      "notVisited": {
+        "label": "Not visited",
+        "description": "You haven't opened this question yet."
+      }
+    },
+    "ariaQuestion": "Question {{n}}{{title}} — {{status}}{{flaggedSuffix}}",
+    "ariaQuestionTitlePrefix": ": ",
+    "ariaFlaggedSuffix": ", flagged",
+    "questionLabel": "Question {{n}}",
+    "qShort": "Q{{n}}",
+    "flaggedShort": "Flagged"
+  }
+}
