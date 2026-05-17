@@ -245,6 +245,10 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                   </Button>
                 </>
               )}
+              <Button variant="secondary" onClick={handleDownloadReceipt}>
+                <Download className="h-4 w-4 mr-1.5" />
+                Download receipt (PDF)
+              </Button>
             </div>
           </CardContent>
         </Card>
