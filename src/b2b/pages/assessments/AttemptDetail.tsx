@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
+import { useCurrentOrg } from "../../context/OrgContext";
+import { useCanProctor } from "../../hooks/usePermissions";
 
 export default function AttemptDetail() {
   const { id, attemptId } = useParams();
@@ -18,6 +20,8 @@ export default function AttemptDetail() {
   const finalize = useFinalizeAttemptScore();
   const { data: events } = useAttemptEvents(attemptId);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const { org } = useCurrentOrg();
+  const { canProctor } = useCanProctor(org?.id);
 
   const totals = useMemo(() => {
     if (!data) return { earned: 0, max: 0 };
@@ -81,9 +85,9 @@ export default function AttemptDetail() {
         </Card>
       </div>
 
-      <AttemptProctoringPanel attemptId={data.attempt.id} />
+      {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} />}
 
-      {events && events.length > 0 && (
+      {canProctor && events && events.length > 0 && (
         <Card className="mb-4">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Proctoring log ({events.length} events)</CardTitle></CardHeader>
           <CardContent className="max-h-56 overflow-auto text-xs space-y-1 font-mono">
