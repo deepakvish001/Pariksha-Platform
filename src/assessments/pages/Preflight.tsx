@@ -277,6 +277,8 @@ function AvStep({
   const [level, setLevel] = useState(0);
   const [audioOk, setAudioOk] = useState(false);
   const [videoOk, setVideoOk] = useState(false);
+  const [speakerOk, setSpeakerOk] = useState(false);
+  const [playingTone, setPlayingTone] = useState(false);
 
   useEffect(() => {
     if (!stream || !videoRef.current) return;
@@ -319,14 +321,51 @@ function AvStep({
     };
   }, [stream]);
 
+  /** Plays a short 440 Hz tone through the system speakers so the candidate
+   *  can confirm playback works (not just the mic). */
+  const playTone = async () => {
+    if (playingTone) return;
+    setPlayingTone(true);
+    try {
+      const AudioCtx =
+        (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
+          .AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) {
+        setPlayingTone(false);
+        return;
+      }
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 440;
+      gain.gain.value = 0;
+      osc.connect(gain).connect(ctx.destination);
+      const now = ctx.currentTime;
+      // gentle envelope to avoid clicks
+      gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+      gain.gain.linearRampToValueAtTime(0.2, now + 1.05);
+      gain.gain.linearRampToValueAtTime(0, now + 1.2);
+      osc.start(now);
+      osc.stop(now + 1.25);
+      osc.onended = () => {
+        ctx.close().catch(() => {});
+        setPlayingTone(false);
+      };
+    } catch {
+      setPlayingTone(false);
+    }
+  };
+
   useEffect(() => {
-    if (audioOk && videoOk) onPass();
-  }, [audioOk, videoOk, onPass]);
+    if (audioOk && videoOk && speakerOk) onPass();
+  }, [audioOk, videoOk, speakerOk, onPass]);
 
   return (
     <StepShell
       title="Test your audio and video"
-      description="Confirm your webcam preview is visible and speak to see the microphone meter respond."
+      description="Confirm your webcam preview is visible, speak to see the microphone meter respond, then play the tone to confirm your speakers work."
     >
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="rounded-lg border border-[hsl(var(--border))] overflow-hidden bg-black aspect-video relative">
@@ -367,6 +406,60 @@ function AvStep({
             Say "hello" — the bar should move. If it stays flat, check your system
             input device.
           </p>
+        </div>
+      </div>
+
+      {/* Speaker playback self-test */}
+      <div className="rounded-lg border border-[hsl(var(--border))] p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Volume2 className="h-4 w-4" />
+          Speaker check
+          {speakerOk && (
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-600">
+              <CheckCircle2 className="h-3 w-3" /> Confirmed
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Tap <strong>Play tone</strong> and confirm you hear it — this proves the
+          proctor's audio messages will reach you.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={playTone}
+            disabled={playingTone}
+          >
+            {playingTone ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Volume2 className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            {playingTone ? "Playing…" : speakerOk ? "Play again" : "Play tone"}
+          </Button>
+          {!speakerOk ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+                onClick={() => setSpeakerOk(true)}
+                disabled={playingTone}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Yes, I heard it
+              </Button>
+              <span className="text-[11px] text-muted-foreground">
+                Didn't hear it? Check your volume and connected output device, then
+                tap Play tone again.
+              </span>
+            </>
+          ) : (
+            <span className="text-[11px] text-emerald-600 inline-flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Speakers working
+            </span>
+          )}
         </div>
       </div>
     </StepShell>
