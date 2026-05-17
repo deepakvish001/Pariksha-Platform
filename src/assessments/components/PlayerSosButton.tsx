@@ -245,11 +245,21 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
                 />
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
-                <Button variant="ghost" onClick={() => setStep("confirm")}>
+                <Button variant="ghost" onClick={() => setStep("confirm")} disabled={sending}>
                   Back
                 </Button>
-                <Button variant="destructive" onClick={sendEmail} className="font-semibold">
-                  <Send className="h-4 w-4 mr-1.5" /> Send SOS
+                <Button
+                  variant="destructive"
+                  onClick={sendSos}
+                  disabled={sending}
+                  className="font-semibold"
+                >
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-1.5" />
+                  )}
+                  {sending ? "Notifying proctor…" : "Send SOS"}
                 </Button>
               </DialogFooter>
             </div>
