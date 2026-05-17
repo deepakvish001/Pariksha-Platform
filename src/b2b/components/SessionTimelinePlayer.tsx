@@ -28,13 +28,20 @@ const BUCKET = "assessment-proctor";
 const KIND_ICON: Record<Kind, typeof Camera> = { webcam: Camera, screen: Monitor, sideeye: Smartphone };
 const KIND_LABEL: Record<Kind, string> = { webcam: "Webcam", screen: "Screen", sideeye: "Side cam" };
 
+interface Marker {
+  at: string;
+  label: string;
+  tone?: "ok" | "warn" | "info";
+}
+
 interface Props {
   attemptId: string;
   attemptStartedAt: string | null;
   orgId?: string | null;
+  markers?: Marker[];
 }
 
-export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, orgId }: Props) {
+export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, orgId, markers = [] }: Props) {
   const { canProctor, isLoading: roleLoading } = useCanProctor(orgId);
   const [chunksByKind, setChunksByKind] = useState<Record<Kind, Loaded[]>>({
     webcam: [], screen: [], sideeye: [],
