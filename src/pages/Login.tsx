@@ -19,6 +19,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [mfaStep, setMfaStep] = useState<null | { factorId: string }>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaVerifying, setMfaVerifying] = useState(false);
 
   const { signIn } = useAuth();
   const navigate = useNavigate();
