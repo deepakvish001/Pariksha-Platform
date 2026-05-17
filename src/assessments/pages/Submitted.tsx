@@ -359,6 +359,8 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
           </CardContent>
         </Card>
 
+        <ResultsColorKey />
+
         <SubmittedResultsBreakdown attemptId={attempt.id} />
 
 
