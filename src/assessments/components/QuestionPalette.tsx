@@ -198,23 +198,23 @@ export function QuestionPalette({
 
   return (
     <aside
-      aria-label="Question navigator"
+      aria-label={t("palette.header.title")}
       className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden max-h-[calc(100vh-9rem)] sticky top-20"
     >
       {/* Header: progress */}
       <header className="px-3 py-3 border-b border-border bg-muted/30">
         <div className="flex items-center justify-between text-xs mb-2 gap-2">
-          <span className="font-semibold tracking-tight">Questions</span>
+          <span className="font-semibold tracking-tight">{t("palette.header.title")}</span>
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground tabular-nums">
-              {answered}/{items.length} · {pct}%
+              {t("palette.header.progress", { answered, total: items.length, pct })}
             </span>
             {onToggleCollapsed && (
               <button
                 type="button"
                 onClick={onToggleCollapsed}
-                aria-label="Collapse question palette"
-                title="Collapse (])"
+                aria-label={t("palette.header.collapse")}
+                title={t("palette.header.collapseTitle")}
                 className="h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               >
                 <PanelLeftClose className="h-3.5 w-3.5" />
@@ -229,9 +229,9 @@ export function QuestionPalette({
           />
         </div>
         <div className="grid grid-cols-3 gap-1.5 mt-3">
-          <StatPill label="Done" value={answered} tone="emerald" />
-          <StatPill label="Left" value={unanswered} tone={unanswered > 0 ? "amber" : "muted"} />
-          <StatPill label="Flag" value={flagged} tone={flagged > 0 ? "amber" : "muted"} />
+          <StatPill label={t("palette.stats.done")} value={answered} tone="emerald" />
+          <StatPill label={t("palette.stats.left")} value={unanswered} tone={unanswered > 0 ? "amber" : "muted"} />
+          <StatPill label={t("palette.stats.flag")} value={flagged} tone={flagged > 0 ? "amber" : "muted"} />
         </div>
       </header>
 
@@ -252,7 +252,7 @@ export function QuestionPalette({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span>{f}</span>
+                <span>{t(`palette.filters.${f}` as const)}</span>
                 <span className="tabular-nums opacity-60">{count}</span>
               </button>
             );
@@ -262,40 +262,49 @@ export function QuestionPalette({
           <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground leading-snug px-0.5">
             <Flag className="h-3 w-3 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 shrink-0 mt-px" />
             <span className="flex-1">
-              Showing only questions you marked with the{" "}
-              <span className="font-medium text-foreground">Flag for review</span> button. They
-              appear here with an amber flag corner badge — visit them again before submitting.
+              {t("palette.flaggedHint.intro")}{" "}
+              <span className="font-medium text-foreground">
+                {t("palette.flaggedHint.action")}
+              </span>{" "}
+              {t("palette.flaggedHint.outro")}
             </span>
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  aria-label="What is a flagged question?"
+                  aria-label={t("palette.flaggedHint.ariaHelp")}
                   className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-px"
                 >
                   <HelpCircle className="h-3 w-3" />
                 </button>
               </PopoverTrigger>
               <PopoverContent side="bottom" align="end" className="w-64 p-3 text-xs space-y-2">
-                <div className="font-semibold text-sm">About flagged questions</div>
+                <div className="font-semibold text-sm">
+                  {t("palette.flaggedHint.popover.title")}
+                </div>
                 <p className="text-muted-foreground leading-snug">
-                  Flagging is a personal bookmark — it never affects your score or what the
-                  recruiter sees.
+                  {t("palette.flaggedHint.popover.body")}
                 </p>
                 <ul className="space-y-1 text-muted-foreground">
                   <li className="flex gap-1.5">
                     <span className="text-foreground">•</span>
-                    Use the flag button on any question to mark it.
+                    {t("palette.flaggedHint.popover.bullet1")}
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-foreground">•</span>
-                    Flagged items show an amber{" "}
-                    <Flag className="inline h-2.5 w-2.5 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 align-baseline" />{" "}
-                    badge in the navigator.
+                    <span>
+                      {t("palette.flaggedHint.popover.bullet2Prefix")}{" "}
+                      <Flag className="inline h-2.5 w-2.5 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400 align-baseline" />{" "}
+                      {t("palette.flaggedHint.popover.bullet2Suffix")}
+                    </span>
                   </li>
                   <li className="flex gap-1.5">
                     <span className="text-foreground">•</span>
-                    Switch this filter to <em>Flagged</em> to jump between them.
+                    <span>
+                      {t("palette.flaggedHint.popover.bullet3Prefix")}{" "}
+                      <em>{t("palette.flaggedHint.popover.bullet3Em")}</em>{" "}
+                      {t("palette.flaggedHint.popover.bullet3Suffix")}
+                    </span>
                   </li>
                 </ul>
               </PopoverContent>
