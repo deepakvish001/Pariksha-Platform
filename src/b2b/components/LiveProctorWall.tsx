@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, ChevronDown, ChevronUp, Wifi, WifiOff } from "lucide-react";
+import { Eye, ChevronDown, ChevronUp, Wifi, WifiOff, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveStreamTile } from "./LiveStreamTile";
@@ -39,6 +39,8 @@ const KIND_LABEL: Record<Kind, string> = {
  * Tracks per-stream connection state and surfaces sonner toasts whenever a
  * stream drops or reconnects so the proctor doesn't miss outages.
  */
+const MUTE_STORAGE_KEY = "pariksha:live-proctor-toasts-muted";
+
 export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Props) {
   const { canProctor, isLoading: roleLoading } = useCanProctor(orgId);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
@@ -48,6 +50,19 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
   // Tracks whether the stream has ever been connected, so the first transition
   // to "true" is announced as "live" and subsequent flips as reconnect.
   const seenRef = useRef<Record<string, boolean>>({});
+  // Mute toggle — persists across reloads so a proctor doesn't have to
+  // re-silence on every page navigation. Counts stay visible regardless.
+  const [muted, setMuted] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(MUTE_STORAGE_KEY) === "1";
+  });
+  const mutedRef = useRef(muted);
+  useEffect(() => {
+    mutedRef.current = muted;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(MUTE_STORAGE_KEY, muted ? "1" : "0");
+    }
+  }, [muted]);
   // Pending debounce timers per stream key so a brief flap doesn't toast.
   const pendingRef = useRef<Record<string, { timer: number; target: boolean }>>({});
   // Last toast emitted per stream key — used for hard rate-limiting and dedup.
@@ -110,6 +125,12 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
         lastToastRef.current[key] = { connected, at: now };
 
         const seen = seenRef.current[key];
+        // Always mark first-connect as seen so subsequent flaps fire reconnect
+        // / offline toasts once the user un-mutes.
+        if (connected && !seen) seenRef.current[key] = true;
+        // Muted: keep counts/badges accurate but skip the visible toast.
+        if (mutedRef.current) return;
+
         if (connected) {
           if (seen) {
             toast.success(`${candidateName} · ${KIND_LABEL[kind]} reconnected`, { id: `conn:${key}` });
@@ -118,7 +139,6 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
               id: `conn:${key}`,
               description: "Stream is now streaming.",
             });
-            seenRef.current[key] = true;
           }
         } else if (seen) {
           toast.error(`${candidateName} · ${KIND_LABEL[kind]} went offline`, { id: `conn:${key}` });
@@ -176,10 +196,33 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
             </>
           )}
         </CardTitle>
-        <Button size="sm" variant="ghost" onClick={() => setCollapsed((c) => !c)}>
-          {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-          <span className="ml-1 text-xs">{collapsed ? "Show" : "Hide"}</span>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setMuted((m) => {
+                const next = !m;
+                toast(next ? "Connection alerts muted" : "Connection alerts unmuted", {
+                  id: "live-proctor-mute",
+                  description: next
+                    ? "Counts still update, but toasts are silenced on this device."
+                    : "You'll be alerted again when streams flap.",
+                });
+                return next;
+              });
+            }}
+            title={muted ? "Unmute connection alerts" : "Mute connection alerts"}
+            aria-pressed={muted}
+          >
+            {muted ? <BellOff className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+            <span className="ml-1 text-xs">{muted ? "Muted" : "Alerts"}</span>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setCollapsed((c) => !c)}>
+            {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            <span className="ml-1 text-xs">{collapsed ? "Show" : "Hide"}</span>
+          </Button>
+        </div>
       </CardHeader>
       {!collapsed && (
         <CardContent className="space-y-4">
