@@ -8569,7 +8569,7 @@ export type Database = {
       friendship_status: "pending" | "accepted" | "blocked"
       invite_source: "email" | "link" | "bulk_upload" | "manual" | "api"
       invite_status: "pending" | "claimed" | "submitted" | "expired"
-      org_member_role: "owner" | "admin" | "recruiter" | "viewer"
+      org_member_role: "owner" | "admin" | "recruiter" | "viewer" | "proctor"
       org_type: "college" | "company"
       question_type:
         | "coding"
@@ -8739,7 +8739,7 @@ export const Constants = {
       friendship_status: ["pending", "accepted", "blocked"],
       invite_source: ["email", "link", "bulk_upload", "manual", "api"],
       invite_status: ["pending", "claimed", "submitted", "expired"],
-      org_member_role: ["owner", "admin", "recruiter", "viewer"],
+      org_member_role: ["owner", "admin", "recruiter", "viewer", "proctor"],
       org_type: ["college", "company"],
       question_type: [
         "coding",
