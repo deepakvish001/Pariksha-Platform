@@ -654,6 +654,10 @@ export default function Player() {
         />
       )}
 
+      {attemptId && !isPreview && (
+        <AssessmentChatDock attemptId={attemptId} viewerRole="candidate" />
+      )}
+
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-md">
