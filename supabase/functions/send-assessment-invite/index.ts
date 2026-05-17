@@ -120,12 +120,14 @@ Deno.serve(async (req) => {
         <td align="center">
           <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,0.04),0 8px 24px rgba(15,23,42,0.06);">
             <tr>
-              <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;">
+              <td style="background:linear-gradient(135deg,${brand} 0%,${brandDark} 100%);padding:28px 32px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td style="vertical-align:middle;">
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-                        <td style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:10px;width:40px;height:40px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:700;font-size:15px;letter-spacing:0.5px;">${escapeHtml(initials)}</td>
+                        <td style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.22);border-radius:10px;width:44px;height:44px;text-align:center;vertical-align:middle;color:#ffffff;font-weight:700;font-size:15px;letter-spacing:0.5px;padding:0;">
+                          ${logoUrl ? `<img src="${escapeAttr(logoUrl)}" alt="${escapeAttr(orgName)} logo" width="36" height="36" style="display:block;margin:4px auto;border-radius:6px;object-fit:contain;background:#ffffff;" />` : escapeHtml(initials)}
+                        </td>
                         <td style="padding-left:12px;color:#ffffff;font-size:15px;font-weight:600;vertical-align:middle;">${escapeHtml(orgName)}</td>
                       </tr></table>
                     </td>
