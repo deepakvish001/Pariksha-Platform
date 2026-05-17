@@ -436,7 +436,9 @@ export function useChatPresence(
       window.removeEventListener("pagehide", handleUnload);
       window.removeEventListener("beforeunload", handleUnload);
       document.removeEventListener("visibilitychange", handleVisibility);
-      if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+      if (typingTimersRef.current.candidate) window.clearTimeout(typingTimersRef.current.candidate);
+      if (typingTimersRef.current.proctor) window.clearTimeout(typingTimersRef.current.proctor);
+      typingTimersRef.current = { candidate: null, proctor: null };
       if (trailingTrueTimerRef.current) window.clearTimeout(trailingTrueTimerRef.current);
       if (stopDebounceTimerRef.current) window.clearTimeout(stopDebounceTimerRef.current);
       if (heartbeatTimerRef.current) window.clearInterval(heartbeatTimerRef.current);
