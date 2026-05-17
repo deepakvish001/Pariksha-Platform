@@ -462,15 +462,25 @@ function LegendRow({
   icon,
   label,
   tip,
+  count,
 }: {
   icon: React.ReactNode;
   label: string;
   tip?: string;
+  count?: number;
 }) {
   const content = (
-    <div className="flex items-center gap-1.5 cursor-help">
+    <div className="flex items-center gap-1.5 cursor-help min-w-0">
       {icon}
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
+      {typeof count === "number" && (
+        <span
+          className="ml-auto tabular-nums font-semibold text-foreground/80"
+          aria-label={`${count} ${label}`}
+        >
+          {count}
+        </span>
+      )}
     </div>
   );
   if (!tip) return content;
