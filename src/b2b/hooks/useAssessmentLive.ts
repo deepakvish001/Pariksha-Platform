@@ -17,6 +17,7 @@ export type LiveParticipant = {
   external_id: string | null;
   invite_status: string;
   attempt_id: string | null;
+  attempt_slug: string | null;
   attempt_status: string | null;
   started_at: string | null;
   submitted_at: string | null;
