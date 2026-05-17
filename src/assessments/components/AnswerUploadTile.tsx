@@ -476,23 +476,44 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
                     type="button"
                     onClick={async () => {
                       const p = pages[previewIdx];
-                      const ok = await downloadPage(p);
-                      if (!ok && p?.url) window.open(p.url, "_blank", "noopener,noreferrer");
+                      if (!p?.url || downloadingId) return;
+                      setDownloadingId(p.id);
+                      try {
+                        const ok = await downloadPage(p);
+                        if (!ok && p?.url) window.open(p.url, "_blank", "noopener,noreferrer");
+                      } finally {
+                        setDownloadingId(null);
+                      }
                     }}
-                    className="inline-flex items-center gap-1 hover:underline"
+                    disabled={downloadingId === pages[previewIdx].id || downloadingAll}
+                    className="inline-flex items-center gap-1 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
                     aria-label={`Download page ${pages[previewIdx].ordinal}`}
+                    aria-busy={downloadingId === pages[previewIdx].id}
                   >
-                    <Download className="h-3.5 w-3.5" /> Download
+                    {downloadingId === pages[previewIdx].id ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Downloading…
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-3.5 w-3.5" /> Download
+                      </>
+                    )}
                   </button>
                   {pages.length > 1 && (
                     <button
                       type="button"
                       onClick={downloadAll}
-                      disabled={downloadingAll}
-                      className="inline-flex items-center gap-1 hover:underline disabled:opacity-60"
+                      disabled={downloadingAll || downloadingId !== null}
+                      className="inline-flex items-center gap-1 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
                       aria-label={`Download all ${pages.length} pages`}
+                      aria-busy={downloadingAll}
                     >
-                      <Download className="h-3.5 w-3.5" />
+                      {downloadingAll ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
                       {downloadingAll ? `Downloading…` : `Download all (${pages.length})`}
                     </button>
                   )}
