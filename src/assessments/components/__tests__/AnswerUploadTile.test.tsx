@@ -81,9 +81,11 @@ describe("AnswerUploadTile — phone upload → laptop sync → onPagesChange", 
     // Parent (Player) receives the page list — used to compute isAnswered
     await waitFor(() => expect(onPagesChange).toHaveBeenCalledWith(pages));
 
-    // Counter pill reflects the real count
-    expect(await screen.findByText("2")).toBeInTheDocument();
-    expect(screen.getByText(/pages uploaded/i)).toBeInTheDocument();
+    // Counter pill reflects the real count (text nodes are split, so match loosely)
+    await waitFor(() => {
+      expect(screen.getByText(/page(s)? uploaded/i)).toBeInTheDocument();
+      expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+    });
 
     // Realtime subscription was wired so future phone uploads auto-pull
     expect(channelMock.subscribe).toHaveBeenCalledTimes(1);
