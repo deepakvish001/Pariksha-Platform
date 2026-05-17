@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
 import SettingsCard from "./SettingsCard";
+import TwoFactorAuthCard from "./TwoFactorAuthCard";
 
 const SettingsSecurityTab = () => {
   const { user } = useAuth();
@@ -187,6 +188,8 @@ const SettingsSecurityTab = () => {
           </div>
         )}
       </SettingsCard>
+
+      <TwoFactorAuthCard />
 
       {/* Security Tips Card */}
       <SettingsCard delay={0.05}>

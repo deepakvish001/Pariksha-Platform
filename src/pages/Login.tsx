@@ -11,6 +11,7 @@ import AuthLayout from "@/components/AuthLayout";
 import { getPostLoginPath } from "@/lib/postLoginRedirect";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -18,6 +19,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [mfaStep, setMfaStep] = useState<null | { factorId: string }>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaVerifying, setMfaVerifying] = useState(false);
 
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -53,6 +57,18 @@ const Login = () => {
       return;
     }
 
+    // Check if MFA is required
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalData?.nextLevel === "aal2" && aalData.currentLevel === "aal1") {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totp = factors?.totp?.find((f) => f.status === "verified");
+      if (totp) {
+        setMfaStep({ factorId: totp.id });
+        setIsLoading(false);
+        return;
+      }
+    }
+
     toast({
       title: "Welcome back!",
       description: "You've successfully logged in.",
@@ -65,6 +81,34 @@ const Login = () => {
     navigate(dest, { replace: true });
 
     setIsLoading(false);
+  };
+
+  const handleMfaVerify = async () => {
+    if (!mfaStep || mfaCode.length !== 6) return;
+    setMfaVerifying(true);
+    const { data: challenge, error: chErr } = await supabase.auth.mfa.challenge({ factorId: mfaStep.factorId });
+    if (chErr || !challenge) {
+      toast({ variant: "destructive", title: "Challenge failed", description: chErr?.message });
+      setMfaVerifying(false);
+      return;
+    }
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfaStep.factorId,
+      challengeId: challenge.id,
+      code: mfaCode,
+    });
+    if (error) {
+      toast({ variant: "destructive", title: "Invalid code", description: error.message });
+      setMfaVerifying(false);
+      setMfaCode("");
+      return;
+    }
+    toast({ title: "Welcome back!" });
+    const { data: { user } } = await supabase.auth.getUser();
+    const dest = from ?? (user ? await getPostLoginPath(user.id) : "/learn");
+    try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
+    navigate(dest, { replace: true });
+    setMfaVerifying(false);
   };
 
   const handleGoogleSignIn = async () => {
@@ -100,6 +144,42 @@ const Login = () => {
       subtitle="Sign in to continue tracking your academic journey and unlock your full potential."
     >
       <div className="card-dark">
+        {mfaStep ? (
+          <div className="space-y-5">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-foreground">Two-factor authentication</h1>
+              <p className="text-muted-foreground mt-2">Enter the 6-digit code from your authenticator app.</p>
+            </div>
+            <div className="flex justify-center">
+              <InputOTP maxLength={6} value={mfaCode} onChange={setMfaCode}>
+                <InputOTPGroup>
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <InputOTPSlot key={i} index={i} />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <Button className="w-full h-11 btn-primary" onClick={handleMfaVerify} disabled={mfaVerifying || mfaCode.length !== 6}>
+              {mfaVerifying ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                "Verify"
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setMfaStep(null);
+                setMfaCode("");
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+        <>
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-4 lg:hidden">
@@ -205,6 +285,8 @@ const Login = () => {
             )}
           </Button>
         </form>
+        </>
+        )}
       </div>
 
       {/* Back to home - mobile only */}
