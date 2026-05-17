@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShieldCheck, Camera, Maximize2, AlertTriangle, CheckCircle2, MonitorUp, Smartphone } from "lucide-react";
+import { ShieldCheck, Camera, Maximize2, AlertTriangle, CheckCircle2, MonitorUp, Smartphone, UserCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { describeRulesForCandidate, type ProctoringConfig } from "../lib/proctoringConfig";
 import { SideCameraPairing } from "./SideCameraPairing";
+import { CandidateDetailsStep } from "./CandidateDetailsStep";
 
 interface Props {
   attemptId: string;
