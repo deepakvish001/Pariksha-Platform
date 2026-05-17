@@ -441,20 +441,71 @@ export default function AssessmentManage() {
             return (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {alerts.map((p) => (
-                  <Link
+                  <button
                     key={p.invite_id}
-                    to={`/b2b/assessments/${assessment.id}/attempts/${p.attempt_id}`}
-                    className="rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs hover:border-amber-500/40 transition-colors"
+                    type="button"
+                    onClick={() => setSelectedInviteId(p.invite_id)}
+                    className="text-left rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs hover:border-amber-500/40 transition-colors"
                   >
                     <div className="font-medium truncate">{p.name ?? p.email}</div>
                     <div className="text-amber-300/90">Integrity {p.integrity_score}</div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             );
           })()}
         </GlassCard>
+
+        {/* Data retention (admins) */}
+        {canProctor && (
+          <GlassCard className="p-4">
+            <button
+              type="button"
+              onClick={() => setShowRetention((v) => !v)}
+              className="w-full flex items-center justify-between text-sm font-semibold"
+            >
+              <span className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-[hsl(var(--primary))]" /> Proctoring data retention
+              </span>
+              {showRetention ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {showRetention && (
+              <div className="mt-3">
+                <RetentionCard />
+              </div>
+            )}
+          </GlassCard>
+        )}
       </div>
+
+      <ParticipantDetailDrawer
+        open={!!selectedInviteId}
+        onOpenChange={(o) => {
+          if (!o) {
+            setSelectedInviteId(null);
+            if (searchParams.get("attempt")) {
+              const next = new URLSearchParams(searchParams);
+              next.delete("attempt");
+              setSearchParams(next, { replace: true });
+            }
+          }
+        }}
+        participant={selectedParticipant}
+        assessmentId={assessment.id}
+        evidence={selectedParticipant?.attempt_id ? evidenceMap?.[selectedParticipant.attempt_id] : undefined}
+        canProctor={canProctor}
+        forceSubmitPending={forceSubmit.isPending}
+        onForceSubmit={(p) => {
+          if (!p.attempt_id) return;
+          forceSubmit.mutate(
+            { attempt_id: p.attempt_id, assessment_id: assessment.id },
+            {
+              onSuccess: () => toast.success(`Force-submitted ${p.name ?? p.email}`),
+              onError: (e: any) => toast.error(e?.message ?? "Failed to force submit"),
+            }
+          );
+        }}
+      />
     </OrgShell>
   );
 }
