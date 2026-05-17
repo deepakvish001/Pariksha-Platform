@@ -34,6 +34,7 @@ import type { ProctoringConfig } from "@/assessments/lib/proctoringConfig";
 import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useCanProctor } from "../../hooks/usePermissions";
 import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
 import { paths } from "@/lib/routing/paths";
