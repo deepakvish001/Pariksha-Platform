@@ -110,6 +110,133 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
     }
   };
 
+  const [exporting, setExporting] = useState(false);
+  const exportEvidence = async () => {
+    setExporting(true);
+    const t = toast.loading("Preparing evidence export…");
+    try {
+      // Pull EVERYTHING for this attempt (the on-screen lists are paginated).
+      const [s, f, fd, rec] = await Promise.all([
+        supabase.from("assessment_proctor_snapshots")
+          .select("id,source,storage_path,captured_at,reviewed")
+          .eq("attempt_id", attemptId).order("captured_at", { ascending: true }),
+        supabase.from("assessment_side_camera_frames")
+          .select("id,storage_path,captured_at")
+          .eq("attempt_id", attemptId).order("captured_at", { ascending: true }),
+        supabase.from("assessment_proctor_findings")
+          .select("id,snapshot_id,severity,finding,created_at")
+          .eq("attempt_id", attemptId).order("created_at", { ascending: true }),
+        supabase.from("assessment_proctor_recordings")
+          .select("id,kind,storage_path,started_at,ended_at,duration_ms,size_bytes")
+          .eq("attempt_id", attemptId).order("started_at", { ascending: true }),
+      ]);
+
+      const allSnaps = (s.data ?? []) as Snap[];
+      const allFrames = (f.data ?? []) as Frame[];
+      const allFindings = (fd.data ?? []) as Finding[];
+      const allRecs = (rec.data ?? []) as Recording[];
+
+      const paths = [
+        ...allSnaps.map((x) => x.storage_path),
+        ...allFrames.map((x) => x.storage_path),
+        ...allRecs.map((x) => x.storage_path),
+      ];
+
+      // Sign URLs in batches (createSignedUrls accepts up to ~100).
+      const signed: Record<string, string> = {};
+      for (let i = 0; i < paths.length; i += 80) {
+        const batch = paths.slice(i, i + 80);
+        const { data } = await supabase.storage.from(BUCKET).createSignedUrls(batch, 600);
+        (data ?? []).forEach((d) => { if (d.path && d.signedUrl) signed[d.path] = d.signedUrl; });
+      }
+
+      const zip = new JSZip();
+      const root = zip.folder(`attempt-${attemptId}-evidence`)!;
+
+      const safeName = (p: string) => p.split("/").pop()?.replace(/[^a-zA-Z0-9._-]/g, "_") ?? "file";
+      const stamp = (iso: string) => iso.replace(/[:.]/g, "-");
+
+      const downloadInto = async (
+        folder: JSZip,
+        rows: Array<{ storage_path: string; captured_at?: string; started_at?: string }>,
+      ) => {
+        let ok = 0, fail = 0;
+        await Promise.all(rows.map(async (row) => {
+          const url = signed[row.storage_path];
+          if (!url) { fail++; return; }
+          try {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(String(r.status));
+            const blob = await r.blob();
+            const ts = stamp(row.captured_at ?? row.started_at ?? "");
+            folder.file(`${ts}__${safeName(row.storage_path)}`, blob);
+            ok++;
+          } catch { fail++; }
+        }));
+        return { ok, fail };
+      };
+
+      const webcamFolder = root.folder("webcam")!;
+      const screenFolder = root.folder("screen")!;
+      const sideeyeFolder = root.folder("sideeye")!;
+      const recFolder = root.folder("recordings")!;
+
+      const [w, sc, se, rc] = await Promise.all([
+        downloadInto(webcamFolder, allSnaps.filter((x) => x.source === "webcam")),
+        downloadInto(screenFolder, allSnaps.filter((x) => x.source === "screen")),
+        downloadInto(sideeyeFolder, allFrames),
+        downloadInto(recFolder, allRecs),
+      ]);
+
+      root.file("findings.json", JSON.stringify(allFindings, null, 2));
+      root.file(
+        "index.json",
+        JSON.stringify(
+          {
+            attempt_id: attemptId,
+            exported_at: new Date().toISOString(),
+            counts: {
+              webcam: allSnaps.filter((x) => x.source === "webcam").length,
+              screen: allSnaps.filter((x) => x.source === "screen").length,
+              sideeye: allFrames.length,
+              recordings: allRecs.length,
+              findings: allFindings.length,
+            },
+            results: { webcam: w, screen: sc, sideeye: se, recordings: rc },
+            snapshots: allSnaps,
+            frames: allFrames,
+            recordings: allRecs,
+          },
+          null,
+          2,
+        ),
+      );
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `attempt-${attemptId}-evidence.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+
+      const total = w.ok + sc.ok + se.ok + rc.ok;
+      const failed = w.fail + sc.fail + se.fail + rc.fail;
+      toast.success(
+        failed
+          ? `Exported ${total} files (${failed} failed)`
+          : `Exported ${total} evidence files`,
+        { id: t },
+      );
+    } catch (e) {
+      toast.error((e as Error).message ?? "Export failed", { id: t });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const Tile = ({ path, captured_at, source, finding }: { path: string; captured_at: string; source?: string; finding?: Finding }) => {
     const url = urls[path];
     const sev = finding?.severity ?? "";
