@@ -375,12 +375,8 @@ export default function SideCameraUploadPage() {
     setUploading(false);
     cancelRef.current = false;
     if (cancelled) {
-      const uploadedNow = targets.slice(0, completed).filter((_, i) => {
-        const t = targets[i];
-        return t && (t as Page); // placeholder; we use completed count below
-      }).length;
       setError(
-        `Upload cancelled. ${uploadedNow || completed} of ${targets.length} page${targets.length === 1 ? "" : "s"} uploaded. The rest are kept as drafts.`
+        `Upload cancelled. ${completed} of ${targets.length} page${targets.length === 1 ? "" : "s"} uploaded. The rest are kept as drafts — tap Upload to resume.`
       );
       return;
     }
