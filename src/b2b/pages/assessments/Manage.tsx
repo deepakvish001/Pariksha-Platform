@@ -55,6 +55,7 @@ import {
   ChevronUp,
   Check,
   RotateCcw,
+  ExternalLink,
 } from "lucide-react";
 
 type SortKey = "name" | "status" | "elapsed" | "score" | "integrity";
