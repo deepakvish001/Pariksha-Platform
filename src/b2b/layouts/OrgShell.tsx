@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, ShieldAlert, Menu } from "lucide-react";
+import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, ShieldAlert, Menu, Home, ChevronRight } from "lucide-react";
 import { useOrgBasePath, useCurrentOrg } from "../context/OrgContext";
 import { useCanProctor } from "../hooks/usePermissions";
 import { B2BBackdrop } from "../components/B2BBackdrop";
