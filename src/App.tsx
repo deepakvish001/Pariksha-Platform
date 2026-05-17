@@ -298,7 +298,7 @@ const App = () => (
                       <Route path="assessments/:id/manage" element={<B2BAssessmentManage />} />
                       <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
                       <Route path="question-bank" element={<B2BQuestionBank />} />
-                      <Route path="proctoring" element={<B2BProctoring />} />
+                      <Route path="proctoring" element={<Navigate to="assessments" replace />} />
                       <Route path="team" element={<B2BTeam />} />
                       <Route path="settings" element={<B2BSettings />} />
                       <Route path="insights/feedback" element={<B2BInsightsFeedback />} />
