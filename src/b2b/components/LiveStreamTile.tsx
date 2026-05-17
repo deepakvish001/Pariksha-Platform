@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Camera, Monitor, Smartphone, CircleSlash, Circle, Square, Loader2 } from "lucide-react";
+import { formatDistanceToNowStrict } from "date-fns";
 import { useWebrtcStream } from "@/hooks/useWebrtcStream";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
