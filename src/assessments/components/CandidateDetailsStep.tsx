@@ -487,14 +487,18 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
                   size="sm"
                   variant="outline"
                   onClick={() => {
+                    // Reset ONLY selfie state — ID, form, and other steps are preserved.
+                    // Save (and therefore Start test) stays disabled until the new
+                    // capture passes every validation rule.
                     setSelfieDataUrl(null);
                     setSelfieUrl(null);
                     setSelfieChecks([]);
+                    setGlobalError(null);
                     startCamera();
                   }}
                   disabled={busy}
                 >
-                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retake
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Retake selfie
                 </Button>
               </div>
               {selfieChecks.length > 0 && <ChecklistView checks={selfieChecks} />}
