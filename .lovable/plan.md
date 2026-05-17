@@ -1,101 +1,133 @@
+## Goal
 
-# Meaningful Slugs & Breadcrumbs — App-wide
+Continuously record every candidate's three eyes — webcam, screen, and side-camera — from attempt start to submit, upload in resilient ~165 s chunks, and review them later on the candidate detail page in a **synced 3-track timeline player** with event markers.
 
-Goal: every URL segment is a readable slug (not a UUID/hash) and every breadcrumb shows a real human label sourced from the entity, not a path-cased guess.
+This replaces the current manual "Record" button (which only works while a proctor is watching the live wall) with always-on, candidate/phone-side recording.
 
-This is a large change. I'll ship it in 5 phases so the app stays working at every step.
+---
 
-## Scope (entities getting slugs)
+## Architecture
 
-| Area | Current URL | New URL |
-|---|---|---|
-| B2B orgs | `/companies/:slug` (already good) | keep |
-| Assessments (B2B) | `/companies/acme/assessments/ea972db1-...` | `/companies/acme/assessments/my-test` |
-| Attempts | `/.../assessments/<uuid>/attempts/<uuid>` | `/.../assessments/my-test/attempts/john-doe-2` |
-| Contests | `/contests/<uuid>` | `/contests/spring-cup-2026` |
-| Contest problems | `/contests/<uuid>/problems/<uuid>` | `/contests/spring-cup/problems/two-sum` |
-| Blog posts | already slugged | verify |
-| Public profiles | `/u/:username` (already good) | keep |
-| Library items (DSA / SQL / Interview / Companies) | mixed | normalize to slugs |
-| Arena rooms / matches | `<uuid>` | short readable codes (already partly done for join code) |
-| Quizzes | `<uuid>` | slug |
-| Roadmaps | mostly slugged | verify |
-| Admin pages | UUIDs in URL stay (admin-only), but breadcrumbs resolve to real names |
+```text
+Candidate browser (Player.tsx)        Phone (SideCamera.tsx)
+  ├─ webcam MediaStream  ──┐            └─ rear/front cam MediaStream
+  └─ screen MediaStream  ──┤                       │
+                           ▼                       ▼
+            useChunkedRecorder (new shared hook, 165 s chunks, 720p / ~800 kbps)
+                           │
+                           ▼
+   PUT → supabase.storage('assessment-proctor')
+        path: {attempt_id}/sessions/{kind}/{session_id}/{seq}.webm
+                           │
+                           ▼
+   INSERT row → assessment_proctor_session_chunks
+        (attempt_id, kind, session_id, seq, started_at, ended_at,
+         duration_ms, size_bytes, storage_path)
 
-## Phase 1 — Schema: add `slug` columns
-
-One migration adds `slug TEXT` (unique within the right scope) to:
-`assessments`, `attempts`, `contests`, `contest_problems`, `quizzes`,
-`org_members` (handle), plus any library tables missing slugs.
-
-- Unique indexes scoped correctly (e.g. `(org_id, slug)` for assessments, `(contest_id, slug)` for contest problems, global unique for contests).
-- Backfill trigger: on insert/update of `title`/`name`, if `slug` is null, generate from title using a `public.slugify(text)` SQL function + numeric suffix on collision.
-- One-time backfill UPDATE for all existing rows.
-- RLS unchanged (slug is just another column).
-
-## Phase 2 — Route resolution layer
-
-New helper `src/lib/routing/resolveBySlugOrId.ts`:
-- Accepts a param that's either a UUID or a slug.
-- Looks up by slug first, falls back to UUID.
-- If a UUID is hit, returns a `redirectTo` with the canonical slug URL so the page can `<Navigate replace>` to the pretty URL.
-
-Updated route components (`AssessmentDetail`, `AttemptDetail`, `ContestDetail`, `ContestPlayProblem`, etc.) use this helper. Old UUID URLs keep working but get rewritten in the address bar.
-
-## Phase 3 — Link generation
-
-Centralize URL building in `src/lib/routing/paths.ts`:
+Proctor (AttemptDetail → new "Session replay" tab)
+  └─ useSessionTimeline()  ─► loads all chunks for attempt
+       ├─ builds per-eye timeline (offset-from-attempt-start)
+       └─ <SessionTimelinePlayer />  3 stacked <video> tags + shared scrubber
+                                     + event-marker rail (attempt_events,
+                                       proctor_findings)
 ```
-paths.b2b.assessment(org, assessment)       // /companies/acme/assessments/my-test
-paths.b2b.attempt(org, assessment, attempt) // /.../attempts/john-doe-2
-paths.contest(contest)
-paths.contestProblem(contest, problem)
-paths.quiz(quiz)
-```
-Replace every hand-built `\`/contests/${id}\`` template literal across the codebase with these helpers (ripgrep sweep).
 
-## Phase 4 — Breadcrumb resolver
+---
 
-New hook `useBreadcrumbLabels(segments)` that:
-- Walks the path segments
-- For known entity segments, queries the corresponding table (cached via react-query) to fetch the display name
-- Returns `[{ label, to }]` for the header
+## Data model
 
-Wire it into:
-- `OrgShell` (B2B header) — replaces current `humanize()` + `#hash` fallback
-- `useAdminBreadcrumb` — same treatment for `/admin/contests/:id/...`
-- `ContestKioskLayout`, `ArenaLayout`, any other layout with crumbs
+New table (migration):
 
-Result: instead of "Assessments › #ea972db" you see "Assessments › My Test › Attempts › John Doe".
+- `assessment_proctor_session_chunks`
+  - `id uuid pk`
+  - `attempt_id uuid` (fk → assessment_attempts)
+  - `session_id uuid` — one per (attempt, kind, page-load), used to stitch resumed sessions cleanly
+  - `kind text check (kind in ('webcam','screen','sideeye'))`
+  - `seq int` — monotonic chunk index within session
+  - `started_at timestamptz`, `ended_at timestamptz`, `duration_ms int`
+  - `size_bytes bigint`, `mime text`, `storage_path text`
+  - `uploaded_by uuid`, `created_at timestamptz default now()`
+  - unique (`attempt_id`, `kind`, `session_id`, `seq`)
+  - RLS: candidate can insert rows for their own `attempt_id`; org owners / admins / proctors can select.
+- Auto-purge: extend the existing `purge-proctoring-data` edge function to honor the same retention setting for the new table + its storage paths.
 
-## Phase 5 — Redirects, sitemap, tests
+The existing `assessment_proctor_recordings` table stays in place for proctor-side manual clips; the new table is the authoritative continuous session source.
 
-- Catch legacy UUID URLs (Phase 2 redirect) and 301-style replace.
-- Update `scripts/generate-sitemap.ts` to emit the new slug URLs for public entities (contests, blog, profiles).
-- Add Playwright tests:
-  - Hitting `/contests/<uuid>` redirects to `/contests/<slug>`
-  - Breadcrumb on an assessment manage page shows the assessment title, not a hash
-  - Slug collision: creating two assessments named "My Test" produces `my-test` and `my-test-2`
+---
+
+## Capture (candidate side)
+
+New shared hook `src/hooks/useChunkedRecorder.ts`:
+
+- Inputs: `stream`, `attemptId`, `kind`, `enabled`, `chunkMs = 165_000`, `bitsPerSecond = 800_000`, `width = 1280`.
+- Picks supported MIME via existing helper (`video/webm;codecs=vp9,opus` → vp8 → mp4 fallback).
+- Each chunk = a fresh `MediaRecorder` instance; on `stop`, uploads to storage and inserts the row, then immediately starts the next recorder. This guarantees each chunk is independently playable (whole-segment webm), not a fragment.
+- Retry queue in `IndexedDB` for offline / failed uploads; flushes on `online` event and on page show.
+- Auto-stops on `stream` end, `enabled=false`, page unload (with `navigator.sendBeacon` fallback for the trailing row).
+
+Wire-up in `src/assessments/pages/Player.tsx`:
+
+- `useChunkedRecorder({ stream: camStream, attemptId, kind: 'webcam', enabled: proctoringEnabled && lockdownReady })`
+- Same for `screenStream` with `kind: 'screen'`.
+
+Wire-up in `src/assessments/pages/SideCamera.tsx`:
+
+- Add same hook against the phone's `streamRef.current` with `kind: 'sideeye'`, gated on `status === 'streaming'`.
+- Keep the existing periodic still-frame upload for AI review (cheap thumbnails); they complement the video.
+
+Proctoring config (`AssessmentProctoringConfig.tsx`): add a single toggle **"Record full session (all eyes)"** defaulting on for new assessments; persisted in the existing `proctoring_config` JSON. Hook reads this flag.
+
+---
+
+## Review (proctor side)
+
+New tab on `src/b2b/pages/assessments/AttemptDetail.tsx` called **"Session replay"** (sits next to the current proctoring evidence section).
+
+New components:
+
+- `src/b2b/hooks/useSessionChunks.ts` — loads all `session_chunks` for the attempt, groups by kind, sorts by `started_at`, computes per-eye `offset_ms` from the attempt's `started_at`, signs URLs in batches of 80.
+- `src/b2b/components/SessionTimelinePlayer.tsx`:
+  - Three stacked `<video>` elements (webcam · screen · sideeye), each with its own playlist of signed chunk URLs.
+  - Shared transport bar: play/pause, ±10 s, 1× / 1.5× / 2×, time display (`HH:MM:SS` of attempt + wall-clock).
+  - One canonical "playhead time" in ms-from-attempt-start. On scrub, each video seeks to the correct chunk and offset within it (chunk lookup table). When a chunk ends, advances to the next; gaps (e.g. side-cam reconnect) are rendered as a dimmed "no signal" overlay on that eye while playback continues for the others.
+  - Auto-syncs the other two videos when one buffers (pauses all until ready) so the three tracks never drift.
+  - Marker rail under the scrubber merges `attempt_events` (tab_switch, focus_loss, screenshare_lost, device_change, typing_burst) and `assessment_proctor_findings` (severity-colored dots). Click a marker → seek + flash the affected eye.
+- "Download session" button reuses the existing ZIP export, extended to include the new chunks under `sessions/{kind}/`.
+
+The existing inline gallery + lightbox is unchanged and stays as the "snapshots & clips" view.
+
+---
 
 ## Technical notes
 
-- **Slug generator (SQL):** lowercase, strip diacritics, replace non-alphanumerics with `-`, trim, max 60 chars, append `-N` on collision via trigger.
-- **Stale UUID links:** anything stored in DB (notifications, emails) keeps working because Phase 2 resolver accepts both.
-- **No breaking changes** for users currently mid-flow; old bookmarks redirect.
-- **Admin pages** keep UUIDs in URL (less churn, internal-only), but their breadcrumbs still get real labels.
+- **Chunk = full WebM**, not fMP4 fragment — each file is independently playable, so a crashed upload only loses ~165 s and review still works.
+- Storage path convention `{attempt_id}/sessions/{kind}/{session_id}/{seq.padStart(5,'0')}.webm` keeps lexicographic order = playback order.
+- The candidate-side hook holds **at most one** in-flight upload per kind to keep bandwidth bounded; the rest queue in IndexedDB.
+- Session player only fetches signed URLs for chunks whose timestamp is within the current ±60 s window (lazy) to keep the page responsive for long attempts.
+- All new UI follows the existing semantic-token aesthetic (no raw colors).
 
-## Out of scope
+---
 
-- Renaming top-level routes (`/learn`, `/library`, `/arena`) — they're already meaningful.
-- Changing org slugs (already implemented and stable).
-- i18n of slugs (English only for now).
+## Files
 
-## Deliverable order
+New
+- `supabase/migrations/<ts>_create_session_chunks.sql`
+- `src/hooks/useChunkedRecorder.ts`
+- `src/b2b/hooks/useSessionChunks.ts`
+- `src/b2b/components/SessionTimelinePlayer.tsx`
 
-1. Approve plan
-2. Migration (Phase 1) — needs your approval
-3. Resolver + paths helper (Phases 2 & 3)
-4. Breadcrumb resolver (Phase 4)
-5. Redirects + sitemap + tests (Phase 5)
+Edited
+- `src/assessments/pages/Player.tsx` — invoke recorder for webcam + screen
+- `src/assessments/pages/SideCamera.tsx` — invoke recorder for sideeye
+- `src/b2b/components/AssessmentProctoringConfig.tsx` — add "Record full session" toggle
+- `src/b2b/pages/assessments/AttemptDetail.tsx` — add "Session replay" tab
+- `src/b2b/components/AttemptProctoringPanel.tsx` — extend ZIP export to include session chunks
+- `supabase/functions/purge-proctoring-data/index.ts` — honor retention for the new table
 
-Ready to start with the Phase 1 migration when you approve.
+---
+
+## Out of scope (call out, don't build)
+
+- Audio capture from screen-share (browser support is inconsistent; webcam audio already lives on the webcam track when enabled).
+- Server-side transcoding to mp4 — playback is webm-native in all supported browsers.
+- AI review of session video (the existing snapshot-review flow remains the AI surface; can be extended later to sample frames from chunks).
