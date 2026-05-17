@@ -21,6 +21,7 @@ import { resolveProctoringConfig } from "../lib/proctoringConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerTopBar } from "../components/PlayerTopBar";
 import { QuestionPalette } from "../components/QuestionPalette";
+import { AnswerUploadTile } from "../components/AnswerUploadTile";
 import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
