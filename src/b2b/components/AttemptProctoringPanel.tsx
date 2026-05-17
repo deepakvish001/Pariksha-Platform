@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle, Video, Trash2, Download } from "lucide-react";
+import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle, Video, Trash2, Download, ChevronLeft, ChevronRight, X, Play } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 type Snap = { id: string; source: string; storage_path: string; captured_at: string; reviewed: boolean };
 type Frame = { id: string; storage_path: string; captured_at: string };
