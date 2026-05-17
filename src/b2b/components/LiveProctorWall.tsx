@@ -196,10 +196,33 @@ export function LiveProctorWall({ attempts, orgId, defaultCollapsed = true }: Pr
             </>
           )}
         </CardTitle>
-        <Button size="sm" variant="ghost" onClick={() => setCollapsed((c) => !c)}>
-          {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-          <span className="ml-1 text-xs">{collapsed ? "Show" : "Hide"}</span>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setMuted((m) => {
+                const next = !m;
+                toast(next ? "Connection alerts muted" : "Connection alerts unmuted", {
+                  id: "live-proctor-mute",
+                  description: next
+                    ? "Counts still update, but toasts are silenced on this device."
+                    : "You'll be alerted again when streams flap.",
+                });
+                return next;
+              });
+            }}
+            title={muted ? "Unmute connection alerts" : "Mute connection alerts"}
+            aria-pressed={muted}
+          >
+            {muted ? <BellOff className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+            <span className="ml-1 text-xs">{muted ? "Muted" : "Alerts"}</span>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setCollapsed((c) => !c)}>
+            {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            <span className="ml-1 text-xs">{collapsed ? "Show" : "Hide"}</span>
+          </Button>
+        </div>
       </CardHeader>
       {!collapsed && (
         <CardContent className="space-y-4">
