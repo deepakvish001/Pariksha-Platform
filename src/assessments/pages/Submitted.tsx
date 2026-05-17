@@ -224,6 +224,13 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
             )}
 
             {typeof attempt.integrity_score === "number" && (
+              <IntegrityFactorSummary
+                attemptId={attempt.id}
+                assessmentId={assessment.id}
+              />
+            )}
+
+            {typeof attempt.integrity_score === "number" && (
               <IntegrityTimeline
                 attemptId={attempt.id}
                 assessmentId={assessment.id}
