@@ -11,6 +11,7 @@ export interface AssessmentChatMessage {
   sender_role: ChatRole;
   body: string;
   read_by_recipient: boolean;
+  read_at: string | null;
   created_at: string;
 }
 
