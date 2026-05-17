@@ -306,6 +306,7 @@ const App = () => (
                 {/* Student-side assessments */}
                 <Route path="/assessments/join/:token" element={<StudentJoin />} />
                 <Route path="/assessments/sidecam/:token" element={<StudentSideCamera />} />
+                <Route path="/assessments/sidecam/:token/upload/:questionId" element={<StudentSideCameraUpload />} />
                 <Route path="/assessments/integrity-policy" element={<IntegrityPolicy />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
