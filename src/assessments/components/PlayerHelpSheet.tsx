@@ -1,4 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { PaletteLegend } from "./PaletteLegend";
 
 interface Props {
   open: boolean;
@@ -25,7 +26,7 @@ const TIPS = [
 export function PlayerHelpSheet({ open, onOpenChange }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[360px] sm:w-[400px] p-5">
+      <SheetContent side="right" className="w-[360px] sm:w-[420px] p-5 overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle>Help & shortcuts</SheetTitle>
           <SheetDescription>
@@ -34,6 +35,12 @@ export function PlayerHelpSheet({ open, onOpenChange }: Props) {
         </SheetHeader>
 
         <div className="mt-5 space-y-5">
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              Palette color key
+            </h3>
+            <PaletteLegend variant="inline" />
+          </section>
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
               Keyboard

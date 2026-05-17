@@ -30,6 +30,7 @@ import {
   type SummaryCheck,
   type CheckState,
 } from "@/assessments/components/PreflightSummaryDialog";
+import { PaletteLegend } from "@/assessments/components/PaletteLegend";
 import "@/b2b/theme.css";
 
 type StepState = "pending" | "active" | "passed" | "failed";
@@ -440,6 +441,7 @@ function ReadyStep({
           </div>
         </div>
       </div>
+      <PaletteLegend title="Before you start — palette color key" />
       <Button size="lg" onClick={onStart} className="w-full sm:w-auto">
         Start test
         <ArrowRight className="h-4 w-4 ml-2" />
