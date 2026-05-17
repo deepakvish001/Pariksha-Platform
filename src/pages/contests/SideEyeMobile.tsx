@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Camera, AlertCircle, CheckCircle2, BatteryLow, EyeOff, RefreshCw } from "lucide-react";
 import { useSideEyeSignalling } from "@/hooks/useSideEyeSignalling";
+import { SideEyeReadyCheck } from "@/assessments/components/SideEyeReadyCheck";
 import { toast } from "sonner";
 
 /**
