@@ -3,8 +3,139 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, Camera, CheckCircle2, RefreshCw } from "lucide-react";
+import { Loader2, Upload, Camera, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+// ---- Image validation helpers ----
+interface CheckResult { ok: boolean; label: string; detail?: string }
+
+const ID_MIN_W = 480;
+const ID_MIN_H = 320;
+const ID_MIN_BYTES = 30 * 1024;
+const ID_MAX_BYTES = 5 * 1024 * 1024;
+
+const SELFIE_MIN_W = 320;
+const SELFIE_MIN_H = 240;
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("Could not read image"));
+    img.src = src;
+  });
+}
+
+async function validateIdPhoto(file: File): Promise<CheckResult[]> {
+  const checks: CheckResult[] = [];
+  checks.push({
+    ok: file.type.startsWith("image/"),
+    label: "Image file",
+    detail: file.type || "unknown",
+  });
+  checks.push({
+    ok: file.size >= ID_MIN_BYTES && file.size <= ID_MAX_BYTES,
+    label: "Size 30 KB – 5 MB",
+    detail: `${(file.size / 1024).toFixed(0)} KB`,
+  });
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await loadImage(url);
+    URL.revokeObjectURL(url);
+    const big = img.width >= ID_MIN_W && img.height >= ID_MIN_H;
+    const ratio = img.width / img.height;
+    checks.push({
+      ok: big,
+      label: `Min ${ID_MIN_W}×${ID_MIN_H}px`,
+      detail: `${img.width}×${img.height}`,
+    });
+    checks.push({
+      ok: ratio >= 1.0 && ratio <= 2.5,
+      label: "Landscape orientation",
+      detail: ratio.toFixed(2),
+    });
+  } catch {
+    checks.push({ ok: false, label: `Min ${ID_MIN_W}×${ID_MIN_H}px`, detail: "unreadable" });
+  }
+  return checks;
+}
+
+function analyzeSelfieFrame(video: HTMLVideoElement): {
+  checks: CheckResult[];
+  blob: Promise<Blob>;
+  dataUrl: string;
+} | null {
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(video, 0, 0, w, h);
+
+  // Sample center region for face heuristics
+  const sx = Math.floor(w * 0.25);
+  const sy = Math.floor(h * 0.15);
+  const sw = Math.floor(w * 0.5);
+  const sh = Math.floor(h * 0.7);
+  const data = ctx.getImageData(sx, sy, sw, sh).data;
+
+  let sum = 0;
+  let sumSq = 0;
+  let skin = 0;
+  const total = sw * sh;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    sum += lum;
+    sumSq += lum * lum;
+    // Simple skin-tone heuristic (RGB rule)
+    if (
+      r > 95 && g > 40 && b > 20 &&
+      r > g && r > b &&
+      Math.abs(r - g) > 15 &&
+      r - Math.min(g, b) > 15
+    ) {
+      skin++;
+    }
+  }
+  const mean = sum / total;
+  const variance = sumSq / total - mean * mean;
+  const skinRatio = skin / total;
+
+  const checks: CheckResult[] = [
+    {
+      ok: w >= SELFIE_MIN_W && h >= SELFIE_MIN_H,
+      label: `Min ${SELFIE_MIN_W}×${SELFIE_MIN_H}px`,
+      detail: `${w}×${h}`,
+    },
+    {
+      ok: mean >= 50 && mean <= 220,
+      label: "Lighting balanced",
+      detail: `lum ${mean.toFixed(0)}`,
+    },
+    {
+      ok: variance >= 250,
+      label: "Frame in focus",
+      detail: `σ² ${variance.toFixed(0)}`,
+    },
+    {
+      ok: skinRatio >= 0.05,
+      label: "Face visible in frame",
+      detail: `${(skinRatio * 100).toFixed(1)}%`,
+    },
+  ];
+
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+  const blob = new Promise<Blob>((res, rej) =>
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error("Capture failed"))), "image/jpeg", 0.85),
+  );
+  return { checks, blob, dataUrl };
+}
 
 export interface CandidateDetailsPayload {
   full_name: string;
