@@ -1,140 +1,115 @@
-# Secure Assessments + Advanced Proctoring + Questions Drawer
+## Goal
 
-Three independent workstreams, shipped in one pass. Backwards compatible — existing assessments keep working with current defaults.
+Recreate the polished, step-by-step student exam experience shown in the SRM/CodeTantra manual on top of our existing Parikshaa assessments + Side Eye stack. The manual's strength is *guidance* — every screen tells the student exactly what to do next, with visuals. We'll mirror that flow with our deep-black/amber theme.
 
-## 1. Configurable Anti-Cheat (admin chooses per assessment)
+We already have most building blocks (`Lobby`, `Player`, `SideCamera`, `SideCameraPairing`, `WebcamPip`, `useProctoring`, `assessment-sidecam` edge fn). The work is mostly **UX polish + a few missing screens (env check, descriptive-answer mobile upload, submit summary)** — not new backend.
 
-### Schema: `assessments.proctoring_config jsonb`
-Stored as JSON for forward-compatibility. Defaults to current behavior so old assessments are unaffected.
+---
+
+## Flow we'll build (mapped to manual steps)
 
 ```text
-{
-  strictness: "lenient" | "balanced" | "strict",
-  events: {
-    tab_switch: { count: true, weight: 5 },
-    fullscreen_exit: { count: true, weight: 8, autosubmit_after: 1 },
-    paste_blocked: { count: true, weight: 4 },
-    no_face_seconds: { threshold: 10, weight: 6 },
-    multi_face: { weight: 10, autosubmit_after: 1 },
-    second_monitor: { weight: 10, autosubmit_after: 1 },
-    screenshare_lost: { weight: 8 },
-    webcam_lost: { weight: 10 },
-    device_change: { weight: 999, autosubmit_after: 1 },
-    side_eye_lost: { weight: 6 }
-  },
-  max_violations: 15,
-  require_screen_share: true,
-  require_side_eye: true,
-  require_face_detection: true,
-  allow_clipboard_in_inputs: false
-}
+Login → My Assessments → [Open Test] → Pre-flight Wizard ──┐
+                                                            │
+  ┌─ Step 1  Device & browser check (auto-detect)           │
+  ├─ Step 2  Permissions: cam + mic + screen (Allow chain)  │
+  ├─ Step 3  Audio/Webcam/Mic self-test (Play / Yes)        │
+  ├─ Step 4  Pair Third Eye (QR → mobile)                   │
+  │           └─ mobile: login → Third Eye → Allow camera   │
+  │                    → place phone → "Connected" pulse    │
+  └─ Step 5  Proctor ready → [Start Test] unlocks           │
+                                                            ▼
+                                                  ┌── In-Test Shell ──┐
+                                                  │  Top: timer, SOS  │
+                                                  │  Left: palette    │
+                                                  │  Center: question │
+                                                  │  Right: chat dock │
+                                                  │  Bottom: nav      │
+                                                  └───────┬───────────┘
+                                                          │
+                              Descriptive Q → "Upload from phone" tile
+                                  └─ phone: capture pages → reorder
+                                     → upload → laptop "Sync" → preview
+                                                          │
+                                                Finish → Summary modal
+                                                       → Confirmation screen
 ```
 
-Admin UI: new "Proctoring" tab on the assessment editor with three presets + an "Advanced" accordion to tweak weights, thresholds, and required streams.
+---
 
-### Player wiring
-`useProctoring` reads `proctoring_config` from the loaded assessment, replaces the current hard-coded `EVENT_WEIGHTS` / `MAX_VIOLATIONS`, and respects per-event `autosubmit_after`.
+## Screens & components to add / refine
 
-## 2. Collapsible Left Question Drawer
+### 1. Pre-flight Wizard (`src/assessments/pages/Preflight.tsx`, new)
+Replaces the current ad-hoc Lobby allow-prompts. Single fullscreen page, 5 numbered steps in a left rail (like the manual's "Step 01… Step 15"), big preview on the right.
+- **Step cards** with states: `pending / active / passed / failed`, semantic amber active ring.
+- Auto-detect: OS, browser, version; show the manual's OS×browser compatibility matrix with our row highlighted ✓.
+- Webcam preview tile + audio meter (reuse `WebcamPip`).
+- "Proceed to test" stays disabled until all steps pass and Third Eye is paired.
 
-Replace the current top-bar palette with a left rail in `Player.tsx`.
+### 2. Third Eye Pairing — restyled (`SideCameraPairing.tsx`)
+- Replace the current minimal QR card with a two-pane layout: left = QR + numbered phone instructions ("Open camera, place 3–4 ft to your side, landscape"); right = live phone preview thumbnail once connected with a green "Connected" pulse.
+- Mobile side (`SideCamera.tsx`): add the manual's placement diagram, auto-rotate / DND reminder, and a "Connected — keep this screen on" confirmation page.
 
-- Default expanded ~280px, collapsible to ~56px icon strip.
-- Persists state in `localStorage("assessment.palette")`.
-- Sticky full viewport height; main content shifts via CSS grid (`grid-cols-[auto_1fr]`).
-- Shows section groups, numbered tiles, status (answered / marked / current / unattempted), filters, search-by-number, and progress bar.
-- On mobile (<768px): renders as an off-canvas Sheet triggered by a FAB.
-- Built with shadcn `Sidebar` primitive for consistency with the rest of the app.
+### 3. In-Test Shell polish (`Player.tsx`, `PlayerTopBar`, `PlayerBottomBar`, `QuestionPalette`)
+- **Top bar**: countdown chip (color shifts red < 5 min), candidate name + photo, network/proctor status dots, **SOS** button (opens a dialog like manual p.45 with preset reasons).
+- **Palette** (left): grid of question numbers with legend (Answered / Marked / Not visited / Current) matching manual p.41. Sticky, collapsible on narrow screens.
+- **Chat with Proctor** dock (right): floating green chat FAB → slide-over panel, unread badge.
+- **Zoom controls** + **General Instructions** modal accessible from top-right (matches p.43–44).
 
-## 3. Advanced Proctoring
+### 4. Descriptive answer upload (the big missing piece)
+New mobile route `src/assessments/pages/SideCameraUpload.tsx` (or extend `SideCamera.tsx`):
+- On laptop, descriptive questions show an **"Upload answer sheets from phone"** tile with a counter ("0 / N pages uploaded") and a **Sync** button.
+- On phone Third Eye: tap **Upload for Q3** → camera capture sheet by sheet → preview grid → drag-to-reorder (use existing `@dnd-kit`) → **Upload** with confirmation dialog → "Uploaded ✓".
+- Laptop polls / realtime-subscribes; **Sync** pulls signed thumbnails into the question's answer slot.
 
-### 3a. Face detection (in-browser)
-- Use `face-api.js` (tiny model, ~190KB) loaded from `/public/models/`.
-- Runs every 2s on the existing webcam stream.
-- Emits `no_face` (after threshold seconds) and `multi_face` events. Logged to `attempt_events`.
+Storage: reuse `assessment-proctor` bucket with a new prefix `answers/{attempt_id}/{question_id}/{n}.jpg`; new table `assessment_answer_uploads (attempt_id, question_id, storage_path, ordinal, uploaded_at)` with strict RLS (attempt owner + org proctors only). Existing `assessment-sidecam` edge fn handles signed upload URLs.
 
-### 3b. Screen-share + second-monitor detection
-- During `AssessmentLockdownGate`, after webcam, request `navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } })`. Reject if `displaySurface !== "monitor"`.
-- Poll `window.screen.isExtended` every 5s; if true → `second_monitor` event.
-- Stream is sampled (1 frame / 10s) and uploaded same path as webcam snapshots.
+### 5. Submit flow
+- **Test Summary modal** before submit: table of Answered / Marked / Not answered counts per section, matches manual p.46.
+- **Confirmation screen** (`Submitted.tsx`): big check, "Congratulations! You have successfully submitted." + attempt id, proctor disconnect, support contact block (email/phone from org settings).
 
-### 3c. Paste / typing-pattern detection
-- Wrap text inputs (code editor, SQL, text answers) with a `useTypingAnalytics` hook.
-- Flags: paste > 50 chars, typing speed > 800 cpm sustained 10s, identical keystroke bursts.
-- New event types: `paste_large`, `typing_burst`. Server-side cron job hashes final answers to flag duplicates across attempts.
+### 6. Help & Support
+- Persistent `?` button in top bar opens `PlayerHelpSheet` with the manual's troubleshooting tree (browser update, mic not detected, phone disconnected, re-pair Third Eye) and org support contacts.
 
-### 3d. Device / IP lock
-- On attempt start, compute a fingerprint (FingerprintJS open-source, no API key) + capture IP via edge function.
-- Store in `assessment_attempts.device_fingerprint` / `device_ip`.
-- Every resume / heartbeat compares; mismatch → `device_change` event + auto-submit.
+---
 
-### 3e. AI snapshot review (async)
-- New edge function `assessment-snapshot-review` runs every 30s on a queue of unreviewed snapshots.
-- Calls Lovable AI (`google/gemini-3-flash-preview`) with structured output: `{ phone_in_frame, looking_away, identity_match, person_count, notes }`.
-- Persists to `assessment_proctor_findings`; surfaces flags in admin Proctoring view with severity badges.
+## Visual language
 
-### 3f. Third Eye (multi-device side camera) — for assessments
-We already have the contest version. Generalize it.
+Stay 100% on the existing B2B theme (`.theme-b2b`, deep black + amber primary, glassmorphism cards). No new tokens. Use:
+- `GlassPanel` for every wizard step card and the chat dock.
+- Numbered step circles: 32px, `bg-primary text-primary-foreground` when active, `bg-secondary` when pending, `bg-emerald-500` when passed.
+- Subtle framer-motion fade+slide between wizard steps (200ms, ease-out) — same vocabulary as the rest of the app.
+- All copy short and instructional, matching the manual's tone ("Click on **Allow** to continue").
 
-- Rename / extend `contest_side_camera_*` tables OR add parallel `assessment_side_camera_*` tables with the same shape, keyed by `attempt_id` instead of `contest_submission_id`. (Plan: parallel tables to avoid breaking contests.)
-- Reuse the existing pairing edge functions (`sideeye-pair`, `sideeye-signal`, `sideeye-frame-upload`) with an `attempt_id` parameter.
-- Candidate flow:
-  1. Lockdown gate shows QR + 6-digit code.
-  2. Candidate opens link on phone, accepts camera, places phone at side angle.
-  3. WebRTC P2P stream (signaling via existing `sideeye-signal` function) — phone → laptop preview tile + every 5s a JPEG chunk uploaded to storage.
-  4. Lockdown completes only after side-eye `paired` AND face detected on primary cam.
-- During exam:
-  - Phone disconnect > 15s → `side_eye_lost` event.
-  - Snapshots tied to `attempt_id` reviewed by the same `assessment-snapshot-review` edge function (extra prompt: hands on desk, phone presence, secondary person).
-- Admin dashboard: existing `Proctoring.tsx` gets a "Third Eye" tab per attempt that tiles webcam | screen | side-eye live (when active) or last frames (when not).
+---
 
-## Technical Details
+## Technical notes
 
-### Files added
-- `src/assessments/hooks/useFaceDetection.ts`
-- `src/assessments/hooks/useDisplayCapture.ts`
-- `src/assessments/hooks/useTypingAnalytics.ts`
-- `src/assessments/hooks/useDeviceLock.ts`
-- `src/assessments/hooks/useSideEyeAssessment.ts` (wraps existing WebRTC client)
-- `src/assessments/components/QuestionDrawer.tsx` (replaces top palette in player layout)
-- `src/assessments/components/ThirdEyePairing.tsx`
-- `src/b2b/components/AssessmentProctoringConfig.tsx` (admin editor tab)
-- `supabase/functions/assessment-snapshot-review/index.ts`
-- `supabase/functions/assessment-sideeye-pair/index.ts` (thin wrapper or shared)
-- `public/models/tiny_face_detector*.json` + weights
+- **No new auth.** Mobile pairs via existing signed pair-token in `contest-sideeye-pair` style; reuse `assessment-sidecam` edge function for upload URLs (already deployed).
+- **Realtime sync** for phone→laptop uses the existing `assessment_side_camera_frames` channel pattern; add a sibling channel for `assessment_answer_uploads`.
+- **RLS**: new `assessment_answer_uploads` table — owner can insert/select own rows, proctors of the org can select via `has_role`/`useCanProctor` server equivalent, no updates/deletes from clients.
+- **Routes added**:
+  - `/assessments/:id/preflight`
+  - `/assessments/:id/submitted`
+  - `/side-camera/:token/upload/:questionId` (mobile)
+- **Files added**: `Preflight.tsx`, `Submitted.tsx`, `SideCameraUpload.tsx`, `PreflightStep.tsx`, `SosDialog.tsx`, `ProctorChatDock.tsx`, `TestSummaryDialog.tsx`, `CompatibilityMatrix.tsx`.
+- **Files refined**: `Lobby.tsx` (becomes a thin shell that redirects into Preflight), `Player.tsx` (mount chat dock + summary dialog), `SideCameraPairing.tsx`, `SideCamera.tsx`, `PlayerTopBar.tsx`, `PlayerBottomBar.tsx`, `QuestionPalette.tsx`.
 
-### Files edited
-- `src/assessments/pages/Player.tsx` — grid layout, mount drawer, wire all new hooks.
-- `src/assessments/hooks/useProctoring.ts` — config-driven weights, new event kinds, per-event auto-submit.
-- `src/assessments/components/AssessmentLockdownGate.tsx` — add screen-share + Third Eye gates.
-- `src/admin/parikshaa/Proctoring.tsx` — Third Eye tile + AI findings column.
-- `src/b2b/pages/AssessmentEditor.tsx` — new Proctoring tab.
+---
 
-### Migrations
-1. `ALTER TABLE assessments ADD COLUMN proctoring_config jsonb NOT NULL DEFAULT '{}'::jsonb;`
-2. `ALTER TABLE assessment_attempts ADD COLUMN device_fingerprint text, ADD COLUMN device_ip inet, ADD COLUMN screen_extended boolean DEFAULT false;`
-3. New `assessment_proctor_snapshots` (attempt_id, source: 'webcam'|'screen'|'sideeye', storage_path, captured_at) + RLS.
-4. New `assessment_proctor_findings` (snapshot_id, finding jsonb, severity, created_at) + RLS.
-5. New `assessment_side_camera_pairings` + `assessment_side_camera_frames` (mirror of contest variants, keyed on attempt_id) + RLS.
-6. Storage bucket `assessment-proctor` (private) + read policies for org admins.
+## Out of scope (call out explicitly)
 
-### Edge functions
-- `assessment-snapshot-review` (cron every 30s via pg_cron + pg_net) → Gemini structured output.
-- `assessment-sideeye-pair` (POST: returns pairing code + token bound to attempt_id).
-- `assessment-sideeye-signal` (WebSocket-style POST for SDP/ICE exchange).
-- `assessment-device-claim` (POST on attempt start: writes fingerprint + IP, returns 409 if mismatch).
+- No changes to grading, question authoring, or org admin screens.
+- No new AI proctoring rules — existing `assessment-snapshot-review` keeps running on the new uploads only if you want; otherwise answer uploads are excluded from AI review.
+- No native mobile app — phone side stays a PWA-friendly web page like today.
 
-### Libraries to add
-- `face-api.js` (or `@vladmandic/face-api` fork — better TS support)
-- `@fingerprintjs/fingerprintjs` (open source v3)
+---
 
-### Backwards compatibility
-- `proctoring_config = {}` falls back to current hard-coded behavior.
-- Contests' existing `contest_side_camera_*` flow untouched.
-- Admin `Proctoring.tsx` continues to read existing tables; new columns rendered only when present.
+## Suggested build order
 
-## Out of scope
-- Audio monitoring (deferred — was not selected).
-- Live proctor video chat (the multi-view tile is offline / last-frame; no live human invigilator UI in this pass).
-- Mobile-as-primary-device support (laptop required).
+1. Preflight wizard + compatibility matrix + restyled pairing  (biggest UX win, no schema)
+2. In-test shell polish: palette legend, SOS dialog, chat dock, summary modal, submitted screen
+3. Descriptive answer upload (new table + mobile capture/reorder + laptop sync tile)
+4. Help sheet content pass + final QA on mobile breakpoints
 
+Shall I proceed with step 1 first, or do you want all four batched into one go?
