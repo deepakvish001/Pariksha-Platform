@@ -27,6 +27,15 @@ export default function SideCameraPage() {
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [framesSent, setFramesSent] = useState(0);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+
+  // Publish the rear-camera feed live to proctors via WebRTC, keyed by the
+  // pairing token (same token already authenticates snapshot uploads).
+  useWebrtcStream({
+    channelId: status === "streaming" && token ? `proctor:sidecam:${token}` : null,
+    role: "publisher",
+    localStream: liveStream,
+  });
 
   const call = async (action: string, init?: RequestInit) => {
     const res = await fetch(`${FN_URL}?action=${action}&token=${encodeURIComponent(token)}`, {
