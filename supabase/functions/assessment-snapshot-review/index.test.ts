@@ -46,7 +46,7 @@ async function post(body: unknown, auth?: string) {
 /** Create a throwaway authenticated user that is NOT a member of any org. */
 async function createOutsiderSession(): Promise<string> {
   const client = createClient(SUPABASE_URL, ANON, {
-    auth: { persistSession: false },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
   const email = `proctor-test-${crypto.randomUUID()}@example.test`;
   const password = `Test-${crypto.randomUUID()}!`;
@@ -54,8 +54,11 @@ async function createOutsiderSession(): Promise<string> {
   if (error) throw new Error(`signUp failed: ${error.message}`);
   const token = data.session?.access_token;
   if (!token) throw new Error("signUp returned no session (email confirmation enabled?)");
+  await client.auth.signOut().catch(() => {});
   return token;
 }
+
+const AUTHED_OPTS = { sanitizeOps: false, sanitizeResources: false };
 
 Deno.test("CORS preflight allows POST", async () => {
   const res = await fetch(FN_URL, {
