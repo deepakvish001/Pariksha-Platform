@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
                 </table>
                 <p style="margin:0 0 6px;font-size:12px;color:#64748b;">Or paste this link into your browser:</p>
                 <p style="margin:0 0 28px;font-size:12px;word-break:break-all;">
-                  <a href="${link}" style="color:#2563eb;text-decoration:none;">${link}</a>
+                  <a href="${link}" style="color:${brand};text-decoration:none;">${link}</a>
                 </p>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-top:1px solid #e2e8f0;margin:0 0 8px;">
                   <tr><td style="padding-top:20px;">
