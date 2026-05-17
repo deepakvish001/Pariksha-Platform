@@ -181,19 +181,60 @@ function ProctoringContent(props: any) {
     q, setQ, filter, setFilter, assessmentFilter, setAssessmentFilter,
     snapCounts, sideCounts, inspectingId, setInspectingId,
     evidenceId, setEvidenceId, evidenceLabel, setEvidenceLabel } = props;
-  const { canProctor, isLoading: permLoading } = useCanProctor(org.id);
+  const { canProctor, role, isLoading: permLoading } = useCanProctor(org.id);
 
-  if (permLoading) return <OrgShell title="Proctoring"><div className="b2b-card p-6 text-sm text-muted-foreground">Checking permissions…</div></OrgShell>;
-  if (!canProctor) {
+  if (permLoading) {
     return (
       <OrgShell title="Proctoring">
-        <div className="b2b-card p-8 max-w-xl mx-auto text-center">
-          <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-amber-500" />
-          <h2 className="text-base font-semibold mb-1">Restricted area</h2>
-          <p className="text-sm text-muted-foreground">
-            Proctoring evidence and AI reviews are limited to organization owners,
-            admins, and members with the <span className="font-medium">Proctor</span> role.
-            Ask an admin to update your role from the Team page if you need access.
+        <div className="b2b-card p-6 text-sm text-muted-foreground flex items-center gap-2">
+          <RefreshCw className="h-4 w-4 animate-spin" /> Checking your access to proctoring evidence…
+        </div>
+      </OrgShell>
+    );
+  }
+  if (!canProctor) {
+    const allowed = ["owner", "admin", "proctor"];
+    return (
+      <OrgShell title="Proctoring">
+        <div className="b2b-card p-8 max-w-xl mx-auto text-center space-y-4">
+          <div className="mx-auto h-14 w-14 rounded-full bg-amber-500/10 flex items-center justify-center">
+            <ShieldAlert className="h-7 w-7 text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Restricted access</h2>
+            <p className="text-sm text-muted-foreground">
+              Proctoring evidence, webcam and screen snapshots, side-eye recordings, and AI integrity
+              reviews contain sensitive candidate data. Access is limited to specific organization roles.
+            </p>
+          </div>
+
+          <div className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/30 p-4 text-left">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+              Required roles
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {allowed.map((r) => (
+                <Badge key={r} variant="secondary" className="capitalize">{r}</Badge>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground mt-3">
+              Your current role in <span className="font-medium text-foreground">{org.name}</span>:{" "}
+              <span className="font-medium text-foreground capitalize">{role ?? "no access"}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <Button asChild size="sm" variant="outline">
+              <Link to="/b2b/settings/team">
+                Open Team settings <ArrowRight className="h-3 w-3 ml-1" />
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/b2b/dashboard">Back to dashboard</Link>
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Ask an organization owner or admin to grant you the Proctor role if you need to review evidence.
           </p>
         </div>
       </OrgShell>
