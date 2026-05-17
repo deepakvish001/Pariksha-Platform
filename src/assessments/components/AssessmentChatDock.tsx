@@ -166,12 +166,6 @@ export function AssessmentChatDock({
           </Button>
         )}
       </header>
-        {variant === "floating" && (
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 text-sm">
         {isLoading ? (
