@@ -198,7 +198,7 @@ export default function Player() {
 
   // Screen capture monitoring — required only when proctoring_config.require_screen_share
   const secondMonitorLoggedRef = useRef(false);
-  useDisplayCapture({
+  const { stream: screenStream } = useDisplayCapture({
     attemptId,
     enabled: proctoringEnabled && lockdownReady && proctoringConfig.require_screen_share,
     onSecondMonitor: () => {
@@ -207,6 +207,22 @@ export default function Player() {
       void logProctorEvent("second_monitor");
     },
     onShareLost: () => { void logProctorEvent("screenshare_lost"); },
+  });
+
+  // Live three-eye publishers — broadcast existing webcam + screen streams over
+  // WebRTC so proctors can watch from the Manage Assessment page in real time.
+  // Channels are scoped per attempt and gated by lockdownReady so we never
+  // publish before the attempt is officially in progress.
+  useWebrtcStream({
+    channelId: proctoringEnabled && lockdownReady && camStream && attemptId ? `proctor:${attemptId}:webcam` : null,
+    role: "publisher",
+    localStream: camStream,
+  });
+  useWebrtcStream({
+    channelId: proctoringEnabled && lockdownReady && screenStream && attemptId ? `proctor:${attemptId}:screen` : null,
+    role: "publisher",
+    localStream: screenStream,
+    maxBitrate: 800_000,
   });
 
   // Typing analytics — flags super-human typing bursts inside any text input or editor
