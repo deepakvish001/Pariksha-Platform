@@ -5,9 +5,11 @@ import {
   Wifi, WifiOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PlayerSosButton } from "./PlayerSosButton";
 
 interface Props {
   title: string;
+  attemptId?: string | null;
   answered: number;
   flagged: number;
   total: number;
