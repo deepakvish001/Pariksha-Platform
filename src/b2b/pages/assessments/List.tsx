@@ -57,6 +57,7 @@ export default function B2BAssessmentsList() {
   const navigate = useNavigate();
   const org = orgs?.[0];
   const { data: assessments, isLoading: aLoading } = useAssessments(org?.id);
+  const { data: flagged } = useFlaggedAcrossOrg(org?.id, 5);
 
   const [tab, setTab] = useState<TabKey>("live");
   const [query, setQuery] = useState("");
