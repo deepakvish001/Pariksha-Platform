@@ -168,7 +168,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
    *  3. Post a system chat message so the proctor sees it instantly in chat.
    * Best-effort: if all fail, fall back to email so the candidate is never stranded.
    */
-  const notifyProctor = async (): Promise<{ ok: boolean; error?: string; rateLimited?: boolean }> => {
+  const notifyProctor = async (): Promise<{ ok: boolean; error?: string; rateLimited?: boolean; queued?: boolean }> => {
     if (!attemptId) return { ok: false, error: "No active attempt" };
     try {
       const { data: u } = await supabase.auth.getUser();
