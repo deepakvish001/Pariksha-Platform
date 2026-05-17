@@ -227,6 +227,11 @@ export function useChatPresence(
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimerRef = useRef<number | null>(null);
   const lastBroadcastRef = useRef<number>(0);
+  // Last typing value we actually broadcast — used to dedupe.
+  const lastSentTypingRef = useRef<boolean>(false);
+  // Pending trailing-broadcast timers, so the final state isn't dropped.
+  const trailingTrueTimerRef = useRef<number | null>(null);
+  const stopDebounceTimerRef = useRef<number | null>(null);
   const peerRole = viewerRole === "candidate" ? "proctor" : "candidate";
 
   useEffect(() => {
