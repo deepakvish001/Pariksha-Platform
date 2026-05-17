@@ -773,7 +773,7 @@ function ChoiceQuestionCard({
         )}
       </div>
       <CardContent className="space-y-4 pt-5">
-        <QuestionInput question={question} value={value} onChange={onChange} />
+        <QuestionInput question={question} value={value} onChange={onChange} attemptId={attemptId} />
       </CardContent>
     </Card>
   );
