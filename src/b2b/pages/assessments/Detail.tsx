@@ -322,6 +322,12 @@ function SettingsPanel({
   const [showResults, setShowResults] = useState<boolean>(assessment.show_results_to_candidate !== false);
   const [startsAt, setStartsAt] = useState(toLocalInput(assessment.starts_at));
   const [endsAt, setEndsAt] = useState(toLocalInput(assessment.ends_at));
+  const [brandColor, setBrandColor] = useState<string>(
+    typeof assessment.brand_color === "string" ? assessment.brand_color : ""
+  );
+  const normalizedBrand = brandColor.trim();
+  const isValidBrand =
+    normalizedBrand === "" || /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalizedBrand);
 
   const now = Date.now();
   const startMs = startsAt ? new Date(startsAt).getTime() : null;
