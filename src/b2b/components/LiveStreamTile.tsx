@@ -26,6 +26,8 @@ interface Props {
   className?: string;
   /** When set, shows a Record/Stop button that uploads to storage and inserts a row. */
   attemptId?: string;
+  /** Notified whenever the WebRTC connection flips between connected and disconnected. */
+  onConnectionChange?: (connected: boolean, state: string) => void;
 }
 
 function pickMime(): string {
@@ -45,7 +47,7 @@ function pickMime(): string {
  * Single viewer tile that subscribes to a publisher on the given channel and
  * optionally records the remote MediaStream to storage on demand.
  */
-export function LiveStreamTile({ channelId, kind, className, attemptId }: Props) {
+export function LiveStreamTile({ channelId, kind, className, attemptId, onConnectionChange }: Props) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const recRef = useRef<MediaRecorder | null>(null);
@@ -59,6 +61,14 @@ export function LiveStreamTile({ channelId, kind, className, attemptId }: Props)
     role: "viewer",
     onRemoteStream: setStream,
   });
+
+  const prevConnRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (prevConnRef.current !== connected) {
+      prevConnRef.current = connected;
+      onConnectionChange?.(connected, connectionState);
+    }
+  }, [connected, connectionState, onConnectionChange]);
 
   useEffect(() => {
     if (videoRef.current && stream) videoRef.current.srcObject = stream;
