@@ -53,6 +53,46 @@ async function findPairing(token: string) {
   return data;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TOKEN_RE = /^[0-9a-f]{32,96}$/i; // hex pair_token (default 48), conservative bounds
+const MAX_DATAURL_BYTES = 10 * 1024 * 1024; // 10 MB raw string cap
+const MAX_ORDINAL = 50;
+const PAIR_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6h
+
+function isUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID_RE.test(v);
+}
+function isToken(v: unknown): v is string {
+  return typeof v === "string" && TOKEN_RE.test(v);
+}
+
+/**
+ * Verify a question is part of the assessment that this attempt belongs to.
+ * Prevents a phone holding a valid pair-token from uploading pages targeted
+ * at a question that does not exist in the current exam.
+ */
+async function questionInAttempt(attemptId: string, questionId: string): Promise<boolean> {
+  const { data: att } = await admin
+    .from("assessment_attempts")
+    .select("assessment_id")
+    .eq("id", attemptId)
+    .maybeSingle();
+  if (!att?.assessment_id) return false;
+  const { data: rows } = await admin
+    .from("section_questions")
+    .select("question_id, assessment_sections!inner(assessment_id)")
+    .eq("question_id", questionId)
+    .eq("assessment_sections.assessment_id", att.assessment_id)
+    .limit(1);
+  return !!(rows && rows.length);
+}
+
+function pairingFresh(p: { status: string; created_at: string }) {
+  if (p.status === "disconnected" || p.status === "expired") return false;
+  const age = Date.now() - new Date(p.created_at).getTime();
+  return age <= PAIR_MAX_AGE_MS;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -217,37 +257,55 @@ Deno.serve(async (req) => {
     // ---- ANSWER-UPLOAD (phone uploads descriptive answer-sheet page) ----
     if (action === "answer-upload") {
       const token = req.headers.get("x-pair-token") ?? url.searchParams.get("token") ?? "";
-      if (!token) return json({ error: "token required" }, 400);
+      if (!isToken(token)) return json({ error: "invalid_token" }, 400);
       const p = await findPairing(token);
-      if (!p) return json({ error: "not_found" }, 404);
-      if (p.status === "disconnected" || p.status === "expired")
-        return json({ error: "pairing_closed" }, 410);
+      if (!p) return json({ error: "pairing_not_found" }, 404);
+      if (!pairingFresh(p))
+        return json({ error: "pairing_closed_or_expired" }, 410);
 
       const body = await req.json().catch(() => null) as
-        | { dataUrl?: string; questionId?: string; ordinal?: number }
+        | { dataUrl?: string; questionId?: string; ordinal?: number; attemptId?: string }
         | null;
       const dataUrl = body?.dataUrl;
       const questionId = body?.questionId;
       const ordinal = Number(body?.ordinal);
-      if (!dataUrl || !dataUrl.startsWith("data:image/"))
-        return json({ error: "dataUrl required" }, 400);
-      if (!questionId) return json({ error: "questionId required" }, 400);
-      if (!Number.isFinite(ordinal) || ordinal < 1)
-        return json({ error: "ordinal required" }, 400);
+
+      if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/"))
+        return json({ error: "invalid_dataUrl" }, 400);
+      if (dataUrl.length > MAX_DATAURL_BYTES)
+        return json({ error: "payload_too_large" }, 413);
+      if (!isUuid(questionId)) return json({ error: "invalid_questionId" }, 400);
+      if (!Number.isInteger(ordinal) || ordinal < 1 || ordinal > MAX_ORDINAL)
+        return json({ error: "invalid_ordinal" }, 400);
+      // If caller passes attemptId, it MUST match the pairing's attempt
+      if (body?.attemptId && body.attemptId !== p.attempt_id)
+        return json({ error: "attempt_mismatch" }, 403);
 
       // Verify attempt is still in progress
       const { data: attempt } = await admin
         .from("assessment_attempts")
-        .select("status")
+        .select("status, assessment_id")
         .eq("id", p.attempt_id)
         .maybeSingle();
       if (!attempt) return json({ error: "attempt_not_found" }, 404);
       if (attempt.status !== "in_progress")
         return json({ error: "attempt_closed" }, 410);
 
+      // Verify the question actually belongs to this attempt's assessment
+      const belongs = await questionInAttempt(p.attempt_id, questionId!);
+      if (!belongs) return json({ error: "question_not_in_attempt" }, 403);
+
       const comma = dataUrl.indexOf(",");
-      const b64 = dataUrl.slice(comma + 1);
-      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      if (comma < 0) return json({ error: "invalid_dataUrl" }, 400);
+      let bin: Uint8Array;
+      try {
+        const b64 = dataUrl.slice(comma + 1);
+        bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      } catch {
+        return json({ error: "invalid_base64" }, 400);
+      }
+      if (bin.byteLength > MAX_DATAURL_BYTES)
+        return json({ error: "payload_too_large" }, 413);
 
       const path = `answers/${p.attempt_id}/${questionId}/${ordinal}-${Date.now()}.jpg`;
       const { error: upErr } = await admin.storage
@@ -288,10 +346,14 @@ Deno.serve(async (req) => {
     if (action === "answer-list") {
       const token = req.headers.get("x-pair-token") ?? url.searchParams.get("token") ?? "";
       const questionId = url.searchParams.get("questionId") ?? "";
-      if (!token) return json({ error: "token required" }, 400);
-      if (!questionId) return json({ error: "questionId required" }, 400);
+      if (!isToken(token)) return json({ error: "invalid_token" }, 400);
+      if (!isUuid(questionId)) return json({ error: "invalid_questionId" }, 400);
       const p = await findPairing(token);
-      if (!p) return json({ error: "not_found" }, 404);
+      if (!p) return json({ error: "pairing_not_found" }, 404);
+      if (!pairingFresh(p)) return json({ error: "pairing_closed_or_expired" }, 410);
+
+      const belongs = await questionInAttempt(p.attempt_id, questionId);
+      if (!belongs) return json({ error: "question_not_in_attempt" }, 403);
 
       const { data: rows } = await admin
         .from("assessment_answer_uploads")
@@ -305,22 +367,32 @@ Deno.serve(async (req) => {
     // ---- ANSWER-DELETE (phone removes a page before final upload) -------
     if (action === "answer-delete") {
       const token = req.headers.get("x-pair-token") ?? url.searchParams.get("token") ?? "";
-      if (!token) return json({ error: "token required" }, 400);
+      if (!isToken(token)) return json({ error: "invalid_token" }, 400);
       const p = await findPairing(token);
-      if (!p) return json({ error: "not_found" }, 404);
+      if (!p) return json({ error: "pairing_not_found" }, 404);
+      if (!pairingFresh(p)) return json({ error: "pairing_closed_or_expired" }, 410);
       const body = await req.json().catch(() => null) as { id?: string } | null;
-      if (!body?.id) return json({ error: "id required" }, 400);
+      if (!isUuid(body?.id)) return json({ error: "invalid_id" }, 400);
 
       const { data: row } = await admin
         .from("assessment_answer_uploads")
         .select("id, attempt_id, storage_path")
-        .eq("id", body.id)
+        .eq("id", body!.id!)
         .maybeSingle();
       if (!row || row.attempt_id !== p.attempt_id)
         return json({ error: "not_found" }, 404);
 
+      // Only allow deletes while the attempt is still in progress
+      const { data: att } = await admin
+        .from("assessment_attempts")
+        .select("status")
+        .eq("id", p.attempt_id)
+        .maybeSingle();
+      if (att?.status !== "in_progress")
+        return json({ error: "attempt_closed" }, 410);
+
       await admin.storage.from(BUCKET).remove([row.storage_path]);
-      await admin.from("assessment_answer_uploads").delete().eq("id", body.id);
+      await admin.from("assessment_answer_uploads").delete().eq("id", body!.id!);
       return json({ ok: true });
     }
 
@@ -329,8 +401,8 @@ Deno.serve(async (req) => {
       const user = await getUser(req);
       if (!user) return json({ error: "auth_required" }, 401);
       const { attemptId, questionId } = await req.json().catch(() => ({}));
-      if (!attemptId || !questionId)
-        return json({ error: "attemptId and questionId required" }, 400);
+      if (!isUuid(attemptId)) return json({ error: "invalid_attemptId" }, 400);
+      if (!isUuid(questionId)) return json({ error: "invalid_questionId" }, 400);
 
       // Authorization: candidate (own attempt) OR org member
       const { data: attempt } = await admin
@@ -339,6 +411,9 @@ Deno.serve(async (req) => {
         .eq("id", attemptId)
         .maybeSingle();
       if (!attempt) return json({ error: "not_found" }, 404);
+
+      const belongs = await questionInAttempt(attemptId, questionId);
+      if (!belongs) return json({ error: "question_not_in_attempt" }, 403);
 
       let allowed = attempt.user_id === user.id;
       if (!allowed) {
@@ -387,7 +462,7 @@ Deno.serve(async (req) => {
       const user = await getUser(req);
       if (!user) return json({ error: "auth_required" }, 401);
       const body = await req.json().catch(() => null) as { id?: string } | null;
-      if (!body?.id) return json({ error: "id required" }, 400);
+      if (!isUuid(body?.id)) return json({ error: "invalid_id" }, 400);
 
       const { data: row } = await admin
         .from("assessment_answer_uploads")
@@ -436,36 +511,46 @@ Deno.serve(async (req) => {
         questionId?: string;
         orderedIds?: string[];
       } | null;
-      if (!body?.attemptId || !body?.questionId || !Array.isArray(body?.orderedIds))
-        return json({ error: "attemptId, questionId, orderedIds required" }, 400);
+      if (!isUuid(body?.attemptId)) return json({ error: "invalid_attemptId" }, 400);
+      if (!isUuid(body?.questionId)) return json({ error: "invalid_questionId" }, 400);
+      if (!Array.isArray(body?.orderedIds) || body!.orderedIds.length === 0 ||
+          body!.orderedIds.length > 200 ||
+          body!.orderedIds.some((id) => !isUuid(id)))
+        return json({ error: "invalid_orderedIds" }, 400);
+      // Reject duplicates
+      if (new Set(body!.orderedIds).size !== body!.orderedIds.length)
+        return json({ error: "duplicate_ids" }, 400);
 
       const { data: attempt } = await admin
         .from("assessment_attempts")
         .select("id, user_id, status")
-        .eq("id", body.attemptId)
+        .eq("id", body!.attemptId!)
         .maybeSingle();
       if (!attempt || attempt.user_id !== user.id) return json({ error: "forbidden" }, 403);
       if (attempt.status !== "in_progress")
         return json({ error: "attempt_not_in_progress" }, 409);
 
+      const belongs = await questionInAttempt(body!.attemptId!, body!.questionId!);
+      if (!belongs) return json({ error: "question_not_in_attempt" }, 403);
+
       // Verify every id belongs to this attempt+question
       const { data: rows } = await admin
         .from("assessment_answer_uploads")
         .select("id")
-        .eq("attempt_id", body.attemptId)
-        .eq("question_id", body.questionId);
+        .eq("attempt_id", body!.attemptId!)
+        .eq("question_id", body!.questionId!);
       const valid = new Set((rows ?? []).map((r) => r.id));
-      if (body.orderedIds.length !== valid.size ||
-          body.orderedIds.some((id) => !valid.has(id)))
+      if (body!.orderedIds.length !== valid.size ||
+          body!.orderedIds.some((id) => !valid.has(id)))
         return json({ error: "id_mismatch" }, 400);
 
       // Two-pass update to dodge unique constraint
       let neg = -1;
-      for (const id of body.orderedIds) {
+      for (const id of body!.orderedIds) {
         await admin.from("assessment_answer_uploads").update({ ordinal: neg-- }).eq("id", id);
       }
       let n = 1;
-      for (const id of body.orderedIds) {
+      for (const id of body!.orderedIds) {
         await admin.from("assessment_answer_uploads").update({ ordinal: n++ }).eq("id", id);
       }
       return json({ ok: true });
