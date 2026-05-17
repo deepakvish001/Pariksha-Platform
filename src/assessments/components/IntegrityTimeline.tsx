@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Eye,
   EyeOff,
   Loader2,
   Monitor,
