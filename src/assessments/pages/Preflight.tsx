@@ -458,6 +458,8 @@ export default function Preflight() {
   const [current, setCurrent] = useState(0);
   const [stateById, setStateById] = useState<Record<string, StepState>>({});
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const env = useMemo(() => detectEnvironment(), []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["attempt", attemptId],
