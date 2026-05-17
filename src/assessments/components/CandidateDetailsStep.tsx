@@ -410,9 +410,10 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
             disabled={busy}
             className="text-xs w-full file:mr-2 file:rounded file:border-0 file:bg-primary file:px-2 file:py-1 file:text-xs file:font-semibold file:text-primary-foreground"
           />
-          {idPhotoUrl && (
+          {idChecks.length > 0 && <ChecklistView checks={idChecks} />}
+          {idPhotoUrl && idChecks.every((c) => c.ok) && (
             <div className="text-[11px] text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Uploaded
+              <CheckCircle2 className="h-3 w-3" /> Verified & uploaded
             </div>
           )}
         </div>
