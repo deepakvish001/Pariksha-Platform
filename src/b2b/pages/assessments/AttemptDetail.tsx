@@ -88,6 +88,21 @@ export default function AttemptDetail() {
 
       {canProctor && <AttemptProctoringPanel attemptId={data.attempt.id} />}
 
+      {canProctor && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Candidate chat</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            <AssessmentChatDock
+              attemptId={data.attempt.id}
+              viewerRole="proctor"
+              variant="embedded"
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {canProctor && events && events.length > 0 && (
         <Card className="mb-4">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Proctoring log ({events.length} events)</CardTitle></CardHeader>
