@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck } from "lucide-react";
+import { MessageCircle, Send, ShieldCheck, X, Loader2, User, Check, CheckCheck, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   sendChatMessage,
   useAssessmentChat,
   useAutoMarkRead,
   useAutoScrollRef,
+  useChatPresence,
   useUnreadCount,
   type ChatRole,
 } from "../hooks/useAssessmentChat";
