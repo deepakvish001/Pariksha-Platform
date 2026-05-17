@@ -140,14 +140,14 @@ export function QuestionPalette({
   if (collapsedRail) {
     return (
       <aside
-        aria-label="Question navigator (collapsed)"
+        aria-label={t("palette.header.expand")}
         className="flex flex-col items-center rounded-xl border border-border bg-card shadow-sm overflow-hidden max-h-[calc(100vh-9rem)] sticky top-20 w-[56px] py-2"
       >
         <button
           type="button"
           onClick={onToggleCollapsed}
-          aria-label="Expand question palette"
-          title="Expand (])"
+          aria-label={t("palette.header.expand")}
+          title={t("palette.header.expandTitle")}
           className="h-9 w-9 grid place-items-center rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
         >
           <PanelLeftOpen className="h-4 w-4" />
