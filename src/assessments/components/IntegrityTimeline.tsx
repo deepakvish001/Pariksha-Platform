@@ -357,6 +357,3 @@ export function IntegrityTimeline({ attemptId, assessmentId, finalScore, classNa
     </section>
   );
 }
-
-// Avoid unused-import lint failures (Eye is part of the public icon set).
-export const _IconExports = { Eye };
