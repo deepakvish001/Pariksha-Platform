@@ -173,6 +173,32 @@ Deno.serve(async (req) => {
     errors.push(`events: ${(e as Error).message}`);
   }
 
+  // ─── Delete old session-recording chunks (storage + rows) ──────────────
+  let chunksDeleted = 0;
+  try {
+    const { data: oldChunks } = await admin
+      .from("assessment_proctor_session_chunks")
+      .select("id, storage_path")
+      .lt("started_at", snapCutoff)
+      .limit(2000);
+    const rows = (oldChunks ?? []) as Array<{ id: string; storage_path: string }>;
+    const chunkPaths = rows.map((r) => r.storage_path).filter((p): p is string => !!p);
+    if (chunkPaths.length > 0) {
+      for (let i = 0; i < chunkPaths.length; i += 100) {
+        const batch = chunkPaths.slice(i, i + 100);
+        const { error: rmErr } = await admin.storage.from("assessment-proctor").remove(batch);
+        if (rmErr) errors.push(`chunk-storage: ${rmErr.message}`);
+      }
+      const ids = rows.map((r) => r.id);
+      const { error: delErr } = await admin.from("assessment_proctor_session_chunks").delete().in("id", ids);
+      if (!delErr) chunksDeleted = ids.length;
+      else errors.push(`chunks: ${delErr.message}`);
+    }
+  } catch (e) {
+    console.error("chunk purge error", e);
+    errors.push(`chunks: ${(e as Error).message}`);
+  }
+
   // ─── Log this run ──────────────────────────────────────────────────────
   try {
     await admin.from("proctoring_purge_runs").insert({
