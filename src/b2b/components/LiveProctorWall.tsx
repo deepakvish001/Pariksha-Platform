@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, ChevronDown, ChevronUp, Wifi, WifiOff } from "lucide-react";
+import { Eye, ChevronDown, ChevronUp, Wifi, WifiOff, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveStreamTile } from "./LiveStreamTile";
