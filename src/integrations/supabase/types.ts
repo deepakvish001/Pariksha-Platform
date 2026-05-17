@@ -990,6 +990,62 @@ export type Database = {
           },
         ]
       }
+      assessment_sos_events: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          attempt_id: string
+          created_at: string
+          id: string
+          issue: string
+          notes: string | null
+          raised_by: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["sos_status"]
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempt_id: string
+          created_at?: string
+          id?: string
+          issue: string
+          notes?: string | null
+          raised_by: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["sos_status"]
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          issue?: string
+          notes?: string | null
+          raised_by?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["sos_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_sos_events_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessments: {
         Row: {
           created_at: string
@@ -8618,6 +8674,7 @@ export type Database = {
         | "true_false"
         | "matching"
         | "short_answer"
+      sos_status: "open" | "acknowledged" | "resolved"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -8789,6 +8846,7 @@ export const Constants = {
         "matching",
         "short_answer",
       ],
+      sos_status: ["open", "acknowledged", "resolved"],
       study_year: [
         "1st Year",
         "2nd Year",
