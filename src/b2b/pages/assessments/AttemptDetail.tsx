@@ -10,6 +10,7 @@ import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
 import { AssessmentChatDock } from "@/assessments/components/AssessmentChatDock";
+import { ProctorEventFeed } from "@/assessments/components/ProctorEventFeed";
 import { useCurrentOrg } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
 
@@ -103,18 +104,10 @@ export default function AttemptDetail() {
         </Card>
       )}
 
-      {canProctor && events && events.length > 0 && (
-        <Card className="mb-4">
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Proctoring log ({events.length} events)</CardTitle></CardHeader>
-          <CardContent className="max-h-56 overflow-auto text-xs space-y-1 font-mono">
-            {events.map((e: any) => (
-              <div key={e.id} className="flex gap-3">
-                <span className="text-[hsl(var(--muted-foreground))]">{new Date(e.created_at).toLocaleTimeString()}</span>
-                <span className="font-medium">{e.kind}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {canProctor && (
+        <div className="mb-4">
+          <ProctorEventFeed attemptId={data.attempt.id} />
+        </div>
       )}
 
       <div className="space-y-4">
