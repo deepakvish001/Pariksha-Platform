@@ -44,11 +44,11 @@ export function OrgShell({
   const homeHref = isLegacy ? "/b2b/dashboard" : base;
 
   return (
-    <div className="theme-b2b relative min-h-screen overflow-hidden">
+    <div className="theme-b2b relative h-screen overflow-hidden">
       <B2BBackdrop variant="subtle" />
-      <div className="relative flex">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl min-h-screen sticky top-0">
-          <div className="px-5 py-5 border-b">
+      <div className="relative flex h-screen">
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl h-screen">
+          <div className="px-5 py-5 border-b shrink-0">
             <NavLink to={homeHref} className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">
                 P
@@ -61,7 +61,7 @@ export function OrgShell({
               </div>
             </NavLink>
           </div>
-          <nav className="flex-1 p-2 space-y-1">
+          <nav className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1 scrollbar-thin">
             {(() => {
               // Normalize pathname: lowercase + strip trailing slash so the
               // active check never partially matches sibling routes (e.g.
@@ -100,15 +100,15 @@ export function OrgShell({
               });
             })()}
           </nav>
-          <div className="p-3 border-t">
+          <div className="p-3 border-t shrink-0">
             <NavLink to="/learn" className="text-xs text-muted-foreground hover:text-foreground">
               ← Back to learning app
             </NavLink>
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0">
-          <header className="sticky top-0 z-10 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur-xl shadow-sm">
+        <main className="flex-1 min-w-0 flex flex-col h-screen">
+          <header className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur-xl shadow-sm">
             <div className="px-6 h-16 flex items-center justify-between gap-4">
               <h1 className="text-base sm:text-lg font-semibold tracking-tight truncate">
                 {title}
@@ -116,7 +116,7 @@ export function OrgShell({
               <div className="flex items-center gap-2 shrink-0">{actions}</div>
             </div>
           </header>
-          <div className="p-6">{children}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-6">{children}</div>
         </main>
       </div>
     </div>
