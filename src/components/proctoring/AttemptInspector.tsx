@@ -547,7 +547,7 @@ export function AttemptInspector({ attemptId, open, onClose, canRunReview = true
                 )}
               </div>
 
-              <AIFindingsPanel attemptId={attempt.id} />
+              <AIFindingsPanel attemptId={attempt.id} canRunReview={canRunReview} />
             </div>
           )}
         </SheetContent>
