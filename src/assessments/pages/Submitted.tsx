@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
   Mail,
   Sparkles,
@@ -13,7 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
+import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
 
 interface Attempt {
   id: string;
@@ -104,6 +107,25 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
           { title: "Recruiter follow-up", detail: "If shortlisted, you'll hear back over email within a few business days." },
           { title: "Keep practicing", detail: "Head back to your dashboard to keep your streak going." },
         ];
+
+  const handleDownloadReceipt = () => {
+    try {
+      downloadSubmissionReceipt({
+        attemptId: attempt.id,
+        assessmentTitle: assessment.title,
+        startedAt: attempt.started_at,
+        submittedAt: attempt.submitted_at,
+        score: attempt.score ?? null,
+        integrityScore: attempt.integrity_score ?? null,
+        durationLabel: elapsed,
+        nextSteps,
+      });
+    } catch (e) {
+      toast.error("Couldn't generate receipt", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    }
+  };
 
   return (
     <div className="theme-b2b min-h-screen bg-gradient-to-b from-background via-background to-muted/30 px-4 py-10 sm:py-16">
@@ -223,6 +245,10 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
                   </Button>
                 </>
               )}
+              <Button variant="secondary" onClick={handleDownloadReceipt}>
+                <Download className="h-4 w-4 mr-1.5" />
+                Download receipt (PDF)
+              </Button>
             </div>
           </CardContent>
         </Card>
