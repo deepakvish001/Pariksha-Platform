@@ -289,6 +289,19 @@ function ProctoringContent(props: any) {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground w-16 text-right">{a.integrity_score}</div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEvidenceLabel(a.invite?.name ?? a.invite?.email ?? a.assessment?.title ?? "Attempt");
+                        setEvidenceId(a.id);
+                      }}
+                      className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-[11px] px-1.5 py-1 rounded hover:bg-muted/60"
+                      aria-label="View evidence"
+                      title="View evidence (webcam, screen, side-camera)"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
                     <Link
                       to={`/b2b/assessments/${a.assessment_id}/attempts/${a.id}`}
                       onClick={(e) => e.stopPropagation()}
@@ -310,6 +323,22 @@ function ProctoringContent(props: any) {
         open={!!inspectingId}
         onClose={() => setInspectingId(null)}
       />
+
+      <Sheet open={!!evidenceId} onOpenChange={(o) => !o && setEvidenceId(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Eye className="h-4 w-4" /> Evidence — {evidenceLabel}
+            </SheetTitle>
+            <SheetDescription>
+              Live webcam, shared screen, and phone side-camera captures with AI findings.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            {evidenceId && <AttemptProctoringPanel attemptId={evidenceId} />}
+          </div>
+        </SheetContent>
+      </Sheet>
     </OrgShell>
   );
 }
