@@ -72,7 +72,22 @@ export default function Player() {
   const [submitted, setSubmitted] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const { prefs: editorPrefs, update: updateEditorPrefs } = useEditorPrefs();
+  const fontScale = editorPrefs.questionFontScale ?? 1;
+  const scaleIdx = QUESTION_FONT_SCALES.indexOf(fontScale as typeof QUESTION_FONT_SCALES[number]);
+  const safeScaleIdx = scaleIdx === -1 ? QUESTION_FONT_SCALES.indexOf(1) : scaleIdx;
+  const canZoomIn = safeScaleIdx < QUESTION_FONT_SCALES.length - 1;
+  const canZoomOut = safeScaleIdx > 0;
+  const zoomIn = () => {
+    if (!canZoomIn) return;
+    updateEditorPrefs({ questionFontScale: QUESTION_FONT_SCALES[safeScaleIdx + 1] });
+  };
+  const zoomOut = () => {
+    if (!canZoomOut) return;
+    updateEditorPrefs({ questionFontScale: QUESTION_FONT_SCALES[safeScaleIdx - 1] });
+  };
   const [paletteCollapsed, setPaletteCollapsed] = useState<boolean>(() => {
     return safeStorage.get("assess.palette.collapsed") === "1";
   });
