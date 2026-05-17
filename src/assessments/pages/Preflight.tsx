@@ -653,7 +653,7 @@ export default function Preflight() {
                   <ReadyStep
                     title={a.title ?? "Assessment"}
                     durationMin={a.duration_min}
-                    onStart={onStart}
+                    onStart={() => setSummaryOpen(true)}
                   />
                 )}
               </div>
