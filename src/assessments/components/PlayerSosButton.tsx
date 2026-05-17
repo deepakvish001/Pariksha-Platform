@@ -590,15 +590,21 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
                 <Button
                   variant="destructive"
                   onClick={sendSos}
-                  disabled={sending}
-                  className="font-semibold"
+                  disabled={sending || blocked}
+                  className="font-semibold tabular-nums"
                 >
                   {sending ? (
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                   ) : (
                     <Send className="h-4 w-4 mr-1.5" />
                   )}
-                  {sending ? "Notifying proctor…" : "Send SOS"}
+                  {sending
+                    ? "Notifying proctor…"
+                    : maxedOut
+                      ? `Limit reached (${MAX_PER_ATTEMPT}/${MAX_PER_ATTEMPT})`
+                      : inCooldown
+                        ? `Resend in ${remainingSec}s`
+                        : "Send SOS"}
                 </Button>
               </DialogFooter>
             </div>
