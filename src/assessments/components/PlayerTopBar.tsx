@@ -161,6 +161,9 @@ export function PlayerTopBar({
               </Tooltip>
             )}
 
+            {/* SOS */}
+            <PlayerSosButton attemptId={attemptId} assessmentTitle={title} />
+
             {/* Timer */}
             {TimerChip}
 
