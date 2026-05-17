@@ -556,6 +556,69 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ---- CHUNK-UPLOAD (phone uploads a ~165s WebM session segment) ------
+    if (action === "chunk-upload") {
+      const token = req.headers.get("x-pair-token") ?? url.searchParams.get("token") ?? "";
+      if (!isToken(token)) return json({ error: "invalid_token" }, 400);
+      const p = await findPairing(token);
+      if (!p) return json({ error: "pairing_not_found" }, 404);
+      if (!pairingFresh(p)) return json({ error: "pairing_closed_or_expired" }, 410);
+
+      const sessionId = url.searchParams.get("sessionId") ?? "";
+      const seqStr = url.searchParams.get("seq") ?? "";
+      const startedAt = url.searchParams.get("startedAt") ?? "";
+      const endedAt = url.searchParams.get("endedAt") ?? "";
+      const durationMs = Number(url.searchParams.get("durationMs") ?? "0");
+      const mime = url.searchParams.get("mime") ?? "video/webm";
+
+      if (!isUuid(sessionId)) return json({ error: "invalid_sessionId" }, 400);
+      const seq = Number(seqStr);
+      if (!Number.isInteger(seq) || seq < 0 || seq > 100_000)
+        return json({ error: "invalid_seq" }, 400);
+      if (!startedAt || !endedAt || !Number.isFinite(new Date(startedAt).getTime()) ||
+          !Number.isFinite(new Date(endedAt).getTime()))
+        return json({ error: "invalid_timestamps" }, 400);
+      if (!Number.isFinite(durationMs) || durationMs < 0 || durationMs > 10 * 60_000)
+        return json({ error: "invalid_durationMs" }, 400);
+
+      const buf = new Uint8Array(await req.arrayBuffer());
+      if (buf.byteLength === 0) return json({ error: "empty_body" }, 400);
+      if (buf.byteLength > 50 * 1024 * 1024) return json({ error: "payload_too_large" }, 413);
+
+      const ext = mime.includes("mp4") ? "mp4" : "webm";
+      const padded = String(seq).padStart(5, "0");
+      const path = `${p.attempt_id}/sessions/sideeye/${sessionId}/${padded}.${ext}`;
+      const { error: upErr } = await admin.storage
+        .from(BUCKET)
+        .upload(path, buf, { contentType: mime, upsert: false });
+      if (upErr && !/already exists|Duplicate/i.test(upErr.message))
+        return json({ error: upErr.message }, 500);
+
+      const { error: insErr } = await admin
+        .from("assessment_proctor_session_chunks")
+        .insert({
+          attempt_id: p.attempt_id,
+          session_id: sessionId,
+          kind: "sideeye",
+          seq,
+          started_at: startedAt,
+          ended_at: endedAt,
+          duration_ms: durationMs,
+          size_bytes: buf.byteLength,
+          mime,
+          storage_path: path,
+        });
+      if (insErr && !/duplicate key/i.test(insErr.message))
+        return json({ error: insErr.message }, 500);
+
+      await admin
+        .from("assessment_side_camera_pairings")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", p.id);
+
+      return json({ ok: true, path });
+    }
+
     return json({ error: "unknown action" }, 400);
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
