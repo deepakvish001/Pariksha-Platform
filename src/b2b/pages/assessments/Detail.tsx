@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play, Activity } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play, Activity, Eye, Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
