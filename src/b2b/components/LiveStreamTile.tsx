@@ -151,6 +151,9 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
 
   const Icon = ICONS[kind];
   const showRecBtn = !!attemptId && connected;
+  const lastSeenLabel = lastConnectedAt
+    ? formatDistanceToNowStrict(new Date(lastConnectedAt), { addSuffix: true })
+    : null;
 
   return (
     <div className={`relative aspect-video rounded-md overflow-hidden border border-[hsl(var(--border))] bg-black/60 ${className ?? ""}`}>
@@ -160,6 +163,9 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
         <div className="absolute inset-0 grid place-items-center text-muted-foreground text-[11px] gap-1.5 px-2 text-center">
           <CircleSlash className="h-4 w-4 mx-auto" />
           {channelId ? "Waiting for stream…" : "Not available"}
+          {lastSeenLabel && channelId && (
+            <span className="text-[10px] text-rose-300/80">Last connected {lastSeenLabel}</span>
+          )}
         </div>
       )}
       <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
