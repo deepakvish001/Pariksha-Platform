@@ -1,104 +1,72 @@
-# Assessment Management — End to End
+# Merge Proctoring into Assessment Manage
 
-Goal: turn the flat assessments list into a real management surface where each test has a clear schedule, a dedicated **Edit** path, and a dedicated **Manage / Live monitor** path showing who joined, who's in progress, who finished, and integrity signals — in real time.
+Goal: kill the separate **Proctoring monitor** and surface every proctoring capability *inside* each assessment's **Manage** page. Clicking any participant opens a side drawer with the full "what is this student doing right now" view.
 
-Most of the underlying data already exists (`assessments`, `assessment_invites`, `assessment_attempts`, `attempt_events`, proctoring panel, scoring). This work is mostly UI composition + a new scheduling board + a live monitor view. No schema changes.
+## 1. Retire the standalone Proctoring page
 
----
+- Delete `src/b2b/pages/Proctoring.tsx`.
+- Remove the `B2BProctoring` import + both route registrations in `src/App.tsx` (`/b2b/proctoring` and the nested `proctoring` route).
+- Add a redirect: `/b2b/proctoring` → `/b2b/assessments` (preserve old bookmarks).
+- Remove the **Proctoring** sidebar entry from `src/b2b/layouts/OrgShell.tsx` (both nav arrays).
+- Update `Dashboard.tsx` / any "Open proctoring" CTAs to point at the assessments hub instead.
 
-## 1. New Assessments Hub (`/b2b/assessments`)
+## 2. Promote Manage into the per-assessment command center
 
-Replace the flat list with a tabbed, status-segmented board built on glass cards (matching the new dashboard aesthetic).
+In `src/b2b/pages/assessments/Manage.tsx`:
 
-Tabs:
-- **Live now** — `status=published` and `now ∈ [starts_at, ends_at]` (or no window set).
-- **Upcoming / Scheduled** — `published` with `starts_at > now`.
-- **Drafts** — `status=draft`.
-- **Closed / Archived** — `ended_at < now` or `status=archived`.
-- **All**.
+- Apply the same role gate the Proctoring page used (`useCanProctor`) so sensitive evidence stays restricted; non-proctors still see the participants table but evidence/snapshot UI is hidden.
+- Extend the existing `useAssessmentLive` hook (or wrap it in this page) to additionally fetch for this assessment's attempts:
+  - `assessment_proctor_findings` (severity, finding, created_at)
+  - `assessment_proctor_snapshots` (webcam vs screen counts)
+  - `assessment_side_camera_frames` (side-cam counts)
+  - subscribe to `INSERT` on findings + snapshots for the live feel the Proctoring page had.
+- Add three new participant-row columns / chips: **Webcam / Screen / Side-cam counts** (Camera/Monitor/Smartphone icons + numbers) and **Findings** (`high`/`med`/`clean` badges) — exact styling reused from `Proctoring.tsx` so we don't lose the visual language.
+- Add `findings`, `snapshots`, `sideCam` to the sort/filter set (e.g. "Flagged only", "High severity", existing status filter stays).
+- Bring `RetentionCard` over and mount it at the bottom of Manage (collapsed by default) so admins can still tune retention from here.
 
-Each card shows: title, status pill, schedule window (Opens in 3h / Live · closes in 42m / Closed 2d ago), duration, invited count, started/submitted counts, average integrity, two primary actions:
-- **Edit** → `/b2b/assessments/:id/edit` (existing Detail "Sections/Settings" experience)
-- **Manage** → `/b2b/assessments/:id/manage` (new live monitor, default landing)
+## 3. Student-in-test drawer
 
-Secondary menu (kebab): Duplicate, Publish/Archive toggle, Copy join link, Delete.
+Replace the current "row click does nothing" behaviour with a `Sheet` (side drawer) — using shadcn `Sheet`, opens on row click.
 
-Top controls: search box, status filter chips, sort (start time / created / invites), "New assessment" button.
+Drawer contents (tabbed, all scoped to the selected `attempt_id`):
 
-## 2. Per-Assessment routes
+1. **Overview** — candidate name/email, status, started/ended, elapsed, score, integrity score, force-submit button (existing), copy attempt link.
+2. **Live evidence** — embeds the existing `AttemptInspector` (`src/components/proctoring/AttemptInspector.tsx`) which already renders webcam/screen/side-cam playback.
+3. **Proctoring findings** — list from `assessment_proctor_findings` with severity badges; reuse `AttemptProctoringPanel`.
+4. **Activity timeline** — `attempt_events` already streamed by `useAssessmentLive`, filtered to this attempt, newest first, with icons for tab_blur/copy/paste/fullscreen_exit/etc.
+5. **SOS history** — reuse `AttemptSosHistoryPanel`.
+6. **Answers / progress** — pull from `assessment_attempt_answers` (question, answer, correct, time spent) so the proctor can see what the student is actually doing question-by-question.
 
-Split today's single `Detail.tsx` into two clearer destinations sharing the same data:
+Footer of the drawer: **"Open full attempt page"** → existing `/b2b/assessments/:id/attempts/:attemptId` for deep forensics.
 
-```text
-/b2b/assessments/:id           → redirect to /manage
-/b2b/assessments/:id/manage    → Live monitor (default)
-/b2b/assessments/:id/edit      → Authoring (Sections, Invites, Settings, Proctoring config)
-```
+Drawer is `w-full sm:max-w-2xl lg:max-w-4xl`, glass card aesthetic to match the rest of B2B.
 
-Both pages share a sticky header strip:
-- Title + status badge + schedule chip ("Live · closes 14:32")
-- Counters: Invited · Joined · In progress · Submitted · Avg integrity
-- Action buttons: Take preview · Publish/Archive · Copy join link · Switch view (Edit ↔ Manage)
+## 4. Cross-assessment safety net
 
-### 2a. Edit view (`/edit`)
-Reuses existing panels: **Sections & Questions**, **Invites**, **Settings** (schedule, duration, max attempts, proctoring config). Tabs trimmed of monitoring panels which now live in Manage.
+Because the org-wide list is gone, add a **"Flagged across all assessments"** ribbon at the top of the **Assessments Hub** (`List.tsx`) — a thin horizontal strip showing the 5 highest-severity live attempts org-wide, each chip deep-linking to `/b2b/assessments/:id/manage?attempt=<id>` (auto-opens the drawer). This keeps the cross-assessment triage that was the Proctoring page's main job, without a separate route.
 
-### 2b. Manage view (`/manage`) — new
-Realtime cockpit. Four panels:
+Manage page reads `?attempt=` on mount and opens the drawer for that id.
 
-1. **Live participants table** — one row per invite, joined with their latest attempt.
-   Columns: Name / email · Status (Not joined · Joined · In progress · Submitted · Auto-submitted · Abandoned) · Started · Elapsed (ticking) · Progress (answered / total) · Score · Integrity · Last activity · Actions (View attempt, Force submit, Resend invite, Remove).
-   Filters: status chips, search.
-2. **Activity feed** — last 50 `attempt_events` across the assessment (joined, tab-switch, copy-paste, fullscreen exit, submit). Color-coded by severity.
-3. **Integrity alerts** — attempts with integrity < 70 surfaced with reason summary; click → AttemptDetail.
-4. **Schedule & capacity strip** — opens-at / closes-at countdown, time remaining, # of concurrent in-progress users, peak concurrency today.
+## 5. Tests / cleanup
 
-Realtime: subscribe to `assessment_attempts` and `attempt_events` filtered by `assessment_id` so the table and feed update without refresh.
+- Update `src/b2b/pages/__tests__/Dashboard.test.tsx` if it referenced the proctoring link.
+- Delete any tests for `Proctoring.tsx`.
+- Add a smoke test for Manage: drawer opens on row click, force-submit confirmation still works, `?attempt=` auto-opens.
 
-## 3. Schedule helpers
+## Technical notes
 
-Add `src/b2b/lib/assessmentSchedule.ts` with pure helpers:
-- `getScheduleState(a)` → `'draft' | 'scheduled' | 'live' | 'closed' | 'archived'`
-- `formatWindow(a, now)` → human string ("Opens in 3h 12m", "Live · 42m left", "Closed 2d ago")
-- `bucketAssessments(list, now)` → `{ live, upcoming, drafts, closed }`
+- Reused components: `AttemptInspector`, `AttemptProctoringPanel`, `AttemptSosHistoryPanel`, `RetentionCard` — no rewrites.
+- New data wiring lives in `useAssessmentLive` (extended) — no new hook file.
+- All evidence queries already filter by attempt ids that belong to the current assessment, so existing RLS keeps tenants isolated.
+- No DB migrations required.
 
-Used by the hub board, the per-assessment header strip, and the dashboard "Upcoming assessments" widget.
+## Files touched
 
-## 4. Hooks (new, thin wrappers — no schema changes)
-
-`src/b2b/hooks/useAssessmentLive.ts`:
-- `useLiveParticipants(assessmentId)` — joins `assessment_invites` + latest `assessment_attempts` row per invite; subscribes to realtime.
-- `useAssessmentActivity(assessmentId, limit=50)` — pulls + subscribes to `attempt_events`.
-- `useForceSubmitAttempt()` — mutation calling existing submit RPC / status update.
-- `useResendInvite()` — re-trigger the existing invite send edge function.
-
-## 5. Wiring
-
-- Update router (wherever `/b2b/assessments/:id` is mounted) to add `/edit` and `/manage` children + the redirect.
-- Replace card `onClick navigate(\`/b2b/assessments/${a.id}\`)` in `List.tsx` with the two-button design (Edit + Manage) and the schedule chip.
-- Dashboard's "Upcoming assessments" widget already added — link each row to `/manage` for consistency.
-
-## 6. Out of scope (call out explicitly)
-- No DB schema changes — `starts_at`, `ends_at`, `status`, `attempt_events`, integrity scoring all already exist.
-- No new edge functions — reuse existing invite/submit RPCs.
-- No changes to candidate-side player.
-
----
-
-## Files to add
-- `src/b2b/lib/assessmentSchedule.ts`
-- `src/b2b/hooks/useAssessmentLive.ts`
-- `src/b2b/pages/assessments/Manage.tsx`
-- `src/b2b/pages/assessments/Edit.tsx` (thin wrapper that mounts the existing Sections/Invites/Settings panels extracted from `Detail.tsx`)
-- `src/b2b/components/assessments/ScheduleChip.tsx`
-- `src/b2b/components/assessments/AssessmentCard.tsx`
-- `src/b2b/components/assessments/LiveParticipantsTable.tsx`
-- `src/b2b/components/assessments/ActivityFeed.tsx`
-
-## Files to change
-- `src/b2b/pages/assessments/List.tsx` — new hub layout with tabs + cards.
-- `src/b2b/pages/assessments/Detail.tsx` — refactor into shared header + redirect to `/manage`; extract panels into reusable components.
-- Router config — add `/edit`, `/manage`, redirect.
-- Dashboard "Upcoming assessments" rows link to `/manage`.
-
-Confirm and I'll implement.
+- delete: `src/b2b/pages/Proctoring.tsx`
+- edit: `src/App.tsx` (remove routes, add redirect)
+- edit: `src/b2b/layouts/OrgShell.tsx` (drop Proctoring nav entries)
+- edit: `src/b2b/hooks/useAssessmentLive.ts` (add findings/snapshots/side-cam queries + realtime)
+- edit: `src/b2b/pages/assessments/Manage.tsx` (new columns, drawer, role gate, retention card, `?attempt=` handler)
+- edit: `src/b2b/pages/assessments/List.tsx` (flagged ribbon)
+- edit: `src/b2b/pages/Dashboard.tsx` (retarget any proctoring CTA)
+- edit/remove: related tests

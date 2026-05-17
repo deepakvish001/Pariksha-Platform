@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams, Link } from "react-router-dom";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useAssessment, useUpdateAssessment } from "../../hooks/useAssessments";
 import { useInvites, buildJoinUrl } from "../../hooks/useInvites";
 import {
   useLiveParticipants,
   useAssessmentActivity,
+  useAssessmentEvidence,
   useForceSubmitAttempt,
   type LiveParticipant,
   type ParticipantStatus,
 } from "../../hooks/useAssessmentLive";
+import { useCanProctor } from "../../hooks/usePermissions";
+import { useCurrentOrg } from "../../context/OrgContext";
+import ParticipantDetailDrawer from "../../components/ParticipantDetailDrawer";
+import { RetentionCard } from "@/components/proctoring/RetentionCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -41,6 +46,11 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Camera,
+  Monitor,
+  Smartphone,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 type SortKey = "name" | "status" | "elapsed" | "score" | "integrity";
@@ -114,17 +124,36 @@ function Tick({ at }: { at: string | null }) {
 export default function AssessmentManage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: assessment, isLoading } = useAssessment(id);
   const update = useUpdateAssessment();
   const { data: participants } = useLiveParticipants(id);
   const { data: events } = useAssessmentActivity(id);
   const { data: invites } = useInvites(id);
+  const { data: evidenceMap } = useAssessmentEvidence(id);
   const forceSubmit = useForceSubmitAttempt();
+  const { org } = useCurrentOrg();
+  const { canProctor } = useCanProctor(org?.id);
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ParticipantStatus | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("status");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [selectedInviteId, setSelectedInviteId] = useState<string | null>(null);
+  const [showRetention, setShowRetention] = useState(false);
+
+  // Open drawer from ?attempt= query param.
+  useEffect(() => {
+    const a = searchParams.get("attempt");
+    if (!a || !participants) return;
+    const p = participants.find((x) => x.attempt_id === a);
+    if (p) setSelectedInviteId(p.invite_id);
+  }, [searchParams, participants]);
+
+  const selectedParticipant = useMemo(
+    () => participants?.find((p) => p.invite_id === selectedInviteId) ?? null,
+    [participants, selectedInviteId]
+  );
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -336,6 +365,7 @@ export default function AssessmentManage() {
                       <SortTh label="Elapsed" k="elapsed" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       <SortTh label="Score" k="score" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                       <SortTh label="Integrity" k="integrity" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                      {canProctor && <th className="font-medium py-2 px-2 text-left">Evidence</th>}
                       <th className="text-right font-medium py-2 px-2">Actions</th>
                     </tr>
                   </thead>
@@ -346,6 +376,9 @@ export default function AssessmentManage() {
                         p={p}
                         assessmentId={assessment.id}
                         pending={forceSubmit.isPending}
+                        evidence={p.attempt_id ? evidenceMap?.[p.attempt_id] : undefined}
+                        canProctor={canProctor}
+                        onOpen={() => setSelectedInviteId(p.invite_id)}
                         onForceSubmit={() => {
                           if (!p.attempt_id) return;
                           forceSubmit.mutate(
@@ -408,20 +441,71 @@ export default function AssessmentManage() {
             return (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {alerts.map((p) => (
-                  <Link
+                  <button
                     key={p.invite_id}
-                    to={`/b2b/assessments/${assessment.id}/attempts/${p.attempt_id}`}
-                    className="rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs hover:border-amber-500/40 transition-colors"
+                    type="button"
+                    onClick={() => setSelectedInviteId(p.invite_id)}
+                    className="text-left rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs hover:border-amber-500/40 transition-colors"
                   >
                     <div className="font-medium truncate">{p.name ?? p.email}</div>
                     <div className="text-amber-300/90">Integrity {p.integrity_score}</div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             );
           })()}
         </GlassCard>
+
+        {/* Data retention (admins) */}
+        {canProctor && (
+          <GlassCard className="p-4">
+            <button
+              type="button"
+              onClick={() => setShowRetention((v) => !v)}
+              className="w-full flex items-center justify-between text-sm font-semibold"
+            >
+              <span className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-[hsl(var(--primary))]" /> Proctoring data retention
+              </span>
+              {showRetention ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {showRetention && (
+              <div className="mt-3">
+                <RetentionCard />
+              </div>
+            )}
+          </GlassCard>
+        )}
       </div>
+
+      <ParticipantDetailDrawer
+        open={!!selectedInviteId}
+        onOpenChange={(o) => {
+          if (!o) {
+            setSelectedInviteId(null);
+            if (searchParams.get("attempt")) {
+              const next = new URLSearchParams(searchParams);
+              next.delete("attempt");
+              setSearchParams(next, { replace: true });
+            }
+          }
+        }}
+        participant={selectedParticipant}
+        assessmentId={assessment.id}
+        evidence={selectedParticipant?.attempt_id ? evidenceMap?.[selectedParticipant.attempt_id] : undefined}
+        canProctor={canProctor}
+        forceSubmitPending={forceSubmit.isPending}
+        onForceSubmit={(p) => {
+          if (!p.attempt_id) return;
+          forceSubmit.mutate(
+            { attempt_id: p.attempt_id, assessment_id: assessment.id },
+            {
+              onSuccess: () => toast.success(`Force-submitted ${p.name ?? p.email}`),
+              onError: (e: any) => toast.error(e?.message ?? "Failed to force submit"),
+            }
+          );
+        }}
+      />
     </OrgShell>
   );
 }
@@ -430,18 +514,30 @@ function ParticipantRow({
   p,
   assessmentId,
   onForceSubmit,
+  onOpen,
   pending,
+  evidence,
+  canProctor,
 }: {
   p: LiveParticipant;
   assessmentId: string;
   onForceSubmit: () => void;
+  onOpen: () => void;
   pending?: boolean;
+  evidence?: import("../../hooks/useAssessmentLive").EvidenceCounts;
+  canProctor: boolean;
 }) {
   const canForceSubmit =
     !!p.attempt_id && p.status !== "submitted" && p.status !== "auto_submitted";
+  const ev = evidence;
+  const onRowClick = (e: React.MouseEvent) => {
+    // Avoid triggering on action button clicks
+    if ((e.target as HTMLElement).closest("[data-row-action]")) return;
+    onOpen();
+  };
 
   return (
-    <tr className="hover:bg-white/[0.02]">
+    <tr className="hover:bg-white/[0.02] cursor-pointer" onClick={onRowClick}>
       <td className="py-2.5 px-2 min-w-0">
         <div className="font-medium truncate">{p.name ?? p.email}</div>
         <div className="text-muted-foreground text-[10px] truncate">
@@ -485,15 +581,34 @@ function ParticipantRow({
           <span className="text-muted-foreground">—</span>
         )}
       </td>
-      <td className="py-2.5 px-2 text-right">
-        <div className="inline-flex items-center gap-1">
-          {p.attempt_id && (
-            <Link to={`/b2b/assessments/${assessmentId}/attempts/${p.attempt_id}`}>
-              <Button size="sm" variant="ghost" className="h-7 px-2" title="View attempt">
-                <Eye className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
+      {canProctor && (
+        <td className="py-2.5 px-2">
+          {ev ? (
+            <div className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span className="inline-flex items-center gap-0.5"><Camera className="h-3 w-3" />{ev.webcam}</span>
+              <span className="inline-flex items-center gap-0.5"><Monitor className="h-3 w-3" />{ev.screen}</span>
+              <span className="inline-flex items-center gap-0.5"><Smartphone className="h-3 w-3" />{ev.side_cam}</span>
+              {ev.findings_high > 0 && (
+                <span className="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                  {ev.findings_high} high
+                </span>
+              )}
+              {ev.findings_med > 0 && ev.findings_high === 0 && (
+                <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  {ev.findings_med} med
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
           )}
+        </td>
+      )}
+      <td className="py-2.5 px-2 text-right" data-row-action>
+        <div className="inline-flex items-center gap-1">
+          <Button size="sm" variant="ghost" className="h-7 px-2" title="View details" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button

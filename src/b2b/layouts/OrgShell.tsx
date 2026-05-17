@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, ShieldAlert, Menu, Home, ChevronRight } from "lucide-react";
+import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, Menu, Home, ChevronRight } from "lucide-react";
 import { useOrgBasePath, useCurrentOrg } from "../context/OrgContext";
 import { useCanProctor } from "../hooks/usePermissions";
 import { B2BBackdrop } from "../components/B2BBackdrop";
@@ -130,7 +130,6 @@ export function OrgShell({
     ? [
         { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false, requiresProctor: false },
         { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false, requiresProctor: false },
-        { to: "/b2b/proctoring", label: "Proctoring", icon: ShieldAlert, exact: false, requiresProctor: true },
         { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false, requiresProctor: false },
         { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false, requiresProctor: false },
         { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true, requiresProctor: false },
@@ -138,7 +137,6 @@ export function OrgShell({
     : [
         { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true, requiresProctor: false },
         { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false, requiresProctor: false },
-        { to: `${base}/proctoring`, label: "Proctoring", icon: ShieldAlert, exact: false, requiresProctor: true },
         { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false, requiresProctor: false },
         { to: `${base}/team`, label: "Team", icon: Users, exact: false, requiresProctor: false },
         { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true, requiresProctor: false },

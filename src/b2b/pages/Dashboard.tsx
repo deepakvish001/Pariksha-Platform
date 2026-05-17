@@ -453,7 +453,7 @@ function IntegrityAlertsWidget({
             variant="ghost"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => navigate(`${basePath}/proctoring`)}
+            onClick={() => navigate(`${basePath}/assessments`)}
           >
             Review <ChevronRight className="ml-0.5 h-3.5 w-3.5" />
           </Button>
@@ -482,7 +482,7 @@ function IntegrityAlertsWidget({
                 <li key={a.id}>
                   <button
                     onClick={() =>
-                      navigate(`${basePath}/assessments/${a.assessment_id}/attempts/${a.id}`)
+                      navigate(`${basePath}/assessments/${a.assessment_id}/manage?attempt=${a.id}`)
                     }
                     className="group w-full flex items-center justify-between gap-3 rounded-lg border border-[hsl(var(--border))]/40 bg-[hsl(var(--background))]/30 px-3 py-2 text-left hover:border-[hsl(var(--primary))]/30 hover:bg-[hsl(var(--secondary))]/30 transition-colors"
                   >
