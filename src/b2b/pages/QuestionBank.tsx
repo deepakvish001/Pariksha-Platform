@@ -425,6 +425,8 @@ function QuestionEditorDialog({ question, onClose }: { question: Question; onClo
         {question.type === "true_false" && <TrueFalseEditor question={question} />}
         {question.type === "matching" && <MatchingEditor question={question} />}
         {question.type === "short_answer" && <ShortAnswerEditor question={question} />}
+        {question.type === "numerical" && <NumericalEditor question={question} />}
+        {question.type === "fill_blanks" && <FillBlanksEditor question={question} />}
         {(question.type === "coding" || question.type === "sql") && <TestCaseEditor questionId={question.id} />}
         {question.type === "subjective" && (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
