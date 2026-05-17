@@ -382,6 +382,95 @@ Deno.serve(async (req) => {
       return json({ pages });
     }
 
+    // ---- ANSWER-DELETE-AUTH (laptop tile deletes a page via JWT) --------
+    if (action === "answer-delete-auth") {
+      const user = await getUser(req);
+      if (!user) return json({ error: "auth_required" }, 401);
+      const body = await req.json().catch(() => null) as { id?: string } | null;
+      if (!body?.id) return json({ error: "id required" }, 400);
+
+      const { data: row } = await admin
+        .from("assessment_answer_uploads")
+        .select("id, attempt_id, question_id, storage_path")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!row) return json({ error: "not_found" }, 404);
+
+      const { data: attempt } = await admin
+        .from("assessment_attempts")
+        .select("id, user_id, status")
+        .eq("id", row.attempt_id)
+        .maybeSingle();
+      if (!attempt || attempt.user_id !== user.id) return json({ error: "forbidden" }, 403);
+      if (attempt.status !== "in_progress")
+        return json({ error: "attempt_not_in_progress" }, 409);
+
+      await admin.storage.from(BUCKET).remove([row.storage_path]);
+      await admin.from("assessment_answer_uploads").delete().eq("id", body.id);
+
+      // Re-pack ordinals so the remaining pages stay 1..N
+      const { data: remaining } = await admin
+        .from("assessment_answer_uploads")
+        .select("id, ordinal")
+        .eq("attempt_id", row.attempt_id)
+        .eq("question_id", row.question_id)
+        .order("ordinal", { ascending: true });
+      // Two-pass to avoid unique (attempt, question, ordinal) collisions
+      let neg = -1;
+      for (const r of remaining ?? []) {
+        await admin.from("assessment_answer_uploads").update({ ordinal: neg-- }).eq("id", r.id);
+      }
+      let n = 1;
+      for (const r of remaining ?? []) {
+        await admin.from("assessment_answer_uploads").update({ ordinal: n++ }).eq("id", r.id);
+      }
+      return json({ ok: true });
+    }
+
+    // ---- ANSWER-REORDER (laptop tile reorders pages via JWT) ------------
+    if (action === "answer-reorder") {
+      const user = await getUser(req);
+      if (!user) return json({ error: "auth_required" }, 401);
+      const body = await req.json().catch(() => null) as {
+        attemptId?: string;
+        questionId?: string;
+        orderedIds?: string[];
+      } | null;
+      if (!body?.attemptId || !body?.questionId || !Array.isArray(body?.orderedIds))
+        return json({ error: "attemptId, questionId, orderedIds required" }, 400);
+
+      const { data: attempt } = await admin
+        .from("assessment_attempts")
+        .select("id, user_id, status")
+        .eq("id", body.attemptId)
+        .maybeSingle();
+      if (!attempt || attempt.user_id !== user.id) return json({ error: "forbidden" }, 403);
+      if (attempt.status !== "in_progress")
+        return json({ error: "attempt_not_in_progress" }, 409);
+
+      // Verify every id belongs to this attempt+question
+      const { data: rows } = await admin
+        .from("assessment_answer_uploads")
+        .select("id")
+        .eq("attempt_id", body.attemptId)
+        .eq("question_id", body.questionId);
+      const valid = new Set((rows ?? []).map((r) => r.id));
+      if (body.orderedIds.length !== valid.size ||
+          body.orderedIds.some((id) => !valid.has(id)))
+        return json({ error: "id_mismatch" }, 400);
+
+      // Two-pass update to dodge unique constraint
+      let neg = -1;
+      for (const id of body.orderedIds) {
+        await admin.from("assessment_answer_uploads").update({ ordinal: neg-- }).eq("id", id);
+      }
+      let n = 1;
+      for (const id of body.orderedIds) {
+        await admin.from("assessment_answer_uploads").update({ ordinal: n++ }).eq("id", id);
+      }
+      return json({ ok: true });
+    }
+
     return json({ error: "unknown action" }, 400);
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);

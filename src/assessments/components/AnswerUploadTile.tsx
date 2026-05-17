@@ -2,8 +2,47 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Smartphone, CheckCircle2, ImageIcon, ExternalLink } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  Smartphone,
+  CheckCircle2,
+  ImageIcon,
+  ExternalLink,
+  Trash2,
+  GripVertical,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Download,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
 
 interface Page {
   id: string;
@@ -20,17 +59,88 @@ interface Props {
   onPagesChange?: (pages: Page[]) => void;
 }
 
+function SortableThumb({
+  page,
+  onPreview,
+  onDelete,
+  busy,
+}: {
+  page: Page;
+  onPreview: () => void;
+  onDelete: () => void;
+  busy: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: page.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative aspect-[3/4] rounded border bg-muted overflow-hidden group"
+    >
+      <button
+        type="button"
+        onClick={onPreview}
+        className="block w-full h-full hover:ring-2 hover:ring-primary/40"
+        aria-label={`Preview page ${page.ordinal}`}
+      >
+        {page.url ? (
+          <img src={page.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="grid place-items-center h-full text-muted-foreground">
+            <ImageIcon className="h-4 w-4" />
+          </div>
+        )}
+      </button>
+      <button
+        type="button"
+        className="absolute top-0.5 left-0.5 h-5 w-5 grid place-items-center rounded bg-black/55 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+        aria-label="Drag to reorder"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-3 w-3" />
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={busy}
+        className="absolute top-0.5 right-0.5 h-5 w-5 grid place-items-center rounded bg-destructive/85 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition disabled:opacity-50"
+        aria-label={`Delete page ${page.ordinal}`}
+      >
+        <Trash2 className="h-3 w-3" />
+      </button>
+      <span className="absolute bottom-0.5 right-0.5 text-[10px] font-mono bg-black/55 text-white px-1 rounded">
+        {page.ordinal}
+      </span>
+    </div>
+  );
+}
+
 /**
  * Tile shown inside descriptive (subjective) questions. Lets the candidate
  * deep-link their already-paired phone into the answer-sheet capture flow,
  * then pulls the resulting pages back into the question answer with a Sync
- * button (also auto-syncs via realtime).
+ * button (also auto-syncs via realtime). Also supports previewing pages in
+ * a full-screen lightbox, deleting, and drag-reordering them.
  */
 export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props) {
   const [pairToken, setPairToken] = useState<string | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Page | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
 
   // Fetch the most recent pair token for this attempt (RLS-restricted to owner)
   useEffect(() => {
@@ -102,6 +212,75 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
     [pairToken, questionId]
   );
 
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setBusyId(target.id);
+    setPendingDelete(null);
+    try {
+      const { error } = await supabase.functions.invoke(
+        "assessment-sidecam?action=answer-delete-auth",
+        { body: { id: target.id } }
+      );
+      if (error) throw error;
+      toast.success(`Page ${target.ordinal} deleted`);
+      // Optimistic local update; realtime sync will also refresh
+      setPages((prev) =>
+        prev.filter((p) => p.id !== target.id).map((p, i) => ({ ...p, ordinal: i + 1 }))
+      );
+      sync();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not delete page");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const onDragEnd = async (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = pages.findIndex((p) => p.id === active.id);
+    const newIndex = pages.findIndex((p) => p.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(pages, oldIndex, newIndex).map((p, i) => ({ ...p, ordinal: i + 1 }));
+    const prevPages = pages;
+    setPages(next); // optimistic
+    setReordering(true);
+    try {
+      const { error } = await supabase.functions.invoke(
+        "assessment-sidecam?action=answer-reorder",
+        {
+          body: {
+            attemptId,
+            questionId,
+            orderedIds: next.map((p) => p.id),
+          },
+        }
+      );
+      if (error) throw error;
+      onPagesChange?.(next);
+    } catch (err) {
+      setPages(prevPages);
+      toast.error(err instanceof Error ? err.message : "Could not reorder pages");
+    } finally {
+      setReordering(false);
+    }
+  };
+
+  // Keyboard nav in preview
+  useEffect(() => {
+    if (previewIdx === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewIdx(null);
+      if (e.key === "ArrowRight")
+        setPreviewIdx((i) => (i === null ? null : Math.min(pages.length - 1, i + 1)));
+      if (e.key === "ArrowLeft")
+        setPreviewIdx((i) => (i === null ? null : Math.max(0, i - 1)));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewIdx, pages.length]);
+
   return (
     <div className="rounded-lg border bg-card/60 p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -111,7 +290,7 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             Capture handwritten pages on your paired phone, then click <strong>Sync</strong> to
-            attach them to this answer.
+            attach them. You can preview, reorder, or delete pages below.
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={sync} disabled={loading} className="shrink-0">
@@ -120,7 +299,7 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
         </Button>
       </div>
 
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-3 text-xs flex-wrap">
         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-muted">
           <ImageIcon className="h-3.5 w-3.5" />
           <span className="tabular-nums font-semibold">{pages.length}</span> page
@@ -129,6 +308,11 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
         {pages.length > 0 && (
           <span className="inline-flex items-center gap-1 text-emerald-600">
             <CheckCircle2 className="h-3.5 w-3.5" /> Synced
+          </span>
+        )}
+        {reordering && (
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" /> Saving order…
           </span>
         )}
       </div>
@@ -161,48 +345,126 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
       )}
 
       {pages.length > 0 && (
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-          {pages.map((p, i) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setPreviewIdx(i)}
-              className={cn(
-                "relative aspect-[3/4] rounded border bg-muted overflow-hidden",
-                "hover:ring-2 hover:ring-primary/40"
-              )}
-              aria-label={`Page ${p.ordinal}`}
-            >
-              {p.url ? (
-                <img src={p.url} alt="" className="w-full h-full object-cover" loading="lazy" />
-              ) : (
-                <div className="grid place-items-center h-full text-muted-foreground">
-                  <ImageIcon className="h-4 w-4" />
-                </div>
-              )}
-              <span className="absolute bottom-0.5 right-0.5 text-[10px] font-mono bg-black/55 text-white px-1 rounded">
-                {p.ordinal}
-              </span>
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Pages
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              Drag the handle to reorder · hover for actions
+            </span>
+          </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={pages.map((p) => p.id)} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {pages.map((p, i) => (
+                  <SortableThumb
+                    key={p.id}
+                    page={p}
+                    busy={busyId === p.id}
+                    onPreview={() => setPreviewIdx(i)}
+                    onDelete={() => setPendingDelete(p)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </>
       )}
 
-      {previewIdx !== null && pages[previewIdx]?.url && (
+      {previewIdx !== null && pages[previewIdx] && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 grid place-items-center p-4"
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col"
           onClick={() => setPreviewIdx(null)}
         >
-          <img
-            src={pages[previewIdx].url ?? ""}
-            alt=""
-            className="max-h-full max-w-full object-contain"
-          />
-          <div className="absolute bottom-3 left-0 right-0 text-center text-white text-xs">
-            Page {pages[previewIdx].ordinal} of {pages.length} · tap to close
+          <div
+            className="flex items-center justify-between px-4 py-3 text-white text-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="tabular-nums">
+              Page {pages[previewIdx].ordinal} of {pages.length}
+            </span>
+            <div className="flex items-center gap-2">
+              {pages[previewIdx].url && (
+                <a
+                  href={pages[previewIdx].url ?? "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 hover:underline"
+                >
+                  <Download className="h-3.5 w-3.5" /> Open original
+                </a>
+              )}
+              <button
+                type="button"
+                className="h-7 w-7 grid place-items-center rounded hover:bg-white/10"
+                onClick={() => setPreviewIdx(null)}
+                aria-label="Close preview"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div
+            className="flex-1 grid place-items-center p-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewIdx((i) => (i === null ? null : Math.max(0, i - 1)))}
+              disabled={previewIdx === 0}
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <img
+              src={pages[previewIdx].url ?? ""}
+              alt=""
+              className="max-h-full max-w-full object-contain"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                setPreviewIdx((i) =>
+                  i === null ? null : Math.min(pages.length - 1, i + 1)
+                )
+              }
+              disabled={previewIdx === pages.length - 1}
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-30"
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="text-center text-white/70 text-[11px] pb-3">
+            Click outside, press Esc, or use ← → to navigate
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete page {pendingDelete?.ordinal}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the uploaded image from your answer. Remaining pages will be
+              renumbered. You can re-capture and re-upload from your phone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete page
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
