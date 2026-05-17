@@ -26,6 +26,8 @@ interface Props {
   className?: string;
   /** When set, shows a Record/Stop button that uploads to storage and inserts a row. */
   attemptId?: string;
+  /** Notified whenever the WebRTC connection flips between connected and disconnected. */
+  onConnectionChange?: (connected: boolean, state: string) => void;
 }
 
 function pickMime(): string {
