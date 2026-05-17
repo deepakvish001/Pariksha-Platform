@@ -26,7 +26,7 @@ const TIPS = [
 export function PlayerHelpSheet({ open, onOpenChange }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[360px] sm:w-[400px] p-5">
+      <SheetContent side="right" className="w-[360px] sm:w-[420px] p-5 overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle>Help & shortcuts</SheetTitle>
           <SheetDescription>
