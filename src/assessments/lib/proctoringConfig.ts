@@ -53,6 +53,8 @@ export interface ProctoringConfig {
   allow_clipboard_in_inputs: boolean;
   /** AI snapshot review cadence in seconds (0 = disabled). */
   ai_review_interval_s: number;
+  /** Continuously record webcam + screen + side-cam to evidence storage for full session replay. */
+  record_full_session: boolean;
   events: Partial<Record<ProctoringEventKey, ProctoringEventRule>>;
 }
 
