@@ -152,6 +152,45 @@ export default function AssessmentManage() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selectedInviteId, setSelectedInviteId] = useState<string | null>(null);
   const [showRetention, setShowRetention] = useState(false);
+  const resolvedStorageKey = `pariksha:integrity-resolved:${id ?? "_"}`;
+  const [resolvedAlerts, setResolvedAlerts] = useState<Record<string, { type: string; at: string }>>({});
+  const [showResolved, setShowResolved] = useState(false);
+
+  // Load resolved state from localStorage.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(resolvedStorageKey);
+      if (raw) setResolvedAlerts(JSON.parse(raw));
+      else setResolvedAlerts({});
+    } catch {
+      setResolvedAlerts({});
+    }
+  }, [resolvedStorageKey]);
+
+  const persistResolved = (next: Record<string, { type: string; at: string }>) => {
+    setResolvedAlerts(next);
+    try {
+      localStorage.setItem(resolvedStorageKey, JSON.stringify(next));
+    } catch {
+      // ignore quota errors
+    }
+  };
+
+  const alertKey = (attemptId: string, type: string) => `${attemptId}:${type}`;
+  const isResolved = (attemptId: string, type: string) => !!resolvedAlerts[alertKey(attemptId, type)];
+  const markResolved = (attemptId: string, type: string, label: string) => {
+    persistResolved({
+      ...resolvedAlerts,
+      [alertKey(attemptId, type)]: { type, at: new Date().toISOString() },
+    });
+    toast.success(`Marked "${label}" alert as resolved`);
+  };
+  const unmarkResolved = (attemptId: string, type: string) => {
+    const next = { ...resolvedAlerts };
+    delete next[alertKey(attemptId, type)];
+    persistResolved(next);
+    toast.message("Alert reopened");
+  };
 
   // Open drawer from ?attempt= query param.
   useEffect(() => {
