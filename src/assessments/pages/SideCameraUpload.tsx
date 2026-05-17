@@ -275,13 +275,31 @@ export default function SideCameraUploadPage() {
   }, [token, questionId]);
 
   const capture = () => {
+    const sessionErr = validateSession(token, questionId);
+    if (sessionErr) { setError(sessionErr); return; }
+    if (pages.length >= MAX_PAGES) {
+      setError(`You can attach at most ${MAX_PAGES} pages per answer. Remove some first.`);
+      return;
+    }
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < 2) return;
+    if (!video || !canvas || video.readyState < 2) {
+      setError("Camera isn't ready yet. Give it a moment and try again.");
+      return;
+    }
+    if (
+      !video.videoWidth ||
+      !video.videoHeight ||
+      video.videoWidth < MIN_IMAGE_DIM ||
+      video.videoHeight < MIN_IMAGE_DIM
+    ) {
+      setError(`Camera resolution is too low (min ${MIN_IMAGE_DIM}px). Try a different camera.`);
+      return;
+    }
     canvas.width = CAPTURE_WIDTH;
     canvas.height = CAPTURE_HEIGHT;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) { setError("Couldn't access the canvas to capture this page."); return; }
     // letterbox fit
     const vr = video.videoWidth / video.videoHeight;
     const cr = CAPTURE_WIDTH / CAPTURE_HEIGHT;
@@ -297,6 +315,9 @@ export default function SideCameraUploadPage() {
     ctx.fillRect(0, 0, CAPTURE_WIDTH, CAPTURE_HEIGHT);
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, CAPTURE_WIDTH, CAPTURE_HEIGHT);
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+    const imgErr = validateDataUrl(dataUrl);
+    if (imgErr) { setError(imgErr); return; }
+    setError(null);
     setPages((prev) => [
       ...prev,
       { localId: uid(), dataUrl, ordinal: prev.length + 1, uploaded: false, state: "pending" as const },
