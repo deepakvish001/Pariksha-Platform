@@ -310,6 +310,7 @@ function SettingsPanel({
   const [proctoringConfig, setProctoringConfig] = useState<ProctoringConfig | null>(
     (assessment.proctoring_config as ProctoringConfig | null) ?? null
   );
+  const [showResults, setShowResults] = useState<boolean>(assessment.show_results_to_candidate !== false);
   const [startsAt, setStartsAt] = useState(toLocalInput(assessment.starts_at));
   const [endsAt, setEndsAt] = useState(toLocalInput(assessment.ends_at));
 
