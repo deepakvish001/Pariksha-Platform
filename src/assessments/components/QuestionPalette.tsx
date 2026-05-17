@@ -42,6 +42,7 @@ export function QuestionPalette({
   collapsed: collapsedRail = false,
   onToggleCollapsed,
 }: Props) {
+  const { t } = useTranslation();
   const answered = items.filter((i) => i.answered).length;
   const flagged = items.filter((i) => i.flagged).length;
   const unanswered = items.length - answered;
