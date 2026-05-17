@@ -55,6 +55,8 @@ function lastReadLabel(ts: number | null) {
   if (days < 7) return `Last read ${days}d ago`;
   return `Last read ${new Date(ts).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
 }
+
+function TypingDots() {
   return (
     <span className="inline-flex items-center gap-0.5" aria-label="Typing">
       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.2s]" />
