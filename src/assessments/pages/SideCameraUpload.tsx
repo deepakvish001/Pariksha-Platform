@@ -50,6 +50,8 @@ const CAPTURE_WIDTH = 1280;
 const CAPTURE_HEIGHT = 1700; // portrait A4-ish
 const JPEG_QUALITY = 0.78;
 
+type UploadState = "pending" | "uploading" | "uploaded" | "error";
+
 type Page = {
   /** Local-only id (uuid) until uploaded. */
   localId: string;
@@ -59,10 +61,29 @@ type Page = {
   dataUrl: string;
   ordinal: number;
   uploaded: boolean;
+  state: UploadState;
+  errorMsg?: string;
 };
 
 function uid() {
   return `p_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+}
+
+function friendlyError(e: unknown): string {
+  if (e instanceof Error) {
+    const m = e.message.toLowerCase();
+    if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("network"))
+      return "No internet connection. Check your Wi-Fi or mobile data and try again.";
+    if (m.includes("timeout")) return "The upload timed out. Try again on a stronger connection.";
+    if (m.includes("413") || m.includes("too large"))
+      return "This page is too large to upload. Try retaking it with less zoom.";
+    if (m.includes("401") || m.includes("403") || m.includes("token"))
+      return "Your phone session expired. Re-scan the QR code from your laptop.";
+    if (m.includes("500") || m.includes("server"))
+      return "Server error while saving the page. Please retry.";
+    return e.message;
+  }
+  return "Upload failed. Please retry.";
 }
 
 function SortablePage({
