@@ -1,0 +1,5 @@
+ALTER TABLE public.assessment_invites
+  ADD COLUMN IF NOT EXISTS last_sent_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_send_attempt_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_send_error TEXT,
+  ADD COLUMN IF NOT EXISTS send_count INTEGER NOT NULL DEFAULT 0;

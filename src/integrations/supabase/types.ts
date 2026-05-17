@@ -853,7 +853,11 @@ export type Database = {
           expires_at: string | null
           external_id: string | null
           id: string
+          last_send_attempt_at: string | null
+          last_send_error: string | null
+          last_sent_at: string | null
           name: string | null
+          send_count: number
           source: Database["public"]["Enums"]["invite_source"]
           status: Database["public"]["Enums"]["invite_status"]
           token: string
@@ -867,7 +871,11 @@ export type Database = {
           expires_at?: string | null
           external_id?: string | null
           id?: string
+          last_send_attempt_at?: string | null
+          last_send_error?: string | null
+          last_sent_at?: string | null
           name?: string | null
+          send_count?: number
           source?: Database["public"]["Enums"]["invite_source"]
           status?: Database["public"]["Enums"]["invite_status"]
           token?: string
@@ -881,7 +889,11 @@ export type Database = {
           expires_at?: string | null
           external_id?: string | null
           id?: string
+          last_send_attempt_at?: string | null
+          last_send_error?: string | null
+          last_sent_at?: string | null
           name?: string | null
+          send_count?: number
           source?: Database["public"]["Enums"]["invite_source"]
           status?: Database["public"]["Enums"]["invite_status"]
           token?: string
