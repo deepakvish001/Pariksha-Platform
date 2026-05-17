@@ -182,11 +182,22 @@ export default function B2BSettings() {
                   className="font-mono"
                 />
               </div>
-              {!isValidBrand && (
-                <p className="mt-1 text-[11px] text-destructive">Use a hex value like #1f6feb.</p>
-              )}
+              {!isValidBrand ? (
+                <p className="mt-1 text-[11px] text-destructive">{brandValidation.error}</p>
+              ) : brandPreview ? (
+                <div className="mt-1 flex items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+                  <span
+                    aria-hidden
+                    className="inline-block h-3 w-3 rounded-sm border border-[hsl(var(--border))]"
+                    style={{ background: brandPreview }}
+                  />
+                  <span>
+                    Looks good. Saving as <span className="font-mono text-[hsl(var(--foreground))]">{brandPreview}</span>.
+                  </span>
+                </div>
+              ) : null}
               <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
-                Used for the header and call-to-action in invitation emails.
+                Used for the header and call-to-action in invitation emails. Accepts <span className="font-mono">#RGB</span> or <span className="font-mono">#RRGGBB</span>.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
