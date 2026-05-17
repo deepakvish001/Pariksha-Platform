@@ -78,7 +78,9 @@ export function AssessmentChatDock({
   const [open, setOpen] = useState(variant === "embedded");
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   const { data: messages, isLoading } = useAssessmentChat(attemptId);
   const isPanelVisible = open || variant === "embedded";
