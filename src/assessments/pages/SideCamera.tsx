@@ -117,6 +117,71 @@ export default function SideCameraPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
+  // Continuous side-cam recording — uploads ~165s WebM chunks via the
+  // pair-token-authenticated `chunk-upload` action so the phone stream can
+  // be replayed alongside the candidate's webcam + screen later.
+  useEffect(() => {
+    if (status !== "streaming" || !streamRef.current) return;
+    const stream = streamRef.current;
+    let seq = 0;
+    let stopped = false;
+    const sessionId = (crypto as { randomUUID?: () => string })?.randomUUID?.()
+      ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const mimeCandidates = ["video/webm;codecs=vp8,opus", "video/webm"];
+    const mime = mimeCandidates.find((m) =>
+      typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m),
+    ) ?? "video/webm";
+
+    let rec: MediaRecorder | null = null;
+    let timer: number | null = null;
+
+    const startCycle = () => {
+      if (stopped) return;
+      const chunks: BlobPart[] = [];
+      const startedAt = new Date();
+      try {
+        rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 600_000 });
+      } catch {
+        return;
+      }
+      const mySeq = seq++;
+      rec.ondataavailable = (e) => { if (e.data?.size) chunks.push(e.data); };
+      rec.onstop = async () => {
+        const blob = new Blob(chunks, { type: mime });
+        const endedAt = new Date();
+        try {
+          const qs = new URLSearchParams({
+            action: "chunk-upload",
+            token,
+            sessionId,
+            seq: String(mySeq),
+            startedAt: startedAt.toISOString(),
+            endedAt: endedAt.toISOString(),
+            durationMs: String(endedAt.getTime() - startedAt.getTime()),
+            mime,
+          });
+          await fetch(`${FN_URL}?${qs}`, {
+            method: "POST",
+            headers: { apikey: ANON, "Content-Type": "application/octet-stream" },
+            body: blob,
+          });
+        } catch { /* drop on phone; live frames still cover */ }
+        if (!stopped) startCycle();
+      };
+      try { rec.start(); } catch { return; }
+      timer = window.setTimeout(() => {
+        try { rec?.state === "recording" && rec.stop(); } catch { /* noop */ }
+      }, 165_000);
+    };
+
+    startCycle();
+    return () => {
+      stopped = true;
+      if (timer) window.clearTimeout(timer);
+      try { rec?.state === "recording" && rec.stop(); } catch { /* noop */ }
+    };
+  }, [status, token]);
+
   useEffect(() => {
     const onUnload = () => {
       navigator.sendBeacon?.(
