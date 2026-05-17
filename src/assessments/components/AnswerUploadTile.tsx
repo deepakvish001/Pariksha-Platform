@@ -214,11 +214,16 @@ export function AnswerUploadTile({ attemptId, questionId, onPagesChange }: Props
   const downloadAll = async () => {
     if (downloadingAll || pages.length === 0) return;
     setDownloadingAll(true);
+    setDownloadAllDone(0);
+    setDownloadAllTotal(pages.length);
     try {
+      let i = 0;
       for (const p of pages) {
         await downloadPage(p);
+        i += 1;
+        setDownloadAllDone(i);
         // small gap so browsers don't collapse/cancel rapid downloads
-        await new Promise((r) => setTimeout(r, 250));
+        if (i < pages.length) await new Promise((r) => setTimeout(r, 250));
       }
     } finally {
       setDownloadingAll(false);
