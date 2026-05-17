@@ -47,6 +47,7 @@ export default function B2BProctoring() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "flagged" | "high" | "live">("flagged");
   const [assessmentFilter, setAssessmentFilter] = useState<string>("all");
+  const [inspectingId, setInspectingId] = useState<string | null>(null);
 
   const refresh = async () => {
     if (!orgId) return;
