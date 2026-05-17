@@ -29,6 +29,103 @@ const QUICK_ISSUES = [
   "Other emergency — need help now",
 ];
 
+/**
+ * Snapshot of the candidate's environment at the moment SOS was raised.
+ * All probes are wrapped in try/catch so a hostile / restricted browser
+ * (Safari private mode, locked-down kiosk) never blocks the alert itself.
+ */
+async function collectSosMetadata(): Promise<Record<string, unknown>> {
+  const nav: any = typeof navigator !== "undefined" ? navigator : {};
+  const scr: any = typeof screen !== "undefined" ? screen : {};
+  const win: any = typeof window !== "undefined" ? window : {};
+
+  const safe = <T,>(fn: () => T): T | null => {
+    try {
+      return fn();
+    } catch {
+      return null;
+    }
+  };
+
+  // Network — Network Information API where available
+  const conn = nav.connection || nav.mozConnection || nav.webkitConnection || null;
+  const network = conn
+    ? {
+        effective_type: conn.effectiveType ?? null,
+        downlink_mbps: typeof conn.downlink === "number" ? conn.downlink : null,
+        rtt_ms: typeof conn.rtt === "number" ? conn.rtt : null,
+        save_data: !!conn.saveData,
+      }
+    : null;
+
+  // Camera / microphone permission + active device count.
+  // Uses Permissions API + enumerateDevices, both wrapped defensively.
+  const probePermission = async (name: PermissionName): Promise<string | null> => {
+    if (!nav.permissions?.query) return null;
+    try {
+      const res = await nav.permissions.query({ name });
+      return res.state ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const [cameraPerm, micPerm] = await Promise.all([
+    probePermission("camera" as PermissionName),
+    probePermission("microphone" as PermissionName),
+  ]);
+
+  let cameraCount: number | null = null;
+  let micCount: number | null = null;
+  let deviceLabels: { camera: boolean; mic: boolean } | null = null;
+  try {
+    if (nav.mediaDevices?.enumerateDevices) {
+      const devices = await nav.mediaDevices.enumerateDevices();
+      cameraCount = devices.filter((d: MediaDeviceInfo) => d.kind === "videoinput").length;
+      micCount = devices.filter((d: MediaDeviceInfo) => d.kind === "audioinput").length;
+      // Empty label => permission not granted yet
+      deviceLabels = {
+        camera: devices.some((d: MediaDeviceInfo) => d.kind === "videoinput" && !!d.label),
+        mic: devices.some((d: MediaDeviceInfo) => d.kind === "audioinput" && !!d.label),
+      };
+    }
+  } catch {
+    // ignore
+  }
+
+  return {
+    client_ts: new Date().toISOString(),
+    page_url: safe(() => win.location?.href) ?? null,
+    user_agent: nav.userAgent ?? null,
+    platform: nav.userAgentData?.platform ?? nav.platform ?? null,
+    languages: Array.isArray(nav.languages) ? nav.languages.slice(0, 4) : null,
+    timezone: safe(() => Intl.DateTimeFormat().resolvedOptions().timeZone) ?? null,
+    online: typeof nav.onLine === "boolean" ? nav.onLine : null,
+    cpu_cores: typeof nav.hardwareConcurrency === "number" ? nav.hardwareConcurrency : null,
+    device_memory_gb: typeof nav.deviceMemory === "number" ? nav.deviceMemory : null,
+    viewport: {
+      w: safe(() => win.innerWidth) ?? null,
+      h: safe(() => win.innerHeight) ?? null,
+      dpr: safe(() => win.devicePixelRatio) ?? null,
+    },
+    screen: {
+      w: scr.width ?? null,
+      h: scr.height ?? null,
+    },
+    network,
+    media: {
+      camera_permission: cameraPerm,
+      mic_permission: micPerm,
+      camera_count: cameraCount,
+      mic_count: micCount,
+      camera_active: deviceLabels?.camera ?? null,
+      mic_active: deviceLabels?.mic ?? null,
+    },
+    visibility: safe(() => document.visibilityState) ?? null,
+    fullscreen: safe(() => !!document.fullscreenElement),
+  };
+}
+
 interface Props {
   attemptId?: string | null;
   assessmentTitle?: string;
@@ -117,6 +214,11 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
 
       const raisedAt = new Date().toISOString();
 
+      // ── Enriched context for proctors ────────────────────────────
+      // Helps the proctor decide whether this is a device issue, a
+      // network blip, or a user-side emergency without asking again.
+      const metadata = await collectSosMetadata();
+
       const sosInsert = supabase
         .from("assessment_sos_events")
         .insert({
@@ -136,6 +238,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           notes: notes || null,
           raised_at: raisedAt,
           assessment_title: assessmentTitle ?? null,
+          ...metadata,
         },
       });
 
