@@ -173,6 +173,60 @@ export function PlayerTopBar({
               </Tooltip>
             )}
 
+            {/* Zoom controls */}
+            {onZoomOut && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onZoomOut}
+                    disabled={!canZoomOut}
+                    className="h-8 w-8 p-0 hidden sm:inline-flex"
+                    aria-label="Decrease question text size"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Smaller text</TooltipContent>
+              </Tooltip>
+            )}
+            {onZoomIn && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onZoomIn}
+                    disabled={!canZoomIn}
+                    className="h-8 w-8 p-0 hidden sm:inline-flex"
+                    aria-label="Increase question text size"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Larger text</TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* General instructions */}
+            {onShowInstructions && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onShowInstructions}
+                    className="h-8 w-8 p-0"
+                    aria-label="Show general instructions"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>General instructions</TooltipContent>
+              </Tooltip>
+            )}
+
             {/* SOS */}
             <PlayerSosStatus attemptId={attemptId} />
             <PlayerSosTimeline attemptId={attemptId} />
