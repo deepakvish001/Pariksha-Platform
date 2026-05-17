@@ -423,6 +423,30 @@ function SettingsPanel({
         onChange={(cfg) => setProctoringConfig(cfg)}
       />
 
+      <div className="border-t pt-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">Show results to candidate</div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            When off, candidates only see a submission confirmation and feedback form — no score, breakdown, integrity, or receipt PDF.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showResults}
+          onClick={() => setShowResults((v) => !v)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            showResults ? "bg-[hsl(var(--primary))]" : "bg-[hsl(var(--secondary))]"
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+              showResults ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+
       <div className="flex gap-2 pt-2 border-t">
         <Button
           className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
