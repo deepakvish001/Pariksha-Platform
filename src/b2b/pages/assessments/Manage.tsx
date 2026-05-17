@@ -130,6 +130,7 @@ export default function AssessmentManage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { org } = useCurrentOrg();
+  const basePath = useOrgBasePath();
   const { data: assessment, isLoading } = useAssessment(idOrSlug, org?.id);
   const id = assessment?.id;
   const update = useUpdateAssessment();
