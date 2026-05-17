@@ -16,6 +16,8 @@ import {
   Mic,
   MicOff,
   Pause,
+  Pin,
+  PinOff,
   Play,
   Plus,
   Save,
@@ -72,6 +74,16 @@ interface NoteRow {
   body: string;
   created_at: string;
   updated_at: string;
+}
+
+interface PinRow {
+  id: string;
+  event_id: string;
+  attempt_id: string;
+  pinned_by: string;
+  pinned_by_name: string | null;
+  reason: string | null;
+  created_at: string;
 }
 
 interface Props {
@@ -170,7 +182,8 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
   const [events, setEvents] = useState<EventRow[]>([]);
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [notes, setNotes] = useState<NoteRow[]>([]);
-  const [filter, setFilter] = useState<"all" | "events" | "chat" | "critical">("all");
+  const [pins, setPins] = useState<PinRow[]>([]);
+  const [filter, setFilter] = useState<"all" | "events" | "chat" | "critical" | "pinned">("all");
   const [autoscroll, setAutoscroll] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
@@ -209,7 +222,7 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     let cancelled = false;
 
     (async () => {
-      const [evtRes, chatRes, noteRes] = await Promise.all([
+      const [evtRes, chatRes, noteRes, pinRes] = await Promise.all([
         supabase
           .from("attempt_events")
           .select("id, kind, payload, created_at")
@@ -228,11 +241,18 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
           .eq("attempt_id", attemptId)
           .order("created_at", { ascending: true })
           .limit(1000),
+        supabase
+          .from("attempt_event_pins")
+          .select("*")
+          .eq("attempt_id", attemptId)
+          .order("created_at", { ascending: false })
+          .limit(500),
       ]);
       if (cancelled) return;
       if (evtRes.data) setEvents(evtRes.data as EventRow[]);
       if (chatRes.data) setChats(chatRes.data as ChatRow[]);
       if (noteRes.data) setNotes(noteRes.data as NoteRow[]);
+      if (pinRes.data) setPins(pinRes.data as PinRow[]);
     })();
 
     const channel = supabase
@@ -288,6 +308,29 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "attempt_event_pins",
+          filter: `attempt_id=eq.${attemptId}`,
+        },
+        (payload) => {
+          setPins((prev) => {
+            if (payload.eventType === "INSERT") {
+              const row = payload.new as PinRow;
+              if (prev.some((p) => p.id === row.id)) return prev;
+              return [row, ...prev];
+            }
+            if (payload.eventType === "DELETE") {
+              const row = payload.old as Partial<PinRow>;
+              return prev.filter((p) => p.id !== row.id);
+            }
+            return prev;
+          });
+        }
+      )
       .subscribe();
 
     return () => {
@@ -296,14 +339,23 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     };
   }, [attemptId]);
 
+  const pinByEvent = useMemo(() => {
+    const map = new Map<string, PinRow>();
+    for (const p of pins) map.set(p.event_id, p);
+    return map;
+  }, [pins]);
+
   const merged = useMemo<FeedEntry[]>(() => {
     const all = [...events.map(describeEvent), ...chats.map(describeChat)];
     all.sort((a, b) => a.ts - b.ts);
     if (filter === "events") return all.filter((e) => e.source === "event");
     if (filter === "chat") return all.filter((e) => e.source === "chat");
     if (filter === "critical") return all.filter((e) => e.severity === "critical" || e.severity === "warn");
+    if (filter === "pinned") {
+      return all.filter((e) => e.source === "event" && pinByEvent.has(e.key.slice(2)));
+    }
     return all;
-  }, [events, chats, filter]);
+  }, [events, chats, filter, pinByEvent]);
 
   useEffect(() => {
     if (!autoscroll) return;
@@ -314,8 +366,8 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
   const counts = useMemo(() => {
     const critical = events.filter((e) => KIND_MAP[e.kind]?.severity === "critical").length;
     const warn = events.filter((e) => KIND_MAP[e.kind]?.severity === "warn").length;
-    return { total: events.length + chats.length, critical, warn, chat: chats.length };
-  }, [events, chats]);
+    return { total: events.length + chats.length, critical, warn, chat: chats.length, pinned: pins.length };
+  }, [events, chats, pins]);
 
   const notesByEvent = useMemo(() => {
     const map = new Map<string, NoteRow[]>();
@@ -384,6 +436,53 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     }
   };
 
+  const togglePin = async (eventId: string) => {
+    if (!currentUserId) {
+      toast.error("Sign in required to pin events");
+      return;
+    }
+    const existing = pinByEvent.get(eventId);
+    if (existing) {
+      const snapshot = pins;
+      setPins((prev) => prev.filter((p) => p.id !== existing.id));
+      const { error } = await supabase.from("attempt_event_pins").delete().eq("id", existing.id);
+      if (error) {
+        setPins(snapshot);
+        toast.error("Couldn't unpin", { description: error.message });
+      }
+      return;
+    }
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const optimistic: PinRow = {
+      id: tempId,
+      event_id: eventId,
+      attempt_id: attemptId,
+      pinned_by: currentUserId,
+      pinned_by_name: currentUserName,
+      reason: null,
+      created_at: new Date().toISOString(),
+    };
+    setPins((prev) => [optimistic, ...prev]);
+    const { data, error } = await supabase
+      .from("attempt_event_pins")
+      .insert({
+        event_id: eventId,
+        attempt_id: attemptId,
+        pinned_by: currentUserId,
+        pinned_by_name: currentUserName,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      setPins((prev) => prev.filter((p) => p.id !== tempId));
+      toast.error("Couldn't pin event", { description: error.message });
+      return;
+    }
+    setPins((prev) => {
+      const without = prev.filter((p) => p.id !== tempId && p.id !== data.id);
+      return [data as PinRow, ...without];
+    });
+  };
 
   return (
     <div className={cn("rounded-xl border border-border bg-card shadow-sm overflow-hidden", className)}>
@@ -420,8 +519,8 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
-          {(["all", "events", "chat", "critical"] as const).map((f) => (
+        <div className="grid grid-cols-5 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
+          {(["all", "events", "chat", "critical", "pinned"] as const).map((f) => (
             <button
               key={f}
               type="button"
@@ -434,6 +533,11 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
               )}
             >
               {f}
+              {f === "pinned" && counts.pinned > 0 && (
+                <span className="ml-1 tabular-nums text-[10px] text-muted-foreground">
+                  ({counts.pinned})
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -474,21 +578,57 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
             });
             const eventId = e.source === "event" ? e.key.slice(2) : null;
             const eventNotes = eventId ? notesByEvent.get(eventId) ?? [] : [];
+            const pin = eventId ? pinByEvent.get(eventId) ?? null : null;
+            const isPinned = !!pin;
             return (
               <div
                 key={e.key}
                 className={cn(
                   "flex items-start gap-2 rounded-md border px-2.5 py-2 text-xs",
-                  SEVERITY_STYLES[e.severity]
+                  SEVERITY_STYLES[e.severity],
+                  isPinned && "ring-1 ring-amber-500/50 border-amber-500/50"
                 )}
               >
                 <Icon className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", ICON_STYLES[e.severity])} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold leading-tight truncate">{e.label}</span>
+                    {isPinned && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Pin className="h-3 w-3 text-amber-600 dark:text-amber-400 fill-amber-500/30 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Pinned{pin?.pinned_by_name ? ` by ${pin.pinned_by_name}` : ""}
+                          {" · "}
+                          {formatRelative(pin!.created_at)}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <span className="ml-auto text-[10px] tabular-nums text-muted-foreground shrink-0">
                       {time}
                     </span>
+                    {eventId && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => togglePin(eventId)}
+                            className={cn(
+                              "shrink-0 rounded p-0.5 transition-colors",
+                              isPinned
+                                ? "text-amber-600 dark:text-amber-400 hover:text-amber-700"
+                                : "text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
+                            )}
+                            aria-pressed={isPinned}
+                            aria-label={isPinned ? "Unpin event" : "Pin event"}
+                          >
+                            {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{isPinned ? "Unpin" : "Pin for review"}</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                   {e.detail && (
                     <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug whitespace-pre-wrap break-words">

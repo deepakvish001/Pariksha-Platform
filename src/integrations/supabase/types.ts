@@ -1215,6 +1215,44 @@ export type Database = {
           },
         ]
       }
+      attempt_event_pins: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          event_id: string
+          id: string
+          pinned_by: string
+          pinned_by_name: string | null
+          reason: string | null
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          pinned_by: string
+          pinned_by_name?: string | null
+          reason?: string | null
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          pinned_by?: string
+          pinned_by_name?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_event_pins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "attempt_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attempt_events: {
         Row: {
           attempt_id: string
