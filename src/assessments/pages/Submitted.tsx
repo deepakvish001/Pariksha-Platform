@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SubmittedResultsBreakdown } from "../components/SubmittedResultsBreakdown";
 import { downloadSubmissionReceipt } from "../lib/submissionReceipt";
+import { IntegrityExplanation } from "../components/IntegrityExplanation";
 
 const AUTO_REDIRECT_SECONDS = 10;
 
