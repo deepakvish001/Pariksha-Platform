@@ -54,34 +54,47 @@ Deno.serve(async (req) => {
 
   const admin = createClient(supabaseUrl, serviceKey);
 
-  // Load assessment + org
+  // Load assessment (no embed — we re-fetch org separately to always get latest branding)
   const { data: assessment, error: aErr } = await admin
     .from("assessments")
-    .select("id, title, duration_min, org_id, organizations:org_id(id, name, logo_url, brand_color)")
+    .select("id, title, duration_min, org_id")
     .eq("id", assessmentId)
     .maybeSingle();
   if (aErr || !assessment) return json(404, { error: "assessment_not_found" });
 
-  // Authorize: caller must be a member of the org (or owner)
   const orgId = (assessment as any).org_id as string;
-  const orgName = (assessment as any).organizations?.name ?? "Your organization";
+
+  // Always re-read latest org branding at send time (no caching / no stale joins)
+  const { data: org, error: oErr } = await admin
+    .from("organizations")
+    .select("id, name, logo_url, brand_color, owner_id, updated_at")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (oErr || !org) return json(404, { error: "org_not_found" });
+
+  // Authorize: caller must be a member of the org (or owner)
   const { data: member } = await admin
     .from("org_members")
     .select("user_id")
     .eq("org_id", orgId)
     .eq("user_id", callerId)
     .maybeSingle();
-  const { data: org } = await admin
-    .from("organizations")
-    .select("owner_id")
-    .eq("id", orgId)
-    .maybeSingle();
-  if (!member && org?.owner_id !== callerId) return json(403, { error: "forbidden" });
+  if (!member && org.owner_id !== callerId) return json(403, { error: "forbidden" });
+
+  // Cache-bust the logo so email clients don't serve a stale image after the
+  // org updates its logo. Uses org.updated_at as the version fingerprint.
+  const rawLogo = (org.logo_url as string | null) ?? null;
+  const logoVersion = org.updated_at
+    ? new Date(org.updated_at as string).getTime().toString()
+    : Date.now().toString();
+  const logoUrl = rawLogo
+    ? `${rawLogo}${rawLogo.includes("?") ? "&" : "?"}v=${logoVersion}`
+    : null;
 
   const branding = {
-    orgName,
-    logoUrl: (assessment as any).organizations?.logo_url as string | null,
-    brandColor: (assessment as any).organizations?.brand_color as string | null,
+    orgName: (org.name as string) ?? "Your organization",
+    logoUrl,
+    brandColor: (org.brand_color as string | null) ?? null,
     title: assessment.title as string,
     durationMin: (assessment as any).duration_min as number | null,
   };
