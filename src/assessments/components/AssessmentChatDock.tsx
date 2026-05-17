@@ -225,7 +225,7 @@ export function AssessmentChatDock({
             <p
               className={cn(
                 "text-[10px] leading-tight truncate flex items-center gap-1",
-                peer.typing
+                anyTyping
                   ? "text-primary"
                   : peer.online
                   ? "text-emerald-600 dark:text-emerald-400"
@@ -233,10 +233,10 @@ export function AssessmentChatDock({
               )}
               aria-live="polite"
             >
-              {peer.typing ? (
+              {anyTyping ? (
                 <>
                   <TypingDots />
-                  <span>{peerLabel} is typing…</span>
+                  <span>{typingLabel}</span>
                 </>
               ) : peer.online ? (
                 <span>{peerLabel} online</span>
