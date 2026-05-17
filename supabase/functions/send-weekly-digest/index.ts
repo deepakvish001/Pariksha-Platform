@@ -149,9 +149,10 @@ const handler = async (req: Request): Promise<Response> => {
          const totalCorrect = quizResults.reduce((sum, r) => sum + r.score, 0);
          const totalQuestions = quizResults.reduce((sum, r) => sum + r.total_questions, 0);
  
-         // Count by quiz type
+         // Count by quiz type — escape quiz_type since it's user-controlled
          const byType = quizResults.reduce((acc, r) => {
-           acc[r.quiz_type] = (acc[r.quiz_type] || 0) + 1;
+           const key = escapeHtml(r.quiz_type ?? "unknown");
+           acc[key] = (acc[key] || 0) + 1;
            return acc;
          }, {} as Record<string, number>);
  
