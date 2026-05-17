@@ -216,13 +216,73 @@ export default function ParticipantDetailDrawer({
               Candidate hasn't started the assessment yet.
             </div>
           ) : (
-            <Tabs defaultValue="activity" className="w-full">
+            <Tabs
+              defaultValue={canProctor && participant.status === "in_progress" ? "live" : "activity"}
+              className="w-full"
+            >
               <TabsList className="flex flex-wrap h-auto bg-white/[0.03] border border-white/5">
+                {canProctor && (
+                  <TabsTrigger value="live">
+                    <Radio className="h-3.5 w-3.5 mr-1 text-rose-400" /> Live
+                    {participant.status === "in_progress" && (
+                      <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                    )}
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="activity"><ActivityIcon className="h-3.5 w-3.5 mr-1" /> Activity</TabsTrigger>
                 <TabsTrigger value="answers"><ListChecks className="h-3.5 w-3.5 mr-1" /> Answers</TabsTrigger>
                 {canProctor && <TabsTrigger value="evidence"><Eye className="h-3.5 w-3.5 mr-1" /> Evidence</TabsTrigger>}
                 {canProctor && <TabsTrigger value="sos"><LifeBuoy className="h-3.5 w-3.5 mr-1" /> SOS</TabsTrigger>}
               </TabsList>
+
+              {canProctor && (
+                <TabsContent value="live" className="mt-4 space-y-4">
+                  {participant.status === "in_progress" ? (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="inline-block h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                          Live · all three eyes
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">
+                          Started {participant.started_at ? formatDistanceToNow(new Date(participant.started_at), { addSuffix: true }) : "—"}
+                        </span>
+                      </div>
+                      <LiveProctorThreeEye attemptId={attemptId} />
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                        <div className="rounded-md border border-white/5 bg-white/[0.02] p-2">
+                          <div className="text-muted-foreground uppercase tracking-wide">Webcam shots</div>
+                          <div className="font-semibold tabular-nums text-sm">{ev.webcam}</div>
+                        </div>
+                        <div className="rounded-md border border-white/5 bg-white/[0.02] p-2">
+                          <div className="text-muted-foreground uppercase tracking-wide">Screen shots</div>
+                          <div className="font-semibold tabular-nums text-sm">{ev.screen}</div>
+                        </div>
+                        <div className="rounded-md border border-white/5 bg-white/[0.02] p-2">
+                          <div className="text-muted-foreground uppercase tracking-wide">Side-cam</div>
+                          <div className="font-semibold tabular-nums text-sm">{ev.side_cam}</div>
+                        </div>
+                        <div className="rounded-md border border-white/5 bg-white/[0.02] p-2">
+                          <div className="text-muted-foreground uppercase tracking-wide">Flags</div>
+                          <div className="font-semibold tabular-nums text-sm">
+                            <span className="text-rose-300">{ev.findings_high}</span>
+                            <span className="text-muted-foreground"> · </span>
+                            <span className="text-amber-300">{ev.findings_med}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Switch to Evidence tab for full captured history, recordings, and AI findings.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="rounded-md border border-white/5 bg-white/[0.02] p-6 text-center text-xs text-muted-foreground">
+                      Live feed isn't available — this attempt is <span className="font-medium capitalize">{participant.status.replace(/_/g, " ")}</span>.
+                      Open the Evidence tab to review the recorded session.
+                    </div>
+                  )}
+                </TabsContent>
+              )}
 
               <TabsContent value="activity" className="mt-4">
                 <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
@@ -275,9 +335,6 @@ export default function ParticipantDetailDrawer({
 
               {canProctor && (
                 <TabsContent value="evidence" className="mt-4 space-y-4">
-                  {participant.status === "in_progress" && (
-                    <LiveProctorThreeEye attemptId={attemptId} />
-                  )}
                   <AttemptProctoringPanel attemptId={attemptId} orgId={orgId} />
                 </TabsContent>
               )}
