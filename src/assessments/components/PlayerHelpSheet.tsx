@@ -37,6 +37,12 @@ export function PlayerHelpSheet({ open, onOpenChange }: Props) {
         <div className="mt-5 space-y-5">
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              Palette color key
+            </h3>
+            <PaletteLegend variant="inline" />
+          </section>
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
               Keyboard
             </h3>
             <ul className="space-y-1.5">
