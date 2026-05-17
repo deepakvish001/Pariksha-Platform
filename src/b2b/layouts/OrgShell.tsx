@@ -79,14 +79,22 @@ export function OrgShell({
                   key={n.to}
                   to={n.to}
                   end={n.exact}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  aria-current={active ? "page" : undefined}
+                  className={`group relative flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                     active
-                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm"
                       : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))] hover:text-[hsl(var(--foreground))]"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {n.label}
+                  <Icon
+                    className={`h-4 w-4 shrink-0 transition-colors ${
+                      active
+                        ? "text-[hsl(var(--primary-foreground))]"
+                        : "text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))]"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{n.label}</span>
                 </NavLink>
               );
               });
