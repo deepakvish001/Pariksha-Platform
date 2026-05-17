@@ -204,7 +204,11 @@ interface TypingPayload {
 }
 
 const TYPING_TIMEOUT_MS = 4000;
+// Throttle "typing=true" broadcasts so fast typing doesn't spam the channel.
 const TYPING_BROADCAST_THROTTLE_MS = 1500;
+// Debounce "typing=false" so brief pauses between keystrokes don't flicker
+// the peer's typing indicator off/on.
+const TYPING_STOP_DEBOUNCE_MS = 600;
 
 /**
  * Presence + typing indicators for an attempt's chat.
