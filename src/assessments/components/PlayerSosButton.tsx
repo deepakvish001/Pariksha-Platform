@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, LifeBuoy, Loader2, Mail, MessageCircle, MessageSquare, Phone, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { enqueueSos, flushSosQueue, installSosQueueAutoflush } from "@/assessments/lib/sosDeliveryQueue";
+
 
 const SUPPORT_EMAIL = "support@parikshaa.app";
 const SUPPORT_PHONE = "+91 80000 00000";
@@ -139,6 +141,13 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Replay any SOS alerts that failed to deliver in a previous session
+  // (e.g. tab crashed while offline). Safe to call repeatedly.
+  useEffect(() => {
+    installSosQueueAutoflush();
+    void flushSosQueue();
+  }, []);
+
   const reset = () => {
     setStep("confirm");
     setIssue(QUICK_ISSUES[0]);
@@ -168,7 +177,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
    *  3. Post a system chat message so the proctor sees it instantly in chat.
    * Best-effort: if all fail, fall back to email so the candidate is never stranded.
    */
-  const notifyProctor = async (): Promise<{ ok: boolean; error?: string; rateLimited?: boolean }> => {
+  const notifyProctor = async (): Promise<{ ok: boolean; error?: string; rateLimited?: boolean; queued?: boolean }> => {
     if (!attemptId) return { ok: false, error: "No active attempt" };
     try {
       const { data: u } = await supabase.auth.getUser();
@@ -226,7 +235,9 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           raised_by: userId,
           issue,
           notes: notes || null,
-        })
+          delivery_status: "sent",
+          client_attempted_at: raisedAt,
+        } as any)
         .select("id")
         .single();
 
@@ -238,6 +249,7 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
           notes: notes || null,
           raised_at: raisedAt,
           assessment_title: assessmentTitle ?? null,
+          delivery_status: "sent",
           ...metadata,
         },
       });
@@ -255,6 +267,29 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
       if (chat.error) console.warn("SOS chat post failed", chat.error);
       return { ok: true };
     } catch (e: any) {
+      // ── Durable offline fallback ────────────────────────────────
+      // Network is unreachable or Supabase rejected the write. Persist
+      // the alert locally so it replays automatically when we reconnect.
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        const userId = u?.user?.id;
+        if (userId && attemptId) {
+          const metadata = await collectSosMetadata();
+          enqueueSos({
+            attempt_id: attemptId,
+            raised_by: userId,
+            issue,
+            notes: notes || null,
+            metadata,
+            assessment_title: assessmentTitle ?? null,
+          });
+          // Fire-and-forget retry now in case the failure was transient.
+          void flushSosQueue();
+          return { ok: false, queued: true, error: e?.message ?? "Network error" };
+        }
+      } catch (queueErr) {
+        console.warn("SOS queue persist failed", queueErr);
+      }
       return { ok: false, error: e?.message ?? "Network error" };
     }
   };
@@ -278,6 +313,19 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
       toast.warning("SOS not sent", {
         description: result.error ?? "Please wait before raising another alert.",
       });
+      return;
+    }
+
+    // Queued offline → reassure the candidate. We'll auto-replay as soon
+    // as the connection comes back; no need to spam the email fallback.
+    if (result.queued) {
+      toast.warning("SOS queued — you're offline", {
+        description:
+          "We saved your alert. It will deliver to the proctor automatically the moment you're back online.",
+        duration: 10_000,
+      });
+      setOpen(false);
+      reset();
       return;
     }
 

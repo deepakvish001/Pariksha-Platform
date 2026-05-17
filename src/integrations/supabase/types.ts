@@ -998,7 +998,11 @@ export type Database = {
           acknowledged_at: string | null
           acknowledged_by: string | null
           attempt_id: string
+          client_attempted_at: string | null
           created_at: string
+          delivered_at: string | null
+          delivery_error: string | null
+          delivery_status: Database["public"]["Enums"]["sos_delivery_status"]
           id: string
           issue: string
           notes: string | null
@@ -1013,7 +1017,11 @@ export type Database = {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
           attempt_id: string
+          client_attempted_at?: string | null
           created_at?: string
+          delivered_at?: string | null
+          delivery_error?: string | null
+          delivery_status?: Database["public"]["Enums"]["sos_delivery_status"]
           id?: string
           issue: string
           notes?: string | null
@@ -1028,7 +1036,11 @@ export type Database = {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
           attempt_id?: string
+          client_attempted_at?: string | null
           created_at?: string
+          delivered_at?: string | null
+          delivery_error?: string | null
+          delivery_status?: Database["public"]["Enums"]["sos_delivery_status"]
           id?: string
           issue?: string
           notes?: string | null
@@ -8681,6 +8693,7 @@ export type Database = {
         | "true_false"
         | "matching"
         | "short_answer"
+      sos_delivery_status: "queued" | "sent" | "failed"
       sos_status: "open" | "acknowledged" | "resolved"
       study_year:
         | "1st Year"
@@ -8853,6 +8866,7 @@ export const Constants = {
         "matching",
         "short_answer",
       ],
+      sos_delivery_status: ["queued", "sent", "failed"],
       sos_status: ["open", "acknowledged", "resolved"],
       study_year: [
         "1st Year",
