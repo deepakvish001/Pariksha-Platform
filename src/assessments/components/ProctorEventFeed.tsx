@@ -317,6 +317,74 @@ export function ProctorEventFeed({ attemptId, className, maxHeight = 420 }: Prop
     return { total: events.length + chats.length, critical, warn, chat: chats.length };
   }, [events, chats]);
 
+  const notesByEvent = useMemo(() => {
+    const map = new Map<string, NoteRow[]>();
+    for (const n of notes) {
+      const arr = map.get(n.event_id) ?? [];
+      arr.push(n);
+      map.set(n.event_id, arr);
+    }
+    for (const arr of map.values()) arr.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return map;
+  }, [notes]);
+
+  const addNote = async (eventId: string, body: string) => {
+    const trimmed = body.trim();
+    if (!trimmed) return false;
+    if (!currentUserId) {
+      toast.error("Sign in required to add notes");
+      return false;
+    }
+    // Optimistic insert keeps the thread snappy while realtime catches up.
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const nowIso = new Date().toISOString();
+    setNotes((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        event_id: eventId,
+        attempt_id: attemptId,
+        author_id: currentUserId,
+        author_name: currentUserName,
+        body: trimmed,
+        created_at: nowIso,
+        updated_at: nowIso,
+      },
+    ]);
+    const { data, error } = await supabase
+      .from("attempt_event_notes")
+      .insert({
+        event_id: eventId,
+        attempt_id: attemptId,
+        author_id: currentUserId,
+        author_name: currentUserName,
+        body: trimmed,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      setNotes((prev) => prev.filter((n) => n.id !== tempId));
+      toast.error("Couldn't save note", { description: error.message });
+      return false;
+    }
+    setNotes((prev) => {
+      const without = prev.filter((n) => n.id !== tempId && n.id !== data.id);
+      return [...without, data as NoteRow];
+    });
+    return true;
+  };
+
+  const deleteNote = async (noteId: string) => {
+    const snapshot = notes;
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    const { error } = await supabase.from("attempt_event_notes").delete().eq("id", noteId);
+    if (error) {
+      setNotes(snapshot);
+      toast.error("Couldn't delete note", { description: error.message });
+    }
+  };
+
+
   return (
     <div className={cn("rounded-xl border border-border bg-card shadow-sm overflow-hidden", className)}>
       <header className="flex flex-wrap items-center gap-2 px-3 py-2.5 border-b border-border bg-muted/30">
