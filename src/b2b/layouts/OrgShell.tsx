@@ -61,7 +61,7 @@ export function OrgShell({
               </div>
             </NavLink>
           </div>
-          <nav className="flex-1 p-2 space-y-1">
+          <nav className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1 scrollbar-thin">
             {(() => {
               // Normalize pathname: lowercase + strip trailing slash so the
               // active check never partially matches sibling routes (e.g.
