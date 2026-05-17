@@ -107,7 +107,7 @@ export function Submitted({ attempt, assessment, isPreview }: Props) {
 
   return (
     <div className="theme-b2b min-h-screen bg-gradient-to-b from-background via-background to-muted/30 px-4 py-10 sm:py-16">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6">
         <Card className="overflow-hidden border-emerald-500/30 shadow-xl">
           {/* Hero */}
           <div className="relative bg-gradient-to-br from-emerald-500/25 via-emerald-500/10 to-transparent p-8 text-center border-b border-emerald-500/20">
