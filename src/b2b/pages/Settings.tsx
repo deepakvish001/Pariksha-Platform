@@ -22,6 +22,7 @@ export default function B2BSettings() {
 
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [brandColor, setBrandColor] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -29,6 +30,7 @@ export default function B2BSettings() {
     if (org) {
       setName(org.name);
       setLogoUrl(org.logo_url ?? "");
+      setBrandColor(org.brand_color ?? "");
     }
   }, [org?.id]);
 
@@ -44,7 +46,12 @@ export default function B2BSettings() {
   const myRole = members?.find((m) => m.user_id === user?.id)?.role;
   const isOwner = myRole === "owner" || org.owner_id === user?.id;
   const canEdit = isOwner || myRole === "admin";
-  const dirty = name.trim() !== org.name || (logoUrl || "") !== (org.logo_url ?? "");
+  const normalizedBrand = brandColor.trim();
+  const isValidBrand = !normalizedBrand || /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalizedBrand);
+  const dirty =
+    name.trim() !== org.name ||
+    (logoUrl || "") !== (org.logo_url ?? "") ||
+    (normalizedBrand || "") !== (org.brand_color ?? "");
 
   const joinUrl = `${window.location.origin}/assessments/join`;
 
