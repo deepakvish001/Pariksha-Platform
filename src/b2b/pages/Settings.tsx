@@ -230,6 +230,16 @@ export default function B2BSettings() {
               <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
                 Used for the header and call-to-action in invitation emails. Accepts <span className="font-mono">#RGB</span> or <span className="font-mono">#RRGGBB</span>.
               </p>
+              <div className="mt-2">
+                <Button type="button" variant="outline" size="sm" onClick={openPreview}>
+                  <Eye className="h-3.5 w-3.5 mr-1.5" /> Preview invitation email
+                </Button>
+                {dirty && (
+                  <span className="ml-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+                    Save changes first to preview with the latest values.
+                  </span>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
