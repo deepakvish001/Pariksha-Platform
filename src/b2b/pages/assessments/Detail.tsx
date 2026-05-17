@@ -34,6 +34,8 @@ import type { ProctoringConfig } from "@/assessments/lib/proctoringConfig";
 import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
+import { useCanProctor } from "../../hooks/usePermissions";
+import { ShieldAlert } from "lucide-react";
 
 const TYPE_LABEL: Record<string, string> = {
   coding: "Code",
