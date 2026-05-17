@@ -211,13 +211,16 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   const handleIdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setGlobalError("ID photo must be under 5 MB");
-      return;
-    }
     setBusy(true);
     setGlobalError(null);
+    setIdPhotoUrl(null);
     try {
+      const checks = await validateIdPhoto(file);
+      setIdChecks(checks);
+      if (checks.some((c) => !c.ok)) {
+        setGlobalError("ID photo failed validation. Please re-upload a clearer image.");
+        return;
+      }
       const path = await uploadFile(file, "id");
       setIdPhotoUrl(path);
     } catch (err) {
