@@ -696,6 +696,7 @@ function ParticipantRow({
   assessmentId,
   onForceSubmit,
   onOpen,
+  detailHref,
   pending,
   evidence,
   canProctor,
@@ -704,6 +705,7 @@ function ParticipantRow({
   assessmentId: string;
   onForceSubmit: () => void;
   onOpen: () => void;
+  detailHref: string | null;
   pending?: boolean;
   evidence?: import("../../hooks/useAssessmentLive").EvidenceCounts;
   canProctor: boolean;
