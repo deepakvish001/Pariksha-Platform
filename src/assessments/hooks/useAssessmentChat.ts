@@ -294,6 +294,12 @@ export function useChatPresence(
 
     return () => {
       if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+      if (trailingTrueTimerRef.current) window.clearTimeout(trailingTrueTimerRef.current);
+      if (stopDebounceTimerRef.current) window.clearTimeout(stopDebounceTimerRef.current);
+      trailingTrueTimerRef.current = null;
+      stopDebounceTimerRef.current = null;
+      lastSentTypingRef.current = false;
+      lastBroadcastRef.current = 0;
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
@@ -303,19 +309,65 @@ export function useChatPresence(
     (typing: boolean) => {
       const channel = channelRef.current;
       if (!channel || !viewerUserId) return;
-      const now = Date.now();
-      if (typing && now - lastBroadcastRef.current < TYPING_BROADCAST_THROTTLE_MS) return;
-      lastBroadcastRef.current = now;
-      channel.send({
-        type: "broadcast",
-        event: "typing",
-        payload: {
-          role: viewerRole,
-          user_id: viewerUserId,
-          typing,
-          at: now,
-        } satisfies TypingPayload,
-      });
+
+      // Emit raw payload to the channel + record state.
+      const emit = (value: boolean) => {
+        const now = Date.now();
+        lastBroadcastRef.current = now;
+        lastSentTypingRef.current = value;
+        channel.send({
+          type: "broadcast",
+          event: "typing",
+          payload: {
+            role: viewerRole,
+            user_id: viewerUserId,
+            typing: value,
+            at: now,
+          } satisfies TypingPayload,
+        });
+      };
+
+      if (typing) {
+        // A new "typing" intent cancels any pending stop broadcast.
+        if (stopDebounceTimerRef.current) {
+          window.clearTimeout(stopDebounceTimerRef.current);
+          stopDebounceTimerRef.current = null;
+        }
+        const now = Date.now();
+        const elapsed = now - lastBroadcastRef.current;
+        const canSendNow = !lastSentTypingRef.current || elapsed >= TYPING_BROADCAST_THROTTLE_MS;
+        if (canSendNow) {
+          if (trailingTrueTimerRef.current) {
+            window.clearTimeout(trailingTrueTimerRef.current);
+            trailingTrueTimerRef.current = null;
+          }
+          emit(true);
+        } else if (!trailingTrueTimerRef.current) {
+          // Schedule a trailing "still typing" ping so the indicator stays alive.
+          const wait = TYPING_BROADCAST_THROTTLE_MS - elapsed;
+          trailingTrueTimerRef.current = window.setTimeout(() => {
+            trailingTrueTimerRef.current = null;
+            // Only re-broadcast if no stop was queued in the meantime.
+            if (!stopDebounceTimerRef.current) emit(true);
+          }, wait);
+        }
+        return;
+      }
+
+      // typing === false: debounce so brief keystroke gaps don't flicker.
+      if (trailingTrueTimerRef.current) {
+        window.clearTimeout(trailingTrueTimerRef.current);
+        trailingTrueTimerRef.current = null;
+      }
+      if (stopDebounceTimerRef.current) {
+        window.clearTimeout(stopDebounceTimerRef.current);
+      }
+      // If we never broadcast "true", no need to broadcast "false".
+      if (!lastSentTypingRef.current) return;
+      stopDebounceTimerRef.current = window.setTimeout(() => {
+        stopDebounceTimerRef.current = null;
+        emit(false);
+      }, TYPING_STOP_DEBOUNCE_MS);
     },
     [viewerRole, viewerUserId]
   );
