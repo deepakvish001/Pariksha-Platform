@@ -225,6 +225,11 @@ function renderInviteEmail(a: RenderArgs): { html: string; text: string; subject
   const rawBrand = (a.brandColor ?? "").trim();
   const brand = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(rawBrand) ? rawBrand : "#0f172a";
   const brandDark = darken(brand, 0.18);
+  // Dark-mode brand: brighten dark brand colors so they stay readable on a dark
+  // background (e.g. near-black brands would vanish). Light brands are left
+  // mostly as-is. Also used as the CTA background in dark mode.
+  const brandOnDark = ensureReadableOnDark(brand);
+  const brandOnDarkSoft = lighten(brandOnDark, 0.15);
   const initials = a.orgName
     .split(/\s+/)
     .filter(Boolean)
@@ -239,17 +244,40 @@ function renderInviteEmail(a: RenderArgs): { html: string; text: string; subject
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="color-scheme" content="light only" />
-    <meta name="supported-color-schemes" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
     <title>${escapeHtml(subject)}</title>
+    <style>
+      /* Dark-mode friendly palette. The brand color (header gradient) is
+         preserved across schemes; surrounding chrome adapts. */
+      @media (prefers-color-scheme: dark) {
+        body, .em-bg { background:#0b0f17 !important; }
+        .em-card { background:#111827 !important; box-shadow:0 1px 2px rgba(0,0,0,0.4),0 8px 24px rgba(0,0,0,0.45) !important; }
+        .em-text-strong { color:#f1f5f9 !important; }
+        .em-text { color:#cbd5e1 !important; }
+        .em-text-muted { color:#94a3b8 !important; }
+        .em-text-faint { color:#64748b !important; }
+        .em-panel { background:#1e293b !important; border-color:#334155 !important; }
+        .em-panel-label { color:#94a3b8 !important; }
+        .em-divider { border-top-color:#1f2937 !important; }
+        .em-divider-soft { border-top-color:#1f2937 !important; }
+        .em-link { color:${brandOnDark} !important; }
+        .em-cta { background:${brandOnDark} !important; }
+        .em-cta a { color:#0b0f17 !important; }
+        .em-test-banner { background:#3f2d10 !important; border-color:#92660b !important; color:#fde68a !important; }
+        .em-footer-note { color:#64748b !important; }
+        .em-footer-note strong { color:#94a3b8 !important; }
+      }
+      /* Outlook ignores @media but otherwise honors light styles — no-op. */
+    </style>
   </head>
-  <body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;-webkit-font-smoothing:antialiased;">
+  <body class="em-bg" style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;-webkit-font-smoothing:antialiased;">
     <div style="display:none;font-size:1px;color:#f4f5f7;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(preheader)}</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f5f7;padding:32px 16px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="em-bg" style="background:#f4f5f7;padding:32px 16px;">
       <tr>
         <td align="center">
-          ${a.testBanner ? `<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;margin-bottom:12px;"><tr><td style="background:#fef3c7;border:1px solid #fcd34d;color:#78350f;font-size:12px;font-weight:600;padding:10px 16px;border-radius:8px;text-align:center;">⚠ This is a TEST email. The "Start assessment" link is a placeholder and will not work.</td></tr></table>` : ""}
-          <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,0.04),0 8px 24px rgba(15,23,42,0.06);">
+          ${a.testBanner ? `<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;margin-bottom:12px;"><tr><td class="em-test-banner" style="background:#fef3c7;border:1px solid #fcd34d;color:#78350f;font-size:12px;font-weight:600;padding:10px 16px;border-radius:8px;text-align:center;">⚠ This is a TEST email. The "Start assessment" link is a placeholder and will not work.</td></tr></table>` : ""}
+          <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" class="em-card" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,0.04),0 8px 24px rgba(15,23,42,0.06);">
             <tr>
               <td style="background:linear-gradient(135deg,${brand} 0%,${brandDark} 100%);padding:28px 32px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -269,38 +297,38 @@ function renderInviteEmail(a: RenderArgs): { html: string; text: string; subject
             </tr>
             <tr>
               <td style="padding:36px 32px 8px;">
-                <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;font-weight:700;color:#0f172a;letter-spacing:-0.01em;">
+                <h1 class="em-text-strong" style="margin:0 0 8px;font-size:24px;line-height:1.25;font-weight:700;color:#0f172a;letter-spacing:-0.01em;">
                   Hi ${escapeHtml(display)}, you're invited.
                 </h1>
-                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#475569;">
-                  <strong style="color:#0f172a;">${escapeHtml(a.orgName)}</strong> has invited you to complete an online assessment. When you're ready, click the button below to begin.
+                <p class="em-text" style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#475569;">
+                  <strong class="em-text-strong" style="color:#0f172a;">${escapeHtml(a.orgName)}</strong> has invited you to complete an online assessment. When you're ready, click the button below to begin.
                 </p>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin:0 0 28px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="em-panel" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin:0 0 28px;">
                   <tr>
                     <td style="padding:18px 20px;">
-                      <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:6px;">Assessment</div>
-                      <div style="font-size:17px;font-weight:600;color:#0f172a;line-height:1.35;">${escapeHtml(a.title)}</div>
-                      ${a.durationMin ? `<div style="margin-top:10px;font-size:13px;color:#475569;">⏱ Duration: <strong style="color:#0f172a;">${a.durationMin} minutes</strong></div>` : ""}
+                      <div class="em-panel-label" style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;font-weight:600;margin-bottom:6px;">Assessment</div>
+                      <div class="em-text-strong" style="font-size:17px;font-weight:600;color:#0f172a;line-height:1.35;">${escapeHtml(a.title)}</div>
+                      ${a.durationMin ? `<div class="em-text" style="margin-top:10px;font-size:13px;color:#475569;">⏱ Duration: <strong class="em-text-strong" style="color:#0f172a;">${a.durationMin} minutes</strong></div>` : ""}
                     </td>
                   </tr>
                 </table>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px;">
                   <tr>
-                    <td style="border-radius:10px;background:${brand};">
+                    <td class="em-cta" style="border-radius:10px;background:${brand};">
                       <a href="${a.joinUrl}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;letter-spacing:0.2px;">
                         Start assessment →
                       </a>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:0 0 6px;font-size:12px;color:#64748b;">Or paste this link into your browser:</p>
+                <p class="em-text-faint" style="margin:0 0 6px;font-size:12px;color:#64748b;">Or paste this link into your browser:</p>
                 <p style="margin:0 0 28px;font-size:12px;word-break:break-all;">
-                  <a href="${a.joinUrl}" style="color:${brand};text-decoration:none;">${a.joinUrl}</a>
+                  <a href="${a.joinUrl}" class="em-link" style="color:${brand};text-decoration:none;">${a.joinUrl}</a>
                 </p>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-top:1px solid #e2e8f0;margin:0 0 8px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="em-divider" style="border-top:1px solid #e2e8f0;margin:0 0 8px;">
                   <tr><td style="padding-top:20px;">
-                    <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:#0f172a;">Before you begin</p>
-                    <ul style="margin:0;padding:0 0 0 18px;font-size:13px;color:#475569;line-height:1.65;">
+                    <p class="em-text-strong" style="margin:0 0 10px;font-size:13px;font-weight:600;color:#0f172a;">Before you begin</p>
+                    <ul class="em-text" style="margin:0;padding:0 0 0 18px;font-size:13px;color:#475569;line-height:1.65;">
                       <li>Use a laptop or desktop with a stable internet connection.</li>
                       <li>Allow camera &amp; microphone access if prompted.</li>
                       <li>Find a quiet, well-lit space — you won't be able to pause once started.</li>
@@ -310,19 +338,22 @@ function renderInviteEmail(a: RenderArgs): { html: string; text: string; subject
               </td>
             </tr>
             <tr>
-              <td style="padding:20px 32px 28px;border-top:1px solid #f1f5f9;">
-                <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.6;">
+              <td class="em-divider-soft" style="padding:20px 32px 28px;border-top:1px solid #f1f5f9;">
+                <p class="em-footer-note" style="margin:0;font-size:11px;color:#94a3b8;line-height:1.6;">
                   This invite is personal to <strong style="color:#64748b;">${escapeHtml(a.recipientEmail)}</strong>. Please don't share or forward this email.
                 </p>
               </td>
             </tr>
           </table>
-          <p style="margin:18px 0 0;font-size:11px;color:#94a3b8;">Sent by ${escapeHtml(a.orgName)} via Parikshaa · Secure online assessments</p>
+          <p class="em-footer-note" style="margin:18px 0 0;font-size:11px;color:#94a3b8;">Sent by ${escapeHtml(a.orgName)} via Parikshaa · Secure online assessments</p>
         </td>
       </tr>
     </table>
   </body>
 </html>`;
+  // brandOnDarkSoft is reserved for future accents; reference it so the
+  // compiler/linter doesn't flag it as unused.
+  void brandOnDarkSoft;
   const text = `Hi ${display},\n\n${a.orgName} has invited you to take the assessment "${a.title}".${a.durationMin ? `\nDuration: ${a.durationMin} minutes.` : ""}\n\nStart here: ${a.joinUrl}\n\nThis invite is personal to ${a.recipientEmail}. Please don't share it.`;
   return { html, text, subject };
 }
