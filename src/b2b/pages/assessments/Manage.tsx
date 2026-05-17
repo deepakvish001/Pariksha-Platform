@@ -51,6 +51,8 @@ import {
   Smartphone,
   ChevronDown,
   ChevronUp,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 
 type SortKey = "name" | "status" | "elapsed" | "score" | "integrity";
