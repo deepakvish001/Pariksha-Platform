@@ -76,6 +76,18 @@ export function AssessmentChatDock({
   const ordered = useMemo(() => messages ?? [], [messages]);
   const peerLabel = viewerRole === "candidate" ? "Proctor" : "Candidate";
 
+  // Most recent moment the peer read one of our messages.
+  const peerLastReadAt = useMemo(() => {
+    let latest = 0;
+    for (const m of ordered) {
+      if (m.sender_role === viewerRole && m.read_by_recipient && m.read_at) {
+        const t = new Date(m.read_at).getTime();
+        if (t > latest) latest = t;
+      }
+    }
+    return latest || null;
+  }, [ordered, viewerRole]);
+
   // Stop signalling "typing" shortly after the user stops typing or sends.
   const typingStopTimer = useRef<number | null>(null);
   const signalTyping = (isTyping: boolean) => {
