@@ -88,28 +88,36 @@ export function QuestionPalette({
                   if (!it) return null;
                   const active = i === currentIndex;
                   const dim = !passes(i);
+                  const status = getStatusLabel(it, active);
                   return (
-                    <button
-                      key={it.id}
-                      onClick={() => onJump(i)}
-                      aria-current={active ? "true" : undefined}
-                      className={cn(
-                        "relative h-8 rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
-                        dim && "opacity-30",
-                        active
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30"
-                          : it.answered
-                          ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                          : it.visited
-                          ? "border-dashed border-border bg-muted/30 text-muted-foreground"
-                          : "border-border bg-muted/40 text-muted-foreground"
-                      )}
-                    >
-                      {i + 1}
-                      {it.flagged && (
-                        <Flag className="absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500" />
-                      )}
-                    </button>
+                    <Tooltip key={it.id} delayDuration={150}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => onJump(i)}
+                          aria-current={active ? "true" : undefined}
+                          aria-label={`Question ${i + 1} — ${status.label}${it.flagged ? ", flagged" : ""}`}
+                          className={cn(
+                            "relative h-8 rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
+                            dim && "opacity-30",
+                            active
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30"
+                              : it.answered
+                              ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                              : it.visited
+                              ? "border-dashed border-border bg-muted/30 text-muted-foreground"
+                              : "border-border bg-muted/40 text-muted-foreground"
+                          )}
+                        >
+                          {i + 1}
+                          {it.flagged && (
+                            <Flag className="absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[240px]">
+                        <StatusTooltipBody index={i} item={it} status={status} />
+                      </TooltipContent>
+                    </Tooltip>
                   );
                 })}
               </div>
