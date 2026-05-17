@@ -110,7 +110,7 @@ export default function AssessmentDetail() {
           <TabsTrigger value="sections">Sections & Questions</TabsTrigger>
           <TabsTrigger value="invites">Invites</TabsTrigger>
           <TabsTrigger value="results">Results</TabsTrigger>
-          <TabsTrigger value="proctoring">Proctoring</TabsTrigger>
+          {canProctor && <TabsTrigger value="proctoring">Proctoring</TabsTrigger>}
           <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -124,7 +124,17 @@ export default function AssessmentDetail() {
           <ResultsPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="proctoring">
-          <ProctoringTriagePanel assessmentId={assessment.id} />
+          {canProctor ? (
+            <ProctoringTriagePanel assessmentId={assessment.id} />
+          ) : (
+            <div className="b2b-card p-8 max-w-xl mx-auto text-center">
+              <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-amber-500" />
+              <h2 className="text-base font-semibold mb-1">Restricted area</h2>
+              <p className="text-sm text-muted-foreground">
+                Proctoring evidence is limited to organization owners, admins, and members with the Proctor role.
+              </p>
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="insights">
           <InsightsPanel assessmentId={assessment.id} />
