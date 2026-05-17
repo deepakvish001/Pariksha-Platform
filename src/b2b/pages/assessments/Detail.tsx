@@ -35,6 +35,8 @@ import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
 import { useCanProctor } from "../../hooks/usePermissions";
+import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
+import { paths } from "@/lib/routing/paths";
 import { ShieldAlert } from "lucide-react";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -45,15 +47,20 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function AssessmentDetail() {
-  const { id } = useParams();
+  const { id: idOrSlug } = useParams();
   const navigate = useNavigate();
-  const { data: assessment, isLoading } = useAssessment(id);
+  const { org } = useCurrentOrg();
+  const basePath = useOrgBasePath();
+  const { data: assessment, isLoading } = useAssessment(idOrSlug, org?.id);
   const update = useUpdateAssessment();
   const del = useDeleteAssessment();
   const { canProctor } = useCanProctor(assessment?.org_id);
 
   if (isLoading) return null;
-  if (!assessment) return <Navigate to="/b2b/assessments" replace />;
+  if (!assessment) return <Navigate to={paths.b2b.assessmentsList(basePath)} replace />;
+  if (assessment.slug && idOrSlug && idOrSlug !== assessment.slug) {
+    return <Navigate to={paths.b2b.assessment(basePath, assessment)} replace />;
+  }
 
   const isPublished = assessment.status === "published";
 
@@ -62,10 +69,10 @@ export default function AssessmentDetail() {
       title={assessment.title}
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/b2b/assessments")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(paths.b2b.assessmentsList(basePath))}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/b2b/assessments/${assessment.id}/manage`)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(paths.b2b.assessmentManage(basePath, assessment))}>
             <Activity className="h-4 w-4 mr-1" /> Live monitor
           </Button>
           <Badge variant={isPublished ? "default" : "secondary"}>{assessment.status}</Badge>
@@ -77,7 +84,7 @@ export default function AssessmentDetail() {
               const { data, error } = await supabase.rpc("start_preview_attempt", { _assessment: assessment.id });
               if (error) { toast.error(error.message); return; }
               const attempt: any = data;
-              navigate(`/assessments/${attempt.id}/play?preview=1`);
+              navigate(paths.student.play(attempt, { preview: true }));
             }}
           >
             <Play className="h-4 w-4 mr-1" /> Take preview
@@ -124,7 +131,7 @@ export default function AssessmentDetail() {
           <InvitesPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="results">
-          <ResultsPanel assessmentId={assessment.id} />
+          <ResultsPanel assessment={assessment} basePath={basePath} />
         </TabsContent>
         <TabsContent value="proctoring">
           {canProctor ? (
@@ -580,7 +587,8 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
   );
 }
 
-function ResultsPanel({ assessmentId }: { assessmentId: string }) {
+function ResultsPanel({ assessment, basePath }: { assessment: { id: string; slug: string | null }; basePath: string }) {
+  const assessmentId = assessment.id;
   const { data: attempts, isLoading } = useAttempts(assessmentId);
   if (isLoading) return null;
   if (!attempts?.length) {
@@ -639,7 +647,7 @@ function ResultsPanel({ assessmentId }: { assessmentId: string }) {
             <div className="col-span-2">{a.score ?? <span className="text-[hsl(var(--muted-foreground))]">—</span>}</div>
             <div className="col-span-2">{a.integrity_score}</div>
             <div className="col-span-2 text-right">
-              <Link to={`/b2b/assessments/${assessmentId}/attempts/${a.id}`}>
+              <Link to={paths.b2b.attempt(basePath, assessment, a)}>
                 <Button size="sm" variant="outline">Review</Button>
               </Link>
             </div>

@@ -12,8 +12,9 @@ import {
   type ParticipantStatus,
 } from "../../hooks/useAssessmentLive";
 import { useCanProctor } from "../../hooks/usePermissions";
-import { useCurrentOrg } from "../../context/OrgContext";
+import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
 import ParticipantDetailDrawer from "../../components/ParticipantDetailDrawer";
+import { paths } from "@/lib/routing/paths";
 import { RetentionCard } from "@/components/proctoring/RetentionCard";
 import { LiveProctorWall } from "../../components/LiveProctorWall";
 import { Button } from "@/components/ui/button";
@@ -125,10 +126,13 @@ function Tick({ at }: { at: string | null }) {
 }
 
 export default function AssessmentManage() {
-  const { id } = useParams();
+  const { id: idOrSlug } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: assessment, isLoading } = useAssessment(id);
+  const { org } = useCurrentOrg();
+  const basePath = useOrgBasePath();
+  const { data: assessment, isLoading } = useAssessment(idOrSlug, org?.id);
+  const id = assessment?.id;
   const update = useUpdateAssessment();
   const { data: participants } = useLiveParticipants(id);
   const {
@@ -144,7 +148,6 @@ export default function AssessmentManage() {
   const { data: invites } = useInvites(id);
   const { data: evidenceMap } = useAssessmentEvidence(id);
   const forceSubmit = useForceSubmitAttempt();
-  const { org } = useCurrentOrg();
   const { canProctor } = useCanProctor(org?.id);
 
   const [query, setQuery] = useState("");
@@ -273,6 +276,11 @@ export default function AssessmentManage() {
   if (isLoading) return null;
   if (!assessment) return <Navigate to="/b2b/assessments" replace />;
 
+  // Canonicalise URL: when accessed via UUID, redirect to the slug URL.
+  if (assessment.slug && idOrSlug && idOrSlug !== assessment.slug) {
+    return <Navigate to={paths.b2b.assessmentManage(basePath, assessment)} replace />;
+  }
+
   const state = getScheduleState(assessment);
   const isPublished = assessment.status === "published";
   const firstInvite = invites?.[0];
@@ -282,10 +290,10 @@ export default function AssessmentManage() {
       title={assessment.title}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/b2b/assessments")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(paths.b2b.assessmentsList(basePath))}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Hub
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/b2b/assessments/${assessment.id}`)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(paths.b2b.assessment(basePath, assessment))}>
             <Pencil className="h-4 w-4 mr-1" /> Edit
           </Button>
           <Button

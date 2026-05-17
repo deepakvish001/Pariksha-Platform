@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid } from "@/lib/routing/slug";
 
 export type AttemptRow = {
   id: string;
+  slug: string | null;
   assessment_id: string;
   user_id: string;
   invite_id: string | null;
@@ -32,7 +34,7 @@ export function useAttempts(assessmentId?: string) {
 
 export type AttemptDetail = {
   attempt: AttemptRow;
-  assessment: { id: string; title: string; duration_min: number };
+  assessment: { id: string; slug: string | null; title: string; duration_min: number };
   answers: Array<{
     id: string;
     question_id: string;
@@ -53,16 +55,25 @@ export type AttemptDetail = {
   }>;
 };
 
-export function useAttemptDetail(attemptId?: string) {
+/** Accepts either the attempt UUID or its slug (unique within its assessment). */
+export function useAttemptDetail(attemptIdOrSlug?: string, assessmentId?: string) {
   return useQuery({
-    queryKey: ["b2b", "attempt-detail", attemptId],
-    enabled: !!attemptId,
+    queryKey: ["b2b", "attempt-detail", attemptIdOrSlug, assessmentId ?? null],
+    enabled: !!attemptIdOrSlug,
     queryFn: async (): Promise<AttemptDetail> => {
-      const { data: attempt, error: e1 } = await supabase
+      const key = attemptIdOrSlug!;
+      let q = supabase
         .from("assessment_attempts")
-        .select("*, invite:assessment_invites(email,name,external_id), assessment:assessments(id,title,duration_min)")
-        .eq("id", attemptId!)
-        .maybeSingle();
+        .select(
+          "*, invite:assessment_invites(email,name,external_id), assessment:assessments(id,slug,title,duration_min)",
+        );
+      if (isUuid(key)) {
+        q = q.eq("id", key);
+      } else {
+        q = q.eq("slug", key);
+        if (assessmentId) q = q.eq("assessment_id", assessmentId);
+      }
+      const { data: attempt, error: e1 } = await q.maybeSingle();
       if (e1) throw e1;
       if (!attempt) throw new Error("Attempt not found");
 
@@ -71,7 +82,7 @@ export function useAttemptDetail(attemptId?: string) {
         .select(
           "id, question_id, answer, auto_score, manual_score, question:questions(id,type,title,body_md,language,points,meta, mcq_options(id,body,is_correct,order_index), question_test_cases(input,expected_output,is_hidden,order_index))"
         )
-        .eq("attempt_id", attemptId!);
+        .eq("attempt_id", (attempt as any).id);
       if (e2) throw e2;
 
       const a: any = attempt;
