@@ -490,6 +490,16 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
   const create = useCreateInvites();
   const del = useDeleteInvite();
   const [bulk, setBulk] = useState("");
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendingAll, setSendingAll] = useState(false);
+
+  async function sendInvites(opts: { invite_ids?: string[]; only_pending?: boolean }) {
+    const { data, error } = await supabase.functions.invoke("send-assessment-invite", {
+      body: { assessment_id: assessmentId, ...opts },
+    });
+    if (error) throw new Error(error.message ?? "Failed to send");
+    return data as { sent: number; failed: number; results?: { email: string; ok: boolean; error?: string }[] };
+  }
 
   function parseRows(text: string) {
     return text
@@ -515,6 +525,7 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
           <label className="text-sm font-medium">Add candidates</label>
           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
             One per line. Format: <code>email</code>, or <code>email, name</code>, or <code>email, name, roll_id</code>.
+            Emails are sent automatically when added.
           </p>
         </div>
         <Textarea
@@ -531,11 +542,22 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
               const rows = parseRows(bulk);
               if (!rows.length) return toast.error("No valid emails found");
               const inserted = await create.mutateAsync({ assessment_id: assessmentId, rows });
-              toast.success(`${inserted.length} invite(s) added`);
               setBulk("");
+              if (!inserted.length) {
+                toast.info("No new invites added (duplicates skipped)");
+                return;
+              }
+              toast.success(`${inserted.length} invite(s) added`);
+              try {
+                const r = await sendInvites({ invite_ids: inserted.map((i) => i.id) });
+                if (r.sent > 0) toast.success(`${r.sent} invitation email(s) sent`);
+                if (r.failed > 0) toast.error(`${r.failed} email(s) failed to send`);
+              } catch (e) {
+                toast.error((e as Error).message);
+              }
             }}
           >
-            <Plus className="h-4 w-4 mr-1" /> Add invites
+            <Plus className="h-4 w-4 mr-1" /> Add & send invites
           </Button>
         </div>
       </div>
@@ -546,6 +568,32 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
         </div>
       ) : (
         <div className="b2b-card divide-y">
+          <div className="p-3 flex items-center justify-between">
+            <div className="text-xs text-[hsl(var(--muted-foreground))]">
+              {invites.length} invite{invites.length === 1 ? "" : "s"} ·{" "}
+              {invites.filter((i) => i.status === "pending").length} pending
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={sendingAll || !invites.some((i) => i.status === "pending")}
+              onClick={async () => {
+                setSendingAll(true);
+                try {
+                  const r = await sendInvites({ only_pending: true });
+                  if (r.sent > 0) toast.success(`Resent to ${r.sent} pending invite(s)`);
+                  if (r.failed > 0) toast.error(`${r.failed} email(s) failed`);
+                  if (r.sent === 0 && r.failed === 0) toast.info("No pending invites to send");
+                } catch (e) {
+                  toast.error((e as Error).message);
+                } finally {
+                  setSendingAll(false);
+                }
+              }}
+            >
+              {sendingAll ? "Sending…" : "Resend pending"}
+            </Button>
+          </div>
           {invites.map((i) => {
             const url = buildJoinUrl(i.token);
             return (
@@ -557,6 +605,25 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
                   </div>
                 </div>
                 <Badge variant={i.status === "pending" ? "secondary" : "default"}>{i.status}</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={sendingId === i.id}
+                  onClick={async () => {
+                    setSendingId(i.id);
+                    try {
+                      const r = await sendInvites({ invite_ids: [i.id] });
+                      if (r.sent > 0) toast.success(`Email sent to ${i.email}`);
+                      else toast.error(r.results?.[0]?.error ?? "Failed to send");
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    } finally {
+                      setSendingId(null);
+                    }
+                  }}
+                >
+                  {sendingId === i.id ? "Sending…" : "Send email"}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -586,6 +653,7 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
     </div>
   );
 }
+
 
 function ResultsPanel({ assessment, basePath }: { assessment: { id: string; slug: string | null }; basePath: string }) {
   const assessmentId = assessment.id;
