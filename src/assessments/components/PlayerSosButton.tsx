@@ -65,15 +65,31 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
 
   /**
    * Notify the proctor backend:
-   *  1. Insert an `sos` event into attempt_events so org members see it in the feed.
-   *  2. Post a system chat message so it appears in the proctor's chat dock.
-   * Best-effort: if either fails, fall back to email so the candidate is never stranded.
+   *  1. Insert a row into `assessment_sos_events` — the permanent SOS history
+   *     (status open → acknowledged → resolved by a proctor).
+   *  2. Mirror to `attempt_events` so it shows in the live event feed.
+   *  3. Post a system chat message so the proctor sees it instantly in chat.
+   * Best-effort: if all fail, fall back to email so the candidate is never stranded.
    */
   const notifyProctor = async (): Promise<{ ok: boolean; error?: string }> => {
     if (!attemptId) return { ok: false, error: "No active attempt" };
     try {
       const { data: u } = await supabase.auth.getUser();
       const userId = u?.user?.id ?? null;
+      if (!userId) return { ok: false, error: "Not signed in" };
+
+      const raisedAt = new Date().toISOString();
+
+      const sosInsert = supabase
+        .from("assessment_sos_events")
+        .insert({
+          attempt_id: attemptId,
+          raised_by: userId,
+          issue,
+          notes: notes || null,
+        })
+        .select("id")
+        .single();
 
       const eventInsert = supabase.from("attempt_events").insert({
         attempt_id: attemptId,
@@ -81,26 +97,22 @@ export function PlayerSosButton({ attemptId, assessmentTitle, compact }: Props) 
         payload: {
           issue,
           notes: notes || null,
-          raised_at: new Date().toISOString(),
+          raised_at: raisedAt,
           assessment_title: assessmentTitle ?? null,
         },
       });
 
-      const chatInsert = userId
-        ? supabase.from("assessment_chat_messages").insert({
-            attempt_id: attemptId,
-            sender_user_id: userId,
-            sender_role: "system",
-            body: `🚨 SOS raised by candidate — ${issue}${notes ? `\n\nDetails: ${notes}` : ""}`,
-          })
-        : Promise.resolve({ error: null } as any);
+      const chatInsert = supabase.from("assessment_chat_messages").insert({
+        attempt_id: attemptId,
+        sender_user_id: userId,
+        sender_role: "system",
+        body: `🚨 SOS raised by candidate — ${issue}${notes ? `\n\nDetails: ${notes}` : ""}`,
+      });
 
-      const [evt, chat] = await Promise.all([eventInsert, chatInsert]);
-      if (evt.error) throw evt.error;
-      if ((chat as any).error) {
-        // Non-fatal: event already logged.
-        console.warn("SOS chat post failed", (chat as any).error);
-      }
+      const [sos, evt, chat] = await Promise.all([sosInsert, eventInsert, chatInsert]);
+      if (sos.error) throw sos.error;
+      if (evt.error) console.warn("SOS event mirror failed", evt.error);
+      if (chat.error) console.warn("SOS chat post failed", chat.error);
       return { ok: true };
     } catch (e: any) {
       return { ok: false, error: e?.message ?? "Network error" };
