@@ -146,7 +146,6 @@ export default function AssessmentManage() {
   const { data: invites } = useInvites(id);
   const { data: evidenceMap } = useAssessmentEvidence(id);
   const forceSubmit = useForceSubmitAttempt();
-  const { org } = useCurrentOrg();
   const { canProctor } = useCanProctor(org?.id);
 
   const [query, setQuery] = useState("");
