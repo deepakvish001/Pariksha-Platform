@@ -115,6 +115,40 @@ export default function ParticipantDetailDrawer({
   const { data: timeline } = useAttemptTimeline(attemptId);
   const { data: answers } = useAttemptAnswers(attemptId);
 
+  // Controlled tab state so we can auto-switch as the candidate's status changes
+  // (e.g. polling detects they just started or just submitted while the drawer is open).
+  const status = participant?.status;
+  const isLive = status === "in_progress";
+  const [tab, setTab] = useState<string>(() =>
+    canProctor && isLive ? "live" : "activity",
+  );
+  const prevStatusRef = useRef<string | undefined>(status);
+  useEffect(() => {
+    if (!open || !status) return;
+    const prev = prevStatusRef.current;
+    // Candidate just started → jump to live feed.
+    if (canProctor && status === "in_progress" && prev !== "in_progress") {
+      setTab("live");
+    }
+    // Candidate just stopped (submitted/auto/abandoned) → leave live, show activity.
+    if (
+      tab === "live" &&
+      status !== "in_progress" &&
+      prev === "in_progress"
+    ) {
+      setTab("activity");
+    }
+    prevStatusRef.current = status;
+  }, [status, open, canProctor, tab]);
+
+  // When a new participant is selected, reset tab to a sensible default.
+  const inviteKey = participant?.invite_id ?? null;
+  useEffect(() => {
+    if (!inviteKey) return;
+    setTab(canProctor && isLive ? "live" : "activity");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteKey]);
+
   if (!participant) return null;
   const canForce = !!attemptId && participant.status !== "submitted" && participant.status !== "auto_submitted";
 
