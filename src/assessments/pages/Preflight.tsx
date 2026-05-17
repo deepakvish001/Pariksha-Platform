@@ -30,6 +30,7 @@ import {
   type SummaryCheck,
   type CheckState,
 } from "@/assessments/components/PreflightSummaryDialog";
+import { PaletteLegend } from "@/assessments/components/PaletteLegend";
 import "@/b2b/theme.css";
 
 type StepState = "pending" | "active" | "passed" | "failed";
