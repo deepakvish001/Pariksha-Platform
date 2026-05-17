@@ -244,10 +244,14 @@ export default function SideCameraPage() {
           )}
 
           {status !== "streaming" ? (
-            <Button onClick={start} className="w-full" disabled={status === "connecting"}>
-              <Camera className="h-4 w-4 mr-2" />
-              {status === "connecting" ? "Starting camera…" : "Start side camera"}
-            </Button>
+            !ready ? (
+              <SideEyeReadyCheck onReady={() => setReady(true)} buttonLabel="Continue" />
+            ) : (
+              <Button onClick={start} className="w-full" disabled={status === "connecting"}>
+                <Camera className="h-4 w-4 mr-2" />
+                {status === "connecting" ? "Starting camera…" : "Start side camera"}
+              </Button>
+            )
           ) : (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
