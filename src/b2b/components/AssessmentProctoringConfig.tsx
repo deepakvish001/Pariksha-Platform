@@ -121,6 +121,13 @@ export function AssessmentProctoringConfig({ value, enabled, onChange }: Props) 
             disabled={!enabled}
             onChange={(v) => update({ allow_clipboard_in_inputs: v })}
           />
+          <Toggle
+            label="Record full session (all 3 eyes)"
+            description="Continuously captures webcam, screen and side-cam for later replay."
+            checked={cfg.record_full_session}
+            disabled={!enabled}
+            onChange={(v) => update({ record_full_session: v })}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
