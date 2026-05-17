@@ -60,8 +60,10 @@ function lastReadLabel(ts: number | null) {
 }
 
 function TypingDots() {
+  // Purely decorative — the surrounding text (or sr-only announcer) carries
+  // the meaning, so we hide the animated dots from assistive tech.
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label="Typing">
+    <span className="inline-flex items-center gap-0.5" aria-hidden="true">
       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.2s]" />
       <span className="h-1 w-1 rounded-full bg-current animate-bounce [animation-delay:-0.1s]" />
       <span className="h-1 w-1 rounded-full bg-current animate-bounce" />
