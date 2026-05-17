@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
           <p style="font-size:12px;color:#999;margin:0;">This invite is personal to ${escapeHtml(inv.email)}. Please don't share it.</p>
         </div>
       </div>`;
+    const attemptAt = new Date().toISOString();
     try {
       const r = await resend.emails.send({
         from: FROM,
@@ -120,12 +121,31 @@ Deno.serve(async (req) => {
         html,
       });
       if ((r as any)?.error) {
-        results.push({ email: inv.email, ok: false, error: String((r as any).error?.message ?? (r as any).error) });
+        const msg = String((r as any).error?.message ?? (r as any).error);
+        await admin
+          .from("assessment_invites")
+          .update({ last_send_attempt_at: attemptAt, last_send_error: msg })
+          .eq("id", inv.id);
+        results.push({ email: inv.email, ok: false, error: msg });
       } else {
+        await admin
+          .from("assessment_invites")
+          .update({
+            last_send_attempt_at: attemptAt,
+            last_sent_at: attemptAt,
+            last_send_error: null,
+            send_count: ((inv as any).send_count ?? 0) + 1,
+          })
+          .eq("id", inv.id);
         results.push({ email: inv.email, ok: true });
       }
     } catch (e) {
-      results.push({ email: inv.email, ok: false, error: (e as Error).message });
+      const msg = (e as Error).message;
+      await admin
+        .from("assessment_invites")
+        .update({ last_send_attempt_at: attemptAt, last_send_error: msg })
+        .eq("id", inv.id);
+      results.push({ email: inv.email, ok: false, error: msg });
     }
   }
 
