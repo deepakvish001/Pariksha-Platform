@@ -621,7 +621,7 @@ export default function Player() {
           </div>
         </aside>
 
-        <section className="min-w-0 w-full">
+        <section className="min-w-0 w-full" style={{ fontSize: `${fontScale * 100}%` }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={q?.id ?? "empty"}
