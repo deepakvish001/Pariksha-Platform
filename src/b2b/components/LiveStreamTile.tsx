@@ -157,14 +157,27 @@ export function LiveStreamTile({ channelId, kind, className, attemptId, onConnec
         <Badge variant="secondary" className="text-[10px] h-5 gap-1">
           <Icon className="h-3 w-3" /> {LABELS[kind]}
         </Badge>
-        {channelId && (
-          <Badge
-            variant={connected ? "default" : "secondary"}
-            className={`text-[10px] h-5 ${connected ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" : ""}`}
-          >
-            {connected ? "LIVE" : connectionState === "connecting" || connectionState === "new" ? "…" : "OFFLINE"}
-          </Badge>
-        )}
+        {channelId && (() => {
+          const connecting = !connected && (connectionState === "connecting" || connectionState === "new");
+          return (
+            <Badge
+              className={`text-[10px] h-5 gap-1 border ${
+                connected
+                  ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50"
+                  : connecting
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                    : "bg-rose-500/25 text-rose-300 border-rose-500/50"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  connected ? "bg-emerald-400 animate-pulse" : connecting ? "bg-amber-400 animate-pulse" : "bg-rose-400"
+                }`}
+              />
+              {connected ? "LIVE" : connecting ? "CONNECTING" : "OFFLINE"}
+            </Badge>
+          );
+        })()}
         {recording && (
           <Badge className="text-[10px] h-5 bg-red-500/20 text-red-400 border-red-500/40 gap-1">
             <Circle className="h-2 w-2 fill-current animate-pulse" /> REC
