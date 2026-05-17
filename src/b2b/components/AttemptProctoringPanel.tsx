@@ -3,12 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle } from "lucide-react";
+import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle, Video, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Snap = { id: string; source: string; storage_path: string; captured_at: string; reviewed: boolean };
 type Frame = { id: string; storage_path: string; captured_at: string };
 type Finding = { id: string; snapshot_id: string; severity: string; finding: any; created_at: string };
+type Recording = {
+  id: string;
+  kind: "webcam" | "screen" | "sideeye";
+  storage_path: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_ms: number | null;
+  size_bytes: number | null;
+};
 
 const BUCKET = "assessment-proctor";
 
