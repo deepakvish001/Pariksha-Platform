@@ -778,6 +778,60 @@ export type Database = {
           },
         ]
       }
+      assessment_feedback: {
+        Row: {
+          assessment_id: string
+          attempt_id: string
+          clarity: number
+          comments: string | null
+          created_at: string
+          difficulty: string
+          id: string
+          rating: number
+          tech_issues: string | null
+          user_id: string
+        }
+        Insert: {
+          assessment_id: string
+          attempt_id: string
+          clarity: number
+          comments?: string | null
+          created_at?: string
+          difficulty: string
+          id?: string
+          rating: number
+          tech_issues?: string | null
+          user_id: string
+        }
+        Update: {
+          assessment_id?: string
+          attempt_id?: string
+          clarity?: number
+          comments?: string | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          rating?: number
+          tech_issues?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_feedback_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_feedback_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: true
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_invites: {
         Row: {
           assessment_id: string
@@ -1115,6 +1169,7 @@ export type Database = {
           org_id: string
           proctoring_config: Json
           proctoring_enabled: boolean
+          show_results_to_candidate: boolean
           starts_at: string | null
           status: Database["public"]["Enums"]["assessment_status"]
           title: string
@@ -1131,6 +1186,7 @@ export type Database = {
           org_id: string
           proctoring_config?: Json
           proctoring_enabled?: boolean
+          show_results_to_candidate?: boolean
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
           title: string
@@ -1147,6 +1203,7 @@ export type Database = {
           org_id?: string
           proctoring_config?: Json
           proctoring_enabled?: boolean
+          show_results_to_candidate?: boolean
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
           title?: string
