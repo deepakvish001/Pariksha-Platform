@@ -405,10 +405,13 @@ export default function SideCameraUploadPage() {
         >
           <ChevronLeft className="h-4 w-4 mr-1" /> Third Eye
         </Link>
-        <div className="text-xs tabular-nums">
+        <div className="text-xs tabular-nums flex items-center gap-2">
           <span className="font-semibold">{counter.total}</span> page{counter.total === 1 ? "" : "s"}
           {counter.pending > 0 && (
-            <span className="text-amber-600 ml-2">{counter.pending} to upload</span>
+            <span className="text-amber-600">· {counter.pending} to upload</span>
+          )}
+          {counter.failed > 0 && (
+            <span className="text-destructive">· {counter.failed} failed</span>
           )}
         </div>
       </header>
