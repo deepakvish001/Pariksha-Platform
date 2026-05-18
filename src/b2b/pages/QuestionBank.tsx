@@ -259,6 +259,21 @@ export default function QuestionBank() {
     }
   };
 
+  const ExportBtn = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" disabled={exporting || !questions?.length}>
+          <Download className="h-4 w-4 mr-1" />
+          {exporting ? "Exporting…" : "Export"}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => void exportAs("json")}>Export as JSON</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void exportAs("csv")}>Export as CSV</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const filtered = useMemo(() => {
     let list = questions ?? [];
     if (filter !== "all") list = list.filter((q) => q.type === filter);
