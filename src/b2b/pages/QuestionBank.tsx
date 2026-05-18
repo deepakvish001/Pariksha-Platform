@@ -70,6 +70,7 @@ export default function QuestionBank() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardInitial, setWizardInitial] = useState<Question | undefined>(undefined);
   const [legacyType, setLegacyType] = useState<QuestionType | undefined>(undefined);
+  const [legacyOpen, setLegacyOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | QuestionType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [search, setSearch] = useState("");
