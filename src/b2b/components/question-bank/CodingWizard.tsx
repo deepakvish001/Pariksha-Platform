@@ -24,6 +24,7 @@ import {
   type Question,
 } from "../../hooks/useQuestions";
 import { WizardShell, type WizardStep } from "./WizardShell";
+import { StatusHistoryPanel } from "./StatusHistoryPanel";
 import { useWizardAutosave, loadAutosave, clearAutosave } from "./useWizardAutosave";
 import {
   DifficultyPicker,
