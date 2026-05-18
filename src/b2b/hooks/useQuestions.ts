@@ -119,10 +119,25 @@ export function useCreateQuestion() {
       points?: number;
       meta?: Record<string, unknown>;
     }) => {
+export function useCreateQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      org_id: string | null;
+      type: QuestionType;
+      title: string;
+      body_md?: string;
+      language?: string;
+      starter_code?: string;
+      points?: number;
+      meta?: Record<string, unknown>;
+      tier?: QuestionTier;
+      is_global?: boolean;
+    }) => {
       const { data, error } = await supabase
         .from("questions")
         .insert({
-          org_id: input.org_id,
+          org_id: input.is_global ? null : input.org_id,
           type: input.type,
           title: input.title,
           body_md: input.body_md ?? null,
@@ -130,14 +145,17 @@ export function useCreateQuestion() {
           starter_code: input.starter_code ?? null,
           points: input.points ?? 10,
           meta: (input.meta ?? {}) as never,
-        })
+          tier: input.tier ?? "free",
+          is_global: input.is_global ?? false,
+        } as never)
         .select("*")
         .single();
       if (error) throw error;
       return data as Question;
     },
     onSuccess: (q) => {
-      qc.invalidateQueries({ queryKey: ["b2b", "questions", q.org_id] });
+      if (q.is_global) qc.invalidateQueries({ queryKey: ["b2b", "questions", "global"] });
+      else qc.invalidateQueries({ queryKey: ["b2b", "questions", q.org_id] });
     },
   });
 }
