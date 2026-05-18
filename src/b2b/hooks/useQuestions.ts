@@ -12,9 +12,11 @@ export type QuestionType =
   | "numerical"
   | "fill_blanks";
 
+export type QuestionTier = "free" | "premium";
+
 export type Question = {
   id: string;
-  org_id: string;
+  org_id: string | null;
   type: QuestionType;
   title: string;
   body_md: string | null;
@@ -25,6 +27,8 @@ export type Question = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  tier: QuestionTier;
+  is_global: boolean;
 };
 
 export type McqOption = {
