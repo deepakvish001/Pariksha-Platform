@@ -171,6 +171,7 @@ export default function ContestPlayProblem() {
           label={user?.email ?? user?.id ?? "candidate"}
         />
       )}
+      <LivenessChallengeDialog challenge={liveness.active} onSubmit={liveness.submit} />
     </>
   );
 }
