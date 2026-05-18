@@ -37,6 +37,7 @@ import B2BSettings from "@/b2b/pages/Settings";
 import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
 import B2BPricing from "@/b2b/pages/Pricing";
 import { OrgWorkspace } from "@/b2b/context/OrgContext";
+import { RequireOrgCapability } from "@/b2b/components/RequireOrgCapability";
 import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
 import ParikshaaOverview from "@/admin/parikshaa/Overview";
 import ParikshaaUsers from "@/admin/parikshaa/Users";
