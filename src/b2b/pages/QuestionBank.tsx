@@ -515,9 +515,21 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                 );
               })}
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…" className="pl-8 h-9 text-sm" />
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <Select value={tierFilter} onValueChange={(v) => setTierFilter(v as typeof tierFilter)}>
+                <SelectTrigger className="h-9 w-[140px] text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All tiers · {tierCounts.premium + tierCounts.free}</SelectItem>
+                  <SelectItem value="premium">★ Premium · {tierCounts.premium}</SelectItem>
+                  <SelectItem value="free">Free · {tierCounts.free}</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…" className="pl-8 h-9 text-sm" />
+              </div>
             </div>
           </div>
 
