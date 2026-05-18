@@ -29,6 +29,7 @@ import { isAnswered as isAnsweredFn } from "../lib/isAnswered";
 import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
+import { PremiumLockedQuestion } from "../components/PremiumLockedQuestion";
 import { AssessmentChatDock } from "../components/AssessmentChatDock";
 import { Submitted } from "./Submitted";
 import { AssessmentLockdownGate } from "../components/AssessmentLockdownGate";
@@ -340,8 +341,18 @@ export default function Player() {
             }
             setLastSavedAt(Date.now());
           },
-          onError: () => {
-            // keep in queue for retry
+          onError: (err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.includes("premium_required")) {
+              // Drop from queue — saving will never succeed for this user
+              delete pendingQueueRef.current[qid];
+              setPendingCount(Object.keys(pendingQueueRef.current).length);
+              persistQueue();
+              toast.error("This is a Premium question", {
+                description: "Upgrade to Premium to attempt and save answers for this question.",
+              });
+            }
+            // else: keep in queue for retry
           },
         }
       );
@@ -632,7 +643,10 @@ export default function Player() {
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
               {q ? (
-                isWideQuestion ? (
+                (q.meta as { locked?: boolean; tier?: string } | null)?.locked &&
+                (q.meta as { tier?: string } | null)?.tier === "premium" ? (
+                  <PremiumLockedQuestion title={q.title} />
+                ) : isWideQuestion ? (
                   q.type === "coding" ? (
                     <CodingQuestion
                       question={q}
