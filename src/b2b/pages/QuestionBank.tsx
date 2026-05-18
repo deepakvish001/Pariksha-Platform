@@ -84,6 +84,9 @@ export default function QuestionBank() {
   const [filter, setFilter] = useState<"all" | QuestionType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     let list = questions ?? [];
