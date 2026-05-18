@@ -285,7 +285,10 @@ export function CodingWizard({
     hints: draft.hints.filter(Boolean),
   });
 
-  const persist = async (status: "draft" | "published") => {
+  const persist = async (
+    status: "draft" | "published",
+    opts?: { keepOpen?: boolean },
+  ) => {
     if (status === "published" && publishErrors.length > 0) {
       toast.error(
         `Can't publish yet — ${publishErrors.length} required field${
@@ -326,7 +329,7 @@ export function CodingWizard({
       }
       clearAutosave(autosaveKey);
       toast.success(status === "published" ? "Question published" : "Draft saved");
-      if (status === "published") onDone();
+      if (status === "published" && !opts?.keepOpen) onDone();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -347,7 +350,11 @@ export function CodingWizard({
       saving={saving}
       isLast={step === STEPS.length - 1}
       status={status}
-      onStatusChange={setStatus}
+      onStatusChange={(s) => {
+        setStatus(s);
+        // Persist the new status immediately so the toggle isn't a "draft of a draft".
+        void persist(s, { keepOpen: true });
+      }}
       publishErrors={publishErrors}
       lastSavedAt={lastSavedAt}
       history={<StatusHistoryPanel questionId={questionId} />}
