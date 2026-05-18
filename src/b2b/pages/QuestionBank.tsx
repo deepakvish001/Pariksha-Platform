@@ -50,7 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy, Archive, ArchiveRestore } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
@@ -83,7 +83,7 @@ export default function QuestionBank() {
   const [legacyType, setLegacyType] = useState<QuestionType | undefined>(undefined);
   const [legacyOpen, setLegacyOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | QuestionType>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published" | "archived">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -152,14 +152,35 @@ export default function QuestionBank() {
     }
   };
 
+  const upd = useUpdateQuestion();
+  const toggleArchive = async (q: Question) => {
+    const meta = (q.meta ?? {}) as Record<string, unknown>;
+    const isArchived = Boolean(meta.archived);
+    try {
+      await upd.mutateAsync({
+        id: q.id,
+        patch: { meta: { ...meta, archived: !isArchived } as Record<string, unknown> } as Partial<Question>,
+      });
+      toast.success(isArchived ? "Question restored" : "Question archived");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update question");
+    }
+  };
+
   const filtered = useMemo(() => {
     let list = questions ?? [];
     if (filter !== "all") list = list.filter((q) => q.type === filter);
-    if (statusFilter !== "all") {
-      list = list.filter((q) => {
-        const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
-        return s === statusFilter;
-      });
+    const isArchived = (q: Question) => Boolean((q.meta as { archived?: boolean } | null)?.archived);
+    if (statusFilter === "archived") {
+      list = list.filter(isArchived);
+    } else {
+      list = list.filter((q) => !isArchived(q));
+      if (statusFilter !== "all") {
+        list = list.filter((q) => {
+          const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
+          return s === statusFilter;
+        });
+      }
     }
     const s = search.trim().toLowerCase();
     if (s) {
@@ -188,12 +209,20 @@ export default function QuestionBank() {
         : (questions ?? []).filter((q) => q.type === filter);
     let draft = 0;
     let published = 0;
+    let archived = 0;
+    let active = 0;
     for (const q of scope) {
-      const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
+      const meta = (q.meta ?? {}) as { status?: string; archived?: boolean };
+      if (meta.archived) {
+        archived++;
+        continue;
+      }
+      active++;
+      const s = meta.status ?? "published";
       if (s === "draft") draft++;
       else published++;
     }
-    return { all: scope.length, draft, published };
+    return { all: active, draft, published, archived };
   }, [questions, filter]);
 
   // Drop selected IDs that no longer exist (deleted elsewhere or filtered out of the dataset).
@@ -335,6 +364,7 @@ export default function QuestionBank() {
                   { value: "all", label: "All" },
                   { value: "draft", label: "Drafts" },
                   { value: "published", label: "Published" },
+                  { value: "archived", label: "Archived" },
                 ] as const).map((opt) => {
                   const active = statusFilter === opt.value;
                   const n = statusCounts[opt.value];
@@ -408,8 +438,9 @@ export default function QuestionBank() {
           ) : (
             <div className="grid gap-3">
               {filtered.map((q) => {
-                const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[] };
+                const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[]; archived?: boolean };
                 const status = meta.status ?? "published";
+                const archived = Boolean(meta.archived);
                 const diff = meta.difficulty;
                 const isSelected = selected.has(q.id);
                 return (
@@ -417,7 +448,7 @@ export default function QuestionBank() {
                     key={q.id}
                     className={`b2b-card p-4 flex items-center justify-between gap-3 ${
                       isSelected ? "ring-1 ring-[hsl(var(--primary))/0.6]" : ""
-                    }`}
+                    } ${archived ? "opacity-70" : ""}`}
                   >
                     <Checkbox
                       checked={isSelected}
@@ -428,8 +459,11 @@ export default function QuestionBank() {
                     <button onClick={() => openEdit(q)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline">{q.type}</Badge>
-                        {status === "draft" && (
+                        {status === "draft" && !archived && (
                           <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">Draft</Badge>
+                        )}
+                        {archived && (
+                          <Badge className="bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30">Archived</Badge>
                         )}
                         {diff && (
                           <Badge
@@ -465,6 +499,15 @@ export default function QuestionBank() {
                       title="Duplicate question"
                     >
                       <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleArchive(q)}
+                      disabled={upd.isPending}
+                      title={archived ? "Restore question" : "Archive question"}
+                    >
+                      {archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                     </Button>
                     <Button
                       variant="ghost"
