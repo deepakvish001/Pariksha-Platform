@@ -442,58 +442,75 @@ export default function QuestionBank() {
         </div>
       ) : (
         <>
-          <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-1">
-              {FILTERS.map((f) => {
-                const active = filter === f.value;
+          {/* KPI strip */}
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {([
+              { label: "Total", value: (questions?.length ?? 0), tone: "text-foreground" },
+              { label: "Published", value: statusCounts.published, tone: "text-emerald-600 dark:text-emerald-400" },
+              { label: "Drafts", value: statusCounts.draft, tone: "text-amber-600 dark:text-amber-400" },
+              { label: "Archived", value: statusCounts.archived, tone: "text-slate-500 dark:text-slate-400" },
+            ] as const).map((k) => (
+              <div
+                key={k.label}
+                className="b2b-card px-4 py-3 flex items-baseline justify-between gap-2"
+              >
+                <span className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+                  {k.label}
+                </span>
+                <span className={`text-xl font-semibold tabular-nums ${k.tone}`}>{k.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Toolbar */}
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              role="tablist"
+              aria-label="Filter by status"
+              className="inline-flex rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--secondary))/0.4] p-0.5 self-start"
+            >
+              {([
+                { value: "all", label: "All" },
+                { value: "draft", label: "Drafts" },
+                { value: "published", label: "Published" },
+                { value: "archived", label: "Archived" },
+              ] as const).map((opt) => {
+                const active = statusFilter === opt.value;
+                const n = statusCounts[opt.value];
                 return (
                   <button
-                    key={f.value}
-                    onClick={() => setFilter(f.value)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    key={opt.value}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setStatusFilter(opt.value)}
+                    className={`px-2.5 h-8 rounded text-xs font-medium transition-colors ${
                       active
-                        ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-                        : "bg-[hsl(var(--secondary))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                        ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm"
+                        : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                     }`}
                   >
-                    {f.label}
-                    <span className="ml-1.5 opacity-70">{counts[f.value] ?? 0}</span>
+                    {opt.label}
+                    <span className="ml-1.5 opacity-70">{n}</span>
                   </button>
                 );
               })}
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div
-                role="tablist"
-                aria-label="Filter by status"
-                className="inline-flex rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--secondary))/0.4] p-0.5"
-              >
-                {([
-                  { value: "all", label: "All" },
-                  { value: "draft", label: "Drafts" },
-                  { value: "published", label: "Published" },
-                  { value: "archived", label: "Archived" },
-                ] as const).map((opt) => {
-                  const active = statusFilter === opt.value;
-                  const n = statusCounts[opt.value];
-                  return (
-                    <button
-                      key={opt.value}
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => setStatusFilter(opt.value)}
-                      className={`px-2.5 h-8 rounded text-xs font-medium transition-colors ${
-                        active
-                          ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm"
-                          : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                      }`}
-                    >
-                      {opt.label}
-                      <span className="ml-1.5 opacity-70">{n}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <Select value={filter} onValueChange={(v) => setFilter(v as "all" | QuestionType)}>
+                <SelectTrigger className="h-9 w-full sm:w-44 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FILTERS.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      {f.label}
+                      <span className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
+                        {counts[f.value] ?? 0}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
                 <Input
@@ -544,7 +561,20 @@ export default function QuestionBank() {
               No questions match your filters.
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="b2b-card overflow-hidden divide-y divide-[hsl(var(--border))]">
+              {/* List header row */}
+              <div className="hidden md:flex items-center gap-3 px-3 py-2 bg-[hsl(var(--secondary))/0.4] text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+                <Checkbox
+                  checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+                  onCheckedChange={toggleAllVisible}
+                  aria-label="Select all visible"
+                  className="shrink-0"
+                />
+                <span className="w-16">Type</span>
+                <span className="flex-1">Title</span>
+                <span className="w-16 text-right">Points</span>
+                <span className="w-24" />
+              </div>
               {filtered.map((q) => {
                 const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[]; archived?: boolean };
                 const status = meta.status ?? "published";
@@ -554,8 +584,8 @@ export default function QuestionBank() {
                 return (
                   <div
                     key={q.id}
-                    className={`b2b-card p-4 flex items-center justify-between gap-3 ${
-                      isSelected ? "ring-1 ring-[hsl(var(--primary))/0.6]" : ""
+                    className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[hsl(var(--secondary))/0.4] ${
+                      isSelected ? "bg-[hsl(var(--primary))/0.06]" : ""
                     } ${archived ? "opacity-70" : ""}`}
                   >
                     <Checkbox
@@ -564,9 +594,13 @@ export default function QuestionBank() {
                       aria-label={`Select ${q.title}`}
                       className="shrink-0"
                     />
+                    <Badge variant="outline" className="shrink-0 hidden md:inline-flex w-16 justify-center">
+                      {q.type}
+                    </Badge>
                     <button onClick={() => openEdit(q)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline">{q.type}</Badge>
+                        <Badge variant="outline" className="md:hidden">{q.type}</Badge>
+                        <span className="font-medium truncate">{q.title}</span>
                         {status === "draft" && !archived && (
                           <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">Draft</Badge>
                         )}
@@ -587,46 +621,50 @@ export default function QuestionBank() {
                             {diff}
                           </Badge>
                         )}
-                        <span className="font-medium truncate">{q.title}</span>
                       </div>
-                      <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-2 flex-wrap">
-                        <span>{q.points} pts</span>
-                        {q.language && <span>· {q.language}</span>}
-                        {(meta.tags ?? []).slice(0, 4).map((t) => (
+                      <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 flex items-center gap-2 flex-wrap">
+                        {q.language && <span>{q.language}</span>}
+                        {(meta.tags ?? []).slice(0, 3).map((t) => (
                           <span key={t} className="px-1.5 py-0.5 rounded bg-[hsl(var(--secondary))] text-[10px]">
                             {t}
                           </span>
                         ))}
                       </div>
                     </button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => duplicateQuestion(q)}
-                      disabled={duplicatingId === q.id}
-                      title="Duplicate question"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleArchive(q)}
-                      disabled={upd.isPending}
-                      title={archived ? "Restore question" : "Archive question"}
-                    >
-                      {archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (!confirm(`Delete "${q.title}"?`)) return;
-                        del.mutate({ id: q.id, org_id: q.org_id });
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">
+                      {q.points}
+                    </span>
+                    <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => duplicateQuestion(q)}
+                        disabled={duplicatingId === q.id}
+                        title="Duplicate question"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleArchive(q)}
+                        disabled={upd.isPending}
+                        title={archived ? "Restore question" : "Archive question"}
+                      >
+                        {archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (!confirm(`Delete "${q.title}"?`)) return;
+                          del.mutate({ id: q.id, org_id: q.org_id });
+                        }}
+                        title="Delete question"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
