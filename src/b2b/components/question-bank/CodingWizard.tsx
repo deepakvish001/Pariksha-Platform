@@ -549,52 +549,80 @@ function ProblemStep({
           Shown to candidates as the visible spec. Add 1–3.
         </p>
         <div className="space-y-3">
-          {draft.examples.map((ex, i) => (
-            <div key={i} className="border rounded-md p-3 space-y-2 bg-[hsl(var(--secondary))/0.3]">
-              <div className="flex items-center justify-between">
-                <Badge variant="outline">Example {i + 1}</Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    patch({ examples: draft.examples.filter((_, idx) => idx !== i) })
-                  }
-                  disabled={draft.examples.length <= 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">Input</Label>
-                  <Textarea
-                    value={ex.input}
-                    onChange={(e) => updateExample(i, { input: e.target.value })}
-                    className="mt-1 min-h-[60px] font-mono text-xs"
-                    placeholder="nums = [2,7,11,15], target = 9"
-                  />
+          {draft.examples.map((ex, i) => {
+            const missingIn = !ex.input.trim();
+            const missingOut = !ex.output.trim();
+            const incomplete = missingIn || missingOut;
+            return (
+              <div
+                key={i}
+                className={`border rounded-md p-3 space-y-2 bg-[hsl(var(--secondary))/0.3] ${
+                  incomplete ? "border-amber-500/50" : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">Example {i + 1}</Badge>
+                    {incomplete && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] uppercase tracking-wide bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                      >
+                        Missing {missingIn && missingOut ? "input + output" : missingIn ? "input" : "output"}
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      patch({ examples: draft.examples.filter((_, idx) => idx !== i) })
+                    }
+                    disabled={draft.examples.length <= 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className={`text-xs ${missingIn ? "text-amber-600 dark:text-amber-400" : ""}`}>
+                      Input{missingIn ? " *" : ""}
+                    </Label>
+                    <Textarea
+                      value={ex.input}
+                      onChange={(e) => updateExample(i, { input: e.target.value })}
+                      className={`mt-1 min-h-[60px] font-mono text-xs ${
+                        missingIn ? "border-amber-500/50 focus-visible:ring-amber-500/40" : ""
+                      }`}
+                      placeholder="nums = [2,7,11,15], target = 9"
+                    />
+                  </div>
+                  <div>
+                    <Label className={`text-xs ${missingOut ? "text-amber-600 dark:text-amber-400" : ""}`}>
+                      Output{missingOut ? " *" : ""}
+                    </Label>
+                    <Textarea
+                      value={ex.output}
+                      onChange={(e) => updateExample(i, { output: e.target.value })}
+                      className={`mt-1 min-h-[60px] font-mono text-xs ${
+                        missingOut ? "border-amber-500/50 focus-visible:ring-amber-500/40" : ""
+                      }`}
+                      placeholder="[0, 1]"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label className="text-xs">Output</Label>
+                  <Label className="text-xs">Explanation (optional)</Label>
                   <Textarea
-                    value={ex.output}
-                    onChange={(e) => updateExample(i, { output: e.target.value })}
-                    className="mt-1 min-h-[60px] font-mono text-xs"
-                    placeholder="[0, 1]"
+                    value={ex.explanation ?? ""}
+                    onChange={(e) => updateExample(i, { explanation: e.target.value })}
+                    className="mt-1 min-h-[40px] text-xs"
+                    placeholder="Because nums[0] + nums[1] == 9."
                   />
                 </div>
               </div>
-              <div>
-                <Label className="text-xs">Explanation (optional)</Label>
-                <Textarea
-                  value={ex.explanation ?? ""}
-                  onChange={(e) => updateExample(i, { explanation: e.target.value })}
-                  className="mt-1 min-h-[40px] text-xs"
-                  placeholder="Because nums[0] + nums[1] == 9."
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <Button
           variant="outline"
