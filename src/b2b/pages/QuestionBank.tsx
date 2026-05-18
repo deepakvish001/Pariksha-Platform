@@ -347,6 +347,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
         list = list.filter((q) => (((q.meta as { status?: string } | null)?.status) ?? "published") === statusFilter);
       }
     }
+    if (tierFilter !== "all") list = list.filter((q) => (q.tier ?? "free") === tierFilter);
     const s = search.trim().toLowerCase();
     if (s) {
       list = list.filter((q) =>
@@ -354,8 +355,22 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
         (q.body_md ?? "").toLowerCase().includes(s) ||
         (q.language ?? "").toLowerCase().includes(s));
     }
-    return list;
-  }, [typeQuestions, statusFilter, search]);
+    // Sort: Premium pinned first, then by created_at desc (input order is already created_at desc)
+    return [...list].sort((a, b) => {
+      const ap = (a.tier ?? "free") === "premium" ? 0 : 1;
+      const bp = (b.tier ?? "free") === "premium" ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      return 0;
+    });
+  }, [typeQuestions, statusFilter, tierFilter, search]);
+
+  const tierCounts = useMemo(() => {
+    let premium = 0, free = 0;
+    for (const q of typeQuestions) {
+      if ((q.tier ?? "free") === "premium") premium++; else free++;
+    }
+    return { premium, free };
+  }, [typeQuestions]);
 
   const statusCounts = useMemo(() => {
     let draft = 0, published = 0, archived = 0, active = 0;
