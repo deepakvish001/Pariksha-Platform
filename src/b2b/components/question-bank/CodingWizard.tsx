@@ -123,7 +123,8 @@ export function CodingWizard({
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(startStep);
-  const [draft, setDraft] = useState<Draft>(initial ? fromQuestion(initial) : EMPTY);
+  const initialDraft = useMemo(() => (initial ? fromQuestion(initial) : EMPTY), [initial]);
+  const [draft, setDraft] = useState<Draft>(initialDraft);
   const [questionId, setQuestionId] = useState<string | undefined>(initial?.id);
   const [saving, setSaving] = useState(false);
   const initialStatus: "draft" | "published" =
@@ -131,6 +132,7 @@ export function CodingWizard({
       ? "published"
       : "draft";
   const [status, setStatus] = useState<"draft" | "published">(initialStatus);
+  const wasPublished = initialStatus === "published";
 
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
@@ -141,6 +143,26 @@ export function CodingWizard({
   const badWeightTest = (persistedTests ?? []).find(
     (t) => !t.expected_output?.toString().trim() || (t.weight ?? 0) < 1,
   );
+
+  // Detect changes that could invalidate existing hidden tests.
+  const riskyChanges = useMemo(() => {
+    if (!wasPublished) return [] as string[];
+    const changes: string[] = [];
+    if (draft.function_signature.trim() !== initialDraft.function_signature.trim())
+      changes.push("Function signature changed — existing test inputs/outputs may no longer match.");
+    if (draft.primary_language !== initialDraft.primary_language)
+      changes.push("Primary language changed.");
+    const removedLangs = initialDraft.allowed_languages.filter(
+      (l) => !draft.allowed_languages.includes(l),
+    );
+    if (removedLangs.length)
+      changes.push(`Removed allowed languages: ${removedLangs.join(", ")}.`);
+    const oldRef = initialDraft.reference_solution.code.trim();
+    const newRef = draft.reference_solution.code.trim();
+    if (oldRef && oldRef !== newRef)
+      changes.push("Reference solution changed — re-verify all hidden tests.");
+    return changes;
+  }, [wasPublished, draft, initialDraft]);
 
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }));
 
@@ -208,6 +230,14 @@ export function CodingWizard({
   });
 
   const persist = async (status: "draft" | "published") => {
+    if (riskyChanges.length > 0) {
+      const proceed = window.confirm(
+        `Heads up — you're editing a PUBLISHED question and made changes that could invalidate hidden tests:\n\n• ${riskyChanges.join(
+          "\n• ",
+        )}\n\nRe-run / re-verify hidden tests after saving. Continue?`,
+      );
+      if (!proceed) return;
+    }
     setSaving(true);
     try {
       const meta = buildMeta(status);
@@ -262,6 +292,13 @@ export function CodingWizard({
       }
       rightPane={<CodingPreview draft={draft} />}
     >
+      {wasPublished && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          <strong>Published question.</strong> Changes to the function signature, primary language,
+          allowed languages, or reference solution can invalidate hidden tests — you'll be asked to
+          confirm before saving.
+        </div>
+      )}
       {step === 0 && <BasicsStep draft={draft} patch={patch} />}
       {step === 1 && <ProblemStep draft={draft} patch={patch} />}
       {step === 2 && <CodeStep draft={draft} patch={patch} />}
@@ -270,6 +307,7 @@ export function CodingWizard({
           draft={draft}
           patch={patch}
           questionId={questionId}
+          wasPublished={wasPublished}
           ensureQuestion={async () => {
             if (questionId) return questionId;
             const meta = buildMeta("draft");
@@ -611,17 +649,20 @@ function TestsStep({
   draft,
   patch,
   questionId,
+  wasPublished,
   ensureQuestion,
 }: {
   draft: Draft;
   patch: (p: Partial<Draft>) => void;
   questionId?: string;
+  wasPublished: boolean;
   ensureQuestion: () => Promise<string>;
 }) {
   return (
     <div className="space-y-5">
       <PersistedTestCases
         questionId={questionId}
+        wasPublished={wasPublished}
         ensureQuestion={ensureQuestion}
       />
 
@@ -703,9 +744,11 @@ function TestsStep({
 
 function PersistedTestCases({
   questionId,
+  wasPublished,
   ensureQuestion,
 }: {
   questionId?: string;
+  wasPublished: boolean;
   ensureQuestion: () => Promise<string>;
 }) {
   const [activeId, setActiveId] = useState<string | undefined>(questionId);
@@ -819,7 +862,18 @@ function PersistedTestCases({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => del.mutate({ id: t.id, question_id: t.question_id })}
+              onClick={() => {
+                if (wasPublished) {
+                  const kind = t.is_hidden ? "hidden" : "sample";
+                  if (
+                    !window.confirm(
+                      `This question is PUBLISHED. Deleting a ${kind} test may change grading for past or in-flight attempts. Delete anyway?`,
+                    )
+                  )
+                    return;
+                }
+                del.mutate({ id: t.id, question_id: t.question_id });
+              }}
               aria-label="Delete"
             >
               <Trash2 className="h-4 w-4" />
@@ -853,6 +907,13 @@ function PersistedTestCases({
         <p className="text-xs text-amber-600 dark:text-amber-400">
           Adding a test case will auto-save this question as a draft so tests can be linked to it.
         </p>
+      )}
+
+      {wasPublished && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          <strong>Published question.</strong> Editing or deleting tests will affect grading for any
+          new attempts. You'll be asked to confirm before destructive changes.
+        </div>
       )}
 
       {samples.length > 0 && (
