@@ -9,6 +9,8 @@ import { useTerminationWatcher } from "@/hooks/useTerminationWatcher";
 import { useZeroTrustWatcher } from "@/hooks/useZeroTrustWatcher";
 import { useContestSessionSigner } from "@/hooks/useContestSessionSigner";
 import SessionWatermark from "@/components/contests/SessionWatermark";
+import { LivenessChallengeDialog } from "@/components/contests/LivenessChallengeDialog";
+import { useLivenessChallenge } from "@/hooks/useLivenessChallenge";
 import TerminationLockout from "@/components/contests/TerminationLockout";
 import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
