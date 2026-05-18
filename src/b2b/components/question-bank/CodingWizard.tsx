@@ -24,6 +24,7 @@ import {
   type Question,
 } from "../../hooks/useQuestions";
 import { WizardShell, type WizardStep } from "./WizardShell";
+import { useWizardAutosave, loadAutosave, clearAutosave } from "./useWizardAutosave";
 import {
   DifficultyPicker,
   StringListEditor,
