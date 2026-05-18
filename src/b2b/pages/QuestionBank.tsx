@@ -67,7 +67,11 @@ export default function QuestionBank() {
   const { data: questions } = useQuestions(org?.id);
   const del = useDeleteQuestion();
   const [editing, setEditing] = useState<Question | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardInitial, setWizardInitial] = useState<Question | undefined>(undefined);
+  const [legacyType, setLegacyType] = useState<QuestionType | undefined>(undefined);
   const [filter, setFilter] = useState<"all" | QuestionType>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
