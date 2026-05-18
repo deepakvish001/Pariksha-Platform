@@ -40,7 +40,17 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Library, Search, Upload, Sparkles } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, Trash2, Library, Search, Upload, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
 
@@ -74,6 +84,9 @@ export default function QuestionBank() {
   const [filter, setFilter] = useState<"all" | QuestionType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     let list = questions ?? [];
@@ -118,6 +131,61 @@ export default function QuestionBank() {
     }
     return { all: scope.length, draft, published };
   }, [questions, filter]);
+
+  // Drop selected IDs that no longer exist (deleted elsewhere or filtered out of the dataset).
+  useEffect(() => {
+    if (selected.size === 0) return;
+    const live = new Set((questions ?? []).map((q) => q.id));
+    let changed = false;
+    const next = new Set<string>();
+    selected.forEach((id) => {
+      if (live.has(id)) next.add(id);
+      else changed = true;
+    });
+    if (changed) setSelected(next);
+  }, [questions, selected]);
+
+  const filteredIds = useMemo(() => filtered.map((q) => q.id), [filtered]);
+  const allVisibleSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+  const someVisibleSelected =
+    filteredIds.some((id) => selected.has(id)) && !allVisibleSelected;
+
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAllVisible = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) filteredIds.forEach((id) => next.delete(id));
+      else filteredIds.forEach((id) => next.add(id));
+      return next;
+    });
+  const clearSelection = () => setSelected(new Set());
+
+  const runBulkDelete = async () => {
+    if (!org || selected.size === 0) return;
+    setBulkDeleting(true);
+    const ids = Array.from(selected);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => del.mutateAsync({ id, org_id: org.id })),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      const ok = results.length - failed;
+      if (ok > 0) toast.success(`Deleted ${ok} question${ok === 1 ? "" : "s"}`);
+      if (failed > 0) toast.error(`Failed to delete ${failed} question${failed === 1 ? "" : "s"}`);
+      clearSelection();
+    } finally {
+      setBulkDeleting(false);
+      setConfirmBulkDelete(false);
+    }
+  };
+
 
   if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
@@ -236,6 +304,39 @@ export default function QuestionBank() {
             </div>
           </div>
 
+          {selected.size > 0 && (
+            <div className="sticky top-2 z-10 mb-3 flex items-center justify-between gap-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.95] backdrop-blur px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+                  onCheckedChange={toggleAllVisible}
+                  aria-label="Select all visible"
+                />
+                <span className="font-medium">{selected.size} selected</span>
+                <button
+                  onClick={toggleAllVisible}
+                  className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] underline-offset-2 hover:underline"
+                >
+                  {allVisibleSelected ? "Clear visible" : `Select all ${filteredIds.length} visible`}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                  <X className="h-4 w-4 mr-1" /> Clear
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setConfirmBulkDelete(true)}
+                  disabled={bulkDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete {selected.size}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {filtered.length === 0 ? (
             <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
               No questions match your filters.
@@ -246,8 +347,20 @@ export default function QuestionBank() {
                 const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[] };
                 const status = meta.status ?? "published";
                 const diff = meta.difficulty;
+                const isSelected = selected.has(q.id);
                 return (
-                  <div key={q.id} className="b2b-card p-4 flex items-center justify-between gap-3">
+                  <div
+                    key={q.id}
+                    className={`b2b-card p-4 flex items-center justify-between gap-3 ${
+                      isSelected ? "ring-1 ring-[hsl(var(--primary))/0.6]" : ""
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleOne(q.id)}
+                      aria-label={`Select ${q.title}`}
+                      className="shrink-0"
+                    />
                     <button onClick={() => openEdit(q)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline">{q.type}</Badge>
@@ -317,6 +430,31 @@ export default function QuestionBank() {
         onOpenChange={(v) => { setLegacyOpen(v); if (!v) setLegacyType(undefined); }}
         hideTrigger
       />
+      <AlertDialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selected.size} question{selected.size === 1 ? "" : "s"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the selected questions along with their tests, options, and history. Assessments that reference them may break. This action can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void runBulkDelete();
+              }}
+              disabled={bulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleting ? "Deleting…" : `Delete ${selected.size}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </OrgShell>
   );
 }
