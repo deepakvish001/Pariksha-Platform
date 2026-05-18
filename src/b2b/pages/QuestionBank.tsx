@@ -611,6 +611,7 @@ function SimpleNewForm({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [points, setPoints] = useState(10);
+  const [tier, setTier] = useState<"free" | "premium">("free");
   const create = useCreateQuestion();
   const upsertOption = useUpsertMcqOption();
 
@@ -623,7 +624,7 @@ function SimpleNewForm({
       type === "fill_blanks" ? { blanks: [] } : {};
     const q = await create.mutateAsync({
       org_id: orgId, type, title: title.trim(),
-      body_md: body || undefined, points, meta,
+      body_md: body || undefined, points, meta, tier,
     });
     if (type === "true_false") {
       await upsertOption.mutateAsync({ question_id: q.id, body: "True", is_correct: true, order_index: 0 });
@@ -643,9 +644,18 @@ function SimpleNewForm({
         <Label>Prompt (Markdown)</Label>
         <Textarea value={body} onChange={(e) => setBody(e.target.value)} className="mt-1 min-h-[140px]" />
       </div>
-      <div>
-        <Label>Points</Label>
-        <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1 w-32" />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Points</Label>
+          <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1 w-32" />
+        </div>
+        <div>
+          <Label>Tier</Label>
+          <TierPicker value={tier} onChange={setTier} className="mt-1" />
+          <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
+            Premium questions are only attemptable by candidates with premium access.
+          </p>
+        </div>
       </div>
       {type === "true_false" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Two options (True / False) will be created. Set the correct one on the next screen.</p>}
       {type === "matching" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Add Left → Right pairs on the next screen.</p>}
@@ -660,6 +670,50 @@ function SimpleNewForm({
         </Button>
       </div>
     </div>
+  );
+}
+
+// ───────────────── Tier helpers ─────────────────
+function TierPicker({
+  value, onChange, className = "",
+}: { value: "free" | "premium"; onChange: (v: "free" | "premium") => void; className?: string }) {
+  return (
+    <div className={`inline-flex rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--secondary))/0.4] p-0.5 ${className}`}>
+      {(["free", "premium"] as const).map((t) => {
+        const active = value === t;
+        return (
+          <button
+            type="button"
+            key={t}
+            onClick={() => onChange(t)}
+            className={`px-3 h-8 rounded text-xs font-medium capitalize transition-colors ${
+              active
+                ? t === "premium"
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 shadow-sm"
+                  : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+            }`}
+          >
+            {t === "premium" ? "★ Premium" : "Free"}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TierBadge({ tier }: { tier: "free" | "premium" }) {
+  if (tier === "premium") {
+    return (
+      <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">
+        ★ Premium
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))]">
+      Free
+    </Badge>
   );
 }
 
