@@ -894,6 +894,7 @@ function PersistedTestCases({
   };
 
   // Rewrite order_index for an entire group based on their new array order.
+  const qc = useQueryClient();
   const reorderGroup = async (
     group: NonNullable<typeof cases>,
     fromId: string,
@@ -903,22 +904,45 @@ function PersistedTestCases({
     const newIndex = group.findIndex((c) => c.id === toId);
     if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
     const nextGroup = arrayMove(group, oldIndex, newIndex);
-    // Persist only rows whose order_index actually changed.
-    const writes = nextGroup
+    // Compute target order_index per moved row (reuse original positions' indices).
+    const targets = nextGroup
       .map((t, i) => ({ t, newOrder: group[i].order_index }))
-      .filter(({ t, newOrder }) => t.order_index !== newOrder)
-      .map(({ t, newOrder }) =>
-        upsert.mutateAsync({
-          id: t.id,
-          question_id: t.question_id,
-          input: t.input,
-          expected_output: t.expected_output,
-          is_hidden: t.is_hidden,
-          weight: t.weight,
-          order_index: newOrder,
-        }),
+      .filter(({ t, newOrder }) => t.order_index !== newOrder);
+    if (targets.length === 0) return;
+
+    // Optimistic cache update so the UI reflects the new order instantly
+    // and survives the in-flight invalidations from each upsert.
+    const queryKey = ["b2b", "test-cases", activeId] as const;
+    await qc.cancelQueries({ queryKey });
+    const previous = qc.getQueryData<NonNullable<typeof cases>>(queryKey);
+    if (previous) {
+      const orderMap = new Map(targets.map(({ t, newOrder }) => [t.id, newOrder]));
+      const next = previous
+        .map((c) => (orderMap.has(c.id) ? { ...c, order_index: orderMap.get(c.id)! } : c))
+        .sort((a, b) => a.order_index - b.order_index);
+      qc.setQueryData(queryKey, next);
+    }
+
+    try {
+      await Promise.all(
+        targets.map(({ t, newOrder }) =>
+          upsert.mutateAsync({
+            id: t.id,
+            question_id: t.question_id,
+            input: t.input,
+            expected_output: t.expected_output,
+            is_hidden: t.is_hidden,
+            weight: t.weight,
+            order_index: newOrder,
+          }),
+        ),
       );
-    await Promise.all(writes);
+    } catch (err) {
+      if (previous) qc.setQueryData(queryKey, previous);
+      toast.error("Could not save the new order. Reverted.");
+    } finally {
+      qc.invalidateQueries({ queryKey });
+    }
   };
 
   const sensors = useSensors(
