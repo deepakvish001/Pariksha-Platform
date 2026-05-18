@@ -19,7 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { FileQuestion } from "lucide-react";
+import { SectionCard } from "../../components/ui/SectionCard";
+import { Switch } from "@/components/ui/switch";
+import { FileQuestion, Sliders, CalendarClock, ShieldCheck, EyeOff, Palette, AlertTriangle } from "lucide-react";
 import {
   Select,
   SelectContent,
