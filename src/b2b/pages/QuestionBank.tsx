@@ -459,8 +459,11 @@ export default function QuestionBank() {
                     <button onClick={() => openEdit(q)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline">{q.type}</Badge>
-                        {status === "draft" && (
+                        {status === "draft" && !archived && (
                           <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">Draft</Badge>
+                        )}
+                        {archived && (
+                          <Badge className="bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30">Archived</Badge>
                         )}
                         {diff && (
                           <Badge
