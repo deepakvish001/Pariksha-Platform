@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { verifySignedRequest, readSignedHeaders } from "../_shared/contest-signing.ts";
 
 /**
  * Single sink for all proctoring violation events.
@@ -43,8 +44,24 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return json({ error: "Unauthorized" }, 401);
 
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.text();
+    const body = rawBody ? JSON.parse(rawBody) : {};
     const { session_id, category, severity, evidence_ref, meta } = body ?? {};
+
+    // Layer 5 — verify HMAC signature when present. Soft-fail (log) for now
+    // so a missing/bad signature gets recorded as its own violation but does
+    // not block the engine from processing legitimate unsigned legacy calls.
+    let signatureStatus: "valid" | "missing" | "invalid" = "missing";
+    let signatureReason: string | null = null;
+    if (readSignedHeaders(req)) {
+      const verify = await verifySignedRequest(req, rawBody);
+      if (verify.ok) {
+        signatureStatus = "valid";
+      } else {
+        signatureStatus = "invalid";
+        signatureReason = verify.reason;
+      }
+    }
 
     if (typeof session_id !== "string" || typeof category !== "string" || typeof severity !== "string") {
       return json({ error: "session_id, category, severity required" }, 400);
