@@ -60,6 +60,13 @@ export const paths = {
       candidate?: CandidateLike,
     ) =>
       `${basePath}/assessments/${preferSlug(a)}/attempts/${attemptSegment(attempt, candidate)}`,
+    candidate: (
+      basePath: string,
+      a: Identifiable,
+      attempt: Identifiable,
+      candidate?: CandidateLike,
+    ) =>
+      `${basePath}/assessments/${preferSlug(a)}/candidates/${attemptSegment(attempt, candidate)}`,
   },
   /** Student-facing assessment flow */
   student: {
