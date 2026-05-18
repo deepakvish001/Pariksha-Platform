@@ -587,6 +587,11 @@ function CodeStep({
             </TabsContent>
           ))}
         </Tabs>
+        <ValidationHint
+          ok={(draft.starter_code[draft.primary_language] ?? "").trim().length > 0}
+        >
+          Starter code for the primary language is required.
+        </ValidationHint>
       </div>
     </div>
   );
