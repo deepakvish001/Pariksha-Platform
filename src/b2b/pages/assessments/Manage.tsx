@@ -450,10 +450,12 @@ export default function AssessmentManage() {
                         assessmentId={assessment.id}
                         detailHref={
                           p.attempt_id
-                            ? paths.b2b.attempt(basePath, assessment, {
-                                id: p.attempt_id,
-                                slug: p.attempt_slug ?? null,
-                              })
+                            ? paths.b2b.attempt(
+                                basePath,
+                                assessment,
+                                { id: p.attempt_id, slug: p.attempt_slug ?? null },
+                                { name: p.name, email: p.email, external_id: p.external_id },
+                              )
                             : null
                         }
                         pending={forceSubmit.isPending}
