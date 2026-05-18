@@ -50,7 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy, Archive, ArchiveRestore } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
