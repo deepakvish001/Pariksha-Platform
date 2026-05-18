@@ -49,6 +49,11 @@ export default function ContestPlayProblem() {
   // Layer 5 — issues per-session ephemeral HMAC signing keys + 60s rotation.
   // Currently issues only; server-side verification is opt-in per function.
   useContestSessionSigner(session.sessionId ?? null);
+  // Layer 3 — active liveness challenges (4-7 min cadence).
+  const liveness = useLivenessChallenge({
+    sessionId: session.sessionId ?? null,
+    enabled: session.hasActive && !termination.terminated,
+  });
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
   const { user } = useAuth();
