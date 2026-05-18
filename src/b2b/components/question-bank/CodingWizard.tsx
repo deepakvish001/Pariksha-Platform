@@ -215,6 +215,8 @@ export function CodingWizard({
       onPublish={() => persist("published")}
       saving={saving}
       isLast={step === STEPS.length - 1}
+      status={status}
+      onStatusChange={setStatus}
       rightPane={<CodingPreview draft={draft} />}
     >
       {step === 0 && <BasicsStep draft={draft} patch={patch} />}
