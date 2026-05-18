@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import { CodeTimelineReplay } from "@/components/admin/contests/CodeTimelineReplay";
+import { SessionSealPanel } from "@/components/admin/contests/SessionSealPanel";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
