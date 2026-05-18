@@ -102,10 +102,113 @@ export default function QuestionBank() {
   return (
     <Routes>
       <Route index element={<HubView org={org!} />} />
+      <Route path="global" element={<GlobalBankView org={org!} />} />
       <Route path=":type" element={<ListView org={org!} />} />
       <Route path=":type/new" element={<NewView org={org!} />} />
       <Route path=":type/:id" element={<EditView org={org!} />} />
     </Routes>
+  );
+}
+
+// ─────────────────────────── GLOBAL BANK (shared, admin-curated) ───────────────────────────
+function GlobalBankView({ org }: { org: { id: string; name?: string } }) {
+  const { data: questions, isLoading } = useGlobalQuestions();
+  const { isAdmin } = useUserRole();
+  const clone = useCloneGlobalQuestion();
+  const base = useBasePath();
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | QuestionType>("all");
+
+  const filtered = useMemo(() => {
+    let list = questions ?? [];
+    if (typeFilter !== "all") list = list.filter((q) => q.type === typeFilter);
+    const s = search.trim().toLowerCase();
+    if (s) list = list.filter((q) => q.title.toLowerCase().includes(s) || (q.body_md ?? "").toLowerCase().includes(s));
+    return [...list].sort((a, b) => ((a.tier ?? "free") === "premium" ? 0 : 1) - ((b.tier ?? "free") === "premium" ? 0 : 1));
+  }, [questions, typeFilter, search]);
+
+  return (
+    <OrgShell
+      title="Global Question Bank"
+      actions={
+        <Button variant="ghost" size="sm" asChild>
+          <Link to={base}><ArrowLeft className="h-4 w-4 mr-1" /> Back to bank</Link>
+        </Button>
+      }
+    >
+      <div className="mb-4 b2b-card p-4 flex items-start gap-3 border-amber-500/30">
+        <Sparkles className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1 text-sm">
+          <div className="font-semibold">Curated by Parikshaa admins</div>
+          <p className="text-[hsl(var(--muted-foreground))] text-xs mt-0.5">
+            {isAdmin
+              ? "You can add, edit, and remove global questions here. Every org can browse them and clone into their own bank."
+              : "Browse questions shared across all orgs. Clone any question into your org to use it in assessments."}
+          </p>
+        </div>
+        {isAdmin && (
+          <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">Super-admin</Badge>
+        )}
+      </div>
+
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+          <SelectTrigger className="h-9 w-[180px] text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {TYPE_CARDS.map((c) => (<SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>))}
+          </SelectContent>
+        </Select>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search global questions…" className="pl-8 h-9 text-sm" />
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
+      ) : filtered.length === 0 ? (
+        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+          {questions?.length ? "No questions match your filters." : "The global bank is empty. Super-admins can add curated questions here."}
+        </div>
+      ) : (
+        <div className="b2b-card overflow-hidden divide-y divide-[hsl(var(--border))]">
+          {filtered.map((q) => {
+            const tier = (q.tier ?? "free") as "free" | "premium";
+            return (
+              <div key={q.id} className={`flex items-center gap-3 px-3 py-2.5 hover:bg-[hsl(var(--secondary))/0.4] ${tier === "premium" ? "border-l-2 border-l-amber-500/60" : ""}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="capitalize text-[10px]">{q.type.replace("_", " ")}</Badge>
+                    <span className="font-medium truncate">{q.title}</span>
+                    <TierBadge tier={tier} />
+                  </div>
+                  {q.body_md && (
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-1">{q.body_md}</p>
+                  )}
+                </div>
+                <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">{q.points} pts</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={clone.isPending}
+                  onClick={async () => {
+                    try {
+                      await clone.mutateAsync({ question_id: q.id, target_org: org.id });
+                      toast.success("Cloned into your bank");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Failed to clone");
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4 mr-1" /> Clone
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </OrgShell>
   );
 }
 
