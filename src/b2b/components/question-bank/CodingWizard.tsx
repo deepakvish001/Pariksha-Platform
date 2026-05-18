@@ -297,6 +297,7 @@ export function CodingWizard({
       status={status}
       onStatusChange={setStatus}
       publishErrors={publishErrors}
+      lastSavedAt={lastSavedAt}
       publishedPreviewTitle="Candidate view · Coding question"
       publishedPreview={
         <CodingPublishedPreview
