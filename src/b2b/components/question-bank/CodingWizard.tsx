@@ -200,16 +200,38 @@ export function CodingWizard({
     if (!draft.title.trim()) errs.push("Title is required.");
     if (draft.body_md.trim().length < 10)
       errs.push("Problem statement must be at least 10 characters.");
-    if (!draft.examples.some((e) => e.input.trim() && e.output.trim()))
+
+    // Examples — must have at least one with BOTH input and output.
+    const goodExamples = draft.examples.filter(
+      (e) => e.input.trim() && e.output.trim(),
+    );
+    if (goodExamples.length === 0)
       errs.push("Add at least one worked example with both input and output.");
+
+    // Constraints — require at least one non-empty constraint line.
+    const goodConstraints = draft.constraints.map((c) => c.trim()).filter(Boolean);
+    if (goodConstraints.length === 0)
+      errs.push("Add at least one input constraint (bounds, sizes, ranges).");
+
+    // Languages & signature.
     if (draft.allowed_languages.length === 0)
       errs.push("Pick at least one allowed language.");
-    if (!draft.function_signature.trim())
-      errs.push("Function signature is required.");
+    const sig = draft.function_signature.trim();
+    if (!sig) errs.push("Function signature is required.");
+    else if (!/\(.*\)/.test(sig))
+      errs.push("Function signature must include a parameter list, e.g. solve(nums, k).");
+
+    // Starter code.
     if (!(draft.starter_code[draft.primary_language] ?? "").trim())
       errs.push("Starter code for the primary language is required.");
-    if (!draft.reference_solution.code.trim())
-      errs.push("Reference solution is required.");
+
+    // Reference solution — must exist AND be non-trivial.
+    const refCode = draft.reference_solution.code.trim();
+    if (!refCode) errs.push("Reference solution is required.");
+    else if (refCode.length < 20)
+      errs.push("Reference solution looks too short — paste the working solution.");
+
+    // Tests.
     if (testCount === 0) errs.push("Add at least one test case.");
     else {
       if (sampleCount === 0) errs.push("Add at least one sample (visible) test.");
