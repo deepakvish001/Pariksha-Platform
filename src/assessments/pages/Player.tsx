@@ -341,8 +341,18 @@ export default function Player() {
             }
             setLastSavedAt(Date.now());
           },
-          onError: () => {
-            // keep in queue for retry
+          onError: (err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.includes("premium_required")) {
+              // Drop from queue — saving will never succeed for this user
+              delete pendingQueueRef.current[qid];
+              setPendingCount(Object.keys(pendingQueueRef.current).length);
+              persistQueue();
+              toast.error("This is a Premium question", {
+                description: "Upgrade to Premium to attempt and save answers for this question.",
+              });
+            }
+            // else: keep in queue for retry
           },
         }
       );
