@@ -550,13 +550,16 @@ function CodeStep({
       </div>
 
       <div>
-        <Label>Function signature (optional)</Label>
+        <Label>Function signature <span className="text-rose-500">*</span></Label>
         <Input
           value={draft.function_signature}
           onChange={(e) => patch({ function_signature: e.target.value })}
           placeholder="function twoSum(nums: number[], target: number): number[]"
           className="mt-1 font-mono text-xs"
         />
+        <ValidationHint ok={draft.function_signature.trim().length > 0}>
+          Required — candidates need a clear contract for inputs and return type.
+        </ValidationHint>
       </div>
 
       <div>
