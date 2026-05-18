@@ -27,6 +27,8 @@ const CRITICAL_AUTO_TERMINATE = new Set([
   "rdp_detected",
   "devtools_open",
   "side_eye_disconnected_grace_expired",
+  "signature_invalid",
+  "print_screen_attempt",
 ]);
 
 Deno.serve(async (req) => {
