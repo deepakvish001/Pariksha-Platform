@@ -783,6 +783,25 @@ function TierBadge({ tier }: { tier: "free" | "premium" }) {
   );
 }
 
+function TierToggle({ question }: { question: Question }) {
+  const upd = useUpdateQuestion();
+  const tier = (question.tier ?? "free") as "free" | "premium";
+  return (
+    <TierPicker
+      value={tier}
+      onChange={async (next) => {
+        if (next === tier) return;
+        try {
+          await upd.mutateAsync({ id: question.id, patch: { tier: next } as Partial<Question> });
+          toast.success(`Marked as ${next === "premium" ? "Premium" : "Free"}`);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Failed to update tier");
+        }
+      }}
+    />
+  );
+}
+
 // ─────────────────────────── EDIT (full-page) ───────────────────────────
 function EditView({ org }: { org: { id: string; name?: string } }) {
   const { type, id } = useParams<{ type: string; id: string }>();
