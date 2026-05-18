@@ -685,6 +685,103 @@ function PersistedTestCases({
     toast.success(`${hidden ? "Hidden" : "Sample"} test added`);
   };
 
+  const move = async (id: string, dir: -1 | 1) => {
+    const all = cases ?? [];
+    const idx = all.findIndex((c) => c.id === id);
+    if (idx === -1) return;
+    const target = all[idx];
+    // Find nearest neighbor in the same group (sample/hidden)
+    let neighborIdx = -1;
+    for (let i = idx + dir; i >= 0 && i < all.length; i += dir) {
+      if (all[i].is_hidden === target.is_hidden) {
+        neighborIdx = i;
+        break;
+      }
+    }
+    if (neighborIdx === -1) return;
+    const neighbor = all[neighborIdx];
+    // Swap their order_index values
+    await Promise.all([
+      upsert.mutateAsync({
+        id: target.id,
+        question_id: target.question_id,
+        input: target.input,
+        expected_output: target.expected_output,
+        is_hidden: target.is_hidden,
+        weight: target.weight,
+        order_index: neighbor.order_index,
+      }),
+      upsert.mutateAsync({
+        id: neighbor.id,
+        question_id: neighbor.question_id,
+        input: neighbor.input,
+        expected_output: neighbor.expected_output,
+        is_hidden: neighbor.is_hidden,
+        weight: neighbor.weight,
+        order_index: target.order_index,
+      }),
+    ]);
+  };
+
+  const renderCase = (t: NonNullable<typeof cases>[number], list: NonNullable<typeof cases>) => {
+    const pos = list.findIndex((x) => x.id === t.id);
+    const isFirst = pos === 0;
+    const isLast = pos === list.length - 1;
+    return (
+      <div key={t.id} className="border rounded-md p-2.5 text-xs space-y-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Badge variant={t.is_hidden ? "secondary" : "outline"} className="gap-1">
+              {t.is_hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              {t.is_hidden ? "Hidden" : "Sample"} #{pos + 1}
+            </Badge>
+            <span className="text-[hsl(var(--muted-foreground))]">weight {t.weight}</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              disabled={isFirst || upsert.isPending}
+              onClick={() => move(t.id, -1)}
+              aria-label="Move up"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              disabled={isLast || upsert.isPending}
+              onClick={() => move(t.id, 1)}
+              aria-label="Move down"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => del.mutate({ id: t.id, question_id: t.question_id })}
+              aria-label="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">In</div>
+            <pre className="whitespace-pre-wrap font-mono">{t.input || "—"}</pre>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">Out</div>
+            <pre className="whitespace-pre-wrap font-mono">{t.expected_output}</pre>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
@@ -700,36 +797,20 @@ function PersistedTestCases({
         </p>
       )}
 
-      {(cases ?? []).map((t) => (
-        <div key={t.id} className="border rounded-md p-2.5 text-xs space-y-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Badge variant={t.is_hidden ? "secondary" : "outline"} className="gap-1">
-                {t.is_hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                {t.is_hidden ? "Hidden" : "Sample"}
-              </Badge>
-              <span className="text-[hsl(var(--muted-foreground))]">weight {t.weight}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => del.mutate({ id: t.id, question_id: t.question_id })}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">In</div>
-              <pre className="whitespace-pre-wrap font-mono">{t.input || "—"}</pre>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">Out</div>
-              <pre className="whitespace-pre-wrap font-mono">{t.expected_output}</pre>
-            </div>
-          </div>
+      {samples.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Sample (visible)</div>
+          {samples.map((t) => renderCase(t, samples))}
         </div>
-      ))}
+      )}
+
+      {hiddens.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Hidden</div>
+          {hiddens.map((t) => renderCase(t, hiddens))}
+        </div>
+      )}
+
 
       <div className="border rounded-md p-3 space-y-2 bg-[hsl(var(--secondary))/0.3]">
         <div className="grid grid-cols-2 gap-2">
