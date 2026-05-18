@@ -272,11 +272,12 @@ export default function QuestionBank() {
           setLegacyOpen(true);
         }}
       />
-      <LegacyNewQuestion
+      <NewQuestionDialog
         orgId={org!.id}
-        type={legacyType}
+        forcedType={legacyType}
         open={legacyOpen}
         onOpenChange={(v) => { setLegacyOpen(v); if (!v) setLegacyType(undefined); }}
+        hideTrigger
       />
     </OrgShell>
   );
