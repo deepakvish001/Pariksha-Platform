@@ -12,6 +12,11 @@ export function isAnswered(
   qq: PaperQuestion,
   a: Record<string, unknown> | undefined
 ): boolean {
+  // Locked Premium questions are excluded from the candidate's submission
+  // surface — treat them as "answered" so they don't show up as unanswered
+  // gaps the user can never fill.
+  const meta = qq.meta as { locked?: boolean; tier?: string } | null | undefined;
+  if (meta?.locked && meta?.tier === "premium") return true;
   if (!a) return false;
   if (qq.type === "mcq" || qq.type === "true_false")
     return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
