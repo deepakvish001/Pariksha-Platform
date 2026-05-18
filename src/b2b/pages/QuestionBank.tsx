@@ -209,12 +209,20 @@ export default function QuestionBank() {
         : (questions ?? []).filter((q) => q.type === filter);
     let draft = 0;
     let published = 0;
+    let archived = 0;
+    let active = 0;
     for (const q of scope) {
-      const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
+      const meta = (q.meta ?? {}) as { status?: string; archived?: boolean };
+      if (meta.archived) {
+        archived++;
+        continue;
+      }
+      active++;
+      const s = meta.status ?? "published";
       if (s === "draft") draft++;
       else published++;
     }
-    return { all: scope.length, draft, published };
+    return { all: active, draft, published, archived };
   }, [questions, filter]);
 
   // Drop selected IDs that no longer exist (deleted elsewhere or filtered out of the dataset).
