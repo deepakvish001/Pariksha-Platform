@@ -60,6 +60,9 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
+import { CodingWizard } from "../components/question-bank/CodingWizard";
+import { SqlWizard } from "../components/question-bank/SqlWizard";
+import { TYPE_CARDS } from "../components/question-bank/types";
 
 const TYPES: { value: QuestionType; label: string }[] = [
   { value: "coding", label: "Coding" },
