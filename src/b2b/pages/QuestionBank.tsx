@@ -103,6 +103,22 @@ export default function QuestionBank() {
     return c;
   }, [questions]);
 
+  // Status counts respect the active type filter so the tab numbers match what's visible.
+  const statusCounts = useMemo(() => {
+    const scope =
+      filter === "all"
+        ? questions ?? []
+        : (questions ?? []).filter((q) => q.type === filter);
+    let draft = 0;
+    let published = 0;
+    for (const q of scope) {
+      const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
+      if (s === "draft") draft++;
+      else published++;
+    }
+    return { all: scope.length, draft, published };
+  }, [questions, filter]);
+
   if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
 
