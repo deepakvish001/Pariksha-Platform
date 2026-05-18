@@ -5,6 +5,8 @@ import { useContest } from "@/hooks/useContests";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { useContestTabLock } from "@/hooks/useContestTabLock";
 import { useContestStreamHealth } from "@/hooks/useContestStreamHealth";
+import { useTerminationWatcher } from "@/hooks/useTerminationWatcher";
+import TerminationLockout from "@/components/contests/TerminationLockout";
 import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
 import { MultiTabBlockedDialog } from "@/components/contests/MultiTabBlockedDialog";
