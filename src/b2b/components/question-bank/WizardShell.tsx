@@ -194,7 +194,14 @@ export function WizardShell({
             <Switch
               id="wizard-publish-toggle"
               checked={isPublished}
-              onCheckedChange={(v) => onStatusChange(v ? "published" : "draft")}
+              onCheckedChange={(v) => {
+                if (!v && isPublished) {
+                  // Block instant unpublish; require explicit confirmation.
+                  setConfirmUnpublish(true);
+                  return;
+                }
+                onStatusChange(v ? "published" : "draft");
+              }}
               disabled={saving}
             />
             <Badge
