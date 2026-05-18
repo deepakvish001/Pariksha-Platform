@@ -14,7 +14,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { CheckCircle2, Flag, LayoutGrid, Send, Trophy } from "lucide-react";
+import { CheckCircle2, Flag, LayoutGrid, Send, Trophy, FileQuestion } from "lucide-react";
+import { EmptyState } from "@/b2b/components/ui/EmptyState";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
 import { useProctoring } from "../hooks/useProctoring";
 import { resolveProctoringConfig } from "../lib/proctoringConfig";
