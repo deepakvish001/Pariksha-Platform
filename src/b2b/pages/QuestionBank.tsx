@@ -290,6 +290,28 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
     }
   };
 
+  const setTier = async (q: Question, tier: "free" | "premium") => {
+    if ((q.tier ?? "free") === tier) return;
+    try {
+      await upd.mutateAsync({ id: q.id, patch: { tier } as Partial<Question> });
+      toast.success(`Marked as ${tier === "premium" ? "Premium" : "Free"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update tier");
+    }
+  };
+
+  const runBulkSetTier = async (tier: "free" | "premium") => {
+    if (selected.size === 0) return;
+    const ids = Array.from(selected);
+    const results = await Promise.allSettled(
+      ids.map((id) => upd.mutateAsync({ id, patch: { tier } as Partial<Question> })),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const ok = results.length - failed;
+    if (ok) toast.success(`Marked ${ok} as ${tier === "premium" ? "Premium" : "Free"}`);
+    if (failed) toast.error(`Failed ${failed}`);
+  };
+
   // Export (scoped to current type)
   const csvEscape = (v: unknown) => {
     if (v === null || v === undefined) return "";
