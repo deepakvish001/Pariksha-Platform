@@ -666,7 +666,12 @@ export default function Player() {
               {q ? (
                 (q.meta as { locked?: boolean; tier?: string } | null)?.locked &&
                 (q.meta as { tier?: string } | null)?.tier === "premium" ? (
-                  <PremiumLockedQuestion title={q.title} />
+                  <PremiumLockedQuestion
+                    title={q.title}
+                    skipped={(answers[q.id] as { skipped?: boolean } | undefined)?.skipped}
+                    onSkip={() => skipQuestion(q.id)}
+                  />
+
                 ) : isWideQuestion ? (
                   q.type === "coding" ? (
                     <CodingQuestion
