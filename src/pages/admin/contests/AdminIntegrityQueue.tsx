@@ -66,20 +66,22 @@ export default function AdminIntegrityQueue() {
       const list = (data ?? []) as Row[];
       const contestIds = Array.from(new Set(list.map((r) => r.contest_id)));
       const userIds = Array.from(new Set(list.map((r) => r.user_id)));
-      const [{ data: contests }, { data: profiles }] = await Promise.all([
-        contestIds.length
-          ? supabase.from("contests").select("id, title").in("id", contestIds)
-          : Promise.resolve({ data: [] as { id: string; title: string }[] }),
-        userIds.length
-          ? supabase.from("profiles").select("id, email").in("id", userIds)
-          : Promise.resolve({ data: [] as { id: string; email: string }[] }),
-      ]);
-      const cMap = new Map((contests ?? []).map((c) => [c.id, c.title]));
-      const pMap = new Map((profiles ?? []).map((p) => [p.id, p.email]));
+      const contestsRes = contestIds.length
+        ? await supabase.from("contests").select("id, title").in("id", contestIds)
+        : { data: [] as Array<{ id: string; title: string }> };
+      const profilesRes = userIds.length
+        ? await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds)
+        : { data: [] as Array<{ user_id: string; full_name: string | null }> };
+      const cMap = new Map<string, string>(
+        (contestsRes.data ?? []).map((c) => [c.id, c.title] as [string, string]),
+      );
+      const pMap = new Map<string, string>(
+        (profilesRes.data ?? []).map((p) => [p.user_id, p.full_name ?? ""] as [string, string]),
+      );
       setRows(list.map((r) => ({
         ...r,
         contest_title: cMap.get(r.contest_id),
-        candidate_email: pMap.get(r.user_id),
+        candidate_name: pMap.get(r.user_id),
       })));
     }
     setLoading(false);
