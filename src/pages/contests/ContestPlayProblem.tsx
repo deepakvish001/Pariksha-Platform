@@ -44,6 +44,9 @@ export default function ContestPlayProblem() {
   const streamHealth = useContestStreamHealth(session.sessionId ?? null);
   const termination = useTerminationWatcher(session.sessionId ?? null);
   useZeroTrustWatcher(session.sessionId ?? null, session.hasActive && !termination.terminated);
+  // Layer 5 — issues per-session ephemeral HMAC signing keys + 60s rotation.
+  // Currently issues only; server-side verification is opt-in per function.
+  useContestSessionSigner(session.sessionId ?? null);
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
   const { user } = useAuth();
@@ -155,6 +158,12 @@ export default function ContestPlayProblem() {
         <CodingProblemDetail />
       </div>
       <MultiTabBlockedDialog open={tabLock.displaced} contestSlug={contest.slug} />
+      {session.sessionId && (
+        <SessionWatermark
+          sessionId={session.sessionId}
+          label={user?.email ?? user?.id ?? "candidate"}
+        />
+      )}
     </>
   );
 }
