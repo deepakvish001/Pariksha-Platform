@@ -251,6 +251,15 @@ export function CodingWizard({
       status={status}
       onStatusChange={setStatus}
       publishErrors={publishErrors}
+      publishedPreviewTitle="Candidate view · Coding question"
+      publishedPreview={
+        <CodingPublishedPreview
+          draft={draft}
+          sampleTests={(persistedTests ?? [])
+            .filter((t) => !t.is_hidden)
+            .map((t) => ({ input: t.input, expected_output: t.expected_output }))}
+        />
+      }
       rightPane={<CodingPreview draft={draft} />}
     >
       {step === 0 && <BasicsStep draft={draft} patch={patch} />}
@@ -910,7 +919,7 @@ function PersistedTestCases({
   );
 }
 
-// ────────── Live candidate preview ──────────
+// ────────── Live candidate preview (sidebar) ──────────
 function CodingPreview({ draft }: { draft: Draft }) {
   return (
     <div className="space-y-3 text-xs">
@@ -939,6 +948,152 @@ function CodingPreview({ draft }: { draft: Draft }) {
         <pre className="border rounded p-2 font-mono whitespace-pre-wrap text-[11px] max-h-40 overflow-auto">
           {draft.starter_code[draft.primary_language]}
         </pre>
+      )}
+    </div>
+  );
+}
+
+// ────────── Full "published" candidate preview (dialog) ──────────
+export function CodingPublishedPreview({
+  draft,
+  sampleTests,
+}: {
+  draft: Draft;
+  sampleTests: { input: string; expected_output: string }[];
+}) {
+  const visibleExamples = draft.examples.filter((e) => e.input.trim() || e.output.trim());
+  const constraints = draft.constraints.map((c) => c.trim()).filter(Boolean);
+  return (
+    <div className="space-y-5 text-sm">
+      <div>
+        <h2 className="text-xl font-semibold">{draft.title || "Untitled question"}</h2>
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          <Badge variant="outline" className="capitalize">{draft.difficulty}</Badge>
+          <Badge variant="outline">{draft.points} pts</Badge>
+          <Badge variant="outline">~{draft.est_minutes} min</Badge>
+          {draft.tags.map((t) => (
+            <Badge key={t} variant="secondary">{t}</Badge>
+          ))}
+        </div>
+      </div>
+
+      {draft.body_md && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Problem
+          </div>
+          <div className="whitespace-pre-wrap leading-relaxed">{draft.body_md}</div>
+        </section>
+      )}
+
+      {constraints.length > 0 && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Constraints
+          </div>
+          <ul className="list-disc pl-5 space-y-0.5 text-[hsl(var(--muted-foreground))]">
+            {constraints.map((c) => (
+              <li key={c}>
+                <code className="font-mono text-xs">{c}</code>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {visibleExamples.length > 0 && (
+        <section className="space-y-3">
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+            Examples
+          </div>
+          {visibleExamples.map((e, i) => (
+            <div key={i} className="border rounded-md p-3 space-y-1.5 bg-[hsl(var(--secondary))/0.3]">
+              <div className="text-xs font-semibold">Example {i + 1}</div>
+              <div>
+                <span className="text-[hsl(var(--muted-foreground))] text-xs">Input</span>
+                <pre className="font-mono text-xs mt-0.5 whitespace-pre-wrap">{e.input}</pre>
+              </div>
+              <div>
+                <span className="text-[hsl(var(--muted-foreground))] text-xs">Output</span>
+                <pre className="font-mono text-xs mt-0.5 whitespace-pre-wrap">{e.output}</pre>
+              </div>
+              {e.explanation && (
+                <div>
+                  <span className="text-[hsl(var(--muted-foreground))] text-xs">Explanation</span>
+                  <div className="text-xs mt-0.5">{e.explanation}</div>
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {sampleTests.length > 0 && (
+        <section className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+            Sample tests ({sampleTests.length})
+          </div>
+          {sampleTests.map((t, i) => (
+            <div key={i} className="border rounded-md p-2 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">In</div>
+                <pre className="font-mono whitespace-pre-wrap">{t.input || "—"}</pre>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">Out</div>
+                <pre className="font-mono whitespace-pre-wrap">{t.expected_output}</pre>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <section>
+        <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+          Languages
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {draft.allowed_languages.map((l) => (
+            <Badge key={l} variant={l === draft.primary_language ? "default" : "outline"}>
+              {LANGUAGES.find((x) => x.value === l)?.label ?? l}
+            </Badge>
+          ))}
+        </div>
+      </section>
+
+      {draft.function_signature && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Function signature
+          </div>
+          <pre className="border rounded p-2 font-mono text-xs whitespace-pre-wrap">
+            {draft.function_signature}
+          </pre>
+        </section>
+      )}
+
+      {draft.starter_code[draft.primary_language] && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Starter code · {LANGUAGES.find((x) => x.value === draft.primary_language)?.label}
+          </div>
+          <pre className="border rounded p-3 font-mono text-xs whitespace-pre-wrap max-h-72 overflow-auto">
+            {draft.starter_code[draft.primary_language]}
+          </pre>
+        </section>
+      )}
+
+      {draft.hints.filter(Boolean).length > 0 && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Hints ({draft.hints.filter(Boolean).length})
+          </div>
+          <ul className="list-decimal pl-5 space-y-0.5 text-[hsl(var(--muted-foreground))] text-xs">
+            {draft.hints.filter(Boolean).map((h, i) => (
+              <li key={i}>{h}</li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

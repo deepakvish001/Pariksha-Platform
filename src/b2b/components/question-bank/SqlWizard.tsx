@@ -180,6 +180,8 @@ export function SqlWizard({
       status={status}
       onStatusChange={setStatus}
       publishErrors={publishErrors}
+      publishedPreviewTitle="Candidate view · SQL question"
+      publishedPreview={<SqlPublishedPreview draft={draft} />}
       rightPane={
         <div className="space-y-3 text-xs">
           <div>
@@ -328,5 +330,79 @@ export function SqlWizard({
         <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
       </div>
     </WizardShell>
+  );
+}
+
+// ────────── Full "published" candidate preview (dialog) ──────────
+function SqlPublishedPreview({ draft }: { draft: Draft }) {
+  const hints = draft.hints.filter(Boolean);
+  return (
+    <div className="space-y-5 text-sm">
+      <div>
+        <h2 className="text-xl font-semibold">{draft.title || "Untitled question"}</h2>
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          <Badge variant="outline" className="uppercase">{draft.dialect}</Badge>
+          <Badge variant="outline" className="capitalize">{draft.difficulty}</Badge>
+          <Badge variant="outline">{draft.points} pts</Badge>
+          {draft.order_sensitive && <Badge variant="outline">Order matters</Badge>}
+          {draft.tags.map((t) => (
+            <Badge key={t} variant="secondary">{t}</Badge>
+          ))}
+        </div>
+      </div>
+
+      {draft.body_md && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Prompt
+          </div>
+          <div className="whitespace-pre-wrap leading-relaxed">{draft.body_md}</div>
+        </section>
+      )}
+
+      {draft.schema_ddl && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Schema
+          </div>
+          <pre className="border rounded p-3 font-mono text-xs whitespace-pre-wrap max-h-60 overflow-auto">
+            {draft.schema_ddl}
+          </pre>
+        </section>
+      )}
+
+      {draft.seed_sql && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Seed data
+          </div>
+          <pre className="border rounded p-3 font-mono text-xs whitespace-pre-wrap max-h-60 overflow-auto">
+            {draft.seed_sql}
+          </pre>
+        </section>
+      )}
+
+      <section>
+        <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+          Your query
+        </div>
+        <div className="border rounded p-3 text-xs text-[hsl(var(--muted-foreground))] italic bg-[hsl(var(--secondary))/0.3]">
+          Candidates write their SQL here. The reference query is hidden.
+        </div>
+      </section>
+
+      {hints.length > 0 && (
+        <section>
+          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1">
+            Hints ({hints.length})
+          </div>
+          <ul className="list-decimal pl-5 space-y-0.5 text-[hsl(var(--muted-foreground))] text-xs">
+            {hints.map((h, i) => (
+              <li key={i}>{h}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }

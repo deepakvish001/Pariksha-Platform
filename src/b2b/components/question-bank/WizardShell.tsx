@@ -1,9 +1,16 @@
-import { ReactNode } from "react";
-import { Check } from "lucide-react";
+import { ReactNode, useState } from "react";
+import { Check, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export type PublishStatus = "draft" | "published";
 
@@ -25,6 +32,8 @@ export function WizardShell({
   status,
   onStatusChange,
   publishErrors,
+  publishedPreview,
+  publishedPreviewTitle,
 }: {
   steps: WizardStep[];
   current: number;
@@ -41,9 +50,12 @@ export function WizardShell({
   status?: PublishStatus;
   onStatusChange?: (s: PublishStatus) => void;
   publishErrors?: string[];
+  publishedPreview?: ReactNode;
+  publishedPreviewTitle?: string;
 }) {
   const isPublished = status === "published";
   const blockedByValidation = isPublished && (publishErrors?.length ?? 0) > 0;
+  const [previewOpen, setPreviewOpen] = useState(false);
   return (
     <div className="flex flex-col h-full">
       <div className="grid md:grid-cols-[200px_1fr] gap-6 flex-1 min-h-0">
@@ -154,6 +166,17 @@ export function WizardShell({
         )}
 
         <div className="flex items-center gap-2">
+          {publishedPreview && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+              disabled={saving}
+              title="Preview the question exactly as a candidate will see it after publishing"
+            >
+              <Eye className="h-4 w-4 mr-1" /> Preview as candidate
+            </Button>
+          )}
           {onSaveDraft && !onStatusChange && (
             <Button variant="outline" onClick={onSaveDraft} disabled={saving}>
               {saving ? "Saving…" : "Save draft"}
@@ -185,6 +208,23 @@ export function WizardShell({
           )}
         </div>
       </div>
+
+      {publishedPreview && (
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                {publishedPreviewTitle ?? "Candidate view"}
+              </DialogTitle>
+              <DialogDescription>
+                This is exactly what candidates see after the question is published. Hidden tests, the reference solution, and any other reviewer-only fields are excluded.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-2">{publishedPreview}</div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
