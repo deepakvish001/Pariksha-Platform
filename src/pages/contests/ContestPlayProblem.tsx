@@ -5,6 +5,8 @@ import { useContest } from "@/hooks/useContests";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { useContestTabLock } from "@/hooks/useContestTabLock";
 import { useContestStreamHealth } from "@/hooks/useContestStreamHealth";
+import { useTerminationWatcher } from "@/hooks/useTerminationWatcher";
+import TerminationLockout from "@/components/contests/TerminationLockout";
 import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
 import { MultiTabBlockedDialog } from "@/components/contests/MultiTabBlockedDialog";
@@ -37,6 +39,7 @@ export default function ContestPlayProblem() {
   // Read-only stream health snapshot for the kiosk banner. The actual
   // recorders live inside SecureProblemHUD's useContestSecureMode hook.
   const streamHealth = useContestStreamHealth(session.sessionId ?? null);
+  const termination = useTerminationWatcher(session.sessionId ?? null);
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
   const { user } = useAuth();
@@ -93,6 +96,13 @@ export default function ContestPlayProblem() {
       <Helmet>
         <title>{contest.title} — {problemSlug}</title>
       </Helmet>
+      {termination.terminated && (
+        <TerminationLockout
+          reason={termination.reason}
+          severity={termination.severity}
+          contestSlug={contest.slug}
+        />
+      )}
       <ContestTopBar
         contestTitle={contest.title}
         contestSlug={contest.slug}
