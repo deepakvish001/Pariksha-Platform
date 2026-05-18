@@ -151,6 +151,22 @@ export function WizardShell({
           >
             Back
           </Button>
+          <div
+            className="hidden sm:flex items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]"
+            title={
+              lastSavedAt
+                ? `Autosaved locally at ${lastSavedAt.toLocaleString()}`
+                : "Your edits will be autosaved to this browser"
+            }
+            aria-live="polite"
+          >
+            {lastSavedAt ? (
+              <Cloud className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <CloudOff className="h-3.5 w-3.5 opacity-60" />
+            )}
+            <span>{savedLabel}</span>
+          </div>
         </div>
 
         {onStatusChange && (
