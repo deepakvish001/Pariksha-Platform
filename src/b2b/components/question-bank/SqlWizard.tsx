@@ -162,6 +162,8 @@ export function SqlWizard({
       onPublish={() => persist("published")}
       saving={saving}
       isLast={step === STEPS.length - 1}
+      status={status}
+      onStatusChange={setStatus}
       rightPane={
         <div className="space-y-3 text-xs">
           <div>
