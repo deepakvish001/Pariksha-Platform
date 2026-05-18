@@ -152,14 +152,35 @@ export default function QuestionBank() {
     }
   };
 
+  const upd = useUpdateQuestion();
+  const toggleArchive = async (q: Question) => {
+    const meta = (q.meta ?? {}) as Record<string, unknown>;
+    const isArchived = Boolean(meta.archived);
+    try {
+      await upd.mutateAsync({
+        id: q.id,
+        patch: { meta: { ...meta, archived: !isArchived } as Record<string, unknown> } as Partial<Question>,
+      });
+      toast.success(isArchived ? "Question restored" : "Question archived");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update question");
+    }
+  };
+
   const filtered = useMemo(() => {
     let list = questions ?? [];
     if (filter !== "all") list = list.filter((q) => q.type === filter);
-    if (statusFilter !== "all") {
-      list = list.filter((q) => {
-        const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
-        return s === statusFilter;
-      });
+    const isArchived = (q: Question) => Boolean((q.meta as { archived?: boolean } | null)?.archived);
+    if (statusFilter === "archived") {
+      list = list.filter(isArchived);
+    } else {
+      list = list.filter((q) => !isArchived(q));
+      if (statusFilter !== "all") {
+        list = list.filter((q) => {
+          const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
+          return s === statusFilter;
+        });
+      }
     }
     const s = search.trim().toLowerCase();
     if (s) {
