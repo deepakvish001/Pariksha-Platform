@@ -14,7 +14,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { CheckCircle2, Flag, LayoutGrid, Send, Trophy } from "lucide-react";
+import { CheckCircle2, Flag, LayoutGrid, Send, Trophy, FileQuestion } from "lucide-react";
+import { EmptyState } from "@/b2b/components/ui/EmptyState";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
 import { useProctoring } from "../hooks/useProctoring";
 import { resolveProctoringConfig } from "../lib/proctoringConfig";
@@ -655,11 +656,11 @@ export default function Player() {
                   />
                 )
               ) : (
-                <Card>
-                  <CardContent className="p-8 text-sm text-muted-foreground">
-                    No questions in this assessment yet.
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  icon={FileQuestion}
+                  title="No questions yet"
+                  description="This assessment doesn't have any questions in this section. Please contact your administrator."
+                />
               )}
             </motion.div>
           </AnimatePresence>
