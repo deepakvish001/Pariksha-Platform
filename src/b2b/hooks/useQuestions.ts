@@ -110,19 +110,6 @@ export function useCreateQuestion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      org_id: string;
-      type: QuestionType;
-      title: string;
-      body_md?: string;
-      language?: string;
-      starter_code?: string;
-      points?: number;
-      meta?: Record<string, unknown>;
-    }) => {
-export function useCreateQuestion() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
       org_id: string | null;
       type: QuestionType;
       title: string;
