@@ -460,6 +460,15 @@ export default function QuestionBank() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => duplicateQuestion(q)}
+                      disabled={duplicatingId === q.id}
+                      title="Duplicate question"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         if (!confirm(`Delete "${q.title}"?`)) return;
                         del.mutate({ id: q.id, org_id: q.org_id });
