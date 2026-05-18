@@ -96,6 +96,13 @@ export default function ContestPlayProblem() {
       <Helmet>
         <title>{contest.title} — {problemSlug}</title>
       </Helmet>
+      {termination.terminated && (
+        <TerminationLockout
+          reason={termination.reason}
+          severity={termination.severity}
+          contestSlug={contest.slug}
+        />
+      )}
       <ContestTopBar
         contestTitle={contest.title}
         contestSlug={contest.slug}
