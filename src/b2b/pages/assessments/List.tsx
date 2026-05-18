@@ -23,6 +23,8 @@ import { bucketAssessments, formatWindow, getScheduleState, type ScheduleState }
 import { useFlaggedAcrossOrg } from "../../hooks/useAssessmentLive";
 import { useCan } from "../../hooks/usePermissions";
 import { ShieldAlert } from "lucide-react";
+import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
+import { EmptyState } from "../../components/ui/EmptyState";
 
 type TabKey = "live" | "upcoming" | "drafts" | "closed" | "all";
 
@@ -45,12 +47,12 @@ function GlassCard({ children, className = "" }: { children: React.ReactNode; cl
   );
 }
 
-const STATE_PILL: Record<ScheduleState, string> = {
-  live: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 animate-pulse",
-  scheduled: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
-  draft: "bg-muted text-muted-foreground border border-white/10",
-  closed: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/30",
-  archived: "bg-zinc-700/30 text-zinc-400 border border-zinc-500/20",
+const STATE_TONE: Record<ScheduleState, StatusTone> = {
+  live: "live",
+  scheduled: "scheduled",
+  draft: "draft",
+  closed: "closed",
+  archived: "archived",
 };
 
 export default function B2BAssessmentsList() {
