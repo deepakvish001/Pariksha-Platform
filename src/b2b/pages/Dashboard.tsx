@@ -32,6 +32,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
+import { KpiTile } from "../components/ui/KpiTile";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, format } from "date-fns";
 import {
