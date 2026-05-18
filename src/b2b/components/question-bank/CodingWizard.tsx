@@ -123,7 +123,8 @@ export function CodingWizard({
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(startStep);
-  const [draft, setDraft] = useState<Draft>(initial ? fromQuestion(initial) : EMPTY);
+  const initialDraft = useMemo(() => (initial ? fromQuestion(initial) : EMPTY), [initial]);
+  const [draft, setDraft] = useState<Draft>(initialDraft);
   const [questionId, setQuestionId] = useState<string | undefined>(initial?.id);
   const [saving, setSaving] = useState(false);
   const initialStatus: "draft" | "published" =
@@ -131,6 +132,7 @@ export function CodingWizard({
       ? "published"
       : "draft";
   const [status, setStatus] = useState<"draft" | "published">(initialStatus);
+  const wasPublished = initialStatus === "published";
 
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
@@ -141,6 +143,26 @@ export function CodingWizard({
   const badWeightTest = (persistedTests ?? []).find(
     (t) => !t.expected_output?.toString().trim() || (t.weight ?? 0) < 1,
   );
+
+  // Detect changes that could invalidate existing hidden tests.
+  const riskyChanges = useMemo(() => {
+    if (!wasPublished) return [] as string[];
+    const changes: string[] = [];
+    if (draft.function_signature.trim() !== initialDraft.function_signature.trim())
+      changes.push("Function signature changed — existing test inputs/outputs may no longer match.");
+    if (draft.primary_language !== initialDraft.primary_language)
+      changes.push("Primary language changed.");
+    const removedLangs = initialDraft.allowed_languages.filter(
+      (l) => !draft.allowed_languages.includes(l),
+    );
+    if (removedLangs.length)
+      changes.push(`Removed allowed languages: ${removedLangs.join(", ")}.`);
+    const oldRef = initialDraft.reference_solution.code.trim();
+    const newRef = draft.reference_solution.code.trim();
+    if (oldRef && oldRef !== newRef)
+      changes.push("Reference solution changed — re-verify all hidden tests.");
+    return changes;
+  }, [wasPublished, draft, initialDraft]);
 
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }));
 
