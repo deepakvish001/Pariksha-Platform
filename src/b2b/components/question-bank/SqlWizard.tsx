@@ -223,6 +223,7 @@ export function SqlWizard({
       status={status}
       onStatusChange={setStatus}
       publishErrors={publishErrors}
+      lastSavedAt={lastSavedAt}
       publishedPreviewTitle="Candidate view · SQL question"
       publishedPreview={<SqlPublishedPreview draft={draft} />}
       rightPane={
