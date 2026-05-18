@@ -180,6 +180,8 @@ export function SqlWizard({
       status={status}
       onStatusChange={setStatus}
       publishErrors={publishErrors}
+      publishedPreviewTitle="Candidate view · SQL question"
+      publishedPreview={<SqlPublishedPreview draft={draft} />}
       rightPane={
         <div className="space-y-3 text-xs">
           <div>
