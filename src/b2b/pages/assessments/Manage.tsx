@@ -93,12 +93,12 @@ const STATUS_LABEL: Record<ParticipantStatus, string> = {
   abandoned: "Abandoned",
 };
 
-const STATUS_COLOR: Record<ParticipantStatus, string> = {
-  not_joined: "bg-muted text-muted-foreground",
-  joined: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
-  in_progress: "bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse",
-  submitted: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
-  auto_submitted: "bg-orange-500/15 text-orange-300 border border-orange-500/30",
+const STATUS_TONE: Record<ParticipantStatus, StatusTone> = {
+  not_joined: "neutral",
+  joined: "scheduled",
+  in_progress: "live",
+  submitted: "success",
+  auto_submitted: "warning",
   abandoned: "bg-rose-500/15 text-rose-300 border border-rose-500/30",
 };
 
