@@ -715,34 +715,62 @@ function ParticipantRow({
   const canForceSubmit =
     !!p.attempt_id && p.status !== "submitted" && p.status !== "auto_submitted";
   const ev = evidence;
+  const navigate = useNavigate();
+  const goToDetail = (e?: React.MouseEvent) => {
+    if (!detailHref) {
+      onOpen();
+      return;
+    }
+    if (e && (e.metaKey || e.ctrlKey || (e as any).button === 1)) {
+      window.open(detailHref, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(detailHref);
+  };
   const onRowClick = (e: React.MouseEvent) => {
     // Avoid triggering on action button clicks
     if ((e.target as HTMLElement).closest("[data-row-action]")) return;
-    onOpen();
+    goToDetail(e);
   };
 
   return (
     <tr
       className="hover:bg-white/[0.02] cursor-pointer"
       onClick={onRowClick}
-      title="Open candidate details"
+      title={detailHref ? "Open candidate page" : "Open candidate details"}
     >
       <td className="py-2.5 px-2 min-w-0">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen();
-          }}
-          className="font-medium truncate text-left hover:underline hover:text-primary inline-flex items-center gap-1"
-        >
-          {p.name ?? p.email}
-        </button>
+        {detailHref ? (
+          <a
+            href={detailHref}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.metaKey || e.ctrlKey || e.button === 1) return;
+              e.preventDefault();
+              navigate(detailHref);
+            }}
+            className="font-medium truncate text-left hover:underline hover:text-primary inline-flex items-center gap-1"
+          >
+            {p.name ?? p.email}
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen();
+            }}
+            className="font-medium truncate text-left hover:underline hover:text-primary inline-flex items-center gap-1"
+          >
+            {p.name ?? p.email}
+          </button>
+        )}
         <div className="text-muted-foreground text-[10px] truncate">
           {p.email}
           {p.external_id ? ` · ${p.external_id}` : ""}
         </div>
       </td>
+
       <td className="py-2.5 px-2">
         <StatusPill tone={STATUS_TONE[p.status]} pulse={p.status === "in_progress"}>
           {STATUS_LABEL[p.status]}
