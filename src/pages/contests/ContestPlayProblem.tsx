@@ -6,6 +6,7 @@ import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { useContestTabLock } from "@/hooks/useContestTabLock";
 import { useContestStreamHealth } from "@/hooks/useContestStreamHealth";
 import { useTerminationWatcher } from "@/hooks/useTerminationWatcher";
+import { useZeroTrustWatcher } from "@/hooks/useZeroTrustWatcher";
 import TerminationLockout from "@/components/contests/TerminationLockout";
 import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
@@ -40,6 +41,7 @@ export default function ContestPlayProblem() {
   // recorders live inside SecureProblemHUD's useContestSecureMode hook.
   const streamHealth = useContestStreamHealth(session.sessionId ?? null);
   const termination = useTerminationWatcher(session.sessionId ?? null);
+  useZeroTrustWatcher(session.sessionId ?? null, session.hasActive && !termination.terminated);
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
   const { user } = useAuth();
