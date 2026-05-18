@@ -1066,6 +1066,107 @@ function PersistedTestCases({
   );
 }
 
+type TestRow = {
+  id: string;
+  question_id: string;
+  input: string | null;
+  expected_output: string;
+  is_hidden: boolean;
+  weight: number;
+  order_index: number;
+};
+
+function SortableTestRow({
+  id,
+  position,
+  test,
+  isFirst,
+  isLast,
+  busy,
+  onUp,
+  onDown,
+  onDelete,
+}: {
+  id: string;
+  position: number;
+  test: TestRow;
+  isFirst: boolean;
+  isLast: boolean;
+  busy: boolean;
+  onUp: () => void;
+  onDown: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border rounded-md p-2.5 text-xs space-y-1 bg-[hsl(var(--background))]"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            className="cursor-grab active:cursor-grabbing text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] touch-none"
+            aria-label="Drag to reorder"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <Badge variant={test.is_hidden ? "secondary" : "outline"} className="gap-1">
+            {test.is_hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            {test.is_hidden ? "Hidden" : "Sample"} #{position}
+          </Badge>
+          <span className="text-[hsl(var(--muted-foreground))]">weight {test.weight}</span>
+        </div>
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            disabled={isFirst || busy}
+            onClick={onUp}
+            aria-label="Move up"
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            disabled={isLast || busy}
+            onClick={onDown}
+            aria-label="Move down"
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onDelete} aria-label="Delete">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">In</div>
+          <pre className="whitespace-pre-wrap font-mono">{test.input || "—"}</pre>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">Out</div>
+          <pre className="whitespace-pre-wrap font-mono">{test.expected_output}</pre>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ────────── Live candidate preview (sidebar) ──────────
 function CodingPreview({ draft }: { draft: Draft }) {
   return (
