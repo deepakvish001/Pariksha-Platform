@@ -60,6 +60,13 @@ export const paths = {
       candidate?: CandidateLike,
     ) =>
       `${basePath}/assessments/${preferSlug(a)}/attempts/${attemptSegment(attempt, candidate)}`,
+    candidate: (
+      basePath: string,
+      a: Identifiable,
+      attempt: Identifiable,
+      candidate?: CandidateLike,
+    ) =>
+      `${basePath}/assessments/${preferSlug(a)}/candidates/${attemptSegment(attempt, candidate)}`,
   },
   /** Student-facing assessment flow */
   student: {
@@ -76,5 +83,7 @@ export const paths = {
       `/b2b/assessments/${preferSlug(a)}/manage`,
     attempt: (a: Identifiable, attempt: Identifiable, candidate?: CandidateLike) =>
       `/b2b/assessments/${preferSlug(a)}/attempts/${attemptSegment(attempt, candidate)}`,
+    candidate: (a: Identifiable, attempt: Identifiable, candidate?: CandidateLike) =>
+      `/b2b/assessments/${preferSlug(a)}/candidates/${attemptSegment(attempt, candidate)}`,
   },
 };

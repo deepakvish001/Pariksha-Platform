@@ -450,7 +450,7 @@ export default function AssessmentManage() {
                         assessmentId={assessment.id}
                         detailHref={
                           p.attempt_id
-                            ? paths.b2b.attempt(
+                            ? paths.b2b.candidate(
                                 basePath,
                                 assessment,
                                 { id: p.attempt_id, slug: p.attempt_slug ?? null },
