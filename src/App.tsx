@@ -197,6 +197,7 @@ import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
 import PublicVerifyReport from "./pages/contests/PublicVerifyReport";
 import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
+import AdminIntegrityQueue from "./pages/admin/contests/AdminIntegrityQueue";
 import AdminBlogList from "./pages/admin/blog/AdminBlogList";
 import AdminBlogEditor from "./pages/admin/blog/AdminBlogEditor";
 import AdminBlogComments from "./pages/admin/blog/AdminBlogComments";
@@ -503,6 +504,7 @@ const App = () => (
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
                   <Route path="sideeye" element={<AdminSideEyeConsole />} />
+                  <Route path="contests/integrity" element={<AdminIntegrityQueue />} />
                   <Route path="contests/sessions/:sessionId/forensics" element={<AdminSessionForensics />} />
                   <Route path="blog" element={<AdminBlogList />} />
                   <Route path="blog/new" element={<AdminBlogEditor />} />
