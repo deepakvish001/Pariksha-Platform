@@ -855,7 +855,18 @@ function PersistedTestCases({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => del.mutate({ id: t.id, question_id: t.question_id })}
+              onClick={() => {
+                if (wasPublished) {
+                  const kind = t.is_hidden ? "hidden" : "sample";
+                  if (
+                    !window.confirm(
+                      `This question is PUBLISHED. Deleting a ${kind} test may change grading for past or in-flight attempts. Delete anyway?`,
+                    )
+                  )
+                    return;
+                }
+                del.mutate({ id: t.id, question_id: t.question_id });
+              }}
               aria-label="Delete"
             >
               <Trash2 className="h-4 w-4" />
