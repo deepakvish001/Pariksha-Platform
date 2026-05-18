@@ -228,6 +228,26 @@ async function reportViolation(
       severity,
       meta,
     });
+    // Auto-terminate on critical liveness failure (matches hard-mode policy
+    // in contest-violation-engine).
+    if (severity === "critical") {
+      await admin.from("contest_sessions").update({
+        terminated_at: new Date().toISOString(),
+        terminated_reason: `${type}:${severity}`,
+        is_active: false,
+      }).eq("id", ch.session_id);
+
+      const channel = admin.channel(`session:${ch.session_id}`);
+      try {
+        await channel.send({
+          type: "broadcast",
+          event: "terminated",
+          payload: { reason: type, severity, at: Date.now() },
+        });
+      } finally {
+        try { await admin.removeChannel(channel); } catch { /* noop */ }
+      }
+    }
   } catch { /* best-effort */ }
 }
 
