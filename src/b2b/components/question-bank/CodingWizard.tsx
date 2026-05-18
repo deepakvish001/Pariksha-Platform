@@ -902,6 +902,13 @@ function PersistedTestCases({
         </p>
       )}
 
+      {wasPublished && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          <strong>Published question.</strong> Editing or deleting tests will affect grading for any
+          new attempts. You'll be asked to confirm before destructive changes.
+        </div>
+      )}
+
       {samples.length > 0 && (
         <div className="space-y-2">
           <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Sample (visible)</div>
