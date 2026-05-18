@@ -2,6 +2,7 @@
 // Uses Fermion's built-in ExactMatch matcher per case, aggregates verdict,
 // stores the submission, and awards XP on first AC.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { verifySignedRequest, readSignedHeaders } from "../_shared/contest-signing.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
