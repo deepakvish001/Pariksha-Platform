@@ -30,6 +30,7 @@ const ContestEditor = () => {
     registration_opens_at: "", registration_closes_at: "",
     status: "draft", visibility: "public", invite_code: "",
     max_participants: null, scoring_mode: "icpc", penalty_minutes: 10,
+    enforcement_mode: "hard",
   });
   const [problems, setProblems] = useState<Problem[]>([]);
   const [allProblems, setAllProblems] = useState<{ slug: string; title: string; is_published: boolean }[]>([]);
@@ -164,8 +165,20 @@ const ContestEditor = () => {
               </Field>
             )}
           </div>
-          <Field label="Banner URL (optional)">
-            <Input value={form.banner_url ?? ""} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} />
+          <Field label="Anti-cheat profile">
+            <Select
+              value={form.enforcement_mode ?? "hard"}
+              onValueChange={(v) => setForm({ ...form, enforcement_mode: v })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Open — log only, no enforcement</SelectItem>
+                <SelectItem value="standard">Standard — log + warn, manual review</SelectItem>
+                <SelectItem value="hard">Hard — auto-terminate on any critical violation (recommended)</SelectItem>
+                <SelectItem value="custom">Custom — managed via admin tools</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
           </Field>
           <Field label="Rules (Markdown)">
             <Textarea rows={6} value={form.rules_md} onChange={(e) => setForm({ ...form, rules_md: e.target.value })} />
