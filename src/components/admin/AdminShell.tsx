@@ -173,6 +173,7 @@ const GROUPS: NavGroup[] = [
         { to: "/admin/contests", label: "All contests", icon: Trophy, end: true },
         { to: "/admin/contests/new", label: "New contest", icon: Sparkles, end: true },
         { to: "/admin/sideeye", label: "Side-Eye Console", icon: ShieldAlert, end: true },
+        { to: "/admin/contests/integrity", label: "Integrity Queue", icon: ShieldAlert, end: true },
       ],
     },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
