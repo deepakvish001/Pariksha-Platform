@@ -3928,6 +3928,66 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_session_event_seq: {
+        Row: {
+          last_nonce: string | null
+          last_seq: number
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_nonce?: string | null
+          last_seq?: number
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          last_nonce?: string | null
+          last_seq?: number
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contest_session_keys: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          key_hash: string
+          key_secret: string
+          revoked_at: string | null
+          rotated_from: string | null
+          sequence: number
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          key_hash: string
+          key_secret: string
+          revoked_at?: string | null
+          rotated_from?: string | null
+          sequence?: number
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          key_hash?: string
+          key_secret?: string
+          revoked_at?: string | null
+          rotated_from?: string | null
+          sequence?: number
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contest_sessions: {
         Row: {
           client_fingerprint: Json | null

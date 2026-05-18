@@ -1,145 +1,132 @@
 ## Goal
 
-Push assessment cheating probability as close to zero as physically possible, focusing on **impersonation**, **external/AI help**, and **second-screen / VM / remote desktop**. Enforcement is **hard auto-terminate**, and every flagged attempt flows through **AI summary → admin review → public verifiable report**.
+You already have the strongest web-based stack I can reasonably build: Trust Gate, Zero-Trust Watcher, Violation Engine, hard auto-terminate, Side Eye phone-cam, hash-chained evidence, Integrity Queue, AI-text classifier, keystroke biometric. The realistic remaining cheating vectors are:
 
-The project already has a strong base (Side Eye, lockdown gate, display capture, device lock, typing analytics, identity-verify, room-scan, viva-scan, audio-analyze, cross-similarity, hash-chain). This plan **closes the remaining gaps** and **wires everything into one zero-trust gate** — not a rewrite.
+1. **Pre-built answer banks** (someone else solved the paper, candidate memorizes / pastes).
+2. **Earpiece + accomplice** reading questions aloud.
+3. **Second device just out of side-cam view** (smartwatch, tablet under desk, mirror reflection).
+4. **Mid-test identity swap** (someone else physically sits down).
+5. **Replay / network tampering** (clock skew, request replay, modified client).
+6. **Post-hoc dispute** ("that wasn't me / the video is fake").
 
----
-
-## 1. Pre-test "Trust Gate" (block start, not warn)
-
-A single `TrustGate` step the candidate must pass before the paper unlocks. Failing any check = cannot start.
-
-- **Photo ID + live selfie match** — candidate uploads gov ID once; capture 3-frame live selfie; `contest-identity-verify` (already exists) returns a match score; threshold gates entry. Re-match every 10 min during the test (silent webcam frame vs stored embedding).
-- **Side Eye mandatory** — pairing screen blocks Start until phone stream is `LIVE` ≥ 30 s and side-cam shows exactly one person + workspace clear (calls `contest-room-scan-analyze`).
-- **Single monitor only** — `window.screen.isExtended` + `getScreenDetails()` Window Management API; if >1 display → block.
-- **Anti-VM / anti-RDP** — heuristics: virtual GPU strings via WebGL `UNMASKED_RENDERER_WEBGL` (VMware, VirtualBox, Parallels, llvmpipe), suspicious user-agent, RDP-style framerate caps, Parsec/AnyDesk hostnames in mDNS-free checks, low-precision performance.now, missing audio output devices. New edge function `contest-environment-attest` signs the attestation server-side.
-- **Browser hardening probe** — devtools-open detector (debugger-timing trap), automation flags (`navigator.webdriver`, headless UA), extension fingerprint check (known cheat extensions: ChatGPT sidebar, Honey-style injectors).
-- **Network probe** — VPN/Tor/datacenter IP check via IP intelligence (ipinfo/abuseipdb) in `contest-environment-attest`.
-
-All probe results stored to a new `contest_trust_attestations` table, hash-chained into the existing evidence chain.
+This plan adds six targeted layers, each closing one of those vectors. Nothing here is a rewrite — every layer plugs into the existing `contest-violation-engine` sink.
 
 ---
 
-## 2. Continuous "Zero-Trust Watcher" during the test
+## Layer 1 — Question randomization + per-candidate watermarking
 
-A single `useZeroTrustWatcher` hook orchestrates every continuous signal and pushes events to `contest-violation-engine` (new) instead of each component logging independently.
+- **Per-candidate question shuffle** from a 3-5x oversized pool, with options also shuffled. Kills the "leaked paper" attack.
+- **Invisible per-candidate watermark** rendered behind every question (zero-width chars in the DOM + faint canvas overlay encoding `session_id`). If a screenshot ever surfaces online, we can prove who leaked it.
+- **Right-click / print / select-all** already partially blocked — extend to block the Print Screen key on focus-loss and log it as `critical`.
 
-| Signal | Source | New / existing |
-|---|---|---|
-| Face presence + identity drift | webcam frame → `contest-identity-verify` every 30 s | existing fn, new cadence |
-| Second person / phone on desk | side-cam → `contest-sideeye-frame-analyze` | existing |
-| Voice / second voice | mic → `contest-audio-analyze` (already exists) | existing, make mandatory |
-| Keystroke biometric drift | `useTypingAnalytics` → new `contest-keystroke-verify` compares to enrolled baseline taken in first 60 s | new fn |
-| Paste burst / unnatural code-fill | typing analytics + answer diff | existing data, new rule |
-| Tab/window blur, fullscreen exit, devtools open | `useDeviceLock` | existing, raise severity |
-| Display added mid-test | Window Management `screens.onchange` | new |
-| Network egress to LLM domains | DNS-prefetch probe + report-only CSP violation reports | new |
-| Free-text AI-generated answer | post-submit + mid-test sampling via `contest-ai-text-classifier` (Gemini grader) | new fn |
-| Code similarity to LLM output / web | existing `contest-cross-similarity` + `contest-similarity-scan` | existing, run live not only post |
+New: `contest-question-allocator` edge function (deterministic per-session shuffle, server-side answer key).
 
 ---
 
-## 3. Violation engine + hard auto-terminate
+## Layer 2 — Continuous voice-print + ambient-audio forensics
 
-New edge function `contest-violation-engine`:
+Extends the existing `contest-audio-analyze`:
 
-- Accepts a typed event `{ session_id, category, severity, evidence_ref }`.
-- Looks up the contest's policy (configurable per contest, defaults to **hard**).
-- Maintains a per-session risk score; **any `severity = critical`** (e.g. face mismatch, second person, second monitor, VM detected, RDP detected, devtools opened) → immediate **`terminate`**.
-- Termination flow: locks `contest_sessions.terminated_at`, force-submits whatever answers exist, pushes a Realtime kill-signal that the player listens for and immediately renders a "Session terminated — under review" lockout.
-- Every action logged + hash-chained.
+- **Enrolled voice baseline** captured during the Trust Gate (candidate reads a 10-sec sentence). Mid-test mic chunks are compared; a second distinct voice → `critical`.
+- **Earpiece-leak detection**: high-pass filter looks for the tinny 4-8 kHz signature of a phone earpiece bleeding into the room mic.
+- **Whisper / sub-vocal coaching**: low-energy speech segments with consistent cadence → `high`.
+- **Question read-aloud detection**: candidate's own voice + simultaneous keystrokes on free-text → flagged (people don't normally narrate while typing).
 
-UI: candidate sees the existing `ViolationBanner` for warnings (graduated levels still available for soft contests), but on terminate they hit a non-dismissable full-screen lockout.
-
----
-
-## 4. Reviewer pipeline: AI report → admin review → public verifiable report
-
-Wire into the existing `contest-integrity-report-generate` + `contest-sideeye-verify-chain` + `PublicVerifyReport` / `PublicIntegrityReport` pages.
-
-1. **Auto** on terminate (or admin-requested) → `contest-integrity-report-generate` builds:
-   - Timeline of every flagged event with thumbnails (webcam, side-cam, screen).
-   - Gemini-written narrative: what happened, severity, suggested verdict (confirm / dispute / inconclusive).
-   - Aggregate risk score breakdown.
-2. **Admin review** in `AdminSideEyeConsole` → new "Integrity Queue" tab: pending reports, one-click approve/reject + reason. Approval triggers `contest-sideeye-verify-chain` to anchor the final hash.
-3. **Public verifiable report** — on admin approval, the existing `PublicVerifyReport` page becomes shareable with a signed link recruiters can independently verify (hash chain re-walked client-side against on-chain anchor).
+New: `contest-voiceprint-verify` edge function (enroll + verify embeddings).
 
 ---
 
-## 5. New DB tables (migration)
+## Layer 3 — Active liveness, not just face match
 
-- `contest_trust_attestations` — pre-test gate result snapshot per attempt (env probes, ID match, single-monitor, VM check, IP rep).
-- `contest_keystroke_baselines` — enrolled keystroke biometric per attempt.
-- `contest_violation_events` — append-only typed event log feeding the engine (separate from existing audit logs to keep schema strict).
-- `contest_integrity_verdicts` — admin decision + public-report token + final hash anchor.
-- `contest_settings.enforcement_mode` column added: `soft | graduated | hard` (default `hard` for new contests).
+Today's identity check is a still-frame match. Add:
 
-All with strict RLS: candidate sees only their own rows; admin sees rows for institutions they manage; service role writes.
+- **Random challenge prompts** every 5 min: "look left", "blink twice", "show your right ear" — micro-action verified by Gemini vision. Defeats photo-on-stand attacks and pre-recorded video loops.
+- **Depth/parallax check** on enrollment: candidate slowly turns head 15°, we sample 5 frames and check geometric consistency (defeats printed-photo + monitor-replay).
+- **Hand-in-frame requirement**: at least one hand visible on keyboard every 30 s, otherwise warn → terminate.
 
----
-
-## 6. New edge functions
-
-- `contest-environment-attest` — server-signed environment probe (IP rep, attestation token).
-- `contest-keystroke-verify` — enroll + verify keystroke biometric.
-- `contest-ai-text-classifier` — Gemini classifier ("how likely AI-written") for free-text answers, sampled mid-test and again post-submit.
-- `contest-violation-engine` — single sink that decides warn / pause / terminate per policy and writes to `contest_violation_events`.
-- (Re-use existing 12 `contest-*` functions — no duplication.)
+Reuses `contest-identity-verify` with a new `mode: "liveness"`.
 
 ---
 
-## 7. Admin/contest configuration
+## Layer 4 — Side Eye AI room sweep, upgraded
 
-In the contest editor, replace the scattered proctoring toggles with one **"Anti-cheat profile"** selector:
+Side Eye already streams a phone-cam. Add stricter rules:
 
-- **Open** (no proctoring) — for practice.
-- **Standard** — current default (webcam + lockdown).
-- **Hard** *(this plan's default)* — every gate above mandatory, auto-terminate on critical events.
-- **Custom** — per-signal toggles for power users.
+- **Mandatory pre-test 360° room sweep** (15-sec slow pan) → Gemini vision must confirm: no second monitor, no second person, no phone other than the paired one, no notes/whiteboards/sticky notes, ceiling/door visible (no one hiding above the frame).
+- **Mid-test occlusion detection**: if the side-cam view is suddenly blocked (hand, towel, change in lighting) → `critical`.
+- **Phone-must-stay-still gyroscope check**: phone reports accelerometer/gyro every 5 s; movement above threshold → warn (someone is repositioning the camera to hide something).
 
-Plus a "Hardware checklist" the candidate must confirm in the invite email (phone, single monitor, quiet room) — pre-emptive, reduces failed attempts.
-
----
-
-## Out of scope (intentionally)
-
-- Native OS-level lockdown browser (we stay web-based).
-- Live human proctors (this is detection + recording, not a staffing layer).
-- Mobile-only candidate flow (desktop required for hard mode).
+Extends existing `contest-sideeye-frame-analyze` + new gyro channel on the pairing WebRTC datachannel.
 
 ---
 
-## Technical detail (for engineers)
+## Layer 5 — Tamper-proof transport & replay defense
 
-```text
-Player.tsx
-  └─ TrustGate (blocks start)
-       ├─ IdentityCheck (contest-identity-verify)
-       ├─ SideEyeReadyCheck (existing, made mandatory)
-       ├─ MultiMonitorCheck (Window Management API)
-       ├─ EnvironmentCheck (contest-environment-attest)
-       └─ KeystrokeEnroll (60s baseline → contest-keystroke-verify)
-  └─ useZeroTrustWatcher  ── pushes typed events ─►  contest-violation-engine
-       ├─ useProctoring (face, audio, presence)
-       ├─ useDeviceLock (focus, fullscreen, devtools)
-       ├─ useDisplayCapture (screen)
-       ├─ useTypingAnalytics → contest-keystroke-verify
-       └─ screens.onchange listener
-  └─ Realtime: kill-signal → TerminatedLockout
+Closes the "modified client" and "post-hoc dispute" vectors:
 
-Admin
-  └─ AdminSideEyeConsole
-       ├─ Live tiles (existing)
-       └─ Integrity Queue (new)
-            └─ contest-integrity-report-generate
-                 └─ PublicVerifyReport (signed link)
-```
+- **Per-session ephemeral signing key** issued at Trust Gate. Every answer submission, every violation event, every webcam frame upload is HMAC-signed client-side; server rejects unsigned or replayed payloads.
+- **Strict-monotonic event clock**: events carry a server-issued nonce + sequence; gaps or out-of-order → `critical`.
+- **Subresource Integrity + CSP** lockdown on the player route (no eval, no inline scripts, hash-pinned bundles) so injected extensions can't silently swap the proctoring code.
+- **Client-attestation token** rotated every 60 s; missing 2 rotations in a row → terminate.
 
-Hash-chain (`sideeye_evidence_chain`) is extended to cover every new event type so the public report verifies the full chain, not just side-cam clips.
+New: `contest-session-sign` (issue/rotate key) + middleware on every existing contest function to verify the HMAC.
+
+---
+
+## Layer 6 — Public, independently-verifiable evidence packet
+
+Makes disputes impossible to win without actual evidence:
+
+- On termination, the existing `contest-integrity-report-generate` is extended to emit a **signed ZIP**: timeline JSON, all webcam/side-cam thumbnails, hash-chain proof, admin verdict, public token. Hash of the ZIP is anchored to a public timestamping service (OpenTimestamps / Bitcoin merkle).
+- The existing `PublicVerifyReport` page re-walks the hash chain client-side against the anchor — anyone (recruiter, court, the candidate themselves) can verify it's untampered.
+- Candidate gets a one-shot dispute window (48 h) with a structured form; the engine attaches the dispute to the same chain.
+
+Reuses `contest-sideeye-verify-chain` + new `contest-evidence-anchor` edge function.
+
+---
+
+## What this stack defeats
+
+| Attack | Layer that catches it |
+|---|---|
+| Leaked paper / answer bank | 1 — randomization + watermark |
+| Accomplice reading questions | 2 — voiceprint + earpiece detector |
+| Hidden second device | 4 — 360° sweep + occlusion |
+| Mid-test swap | 3 — active liveness challenges |
+| Modified player / replay | 5 — signed transport, attestation |
+| "Wasn't me" denial later | 6 — anchored signed evidence ZIP |
+
+Combined with the existing hard auto-terminate, the **practical** cheating probability for a non-state-actor candidate drops to near-zero: any single trip = session ends, evidence is sealed, and the report is publicly verifiable.
+
+---
+
+## New surface area (summary)
+
+**Edge functions (5 new):** `contest-question-allocator`, `contest-voiceprint-verify`, `contest-session-sign`, `contest-evidence-anchor`, plus extended `contest-identity-verify` (liveness mode) and `contest-sideeye-frame-analyze` (sweep mode).
+
+**Tables (3 new):** `contest_voiceprint_baselines`, `contest_session_keys`, `contest_evidence_anchors`.
+
+**UI:** Trust Gate gets two new steps (voice enrollment, 360° sweep). Player gets random-liveness prompt overlay. Admin Integrity Queue gets a "Download signed evidence" button.
+
+**Out of scope (unchanged):** native lockdown browser, live human proctors, mobile-only candidate flow. Those remain the only further upgrades possible after this plan.
 
 ---
 
 ## Honest caveat
 
-No web-based system reaches *literal* zero — a candidate with a hidden earpiece and a memorized question pool can still cheat. This plan eliminates every *practical* vector for a determined-but-not-state-actor cheater, and makes any successful cheating extremely visible in post-hoc review. If you need higher assurance, the next step is a native lockdown-browser companion, which I can plan separately.
+A determined cheater with a hidden in-ear coach and a memorized question pool is *still* theoretically possible — no web stack reaches mathematical zero. But after this plan, every practical attack either (a) trips a `critical` signal and ends the session, or (b) leaves cryptographically-anchored evidence that survives any dispute. That is as close to zero as a browser-based system can get.
+
+---
+
+## Build order if you approve
+
+I'd ship in this order to maximize impact per turn:
+
+1. **Layer 5** (signed transport) — foundational, every other layer depends on it.
+2. **Layer 1** (randomization + watermark) — biggest single deterrent, smallest code.
+3. **Layer 3** (active liveness) — closes the most common real-world attack.
+4. **Layer 2** (voiceprint).
+5. **Layer 4** (room sweep upgrades).
+6. **Layer 6** (anchored evidence packet).
+
+Reply **yes** to start with Layer 5, or name a layer to start elsewhere.
