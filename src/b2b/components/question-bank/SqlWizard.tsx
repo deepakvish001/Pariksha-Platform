@@ -225,6 +225,7 @@ export function SqlWizard({
       onStatusChange={setStatus}
       publishErrors={publishErrors}
       lastSavedAt={lastSavedAt}
+      history={<StatusHistoryPanel questionId={questionId} />}
       publishedPreviewTitle="Candidate view · SQL question"
       publishedPreview={<SqlPublishedPreview draft={draft} />}
       rightPane={
