@@ -63,6 +63,37 @@ export function useQuestions(orgId?: string, type?: QuestionType) {
   });
 }
 
+/** Curated global question bank (visible to everyone authenticated, writable by super-admin only). */
+export function useGlobalQuestions(type?: QuestionType) {
+  return useQuery({
+    queryKey: ["b2b", "questions", "global", type ?? "all"],
+    queryFn: async (): Promise<Question[]> => {
+      let q = supabase.from("questions").select("*").eq("is_global", true).order("created_at", { ascending: false });
+      if (type) q = q.eq("type", type);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as Question[];
+    },
+  });
+}
+
+export function useCloneGlobalQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ question_id, target_org }: { question_id: string; target_org: string }) => {
+      const { data, error } = await supabase.rpc("clone_global_question", {
+        _question_id: question_id,
+        _target_org: target_org,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: (_id, vars) => {
+      qc.invalidateQueries({ queryKey: ["b2b", "questions", vars.target_org] });
+    },
+  });
+}
+
 export function useQuestion(id?: string) {
   return useQuery({
     queryKey: ["b2b", "question", id],
