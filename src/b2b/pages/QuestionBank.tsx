@@ -75,10 +75,8 @@ const TYPES: { value: QuestionType; label: string }[] = [
   { value: "fill_blanks", label: "Fill in the blanks" },
 ];
 
-const FILTERS: { value: "all" | QuestionType; label: string }[] = [
-  { value: "all", label: "All" },
-  ...TYPES.map((t) => ({ value: t.value, label: t.label })),
-];
+
+
 
 const TYPE_ICONS: Record<string, typeof Code2> = {
   code: Code2, database: Database, list: ListChecks, pen: PenLine,
