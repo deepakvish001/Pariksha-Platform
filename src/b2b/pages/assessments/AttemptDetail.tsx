@@ -220,8 +220,8 @@ export default function AttemptDetail() {
             >
               <Save className="h-3 w-3 mr-1" /> Save total
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </SectionCard>
       </div>
 
       {/* Attempt timeline */}
