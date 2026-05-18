@@ -737,9 +737,11 @@ function TestsStep({
 
 function PersistedTestCases({
   questionId,
+  wasPublished,
   ensureQuestion,
 }: {
   questionId?: string;
+  wasPublished: boolean;
   ensureQuestion: () => Promise<string>;
 }) {
   const [activeId, setActiveId] = useState<string | undefined>(questionId);
