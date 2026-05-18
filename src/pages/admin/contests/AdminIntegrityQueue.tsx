@@ -28,7 +28,7 @@ interface Row {
   created_at: string;
   updated_at: string | null;
   contest_title?: string;
-  candidate_email?: string;
+  candidate_name?: string;
 }
 
 const BADGE: Record<Verdict, string> = {
