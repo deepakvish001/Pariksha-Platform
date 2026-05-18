@@ -19,6 +19,7 @@ import { RetentionCard } from "@/components/proctoring/RetentionCard";
 import { LiveProctorWall } from "../../components/LiveProctorWall";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -92,13 +93,13 @@ const STATUS_LABEL: Record<ParticipantStatus, string> = {
   abandoned: "Abandoned",
 };
 
-const STATUS_COLOR: Record<ParticipantStatus, string> = {
-  not_joined: "bg-muted text-muted-foreground",
-  joined: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
-  in_progress: "bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse",
-  submitted: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
-  auto_submitted: "bg-orange-500/15 text-orange-300 border border-orange-500/30",
-  abandoned: "bg-rose-500/15 text-rose-300 border border-rose-500/30",
+const STATUS_TONE: Record<ParticipantStatus, StatusTone> = {
+  not_joined: "neutral",
+  joined: "scheduled",
+  in_progress: "live",
+  submitted: "success",
+  auto_submitted: "warning",
+  abandoned: "danger",
 };
 
 function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -745,9 +746,9 @@ function ParticipantRow({
         </div>
       </td>
       <td className="py-2.5 px-2">
-        <span className={`px-2 py-0.5 rounded-full text-[10px] ${STATUS_COLOR[p.status]}`}>
+        <StatusPill tone={STATUS_TONE[p.status]} pulse={p.status === "in_progress"}>
           {STATUS_LABEL[p.status]}
-        </span>
+        </StatusPill>
       </td>
       <td className="py-2.5 px-2">
         {p.status === "in_progress" ? (
