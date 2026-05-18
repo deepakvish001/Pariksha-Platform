@@ -329,7 +329,7 @@ export function CodingWizard({
       }
       clearAutosave(autosaveKey);
       toast.success(status === "published" ? "Question published" : "Draft saved");
-      if (status === "published") onDone();
+      if (status === "published" && !opts?.keepOpen) onDone();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to save");
     } finally {
