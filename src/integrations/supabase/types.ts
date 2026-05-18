@@ -3189,6 +3189,66 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_integrity_verdicts: {
+        Row: {
+          contest_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          final_hash: string | null
+          id: string
+          public_token: string | null
+          reason: string | null
+          session_id: string
+          updated_at: string
+          user_id: string
+          verdict: Database["public"]["Enums"]["integrity_verdict"]
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          final_hash?: string | null
+          id?: string
+          public_token?: string | null
+          reason?: string | null
+          session_id: string
+          updated_at?: string
+          user_id: string
+          verdict?: Database["public"]["Enums"]["integrity_verdict"]
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          final_hash?: string | null
+          id?: string
+          public_token?: string | null
+          reason?: string | null
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+          verdict?: Database["public"]["Enums"]["integrity_verdict"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_integrity_verdicts_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_integrity_verdicts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_keystroke_profiles: {
         Row: {
           burst_ratio: number
@@ -3842,11 +3902,14 @@ export type Database = {
           is_active: boolean
           last_heartbeat_at: string | null
           last_seen_at: string
+          risk_score: number
           session_token: string
           side_camera_required: boolean
           side_camera_status: string
           started_at: string
           stream_grace_until: string | null
+          terminated_at: string | null
+          terminated_reason: string | null
           user_agent: string | null
           user_id: string
         }
@@ -3861,11 +3924,14 @@ export type Database = {
           is_active?: boolean
           last_heartbeat_at?: string | null
           last_seen_at?: string
+          risk_score?: number
           session_token?: string
           side_camera_required?: boolean
           side_camera_status?: string
           started_at?: string
           stream_grace_until?: string | null
+          terminated_at?: string | null
+          terminated_reason?: string | null
           user_agent?: string | null
           user_id: string
         }
@@ -3880,11 +3946,14 @@ export type Database = {
           is_active?: boolean
           last_heartbeat_at?: string | null
           last_seen_at?: string
+          risk_score?: number
           session_token?: string
           side_camera_required?: boolean
           side_camera_status?: string
           started_at?: string
           stream_grace_until?: string | null
+          terminated_at?: string | null
+          terminated_reason?: string | null
           user_agent?: string | null
           user_id?: string
         }
@@ -4343,6 +4412,90 @@ export type Database = {
           },
         ]
       }
+      contest_trust_attestations: {
+        Row: {
+          automation_flags: Json
+          contest_id: string
+          created_at: string
+          devtools_open: boolean | null
+          display_count: number | null
+          failures: string[]
+          gate_passed: boolean
+          id: string
+          id_match_passed: boolean | null
+          id_match_score: number | null
+          ip_reputation: Json
+          raw: Json
+          rdp_detected: boolean | null
+          session_id: string
+          side_eye_paired: boolean | null
+          signed_token: string | null
+          single_monitor_ok: boolean | null
+          user_id: string
+          vm_detected: boolean | null
+          webgl_renderer: string | null
+        }
+        Insert: {
+          automation_flags?: Json
+          contest_id: string
+          created_at?: string
+          devtools_open?: boolean | null
+          display_count?: number | null
+          failures?: string[]
+          gate_passed?: boolean
+          id?: string
+          id_match_passed?: boolean | null
+          id_match_score?: number | null
+          ip_reputation?: Json
+          raw?: Json
+          rdp_detected?: boolean | null
+          session_id: string
+          side_eye_paired?: boolean | null
+          signed_token?: string | null
+          single_monitor_ok?: boolean | null
+          user_id: string
+          vm_detected?: boolean | null
+          webgl_renderer?: string | null
+        }
+        Update: {
+          automation_flags?: Json
+          contest_id?: string
+          created_at?: string
+          devtools_open?: boolean | null
+          display_count?: number | null
+          failures?: string[]
+          gate_passed?: boolean
+          id?: string
+          id_match_passed?: boolean | null
+          id_match_score?: number | null
+          ip_reputation?: Json
+          raw?: Json
+          rdp_detected?: boolean | null
+          session_id?: string
+          side_eye_paired?: boolean | null
+          signed_token?: string | null
+          single_monitor_ok?: boolean | null
+          user_id?: string
+          vm_detected?: boolean | null
+          webgl_renderer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_trust_attestations_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_trust_attestations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_trust_scores: {
         Row: {
           computed_at: string
@@ -4633,6 +4786,7 @@ export type Database = {
           data_region: string
           description: string | null
           ends_at: string
+          enforcement_mode: Database["public"]["Enums"]["contest_enforcement_mode"]
           id: string
           institution_id: string | null
           invite_code: string | null
@@ -4661,6 +4815,7 @@ export type Database = {
           data_region?: string
           description?: string | null
           ends_at: string
+          enforcement_mode?: Database["public"]["Enums"]["contest_enforcement_mode"]
           id?: string
           institution_id?: string | null
           invite_code?: string | null
@@ -4689,6 +4844,7 @@ export type Database = {
           data_region?: string
           description?: string | null
           ends_at?: string
+          enforcement_mode?: Database["public"]["Enums"]["contest_enforcement_mode"]
           id?: string
           institution_id?: string | null
           invite_code?: string | null
@@ -8825,6 +8981,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_public_integrity_verdict: {
+        Args: { p_token: string }
+        Returns: {
+          contest_id: string
+          decided_at: string
+          final_hash: string
+          session_id: string
+          verdict: Database["public"]["Enums"]["integrity_verdict"]
+        }[]
+      }
       get_quiz_leaderboard: {
         Args: {
           p_difficulty?: string
@@ -9034,7 +9200,9 @@ export type Database = {
       battle_status: "pending" | "live" | "ended" | "abandoned"
       blog_comment_status: "visible" | "hidden" | "reported" | "deleted"
       blog_post_status: "draft" | "scheduled" | "published" | "archived"
+      contest_enforcement_mode: "open" | "standard" | "hard" | "custom"
       friendship_status: "pending" | "accepted" | "blocked"
+      integrity_verdict: "pending" | "confirmed" | "disputed" | "inconclusive"
       invite_source: "email" | "link" | "bulk_upload" | "manual" | "api"
       invite_status: "pending" | "claimed" | "submitted" | "expired"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer" | "proctor"
@@ -9208,7 +9376,9 @@ export const Constants = {
       battle_status: ["pending", "live", "ended", "abandoned"],
       blog_comment_status: ["visible", "hidden", "reported", "deleted"],
       blog_post_status: ["draft", "scheduled", "published", "archived"],
+      contest_enforcement_mode: ["open", "standard", "hard", "custom"],
       friendship_status: ["pending", "accepted", "blocked"],
+      integrity_verdict: ["pending", "confirmed", "disputed", "inconclusive"],
       invite_source: ["email", "link", "bulk_upload", "manual", "api"],
       invite_status: ["pending", "claimed", "submitted", "expired"],
       org_member_role: ["owner", "admin", "recruiter", "viewer", "proctor"],
