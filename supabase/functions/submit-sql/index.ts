@@ -4,9 +4,11 @@
 // frontend can render results uniformly.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import initSqlJs from "npm:sql.js@1.10.3";
+import { verifySignedRequest, readSignedHeaders } from "../_shared/contest-signing.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,7 +181,8 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.text();
+    const body = rawBody ? (() => { try { return JSON.parse(rawBody); } catch { return {}; } })() : {};
     const source_code: string = body.source_code ?? "";
     const language: string = body.language ?? "sql";
     const language_id: number = body.language_id ?? 82;
@@ -189,6 +192,38 @@ Deno.serve(async (req) => {
     const referenceQuery: string = body.reference_query ?? "";
     const orderMatters: boolean = !!body.order_matters;
     const contest_slug: string | undefined = body.contest_slug;
+
+    // Layer 5 — reject unsigned / tampered / replayed contest SQL submissions.
+    if (contest_slug && typeof contest_slug === "string") {
+      const signed = readSignedHeaders(req);
+      if (!signed) {
+        return respond<SubmitResult>({ ok: false, error: "Missing contest session signature" });
+      }
+      const verify = await verifySignedRequest(req, rawBody);
+      if (!verify.ok) {
+        try {
+          if (SUPABASE_SERVICE_ROLE_KEY) {
+            const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+            const { data: sess } = await admin
+              .from("contest_sessions")
+              .select("id, contest_id, user_id")
+              .eq("id", signed.sessionId)
+              .maybeSingle();
+            if (sess) {
+              await admin.from("contest_violations").insert({
+                contest_id: sess.contest_id,
+                user_id: sess.user_id,
+                session_id: sess.id,
+                type: "signature_invalid",
+                severity: "critical",
+                meta: { reason: verify.reason, surface: "submit-sql" },
+              });
+            }
+          }
+        } catch { /* noop */ }
+        return respond<SubmitResult>({ ok: false, error: `Invalid signature: ${verify.reason}` });
+      }
+    }
 
     if (!source_code.trim() || !referenceQuery.trim() || !problem_slug) {
       return respond<SubmitResult>({
