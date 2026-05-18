@@ -84,7 +84,9 @@ export default function AssessmentDetail() {
           <Button variant="outline" size="sm" onClick={() => navigate(paths.b2b.assessmentManage(basePath, assessment))}>
             <Activity className="h-4 w-4 mr-1" /> Live monitor
           </Button>
-          <Badge variant={isPublished ? "default" : "secondary"}>{assessment.status}</Badge>
+          <StatusPill tone={STATUS_TONE[assessment.status] ?? "neutral"} pulse={isPublished}>
+            {assessment.status}
+          </StatusPill>
           <Button
             size="sm"
             variant="outline"
