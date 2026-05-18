@@ -13,6 +13,17 @@ export type Organization = {
   created_at: string;
 };
 
+const ORG_QUERY_OPTS = {
+  // Org membership / org record is stable per session; fetch once and rely on
+  // explicit invalidation after create/join/leave/edit. Prevents permission
+  // re-checks on every navigation or click inside the workspace.
+  staleTime: Infinity,
+  gcTime: Infinity,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+  refetchOnMount: false,
+} as const;
+
 export function useMyOrganizations() {
   const { user } = useAuth();
   return useQuery({
@@ -26,6 +37,7 @@ export function useMyOrganizations() {
       if (error) throw error;
       return (data ?? []) as Organization[];
     },
+    ...ORG_QUERY_OPTS,
   });
 }
 
@@ -42,6 +54,7 @@ export function useActiveOrg(orgId?: string) {
       if (error) throw error;
       return (data ?? null) as Organization | null;
     },
+    ...ORG_QUERY_OPTS,
   });
 }
 
