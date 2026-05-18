@@ -50,7 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy, Archive, ArchiveRestore, Download } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy, Archive, ArchiveRestore, Download, ArrowLeft, ChevronRight, Code2, Database, ListChecks, PenLine, CheckSquare, Shuffle, Type as TypeIcon, Hash, SquareDashedBottom } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
