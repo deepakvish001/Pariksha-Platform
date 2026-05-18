@@ -83,7 +83,7 @@ export default function QuestionBank() {
   const [legacyType, setLegacyType] = useState<QuestionType | undefined>(undefined);
   const [legacyOpen, setLegacyOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | QuestionType>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published" | "archived">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
