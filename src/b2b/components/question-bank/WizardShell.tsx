@@ -24,6 +24,7 @@ export function WizardShell({
   rightPane,
   status,
   onStatusChange,
+  publishErrors,
 }: {
   steps: WizardStep[];
   current: number;
@@ -39,8 +40,10 @@ export function WizardShell({
   rightPane?: ReactNode;
   status?: PublishStatus;
   onStatusChange?: (s: PublishStatus) => void;
+  publishErrors?: string[];
 }) {
   const isPublished = status === "published";
+  const blockedByValidation = isPublished && (publishErrors?.length ?? 0) > 0;
   return (
     <div className="flex flex-col h-full">
       <div className="grid md:grid-cols-[200px_1fr] gap-6 flex-1 min-h-0">
