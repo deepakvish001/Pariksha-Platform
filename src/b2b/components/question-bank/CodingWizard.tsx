@@ -230,6 +230,14 @@ export function CodingWizard({
   });
 
   const persist = async (status: "draft" | "published") => {
+    if (riskyChanges.length > 0) {
+      const proceed = window.confirm(
+        `Heads up — you're editing a PUBLISHED question and made changes that could invalidate hidden tests:\n\n• ${riskyChanges.join(
+          "\n• ",
+        )}\n\nRe-run / re-verify hidden tests after saving. Continue?`,
+      );
+      if (!proceed) return;
+    }
     setSaving(true);
     try {
       const meta = buildMeta(status);
