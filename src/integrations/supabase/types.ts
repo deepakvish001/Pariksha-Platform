@@ -3412,6 +3412,59 @@ export type Database = {
           },
         ]
       }
+      contest_liveness_challenges: {
+        Row: {
+          ai_verdict: Json | null
+          challenge_type: string
+          contest_id: string
+          evidence_path: string | null
+          expires_at: string
+          id: string
+          issued_at: string
+          prompt: Json
+          responded_at: string | null
+          session_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          ai_verdict?: Json | null
+          challenge_type: string
+          contest_id: string
+          evidence_path?: string | null
+          expires_at?: string
+          id?: string
+          issued_at?: string
+          prompt?: Json
+          responded_at?: string | null
+          session_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          ai_verdict?: Json | null
+          challenge_type?: string
+          contest_id?: string
+          evidence_path?: string | null
+          expires_at?: string
+          id?: string
+          issued_at?: string
+          prompt?: Json
+          responded_at?: string | null
+          session_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_liveness_challenges_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_lock_events: {
         Row: {
           contest_id: string | null
