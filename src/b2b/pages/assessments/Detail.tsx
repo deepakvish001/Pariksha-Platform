@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { FileQuestion } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -63,6 +66,12 @@ export default function AssessmentDetail() {
   }
 
   const isPublished = assessment.status === "published";
+  const STATUS_TONE: Record<string, StatusTone> = {
+    draft: "draft",
+    published: "live",
+    archived: "archived",
+    closed: "closed",
+  };
 
   return (
     <OrgShell
@@ -75,7 +84,9 @@ export default function AssessmentDetail() {
           <Button variant="outline" size="sm" onClick={() => navigate(paths.b2b.assessmentManage(basePath, assessment))}>
             <Activity className="h-4 w-4 mr-1" /> Live monitor
           </Button>
-          <Badge variant={isPublished ? "default" : "secondary"}>{assessment.status}</Badge>
+          <StatusPill tone={STATUS_TONE[assessment.status] ?? "neutral"} pulse={isPublished}>
+            {assessment.status}
+          </StatusPill>
           <Button
             size="sm"
             variant="outline"
@@ -193,9 +204,11 @@ function SectionsPanel({ assessmentId, orgId }: { assessmentId: string; orgId: s
       </div>
 
       {!sections?.length && (
-        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-          No sections yet. Add one above to start composing the assessment.
-        </div>
+        <EmptyState
+          icon={FileQuestion}
+          title="No sections yet"
+          description="Add a section above to start composing this assessment (e.g. Coding round, Aptitude, Behavioral)."
+        />
       )}
 
       <div className="space-y-3">
