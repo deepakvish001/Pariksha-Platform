@@ -42,6 +42,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Library, Search, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
 
 const TYPES: { value: QuestionType; label: string }[] = [
   { value: "coding", label: "Coding" },
