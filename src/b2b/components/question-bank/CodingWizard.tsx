@@ -250,6 +250,7 @@ export function CodingWizard({
       isLast={step === STEPS.length - 1}
       status={status}
       onStatusChange={setStatus}
+      publishErrors={publishErrors}
       rightPane={<CodingPreview draft={draft} />}
     >
       {step === 0 && <BasicsStep draft={draft} patch={patch} />}
