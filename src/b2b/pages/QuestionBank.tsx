@@ -132,6 +132,61 @@ export default function QuestionBank() {
     return { all: scope.length, draft, published };
   }, [questions, filter]);
 
+  // Drop selected IDs that no longer exist (deleted elsewhere or filtered out of the dataset).
+  useEffect(() => {
+    if (selected.size === 0) return;
+    const live = new Set((questions ?? []).map((q) => q.id));
+    let changed = false;
+    const next = new Set<string>();
+    selected.forEach((id) => {
+      if (live.has(id)) next.add(id);
+      else changed = true;
+    });
+    if (changed) setSelected(next);
+  }, [questions, selected]);
+
+  const filteredIds = useMemo(() => filtered.map((q) => q.id), [filtered]);
+  const allVisibleSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+  const someVisibleSelected =
+    filteredIds.some((id) => selected.has(id)) && !allVisibleSelected;
+
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAllVisible = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) filteredIds.forEach((id) => next.delete(id));
+      else filteredIds.forEach((id) => next.add(id));
+      return next;
+    });
+  const clearSelection = () => setSelected(new Set());
+
+  const runBulkDelete = async () => {
+    if (!org || selected.size === 0) return;
+    setBulkDeleting(true);
+    const ids = Array.from(selected);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => del.mutateAsync({ id, org_id: org.id })),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      const ok = results.length - failed;
+      if (ok > 0) toast.success(`Deleted ${ok} question${ok === 1 ? "" : "s"}`);
+      if (failed > 0) toast.error(`Failed to delete ${failed} question${failed === 1 ? "" : "s"}`);
+      clearSelection();
+    } finally {
+      setBulkDeleting(false);
+      setConfirmBulkDelete(false);
+    }
+  };
+
+
   if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
 
