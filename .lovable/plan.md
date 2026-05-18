@@ -1,65 +1,111 @@
-## Next: wire Layer 5 + ship Layer 1
+# Role-Based Access Control for the Workspace
 
-Layer 5's foundation (signed-transport DB, `contest-session-sign` edge function, `_shared/contest-signing.ts` verifier, `useContestSessionSigner` hook) is already in. Below is the next batch of work.
+## Current state (what already exists)
 
----
+- **Roles in DB** (`org_member_role` enum + `org_members` table):
+  `owner`, `admin`, `proctor`, `recruiter`, `viewer`.
+- **RLS already enforces writes**:
+  - `organizations`: only owner can delete; owner+admin can update.
+  - `org_members`: owner+admin can insert / update / remove members.
+  - `assessments`: `can_write_org()` (owner+admin) can insert / update / delete; any member can read.
+  - Proctoring evidence already gated via `useCanProctor` (owner+admin+proctor).
+- **Gap**: the UI shows every nav item and every action button to every member. A `viewer` or `recruiter` sees "Delete assessment", "Invite member", "Change role" etc. and only gets blocked when the DB rejects the request. Industry standard is to **hide what you can't do** and **guard the route** in addition to the RLS.
 
-### Part A — Activate Layer 5 in the player and the two highest-risk functions
+## Proposed permission matrix
 
-1. **`src/pages/contests/ContestPlayProblem.tsx`**
-   - Call `useContestSessionSigner(sessionId)` after the Trust Gate passes.
-   - Block answer submission and violation reporting until `ready === true`.
-   - If `missedRotations() >= 2`, push a `signature_invalid` violation and trigger the existing termination lockout.
+| Capability | owner | admin | proctor | recruiter | viewer |
+|---|---|---|---|---|---|
+| View Dashboard / Assessments / Question Bank | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Create / edit / delete assessments | ✅ | ✅ | — | — | — |
+| Publish / schedule assessment | ✅ | ✅ | — | — | — |
+| Edit Question Bank | ✅ | ✅ | — | — | — |
+| Invite / remove members | ✅ | ✅ | — | — | — |
+| Change member roles | ✅ | ✅¹ | — | — | — |
+| View live proctoring wall / evidence / Side-Eye | ✅ | ✅ | ✅ | — | — |
+| Run AI proctoring review | ✅ | ✅ | ✅ | — | — |
+| View attempt results / scores / reports | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Download CSV / export PII | ✅ | ✅ | — | ✅ | — |
+| Edit org settings (name, logo, branding) | ✅ | ✅ | — | — | — |
+| Manage billing / plan | ✅ | — | — | — | — |
+| Transfer ownership / delete org | ✅ | — | — | — | — |
+| View audit log | ✅ | ✅ | — | — | — |
 
-2. **`supabase/functions/contest-violation-engine/index.ts`**
-   - Read raw body once, call `verifySignedRequest(req, rawBody)`.
-   - On `{ ok: false }`, return 401 AND insert a self-report `signature_invalid` violation (critical) so the engine still terminates the session.
+¹ Admin cannot promote anyone to `owner` and cannot demote the owner.
 
-3. **`supabase/functions/contest-answer-submit/index.ts`** (or the equivalent submit function — confirm exact name during exploration)
-   - Same verifier guard. Reject unsigned submits.
+## Implementation plan
 
-4. **Client call sites** for the two functions above switch to `supabase.functions.invoke(name, { body, headers: await sign(...) })`. A tiny wrapper `invokeSigned(name, body)` in the signer hook keeps call sites clean.
+### 1. Central permission layer (`src/b2b/hooks/usePermissions.ts`)
 
----
+Extend the existing hook with one source of truth:
 
-### Part B — Layer 1: question randomization + per-candidate watermark
+```ts
+export type Capability =
+  | "assessments.write" | "assessments.publish"
+  | "questionBank.write"
+  | "members.invite" | "members.removeOrEdit" | "members.promoteToOwner"
+  | "proctor.view" | "proctor.runAi"
+  | "results.exportPii"
+  | "org.editSettings" | "org.manageBilling" | "org.delete"
+  | "audit.view";
 
-1. **Migration**
-   - `contest_session_question_order` table: `session_id`, `question_ids uuid[]`, `option_orders jsonb`, `created_at`. Admin-only RLS; service role writes.
-   - Optional `contest_questions.pool_size` hint column already exists in most schemas — confirm and reuse.
+const MATRIX: Record<Capability, OrgMemberRole[]> = { /* table above */ };
 
-2. **`supabase/functions/contest-question-allocator/index.ts`** (new)
-   - Input: `sessionId`. Auth: JWT-verified candidate owning the session.
-   - Deterministic shuffle seeded by `sha256(sessionId + contest_secret)` so the same session always returns the same order (idempotent on reconnect).
-   - Picks N questions from the contest's pool (oversized 3-5x if available), shuffles option indices per question, persists once.
-   - Returns sanitized questions (no answer key).
+export function useCan(orgId?: string, cap?: Capability): { allowed: boolean; role: OrgMemberRole | null; isLoading: boolean };
+```
 
-3. **Player integration**
-   - `ContestPlayProblem` loads questions via the allocator instead of the current direct table read.
-   - Server-side answer-check uses the persisted `option_orders` to map the candidate's chosen index back to the canonical option.
+All UI gating goes through `useCan(...)` — no scattered `role === "owner"` checks.
 
-4. **Watermark overlay** — new `src/components/contests/SessionWatermark.tsx`
-   - Fixed full-viewport, `pointer-events-none`, z-index just under modals.
-   - Renders 6 faint diagonal repetitions of `{candidate_email} · {sessionId.slice(0,8)} · {timestamp}` at 4% opacity.
-   - Injects zero-width-character encoding of `sessionId` into every question/option DOM node (forensic fingerprint if text is copy-pasted).
-   - Mounted by `ContestPlayProblem` once Trust Gate passes.
+### 2. Route guards
 
-5. **Print Screen / clipboard hardening**
-   - Extend `useZeroTrustWatcher`: `keydown` listener for `PrintScreen` → `critical` violation `print_screen_attempt` (PrintScreen can't be fully blocked in browsers but the attempt is loggable on `keyup`).
-   - Block `copy` event on the question container, log `copy_attempt` at `high`.
+New `<RequireOrgCapability cap="…">` component (mirrors `AdminRoute`):
 
----
+- Wrap `/companies/:slug/team`, `/settings`, `/assessments/new`, `/assessments/:id/edit`, `/assessments/:id/manage`, billing, audit log, etc.
+- On deny → redirect to the workspace dashboard with a toast "You don't have permission to view this page".
 
-### Part C — Light verification
+### 3. Role-aware navigation (`OrgShell.tsx`)
 
-- Smoke-test `contest-session-sign` with `supabase--curl_edge_functions` (issue → rotate → revoke).
-- Confirm `verifySignedRequest` rejects: missing headers, wrong signature, replayed sequence, expired key.
-- Confirm allocator returns the same order on a second call with the same `sessionId` (idempotency).
+Add `requires?: Capability` to each nav item; filter via `useCan`. Items hidden:
+- **Team** → `members.invite`
+- **Settings** → `org.editSettings`
+- **Billing** (when added) → `org.manageBilling`
+- **Audit Log** (when added) → `audit.view`
 
----
+### 4. Action-level gating
 
-### Out of scope this turn
+Hide / disable the actual buttons (don't only rely on RLS rejection):
 
-Layers 2, 3, 4, 6 stay queued. Each is a separate, self-contained turn after this batch lands cleanly.
+- `Team.tsx`: hide "Invite", role dropdown, "Remove" for non-managers; block `owner` row from being edited by an `admin`.
+- `assessments/List.tsx` & `Detail.tsx`: hide "New assessment", "Edit", "Delete", "Publish".
+- `ProctoringTriagePanel`, `LiveProctorWall`, `SessionTimelinePlayer`: already use `canProctor` — migrate to `useCan(orgId, "proctor.view")`.
+- `AttemptDetail`: hide "Export CSV" / PII download for `viewer`.
+- `Settings.tsx`: hide "Transfer ownership" + "Delete organization" unless `owner`.
 
-Reply **yes** to execute Part A + Part B together, or **A only** / **B only** to split.
+### 5. Server-side hardening (only the gaps)
+
+The RLS we already have covers writes. Three additions:
+
+- `org_members` UPDATE policy: block `admin` from changing a row where `role = 'owner'` and from setting `role = 'owner'`.
+- New `audit_logs` table (if not present) gated to `owner` + `admin` reads.
+- `is_org_billing_admin(org_id)` SQL helper used by billing endpoints / future Stripe webhooks → only `owner`.
+
+### 6. Tests
+
+- Extend `src/b2b/hooks/__tests__/usePermissions.test.tsx` with one assertion per (role × capability) cell of the matrix.
+- Playwright: add `e2e/b2b-rbac.spec.ts` logging in as each role and asserting hidden nav items + 403-style redirect on guarded routes.
+
+## Out of scope
+
+- New roles or per-feature custom permissions (kept to the 5 fixed roles).
+- Changing how proctoring evidence works — only renaming the hook call.
+- Cross-org admin access (handled separately by the platform-level `app_role = 'admin'`).
+
+## Files touched (preview)
+
+- `src/b2b/hooks/usePermissions.ts` (extend)
+- `src/b2b/components/RequireOrgCapability.tsx` (new)
+- `src/b2b/layouts/OrgShell.tsx` (filter nav)
+- `src/b2b/pages/Team.tsx`, `Settings.tsx`, `assessments/List.tsx`, `Detail.tsx`, `New.tsx`, `Manage.tsx`, `AttemptDetail.tsx`
+- `src/b2b/components/ProctoringTriagePanel.tsx`, `LiveProctorWall.tsx`
+- `src/App.tsx` (wrap guarded routes)
+- One migration: tighten `org_members` UPDATE + add `is_org_billing_admin()`
+- Tests: `usePermissions.test.tsx`, `e2e/b2b-rbac.spec.ts`

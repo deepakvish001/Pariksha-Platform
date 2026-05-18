@@ -37,6 +37,7 @@ import B2BSettings from "@/b2b/pages/Settings";
 import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
 import B2BPricing from "@/b2b/pages/Pricing";
 import { OrgWorkspace } from "@/b2b/context/OrgContext";
+import { RequireOrgCapability } from "@/b2b/components/RequireOrgCapability";
 import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
 import ParikshaaOverview from "@/admin/parikshaa/Overview";
 import ParikshaaUsers from "@/admin/parikshaa/Users";
@@ -295,14 +296,14 @@ const App = () => (
                     >
                       <Route index element={<B2BDashboard />} />
                       <Route path="assessments" element={<B2BAssessmentsList />} />
-                      <Route path="assessments/new" element={<B2BAssessmentNew />} />
+                      <Route path="assessments/new" element={<RequireOrgCapability cap="assessments.write"><B2BAssessmentNew /></RequireOrgCapability>} />
                       <Route path="assessments/:id" element={<B2BAssessmentDetail />} />
-                      <Route path="assessments/:id/manage" element={<B2BAssessmentManage />} />
+                      <Route path="assessments/:id/manage" element={<RequireOrgCapability cap="assessments.write"><B2BAssessmentManage /></RequireOrgCapability>} />
                       <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
                       <Route path="question-bank" element={<B2BQuestionBank />} />
                       <Route path="proctoring" element={<Navigate to="assessments" replace />} />
-                      <Route path="team" element={<B2BTeam />} />
-                      <Route path="settings" element={<B2BSettings />} />
+                      <Route path="team" element={<RequireOrgCapability cap="members.invite"><B2BTeam /></RequireOrgCapability>} />
+                      <Route path="settings" element={<RequireOrgCapability cap="org.editSettings"><B2BSettings /></RequireOrgCapability>} />
                       <Route path="insights/feedback" element={<B2BInsightsFeedback />} />
                     </Route>
                   );

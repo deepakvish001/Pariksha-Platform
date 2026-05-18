@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, Menu, Home, ChevronRight } from "lucide-react";
 import { useOrgBasePath, useCurrentOrg } from "../context/OrgContext";
-import { useCanProctor } from "../hooks/usePermissions";
+import { useCan, type Capability } from "../hooks/usePermissions";
 import { B2BBackdrop } from "../components/B2BBackdrop";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -118,7 +118,8 @@ export function OrgShell({
   const { pathname } = useLocation();
   const base = useOrgBasePath();
   const { org } = useCurrentOrg();
-  const { canProctor } = useCanProctor(org?.id);
+  const canEditSettings = useCan(org?.id, "org.editSettings").allowed;
+  const canManageMembers = useCan(org?.id, "members.invite").allowed;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Close mobile drawer whenever the route changes.
@@ -127,23 +128,29 @@ export function OrgShell({
   }, [pathname]);
 
   const isLegacy = base === "/b2b";
-  const NAV_ALL = isLegacy
+  type NavCfg = NavItem & { requires?: Capability };
+  const NAV_ALL: NavCfg[] = isLegacy
     ? [
-        { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false, requiresProctor: false },
-        { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false, requiresProctor: false },
-        { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false, requiresProctor: false },
-        { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false, requiresProctor: false },
-        { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true, requiresProctor: false },
+        { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false },
+        { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false },
+        { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false },
+        { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false, requires: "members.invite" },
+        { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true, requires: "org.editSettings" },
       ]
     : [
-        { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true, requiresProctor: false },
-        { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false, requiresProctor: false },
-        { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false, requiresProctor: false },
-        { to: `${base}/team`, label: "Team", icon: Users, exact: false, requiresProctor: false },
-        { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true, requiresProctor: false },
+        { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true },
+        { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false },
+        { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false },
+        { to: `${base}/team`, label: "Team", icon: Users, exact: false, requires: "members.invite" },
+        { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true, requires: "org.editSettings" },
       ];
 
-  const NAV: NavItem[] = NAV_ALL.filter((n) => !n.requiresProctor || canProctor);
+  const NAV: NavItem[] = NAV_ALL.filter((n) => {
+    if (!n.requires) return true;
+    if (n.requires === "members.invite") return canManageMembers;
+    if (n.requires === "org.editSettings") return canEditSettings;
+    return true;
+  });
   const homeHref = isLegacy ? "/b2b/dashboard" : base;
   const orgName = org?.name ?? "Assessments";
 
