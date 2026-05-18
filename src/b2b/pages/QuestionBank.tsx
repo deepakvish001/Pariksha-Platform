@@ -541,6 +541,15 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={clearSelection}><X className="h-4 w-4 mr-1" /> Clear</Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">Set tier</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => void runBulkSetTier("premium")}>★ Mark Premium</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => void runBulkSetTier("free")}>Mark Free</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="destructive" size="sm" onClick={() => setConfirmBulkDelete(true)} disabled={bulkDeleting}>
                   <Trash2 className="h-4 w-4 mr-1" />Delete {selected.size}
                 </Button>
