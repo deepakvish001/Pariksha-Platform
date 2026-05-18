@@ -167,8 +167,19 @@ export const useCodeRunner = () => {
     setIsSubmitting(true);
     try {
       const fnName = params.language === "sql" ? "submit-sql" : "submit-code";
+      // Layer 5 — when this is a contest submission, attach signed transport
+      // headers so the edge function can prove the request came from the live
+      // proctored session and was not replayed/tampered.
+      let signedHeaders: Record<string, string> | null = null;
+      if (params.contest_slug) {
+        try {
+          const { signContestFunctionCall } = await import("@/hooks/useContestSessionSigner");
+          signedHeaders = await signContestFunctionCall(fnName, params);
+        } catch { /* signer not mounted — server will treat as unsigned */ }
+      }
       const { data, error } = await supabase.functions.invoke(fnName, {
         body: params,
+        headers: signedHeaders ?? undefined,
       });
       const payload = data as FunctionEnvelope<SubmitResult> | undefined;
       if (error && !payload) throw error;

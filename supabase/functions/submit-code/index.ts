@@ -2,6 +2,7 @@
 // Uses Fermion's built-in ExactMatch matcher per case, aggregates verdict,
 // stores the submission, and awards XP on first AC.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { verifySignedRequest, readSignedHeaders } from "../_shared/contest-signing.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -295,7 +296,8 @@ Deno.serve(async (req) => {
     if (userErr || !userData.user) return respond<SubmitResult>({ ok: false, error: "Unauthorized", diagnostics: { error_stage: "auth" } });
     const userId = userData.user.id;
 
-    const body = await req.json();
+    const rawBody = await req.text();
+    const body = rawBody ? JSON.parse(rawBody) : {};
     const { source_code, language, language_id, problem_slug, tests, cpu_time_limit, memory_limit, contest_slug } = body ?? {};
 
     if (!source_code || typeof source_code !== "string" || source_code.length > 50000)
@@ -304,6 +306,42 @@ Deno.serve(async (req) => {
       return respond<SubmitResult>({ ok: false, error: "Invalid language", diagnostics: { error_stage: "validation" } });
     if (!problem_slug)
       return respond<SubmitResult>({ ok: false, error: "problem_slug required", diagnostics: { error_stage: "validation" } });
+
+    // Layer 5 — when this is a contest submission, require a valid signed
+    // transport envelope. Rejects replays, tampered payloads, and any client
+    // that bypassed the proctored player.
+    if (contest_slug && typeof contest_slug === "string") {
+      const signed = readSignedHeaders(req);
+      if (!signed) {
+        return respond<SubmitResult>({ ok: false, error: "Missing contest session signature", diagnostics: { error_stage: "signature_missing" } });
+      }
+      const verify = await verifySignedRequest(req, rawBody);
+      if (!verify.ok) {
+        // Best-effort: record a critical signature_invalid violation so the
+        // violation engine can terminate the session on the next sweep.
+        try {
+          if (SUPABASE_SERVICE_ROLE_KEY) {
+            const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+            const { data: sess } = await admin
+              .from("contest_sessions")
+              .select("id, contest_id, user_id")
+              .eq("id", signed.sessionId)
+              .maybeSingle();
+            if (sess) {
+              await admin.from("contest_violations").insert({
+                contest_id: sess.contest_id,
+                user_id: sess.user_id,
+                session_id: sess.id,
+                type: "signature_invalid",
+                severity: "critical",
+                meta: { reason: verify.reason, surface: "submit-code" },
+              });
+            }
+          }
+        } catch { /* noop */ }
+        return respond<SubmitResult>({ ok: false, error: `Invalid signature: ${verify.reason}`, diagnostics: { error_stage: "signature_invalid" } });
+      }
+    }
 
     // Server-side contest gate (defense in depth — the client also calls this
     // RPC, but a malicious client can bypass that check). Looks up the contest
