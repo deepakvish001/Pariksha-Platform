@@ -109,36 +109,48 @@ export default function QuestionBank() {
 // ─────────────────────────── HUB (cards per type) ───────────────────────────
 function HubView({ org }: { org: { id: string; name?: string } }) {
   const { data: questions } = useQuestions(org.id);
+  const { data: globalQuestions } = useGlobalQuestions();
+  const { isAdmin } = useUserRole();
   const base = useBasePath();
 
   const stats = useMemo(() => {
-    const byType: Record<string, { total: number; published: number; draft: number; archived: number }> = {};
-    TYPE_CARDS.forEach((c) => (byType[c.value] = { total: 0, published: 0, draft: 0, archived: 0 }));
-    let total = 0, published = 0, draft = 0, archived = 0;
+    const byType: Record<string, { total: number; published: number; draft: number; archived: number; premium: number }> = {};
+    TYPE_CARDS.forEach((c) => (byType[c.value] = { total: 0, published: 0, draft: 0, archived: 0, premium: 0 }));
+    let total = 0, published = 0, draft = 0, archived = 0, premium = 0;
     (questions ?? []).forEach((q) => {
       const m = (q.meta ?? {}) as { status?: string; archived?: boolean };
-      const bucket = byType[q.type] ?? (byType[q.type] = { total: 0, published: 0, draft: 0, archived: 0 });
+      const bucket = byType[q.type] ?? (byType[q.type] = { total: 0, published: 0, draft: 0, archived: 0, premium: 0 });
       bucket.total++; total++;
+      if ((q.tier ?? "free") === "premium") { bucket.premium++; premium++; }
       if (m.archived) { bucket.archived++; archived++; return; }
       if ((m.status ?? "published") === "draft") { bucket.draft++; draft++; } else { bucket.published++; published++; }
     });
-    return { byType, total, published, draft, archived };
+    return { byType, total, published, draft, archived, premium };
   }, [questions]);
+
+  const globalCount = globalQuestions?.length ?? 0;
 
   return (
     <OrgShell
       title="Question Bank"
       actions={
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to={`${base}/global`}>
+              <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+              Global Bank<span className="ml-1.5 text-xs opacity-70">{globalCount}</span>
+            </Link>
+          </Button>
           <AIGenerateDialog orgId={org.id} />
           <ImportQuestionsDialog orgId={org.id} />
         </div>
       }
     >
       {/* KPI strip */}
-      <div className="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="mb-5 grid grid-cols-2 sm:grid-cols-5 gap-2">
         {([
           { label: "Total", value: stats.total, tone: "text-foreground" },
+          { label: "Premium", value: stats.premium, tone: "text-amber-600 dark:text-amber-400" },
           { label: "Published", value: stats.published, tone: "text-emerald-600 dark:text-emerald-400" },
           { label: "Drafts", value: stats.draft, tone: "text-amber-600 dark:text-amber-400" },
           { label: "Archived", value: stats.archived, tone: "text-slate-500 dark:text-slate-400" },
@@ -150,11 +162,34 @@ function HubView({ org }: { org: { id: string; name?: string } }) {
         ))}
       </div>
 
+      {/* Admin / global bank callout */}
+      <div className="mb-5 b2b-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-amber-500/30">
+        <div className="h-10 w-10 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 grid place-items-center shrink-0">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold flex items-center gap-2">
+            Global Question Bank
+            <Badge variant="outline" className="text-[10px]">Curated</Badge>
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+            {isAdmin
+              ? "You're a super-admin. Add and edit questions in the shared global bank — every org can browse them."
+              : `Browse ${globalCount} curated question${globalCount === 1 ? "" : "s"} shared by Parikshaa admins and clone any into your bank.`}
+          </p>
+        </div>
+        <Button asChild size="sm" variant={isAdmin ? "default" : "outline"} className={isAdmin ? "bg-amber-500 hover:bg-amber-500/90 text-white" : ""}>
+          <Link to={`${base}/global`}>
+            {isAdmin ? "Open global bank" : "Browse global bank"}
+          </Link>
+        </Button>
+      </div>
+
       {/* Type cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {TYPE_CARDS.map((card) => {
           const Icon = TYPE_ICONS[card.icon] ?? Library;
-          const s = stats.byType[card.value] ?? { total: 0, published: 0, draft: 0, archived: 0 };
+          const s = stats.byType[card.value] ?? { total: 0, published: 0, draft: 0, archived: 0, premium: 0 };
           return (
             <div
               key={card.value}
@@ -176,9 +211,9 @@ function HubView({ org }: { org: { id: string; name?: string } }) {
               <div className="grid grid-cols-4 gap-1 text-center">
                 {[
                   { label: "Total", value: s.total, tone: "text-foreground" },
+                  { label: "★ Prem", value: s.premium, tone: "text-amber-600 dark:text-amber-400" },
                   { label: "Pub", value: s.published, tone: "text-emerald-600 dark:text-emerald-400" },
                   { label: "Draft", value: s.draft, tone: "text-amber-600 dark:text-amber-400" },
-                  { label: "Arch", value: s.archived, tone: "text-slate-500 dark:text-slate-400" },
                 ].map((m) => (
                   <div key={m.label} className="rounded-md bg-[hsl(var(--secondary))/0.5] px-2 py-1.5">
                     <div className={`text-sm font-semibold tabular-nums ${m.tone}`}>{m.value}</div>
