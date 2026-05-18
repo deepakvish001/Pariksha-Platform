@@ -642,17 +642,20 @@ function TestsStep({
   draft,
   patch,
   questionId,
+  wasPublished,
   ensureQuestion,
 }: {
   draft: Draft;
   patch: (p: Partial<Draft>) => void;
   questionId?: string;
+  wasPublished: boolean;
   ensureQuestion: () => Promise<string>;
 }) {
   return (
     <div className="space-y-5">
       <PersistedTestCases
         questionId={questionId}
+        wasPublished={wasPublished}
         ensureQuestion={ensureQuestion}
       />
 
