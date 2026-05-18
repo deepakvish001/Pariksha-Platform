@@ -250,7 +250,10 @@ export function SqlWizard({
       saving={saving}
       isLast={step === STEPS.length - 1}
       status={status}
-      onStatusChange={setStatus}
+      onStatusChange={(s) => {
+        setStatus(s);
+        void persist(s, { keepOpen: true });
+      }}
       publishErrors={publishErrors}
       lastSavedAt={lastSavedAt}
       history={<StatusHistoryPanel questionId={questionId} />}
