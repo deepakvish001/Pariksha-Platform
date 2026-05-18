@@ -251,6 +251,15 @@ export function CodingWizard({
       status={status}
       onStatusChange={setStatus}
       publishErrors={publishErrors}
+      publishedPreviewTitle="Candidate view · Coding question"
+      publishedPreview={
+        <CodingPublishedPreview
+          draft={draft}
+          sampleTests={(persistedTests ?? [])
+            .filter((t) => !t.is_hidden)
+            .map((t) => ({ input: t.input, expected_output: t.expected_output }))}
+        />
+      }
       rightPane={<CodingPreview draft={draft} />}
     >
       {step === 0 && <BasicsStep draft={draft} patch={patch} />}
