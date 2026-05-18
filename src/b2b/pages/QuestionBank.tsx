@@ -420,6 +420,7 @@ export default function QuestionBank() {
       title="Question Bank"
       actions={
         <div className="flex items-center gap-2">
+          <ExportBtn />
           <AIGenerateDialog orgId={org!.id} />
           <ImportQuestionsDialog orgId={org!.id} />
           <NewBtn />
