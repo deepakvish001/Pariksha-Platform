@@ -300,6 +300,28 @@ export function WizardShell({
           </DialogContent>
         </Dialog>
       )}
+
+      <AlertDialog open={confirmUnpublish} onOpenChange={setConfirmUnpublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this question?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Switching from Published back to Draft hides this question from candidates and removes it from any assessment that pulls live questions. In-flight attempts won't be affected, but you'll need to publish again before reusing it. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep published</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmUnpublish(false);
+                onStatusChange?.("draft");
+              }}
+            >
+              Move to draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
