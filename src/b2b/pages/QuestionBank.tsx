@@ -5,6 +5,8 @@ import { useMyOrganizations } from "../hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useQuestions,
+  useGlobalQuestions,
+  useCloneGlobalQuestion,
   useCreateQuestion,
   useUpdateQuestion,
   useDeleteQuestion,
@@ -18,6 +20,7 @@ import {
   type Question,
   type McqOption,
 } from "../hooks/useQuestions";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +102,7 @@ export default function QuestionBank() {
   return (
     <Routes>
       <Route index element={<HubView org={org!} />} />
+      <Route path="global" element={<GlobalBankView org={org!} />} />
       <Route path=":type" element={<ListView org={org!} />} />
       <Route path=":type/new" element={<NewView org={org!} />} />
       <Route path=":type/:id" element={<EditView org={org!} />} />
@@ -106,39 +110,153 @@ export default function QuestionBank() {
   );
 }
 
+// ─────────────────────────── GLOBAL BANK (shared, admin-curated) ───────────────────────────
+function GlobalBankView({ org }: { org: { id: string; name?: string } }) {
+  const { data: questions, isLoading } = useGlobalQuestions();
+  const { isAdmin } = useUserRole();
+  const clone = useCloneGlobalQuestion();
+  const base = useBasePath();
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | QuestionType>("all");
+
+  const filtered = useMemo(() => {
+    let list = questions ?? [];
+    if (typeFilter !== "all") list = list.filter((q) => q.type === typeFilter);
+    const s = search.trim().toLowerCase();
+    if (s) list = list.filter((q) => q.title.toLowerCase().includes(s) || (q.body_md ?? "").toLowerCase().includes(s));
+    return [...list].sort((a, b) => ((a.tier ?? "free") === "premium" ? 0 : 1) - ((b.tier ?? "free") === "premium" ? 0 : 1));
+  }, [questions, typeFilter, search]);
+
+  return (
+    <OrgShell
+      title="Global Question Bank"
+      actions={
+        <Button variant="ghost" size="sm" asChild>
+          <Link to={base}><ArrowLeft className="h-4 w-4 mr-1" /> Back to bank</Link>
+        </Button>
+      }
+    >
+      <div className="mb-4 b2b-card p-4 flex items-start gap-3 border-amber-500/30">
+        <Sparkles className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1 text-sm">
+          <div className="font-semibold">Curated by Parikshaa admins</div>
+          <p className="text-[hsl(var(--muted-foreground))] text-xs mt-0.5">
+            {isAdmin
+              ? "You can add, edit, and remove global questions here. Every org can browse them and clone into their own bank."
+              : "Browse questions shared across all orgs. Clone any question into your org to use it in assessments."}
+          </p>
+        </div>
+        {isAdmin && (
+          <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">Super-admin</Badge>
+        )}
+      </div>
+
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+          <SelectTrigger className="h-9 w-[180px] text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {TYPE_CARDS.map((c) => (<SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>))}
+          </SelectContent>
+        </Select>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search global questions…" className="pl-8 h-9 text-sm" />
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
+      ) : filtered.length === 0 ? (
+        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+          {questions?.length ? "No questions match your filters." : "The global bank is empty. Super-admins can add curated questions here."}
+        </div>
+      ) : (
+        <div className="b2b-card overflow-hidden divide-y divide-[hsl(var(--border))]">
+          {filtered.map((q) => {
+            const tier = (q.tier ?? "free") as "free" | "premium";
+            return (
+              <div key={q.id} className={`flex items-center gap-3 px-3 py-2.5 hover:bg-[hsl(var(--secondary))/0.4] ${tier === "premium" ? "border-l-2 border-l-amber-500/60" : ""}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="capitalize text-[10px]">{q.type.replace("_", " ")}</Badge>
+                    <span className="font-medium truncate">{q.title}</span>
+                    <TierBadge tier={tier} />
+                  </div>
+                  {q.body_md && (
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-1">{q.body_md}</p>
+                  )}
+                </div>
+                <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">{q.points} pts</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={clone.isPending}
+                  onClick={async () => {
+                    try {
+                      await clone.mutateAsync({ question_id: q.id, target_org: org.id });
+                      toast.success("Cloned into your bank");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Failed to clone");
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4 mr-1" /> Clone
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </OrgShell>
+  );
+}
+
 // ─────────────────────────── HUB (cards per type) ───────────────────────────
 function HubView({ org }: { org: { id: string; name?: string } }) {
   const { data: questions } = useQuestions(org.id);
+  const { data: globalQuestions } = useGlobalQuestions();
+  const { isAdmin } = useUserRole();
   const base = useBasePath();
 
   const stats = useMemo(() => {
-    const byType: Record<string, { total: number; published: number; draft: number; archived: number }> = {};
-    TYPE_CARDS.forEach((c) => (byType[c.value] = { total: 0, published: 0, draft: 0, archived: 0 }));
-    let total = 0, published = 0, draft = 0, archived = 0;
+    const byType: Record<string, { total: number; published: number; draft: number; archived: number; premium: number }> = {};
+    TYPE_CARDS.forEach((c) => (byType[c.value] = { total: 0, published: 0, draft: 0, archived: 0, premium: 0 }));
+    let total = 0, published = 0, draft = 0, archived = 0, premium = 0;
     (questions ?? []).forEach((q) => {
       const m = (q.meta ?? {}) as { status?: string; archived?: boolean };
-      const bucket = byType[q.type] ?? (byType[q.type] = { total: 0, published: 0, draft: 0, archived: 0 });
+      const bucket = byType[q.type] ?? (byType[q.type] = { total: 0, published: 0, draft: 0, archived: 0, premium: 0 });
       bucket.total++; total++;
+      if ((q.tier ?? "free") === "premium") { bucket.premium++; premium++; }
       if (m.archived) { bucket.archived++; archived++; return; }
       if ((m.status ?? "published") === "draft") { bucket.draft++; draft++; } else { bucket.published++; published++; }
     });
-    return { byType, total, published, draft, archived };
+    return { byType, total, published, draft, archived, premium };
   }, [questions]);
+
+  const globalCount = globalQuestions?.length ?? 0;
 
   return (
     <OrgShell
       title="Question Bank"
       actions={
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to={`${base}/global`}>
+              <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+              Global Bank<span className="ml-1.5 text-xs opacity-70">{globalCount}</span>
+            </Link>
+          </Button>
           <AIGenerateDialog orgId={org.id} />
           <ImportQuestionsDialog orgId={org.id} />
         </div>
       }
     >
       {/* KPI strip */}
-      <div className="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="mb-5 grid grid-cols-2 sm:grid-cols-5 gap-2">
         {([
           { label: "Total", value: stats.total, tone: "text-foreground" },
+          { label: "Premium", value: stats.premium, tone: "text-amber-600 dark:text-amber-400" },
           { label: "Published", value: stats.published, tone: "text-emerald-600 dark:text-emerald-400" },
           { label: "Drafts", value: stats.draft, tone: "text-amber-600 dark:text-amber-400" },
           { label: "Archived", value: stats.archived, tone: "text-slate-500 dark:text-slate-400" },
@@ -150,11 +268,34 @@ function HubView({ org }: { org: { id: string; name?: string } }) {
         ))}
       </div>
 
+      {/* Admin / global bank callout */}
+      <div className="mb-5 b2b-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-amber-500/30">
+        <div className="h-10 w-10 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 grid place-items-center shrink-0">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold flex items-center gap-2">
+            Global Question Bank
+            <Badge variant="outline" className="text-[10px]">Curated</Badge>
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+            {isAdmin
+              ? "You're a super-admin. Add and edit questions in the shared global bank — every org can browse them."
+              : `Browse ${globalCount} curated question${globalCount === 1 ? "" : "s"} shared by Parikshaa admins and clone any into your bank.`}
+          </p>
+        </div>
+        <Button asChild size="sm" variant={isAdmin ? "default" : "outline"} className={isAdmin ? "bg-amber-500 hover:bg-amber-500/90 text-white" : ""}>
+          <Link to={`${base}/global`}>
+            {isAdmin ? "Open global bank" : "Browse global bank"}
+          </Link>
+        </Button>
+      </div>
+
       {/* Type cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {TYPE_CARDS.map((card) => {
           const Icon = TYPE_ICONS[card.icon] ?? Library;
-          const s = stats.byType[card.value] ?? { total: 0, published: 0, draft: 0, archived: 0 };
+          const s = stats.byType[card.value] ?? { total: 0, published: 0, draft: 0, archived: 0, premium: 0 };
           return (
             <div
               key={card.value}
@@ -176,9 +317,9 @@ function HubView({ org }: { org: { id: string; name?: string } }) {
               <div className="grid grid-cols-4 gap-1 text-center">
                 {[
                   { label: "Total", value: s.total, tone: "text-foreground" },
+                  { label: "★ Prem", value: s.premium, tone: "text-amber-600 dark:text-amber-400" },
                   { label: "Pub", value: s.published, tone: "text-emerald-600 dark:text-emerald-400" },
                   { label: "Draft", value: s.draft, tone: "text-amber-600 dark:text-amber-400" },
-                  { label: "Arch", value: s.archived, tone: "text-slate-500 dark:text-slate-400" },
                 ].map((m) => (
                   <div key={m.label} className="rounded-md bg-[hsl(var(--secondary))/0.5] px-2 py-1.5">
                     <div className={`text-sm font-semibold tabular-nums ${m.tone}`}>{m.value}</div>
@@ -219,6 +360,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
   const qc = useQueryClient();
 
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published" | "archived">("all");
+  const [tierFilter, setTierFilter] = useState<"all" | "free" | "premium">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -289,6 +431,28 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
     }
   };
 
+  const setTier = async (q: Question, tier: "free" | "premium") => {
+    if ((q.tier ?? "free") === tier) return;
+    try {
+      await upd.mutateAsync({ id: q.id, patch: { tier } as Partial<Question> });
+      toast.success(`Marked as ${tier === "premium" ? "Premium" : "Free"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update tier");
+    }
+  };
+
+  const runBulkSetTier = async (tier: "free" | "premium") => {
+    if (selected.size === 0) return;
+    const ids = Array.from(selected);
+    const results = await Promise.allSettled(
+      ids.map((id) => upd.mutateAsync({ id, patch: { tier } as Partial<Question> })),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const ok = results.length - failed;
+    if (ok) toast.success(`Marked ${ok} as ${tier === "premium" ? "Premium" : "Free"}`);
+    if (failed) toast.error(`Failed ${failed}`);
+  };
+
   // Export (scoped to current type)
   const csvEscape = (v: unknown) => {
     if (v === null || v === undefined) return "";
@@ -346,6 +510,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
         list = list.filter((q) => (((q.meta as { status?: string } | null)?.status) ?? "published") === statusFilter);
       }
     }
+    if (tierFilter !== "all") list = list.filter((q) => (q.tier ?? "free") === tierFilter);
     const s = search.trim().toLowerCase();
     if (s) {
       list = list.filter((q) =>
@@ -353,8 +518,22 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
         (q.body_md ?? "").toLowerCase().includes(s) ||
         (q.language ?? "").toLowerCase().includes(s));
     }
-    return list;
-  }, [typeQuestions, statusFilter, search]);
+    // Sort: Premium pinned first, then by created_at desc (input order is already created_at desc)
+    return [...list].sort((a, b) => {
+      const ap = (a.tier ?? "free") === "premium" ? 0 : 1;
+      const bp = (b.tier ?? "free") === "premium" ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      return 0;
+    });
+  }, [typeQuestions, statusFilter, tierFilter, search]);
+
+  const tierCounts = useMemo(() => {
+    let premium = 0, free = 0;
+    for (const q of typeQuestions) {
+      if ((q.tier ?? "free") === "premium") premium++; else free++;
+    }
+    return { premium, free };
+  }, [typeQuestions]);
 
   const statusCounts = useMemo(() => {
     let draft = 0, published = 0, archived = 0, active = 0;
@@ -477,9 +656,21 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                 );
               })}
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…" className="pl-8 h-9 text-sm" />
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <Select value={tierFilter} onValueChange={(v) => setTierFilter(v as typeof tierFilter)}>
+                <SelectTrigger className="h-9 w-[140px] text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All tiers · {tierCounts.premium + tierCounts.free}</SelectItem>
+                  <SelectItem value="premium">★ Premium · {tierCounts.premium}</SelectItem>
+                  <SelectItem value="free">Free · {tierCounts.free}</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…" className="pl-8 h-9 text-sm" />
+              </div>
             </div>
           </div>
 
@@ -491,6 +682,15 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={clearSelection}><X className="h-4 w-4 mr-1" /> Clear</Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">Set tier</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => void runBulkSetTier("premium")}>★ Mark Premium</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => void runBulkSetTier("free")}>Mark Free</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="destructive" size="sm" onClick={() => setConfirmBulkDelete(true)} disabled={bulkDeleting}>
                   <Trash2 className="h-4 w-4 mr-1" />Delete {selected.size}
                 </Button>
@@ -505,6 +705,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
               <div className="hidden md:flex items-center gap-3 px-3 py-2 bg-[hsl(var(--secondary))/0.4] text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
                 <Checkbox checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false} onCheckedChange={toggleAllVisible} aria-label="Select all visible" className="shrink-0" />
                 <span className="flex-1">Title</span>
+                <span className="w-24">Tier</span>
                 <span className="w-16 text-right">Points</span>
                 <span className="w-24" />
               </div>
@@ -514,8 +715,9 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                 const archived = Boolean(meta.archived);
                 const diff = meta.difficulty;
                 const isSelected = selected.has(q.id);
+                const tier = (q.tier ?? "free") as "free" | "premium";
                 return (
-                  <div key={q.id} className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[hsl(var(--secondary))/0.4] ${isSelected ? "bg-[hsl(var(--primary))/0.06]" : ""} ${archived ? "opacity-70" : ""}`}>
+                  <div key={q.id} className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[hsl(var(--secondary))/0.4] ${isSelected ? "bg-[hsl(var(--primary))/0.06]" : ""} ${archived ? "opacity-70" : ""} ${tier === "premium" ? "border-l-2 border-l-amber-500/60" : ""}`}>
                     <Checkbox checked={isSelected} onCheckedChange={() => toggleOne(q.id)} aria-label={`Select ${q.title}`} className="shrink-0" />
                     <button onClick={() => navigate(`${base}/${typeKey}/${q.id}`)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -525,6 +727,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                         {diff && (
                           <Badge variant="outline" className={`capitalize ${diff === "easy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : diff === "hard" ? "border-rose-500/40 text-rose-600 dark:text-rose-400" : "border-amber-500/40 text-amber-600 dark:text-amber-400"}`}>{diff}</Badge>
                         )}
+                        <span className="md:hidden"><TierBadge tier={tier} /></span>
                       </div>
                       <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 flex items-center gap-2 flex-wrap">
                         {q.language && <span>{q.language}</span>}
@@ -533,13 +736,17 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                         ))}
                       </div>
                     </button>
+                    <span className="hidden md:flex w-24"><TierBadge tier={tier} /></span>
                     <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">{q.points}</span>
                     <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="sm" onClick={() => setTier(q, tier === "premium" ? "free" : "premium")} disabled={upd.isPending} title={tier === "premium" ? "Mark Free" : "Mark Premium"}>
+                        <Sparkles className={`h-4 w-4 ${tier === "premium" ? "text-amber-500" : ""}`} />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => duplicateQuestion(q)} disabled={duplicatingId === q.id} title="Duplicate question"><Copy className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => toggleArchive(q)} disabled={upd.isPending} title={archived ? "Restore question" : "Archive question"}>
                         {archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => { if (!confirm(`Delete "${q.title}"?`)) return; del.mutate({ id: q.id, org_id: q.org_id }); }} title="Delete question"><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => { if (!confirm(`Delete "${q.title}"?`)) return; if (q.org_id) del.mutate({ id: q.id, org_id: q.org_id }); }} title="Delete question"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </div>
                 );
@@ -611,6 +818,7 @@ function SimpleNewForm({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [points, setPoints] = useState(10);
+  const [tier, setTier] = useState<"free" | "premium">("free");
   const create = useCreateQuestion();
   const upsertOption = useUpsertMcqOption();
 
@@ -623,7 +831,7 @@ function SimpleNewForm({
       type === "fill_blanks" ? { blanks: [] } : {};
     const q = await create.mutateAsync({
       org_id: orgId, type, title: title.trim(),
-      body_md: body || undefined, points, meta,
+      body_md: body || undefined, points, meta, tier,
     });
     if (type === "true_false") {
       await upsertOption.mutateAsync({ question_id: q.id, body: "True", is_correct: true, order_index: 0 });
@@ -643,9 +851,18 @@ function SimpleNewForm({
         <Label>Prompt (Markdown)</Label>
         <Textarea value={body} onChange={(e) => setBody(e.target.value)} className="mt-1 min-h-[140px]" />
       </div>
-      <div>
-        <Label>Points</Label>
-        <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1 w-32" />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Points</Label>
+          <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1 w-32" />
+        </div>
+        <div>
+          <Label>Tier</Label>
+          <TierPicker value={tier} onChange={setTier} className="mt-1" />
+          <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
+            Premium questions are only attemptable by candidates with premium access.
+          </p>
+        </div>
       </div>
       {type === "true_false" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Two options (True / False) will be created. Set the correct one on the next screen.</p>}
       {type === "matching" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Add Left → Right pairs on the next screen.</p>}
@@ -660,6 +877,69 @@ function SimpleNewForm({
         </Button>
       </div>
     </div>
+  );
+}
+
+// ───────────────── Tier helpers ─────────────────
+function TierPicker({
+  value, onChange, className = "",
+}: { value: "free" | "premium"; onChange: (v: "free" | "premium") => void; className?: string }) {
+  return (
+    <div className={`inline-flex rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--secondary))/0.4] p-0.5 ${className}`}>
+      {(["free", "premium"] as const).map((t) => {
+        const active = value === t;
+        return (
+          <button
+            type="button"
+            key={t}
+            onClick={() => onChange(t)}
+            className={`px-3 h-8 rounded text-xs font-medium capitalize transition-colors ${
+              active
+                ? t === "premium"
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 shadow-sm"
+                  : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+            }`}
+          >
+            {t === "premium" ? "★ Premium" : "Free"}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TierBadge({ tier }: { tier: "free" | "premium" }) {
+  if (tier === "premium") {
+    return (
+      <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">
+        ★ Premium
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))]">
+      Free
+    </Badge>
+  );
+}
+
+function TierToggle({ question }: { question: Question }) {
+  const upd = useUpdateQuestion();
+  const tier = (question.tier ?? "free") as "free" | "premium";
+  return (
+    <TierPicker
+      value={tier}
+      onChange={async (next) => {
+        if (next === tier) return;
+        try {
+          await upd.mutateAsync({ id: question.id, patch: { tier: next } as Partial<Question> });
+          toast.success(`Marked as ${next === "premium" ? "Premium" : "Free"}`);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Failed to update tier");
+        }
+      }}
+    />
   );
 }
 
@@ -688,10 +968,21 @@ function EditView({ org }: { org: { id: string; name?: string } }) {
     );
   }
 
+  const tierBar = (
+    <div className="mb-4 b2b-card px-3 py-2 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-[hsl(var(--muted-foreground))]">Visibility tier:</span>
+        <TierBadge tier={(question.tier ?? "free") as "free" | "premium"} />
+      </div>
+      <TierToggle question={question} />
+    </div>
+  );
+
   // Coding & SQL use the existing multi-step wizard, full-page
   if (question.type === "coding") {
     return (
       <OrgShell title={`Edit · ${question.title}`} actions={<Button variant="ghost" size="sm" asChild><Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link></Button>}>
+        {tierBar}
         <div className="b2b-card p-4 md:p-6">
           <CodingWizard orgId={org.id} initial={question} onDone={backToList} onCancel={backToList} />
         </div>
@@ -701,6 +992,7 @@ function EditView({ org }: { org: { id: string; name?: string } }) {
   if (question.type === "sql") {
     return (
       <OrgShell title={`Edit · ${question.title}`} actions={<Button variant="ghost" size="sm" asChild><Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link></Button>}>
+        {tierBar}
         <div className="b2b-card p-4 md:p-6">
           <SqlWizard orgId={org.id} initial={question} onDone={backToList} onCancel={backToList} />
         </div>
@@ -718,6 +1010,7 @@ function EditView({ org }: { org: { id: string; name?: string } }) {
         </Button>
       }
     >
+      {tierBar}
       <div className="b2b-card p-4 md:p-6 space-y-5">
         <div className="flex items-center gap-2">
           <Badge variant="outline">{question.type}</Badge>

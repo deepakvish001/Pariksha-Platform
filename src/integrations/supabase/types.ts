@@ -5929,6 +5929,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_premium: boolean
           suspended_at: string | null
           updated_at: string
           user_id: string
@@ -5938,6 +5939,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_premium?: boolean
           suspended_at?: string | null
           updated_at?: string
           user_id: string
@@ -5947,6 +5949,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_premium?: boolean
           suspended_at?: string | null
           updated_at?: string
           user_id?: string
@@ -6067,12 +6070,15 @@ export type Database = {
           body_md: string | null
           created_at: string
           created_by: string
+          global_curated_by: string | null
           id: string
+          is_global: boolean
           language: string | null
           meta: Json
-          org_id: string
+          org_id: string | null
           points: number
           starter_code: string | null
+          tier: string
           title: string
           type: Database["public"]["Enums"]["question_type"]
           updated_at: string
@@ -6081,12 +6087,15 @@ export type Database = {
           body_md?: string | null
           created_at?: string
           created_by?: string
+          global_curated_by?: string | null
           id?: string
+          is_global?: boolean
           language?: string | null
           meta?: Json
-          org_id: string
+          org_id?: string | null
           points?: number
           starter_code?: string | null
+          tier?: string
           title: string
           type: Database["public"]["Enums"]["question_type"]
           updated_at?: string
@@ -6095,12 +6104,15 @@ export type Database = {
           body_md?: string | null
           created_at?: string
           created_by?: string
+          global_curated_by?: string | null
           id?: string
+          is_global?: boolean
           language?: string | null
           meta?: Json
-          org_id?: string
+          org_id?: string | null
           points?: number
           starter_code?: string | null
+          tier?: string
           title?: string
           type?: Database["public"]["Enums"]["question_type"]
           updated_at?: string
@@ -8966,6 +8978,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      clone_global_question: {
+        Args: { _question_id: string; _target_org: string }
+        Returns: string
+      }
       contest_accept_honor_code: {
         Args: { _contest_id: string }
         Returns: undefined
@@ -9364,6 +9380,7 @@ export type Database = {
           sample: Json
         }[]
       }
+      question_is_global: { Args: { _qid: string }; Returns: boolean }
       question_org: { Args: { _question: string }; Returns: string }
       recompute_contest_leaderboard: {
         Args: { _contest_id: string }
@@ -9468,6 +9485,7 @@ export type Database = {
         }
       }
       test_invite_source_heuristics: { Args: never; Returns: Json }
+      user_is_premium: { Args: { _user_id: string }; Returns: boolean }
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
       validate_contest_submission: {
         Args: { _contest_id: string; _problem_slug: string }

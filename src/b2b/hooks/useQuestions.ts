@@ -12,9 +12,11 @@ export type QuestionType =
   | "numerical"
   | "fill_blanks";
 
+export type QuestionTier = "free" | "premium";
+
 export type Question = {
   id: string;
-  org_id: string;
+  org_id: string | null;
   type: QuestionType;
   title: string;
   body_md: string | null;
@@ -25,6 +27,8 @@ export type Question = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  tier: QuestionTier;
+  is_global: boolean;
 };
 
 export type McqOption = {
@@ -59,6 +63,37 @@ export function useQuestions(orgId?: string, type?: QuestionType) {
   });
 }
 
+/** Curated global question bank (visible to everyone authenticated, writable by super-admin only). */
+export function useGlobalQuestions(type?: QuestionType) {
+  return useQuery({
+    queryKey: ["b2b", "questions", "global", type ?? "all"],
+    queryFn: async (): Promise<Question[]> => {
+      let q = supabase.from("questions").select("*").eq("is_global", true).order("created_at", { ascending: false });
+      if (type) q = q.eq("type", type);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as Question[];
+    },
+  });
+}
+
+export function useCloneGlobalQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ question_id, target_org }: { question_id: string; target_org: string }) => {
+      const { data, error } = await supabase.rpc("clone_global_question", {
+        _question_id: question_id,
+        _target_org: target_org,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: (_id, vars) => {
+      qc.invalidateQueries({ queryKey: ["b2b", "questions", vars.target_org] });
+    },
+  });
+}
+
 export function useQuestion(id?: string) {
   return useQuery({
     queryKey: ["b2b", "question", id],
@@ -75,7 +110,7 @@ export function useCreateQuestion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      org_id: string;
+      org_id: string | null;
       type: QuestionType;
       title: string;
       body_md?: string;
@@ -83,11 +118,13 @@ export function useCreateQuestion() {
       starter_code?: string;
       points?: number;
       meta?: Record<string, unknown>;
+      tier?: QuestionTier;
+      is_global?: boolean;
     }) => {
       const { data, error } = await supabase
         .from("questions")
         .insert({
-          org_id: input.org_id,
+          org_id: input.is_global ? null : input.org_id,
           type: input.type,
           title: input.title,
           body_md: input.body_md ?? null,
@@ -95,14 +132,17 @@ export function useCreateQuestion() {
           starter_code: input.starter_code ?? null,
           points: input.points ?? 10,
           meta: (input.meta ?? {}) as never,
-        })
+          tier: input.tier ?? "free",
+          is_global: input.is_global ?? false,
+        } as never)
         .select("*")
         .single();
       if (error) throw error;
       return data as Question;
     },
     onSuccess: (q) => {
-      qc.invalidateQueries({ queryKey: ["b2b", "questions", q.org_id] });
+      if (q.is_global) qc.invalidateQueries({ queryKey: ["b2b", "questions", "global"] });
+      else qc.invalidateQueries({ queryKey: ["b2b", "questions", q.org_id] });
     },
   });
 }

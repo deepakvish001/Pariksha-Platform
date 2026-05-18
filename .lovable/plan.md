@@ -1,65 +1,70 @@
-
 ## Goal
-Turn `/b2b/question-bank` into a clean **hub of cards (one per question type)**, and move every question action (list, create, edit) into its **own full page** instead of popup dialogs.
 
-## New layout
+1. Tag every question as **Free** or **Premium** (chosen at create / upload / AI-generate time).
+2. Show the tier as a badge in the Question Bank list + filter; the tabular list emphasizes Premium vs Normal.
+3. Gate candidate access — Premium questions are only attemptable by candidates whose org/account has `premium` access.
+4. Make `/b2b/question-bank` double as a **Super-Admin curated global bank**: super-admins see and edit a shared pool that every org can pull from.
 
-### 1. Hub page — `/b2b/question-bank`
-A grid of 9 cards, one per type from `TYPE_CARDS` (Coding, MCQ, SQL, True/False, Short answer, Numerical, Matching, Fill in the blanks, Subjective).
+## Data model (one migration)
 
-Each card shows:
-- Type icon + label + short description
-- Counts: Total · Published · Drafts · Archived (computed from `useQuestions(org.id)` filtered by type)
-- Two actions: **Open** (→ list page) and **+ New** (→ new page for that type)
+`questions` table — add:
+- `tier text not null default 'free' check (tier in ('free','premium'))`
+- `is_global boolean not null default false` — true rows belong to the curated global bank (no org gate)
+- `global_curated_by uuid null` (super-admin user id, for audit)
+- index on `(tier)` and partial index on `(is_global) where is_global = true`
 
-Top of the hub also keeps:
-- KPI strip (Total / Published / Drafts / Archived across all types)
-- Header actions: Import, AI Generate, Export ▾ (unchanged behavior)
+RLS additions on `questions`:
+- Existing org policies stay for `is_global = false`.
+- New SELECT policy: anyone authenticated may read rows where `is_global = true`.
+- New INSERT/UPDATE/DELETE policy for `is_global = true`: only `has_role(auth.uid(),'admin')` (existing `user_roles` table + `has_role` function).
+- Mirror policies on `mcq_options` and `question_test_cases` keyed off parent `questions.is_global`.
 
-```text
-┌ Question Bank ───── [Export▾] [Import] [AI ✨] ┐
-│ Total 124  Published 98  Drafts 21  Archived 5 │
-│                                                │
-│ ┌── Coding ──┐ ┌── MCQ ─────┐ ┌── SQL ─────┐  │
-│ │ 42 total   │ │ 31 total   │ │ 18 total   │  │
-│ │ 30 pub …   │ │ 25 pub …   │ │ 12 pub …   │  │
-│ │ [Open] [+] │ │ [Open] [+] │ │ [Open] [+] │  │
-│ └────────────┘ └────────────┘ └────────────┘  │
-│ … 6 more type cards …                          │
-└───────────────────────────────────────────────┘
-```
+Candidate gating:
+- Add `profiles.is_premium boolean default false` (or reuse if already present — will check before migration).
+- Add SQL helper `public.user_is_premium(uid uuid) returns boolean security definer`.
+- On the assessment attempt path (server-side check in the existing attempts/serve-paper edge function): if question.tier = 'premium' and `!user_is_premium(candidate)`, omit/replace with a "Premium locked" placeholder.
 
-### 2. Type list page — `/b2b/question-bank/:type`
-Reuses the current dense table layout (filters, search, status tabs, bulk bar, row actions), but **scoped to one type** (no type selector). Adds a back link to the hub.
+## Frontend changes (all in `src/b2b`)
 
-- All current features preserved: search, status tabs, bulk select/delete, duplicate, archive/unarchive, row delete.
-- Row click → `/b2b/question-bank/:type/:id/edit` (full page, not dialog).
-- "+ New" button → `/b2b/question-bank/:type/new`.
+**Types**
+- Extend `Question` in `useQuestions.ts` with `tier: 'free'|'premium'` and `is_global: boolean`.
+- New hook flag: `useQuestions(orgId, type, { scope: 'org' | 'global' | 'all' })`. Super-admin in admin mode uses `'global'`; non-admin uses `'org'`.
 
-### 3. New question page — `/b2b/question-bank/:type/new`
-Hosts the existing wizard content as a full-page form (reuses `QuestionWizardDialog` internals rendered without the `Dialog` shell). On save → redirect to the edit page or back to the type list.
+**Create / Upload / AI Generate — ask tier**
+- `SimpleNewForm` and `CodingWizard`/`SqlWizard`: add a small **Tier** segmented control (Free / Premium) in the meta panel, default Free.
+- CSV/JSON import on Question Bank: parse optional `tier` column; if missing show a one-time dialog "Set tier for imported questions" with Free / Premium / Per-row.
+- AI Generate flow: add Tier toggle in the prompt panel, persisted into the generated rows.
 
-### 4. Edit question page — `/b2b/question-bank/:type/:id/edit`
-Hosts the existing `QuestionEditorDialog` body as a full-page editor with the same sections (basics, options/test cases, etc.). Back link returns to the type list. Removes the modal entirely.
+**Hub + List UI**
+- Hub cards already show counts per type — add a small "Premium / Free" mini-split below counts.
+- List view (`ListView` in `QuestionBank.tsx`):
+  - New filter dropdown **Tier**: All / Premium only / Free only (default All, sorted Premium-first).
+  - Default sort: Premium rows pinned to top, then by `created_at desc` (user phrased this as "in tabular list show premium not free one normal questions and premium questions" — interpreted as Premium grouped/highlighted above normal).
+  - New column **Tier** with a gold `Premium` pill and a muted `Free` pill (semantic tokens, not hardcoded colors — extend `--accent-premium` in `index.css`).
+  - Row action + bulk action: **Set tier → Free / Premium**.
 
-## Technical notes
+**Admin mode (super-admin only)**
+- Detect via existing `useUserRole().isAdmin`.
+- Add a top-of-page switch on `/b2b/question-bank`: **Org bank ↔ Global bank**. Hidden for non-admins.
+- Global mode: `useQuestions` scope `'global'`, writes set `is_global = true` and skip `org_id` (column made nullable for global rows OR uses a sentinel global org — will use nullable `org_id` with policy `org_id is null and is_global`).
+- Org users get a read-only "Browse global bank" tab inside the hub that lets them **Clone to org** (server function `clone_global_question(qid, target_org)` copies row + options + tests into their org, tier preserved).
 
-- **Routes** in `src/App.tsx` (both `/b2b/...` and tenant `:slug/...` blocks):
-  - `question-bank` → `QuestionBankHub`
-  - `question-bank/:type` → `QuestionBankList`
-  - `question-bank/:type/new` → `QuestionEditorPage` (create mode)
-  - `question-bank/:type/:id/edit` → `QuestionEditorPage` (edit mode)
-- **File split** under `src/b2b/pages/question-bank/`:
-  - `Hub.tsx` — new card grid + KPI + header actions (Import/AI/Export reused as-is).
-  - `List.tsx` — extracted list/table from current `QuestionBank.tsx`, scoped by `useParams().type`.
-  - `Editor.tsx` — full-page wrapper around the wizard / legacy editor body.
-- Refactor `QuestionWizardDialog` into a `<QuestionWizard />` body + a thin dialog wrapper, so the page version can render the same body without `Dialog`. Same for `QuestionEditorDialog`.
-- Keep `useQuestions`, duplicate/archive/export logic untouched — moved into the list page.
-- `OrgShell` sidebar entry `Question Bank` keeps the same `/b2b/question-bank` href.
-- Empty/loading states preserved per page.
+**Editor**
+- `EditView`: show Tier control. In global mode it edits the global row; in org mode it edits the org row.
 
 ## Out of scope
-- No schema, RLS, or hook changes.
-- No new features (sorting, pagination, saved views).
-- Import / AI Generate / Export logic unchanged — they stay on the hub header.
-- No design-system color changes; uses existing semantic tokens.
+- Billing / actually granting `profiles.is_premium`. The toggle exists; payment flow is separate.
+- Changing existing assessment authoring UI beyond what's needed to keep paper generation honest.
+- Bulk migration of existing questions — they all default to `tier='free'`, `is_global=false`.
+
+## Files touched
+
+- migration (new) — schema + RLS + `clone_global_question` RPC + `user_is_premium` helper
+- `src/b2b/hooks/useQuestions.ts` — types, scope param, clone mutation
+- `src/b2b/pages/QuestionBank.tsx` — Tier filter, column, admin scope switch, bulk action, hub split
+- `src/b2b/components/question-bank/QuestionWizardDialog.tsx` (+ Coding/Sql wizards + SimpleNewForm + AI Generate panel) — Tier control
+- Import CSV/JSON parser inside `QuestionBank.tsx` — tier handling
+- `src/b2b/hooks/usePermissions.ts` — no change; reuse `useUserRole`
+- Assessment paper serve edge function — premium gate (will read and patch in the build step)
+
+## Approve to proceed and I'll run the migration first, then ship the UI.
