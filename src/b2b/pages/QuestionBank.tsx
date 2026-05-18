@@ -364,6 +364,7 @@ export default function QuestionBank() {
                   { value: "all", label: "All" },
                   { value: "draft", label: "Drafts" },
                   { value: "published", label: "Published" },
+                  { value: "archived", label: "Archived" },
                 ] as const).map((opt) => {
                   const active = statusFilter === opt.value;
                   const n = statusCounts[opt.value];
