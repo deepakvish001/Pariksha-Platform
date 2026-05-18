@@ -36,6 +36,7 @@ export function WizardShell({
   publishedPreview,
   publishedPreviewTitle,
   lastSavedAt,
+  history,
 }: {
   steps: WizardStep[];
   current: number;
@@ -55,10 +56,12 @@ export function WizardShell({
   publishedPreview?: ReactNode;
   publishedPreviewTitle?: string;
   lastSavedAt?: Date | null;
+  history?: ReactNode;
 }) {
   const isPublished = status === "published";
   const blockedByValidation = isPublished && (publishErrors?.length ?? 0) > 0;
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   // Tick once a minute so the "Saved Xs ago" label stays current.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
