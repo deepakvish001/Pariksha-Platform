@@ -84,14 +84,19 @@ export default function AttemptDetail() {
   if (error) return <OrgShell title="Attempt"><div className="b2b-card p-6">Failed: {(error as Error).message}</div></OrgShell>;
   if (!data || !assessment) return <Navigate to={paths.b2b.assessmentsList(basePath)} replace />;
 
-  // Canonicalise URL: redirect UUIDs to slug form.
+  // Canonicalise URL: redirect UUIDs / missing candidate prefix to canonical form.
   const canonicalAssessmentSeg = assessment.slug ?? assessment.id;
-  const canonicalAttemptSeg = data.attempt.slug ?? data.attempt.id;
+  const candidateForUrl = {
+    name: (data.attempt.candidate_details as any)?.fullName ?? (data.attempt.candidate_details as any)?.name ?? data.attempt.invite?.name ?? null,
+    email: (data.attempt.candidate_details as any)?.email ?? data.attempt.invite?.email ?? null,
+    external_id: (data.attempt.candidate_details as any)?.externalId ?? data.attempt.invite?.external_id ?? null,
+  };
+  const canonicalAttemptSeg = attemptSegment(data.attempt, candidateForUrl);
   if (
     (idOrSlug && idOrSlug !== canonicalAssessmentSeg) ||
     (attemptIdOrSlug && attemptIdOrSlug !== canonicalAttemptSeg)
   ) {
-    return <Navigate to={paths.b2b.attempt(basePath, assessment, data.attempt)} replace />;
+    return <Navigate to={paths.b2b.attempt(basePath, assessment, data.attempt, candidateForUrl)} replace />;
   }
 
   const cand = data.attempt.invite;
