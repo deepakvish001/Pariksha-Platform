@@ -55,6 +55,8 @@ export default function ContestPlayProblem() {
     sessionId: session.sessionId ?? null,
     enabled: session.hasActive && !termination.terminated,
   });
+  // Layer 4 — keystroke + mouse rhythm baselining (silent, no UI).
+  useBehavioralBaseline(session.sessionId ?? null, session.hasActive && !termination.terminated);
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
   const { user } = useAuth();
