@@ -166,6 +166,17 @@ export function WizardShell({
         )}
 
         <div className="flex items-center gap-2">
+          {publishedPreview && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+              disabled={saving}
+              title="Preview the question exactly as a candidate will see it after publishing"
+            >
+              <Eye className="h-4 w-4 mr-1" /> Preview as candidate
+            </Button>
+          )}
           {onSaveDraft && !onStatusChange && (
             <Button variant="outline" onClick={onSaveDraft} disabled={saving}>
               {saving ? "Saving…" : "Save draft"}
@@ -197,6 +208,23 @@ export function WizardShell({
           )}
         </div>
       </div>
+
+      {publishedPreview && (
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                {publishedPreviewTitle ?? "Candidate view"}
+              </DialogTitle>
+              <DialogDescription>
+                This is exactly what candidates see after the question is published. Hidden tests, the reference solution, and any other reviewer-only fields are excluded.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-2">{publishedPreview}</div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
