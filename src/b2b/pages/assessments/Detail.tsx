@@ -592,7 +592,7 @@ function ResultsPanel({ assessment, basePath }: { assessment: { id: string; slug
             <div className="col-span-2">{a.score ?? <span className="text-[hsl(var(--muted-foreground))]">—</span>}</div>
             <div className="col-span-2">{a.integrity_score}</div>
             <div className="col-span-2 text-right">
-              <Link to={paths.b2b.attempt(basePath, assessment, a)}>
+              <Link to={paths.b2b.attempt(basePath, assessment, a, { name: a.invite?.name, email: a.invite?.email, external_id: a.invite?.external_id })}>
                 <Button size="sm" variant="outline">Review</Button>
               </Link>
             </div>

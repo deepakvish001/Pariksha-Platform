@@ -17,7 +17,7 @@ import AttemptSosHistoryPanel from "../../components/AttemptSosHistoryPanel";
 import { AttemptFeedbackPanel } from "../../components/AttemptFeedbackPanel";
 import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
-import { paths } from "@/lib/routing/paths";
+import { paths, parseAttemptSegment, attemptSegment } from "@/lib/routing/paths";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -37,9 +37,11 @@ export default function AttemptDetail() {
   const navigate = useNavigate();
   const { org } = useCurrentOrg();
   const basePath = useOrgBasePath();
+  // The attempt segment may be prefixed with a candidate slug; strip it for lookup.
+  const attemptKey = parseAttemptSegment(attemptIdOrSlug);
   // Resolve assessment first so the attempt query can be scoped by it.
   const { data: assessment } = useAssessment(idOrSlug, org?.id);
-  const { data, isLoading, error } = useAttemptDetail(attemptIdOrSlug, assessment?.id);
+  const { data, isLoading, error } = useAttemptDetail(attemptKey, assessment?.id);
   const grade = useGradeAnswer();
   const finalize = useFinalizeAttemptScore();
   const { data: events } = useAttemptEvents(data?.attempt.id);
@@ -82,14 +84,19 @@ export default function AttemptDetail() {
   if (error) return <OrgShell title="Attempt"><div className="b2b-card p-6">Failed: {(error as Error).message}</div></OrgShell>;
   if (!data || !assessment) return <Navigate to={paths.b2b.assessmentsList(basePath)} replace />;
 
-  // Canonicalise URL: redirect UUIDs to slug form.
+  // Canonicalise URL: redirect UUIDs / missing candidate prefix to canonical form.
   const canonicalAssessmentSeg = assessment.slug ?? assessment.id;
-  const canonicalAttemptSeg = data.attempt.slug ?? data.attempt.id;
+  const candidateForUrl = {
+    name: (data.attempt.candidate_details as any)?.fullName ?? (data.attempt.candidate_details as any)?.name ?? data.attempt.invite?.name ?? null,
+    email: (data.attempt.candidate_details as any)?.email ?? data.attempt.invite?.email ?? null,
+    external_id: (data.attempt.candidate_details as any)?.externalId ?? data.attempt.invite?.external_id ?? null,
+  };
+  const canonicalAttemptSeg = attemptSegment(data.attempt, candidateForUrl);
   if (
     (idOrSlug && idOrSlug !== canonicalAssessmentSeg) ||
     (attemptIdOrSlug && attemptIdOrSlug !== canonicalAttemptSeg)
   ) {
-    return <Navigate to={paths.b2b.attempt(basePath, assessment, data.attempt)} replace />;
+    return <Navigate to={paths.b2b.attempt(basePath, assessment, data.attempt, candidateForUrl)} replace />;
   }
 
   const cand = data.attempt.invite;
