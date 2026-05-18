@@ -179,6 +179,7 @@ export function SqlWizard({
       isLast={step === STEPS.length - 1}
       status={status}
       onStatusChange={setStatus}
+      publishErrors={publishErrors}
       rightPane={
         <div className="space-y-3 text-xs">
           <div>
