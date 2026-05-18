@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Check, Cloud, CloudOff, Eye } from "lucide-react";
+import { Check, Cloud, CloudOff, Eye, History } from "lucide-react";
 import { formatRelative } from "./useWizardAutosave";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
