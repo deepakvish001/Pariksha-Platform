@@ -198,6 +198,7 @@ export function SqlWizard({
         const q = await create.mutateAsync(payload);
         setQuestionId(q.id);
       }
+      clearAutosave(autosaveKey);
       toast.success(status === "published" ? "Question published" : "Draft saved");
       if (status === "published") onDone();
     } catch (e: unknown) {
