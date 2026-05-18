@@ -21,6 +21,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { bucketAssessments, formatWindow, getScheduleState, type ScheduleState } from "../../lib/assessmentSchedule";
 import { useFlaggedAcrossOrg } from "../../hooks/useAssessmentLive";
+import { useCan } from "../../hooks/usePermissions";
 import { ShieldAlert } from "lucide-react";
 
 type TabKey = "live" | "upcoming" | "drafts" | "closed" | "all";
@@ -58,6 +59,7 @@ export default function B2BAssessmentsList() {
   const org = orgs?.[0];
   const { data: assessments, isLoading: aLoading } = useAssessments(org?.id);
   const { data: flagged } = useFlaggedAcrossOrg(org?.id, 5);
+  const canWrite = useCan(org?.id, "assessments.write").allowed;
 
   const [tab, setTab] = useState<TabKey>("live");
   const [query, setQuery] = useState("");
@@ -89,12 +91,14 @@ export default function B2BAssessmentsList() {
     <OrgShell
       title="Assessments"
       actions={
-        <Button
-          className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-          onClick={() => navigate("/b2b/assessments/new")}
-        >
-          <Plus className="h-4 w-4 mr-1" /> New assessment
-        </Button>
+        canWrite ? (
+          <Button
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+            onClick={() => navigate("/b2b/assessments/new")}
+          >
+            <Plus className="h-4 w-4 mr-1" /> New assessment
+          </Button>
+        ) : null
       }
     >
       <div className="space-y-4">
