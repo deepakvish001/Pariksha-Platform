@@ -119,6 +119,8 @@ export default function AdminSessionForensics() {
         </div>
       )}
 
+      <SessionSealPanel sessionId={sessionId!} />
+
       <Tabs defaultValue="timeline">
         <TabsList>
           <TabsTrigger value="timeline">Code timeline</TabsTrigger>
