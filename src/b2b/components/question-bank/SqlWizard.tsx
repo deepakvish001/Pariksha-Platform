@@ -129,14 +129,29 @@ export function SqlWizard({
   const publishErrors = useMemo(() => {
     const errs: string[] = [];
     if (!draft.title.trim()) errs.push("Title is required.");
-    if (draft.schema_ddl.trim().length < 10)
+    if (draft.body_md.trim().length < 10)
+      errs.push("Add a prompt describing what the candidate should query (≥ 10 chars).");
+
+    const ddl = draft.schema_ddl.trim();
+    if (ddl.length < 10)
       errs.push("Schema DDL must include at least one CREATE TABLE.");
-    if (!/create\s+table/i.test(draft.schema_ddl))
+    else if (!/create\s+table/i.test(ddl))
       errs.push("Schema must contain a CREATE TABLE statement.");
-    if (!draft.reference_query.trim())
-      errs.push("Reference query is required.");
-    else if (!/select/i.test(draft.reference_query))
-      errs.push("Reference query must be a SELECT statement.");
+
+    if (!draft.seed_sql.trim() || !/insert\s+into/i.test(draft.seed_sql))
+      errs.push("Add seed data (at least one INSERT INTO) so the reference query has rows to return.");
+
+    const ref = draft.reference_query.trim();
+    if (!ref) errs.push("Reference query is required.");
+    else {
+      if (!/select/i.test(ref))
+        errs.push("Reference query must be a SELECT statement.");
+      if (!/\bfrom\b/i.test(ref))
+        errs.push("Reference query must include a FROM clause.");
+      if (ref.length < 15)
+        errs.push("Reference query looks too short — provide the full working query.");
+    }
+
     if (draft.points < 1) errs.push("Points must be at least 1.");
     return errs;
   }, [draft]);
@@ -173,6 +188,16 @@ export function SqlWizard({
   });
 
   const persist = async (status: "draft" | "published") => {
+    if (status === "published" && publishErrors.length > 0) {
+      toast.error(
+        `Can't publish yet — ${publishErrors.length} required field${
+          publishErrors.length === 1 ? "" : "s"
+        } incomplete. ${publishErrors[0]}`,
+      );
+      const firstIncomplete = canStep.findIndex((ok) => !ok);
+      if (firstIncomplete >= 0) setStep(firstIncomplete);
+      return;
+    }
     if (riskyChanges.length > 0) {
       const proceed = window.confirm(
         `Heads up — you're editing a PUBLISHED SQL question and changed fields that affect grading:\n\n• ${riskyChanges.join(
