@@ -633,7 +633,10 @@ export default function Player() {
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
               {q ? (
-                isWideQuestion ? (
+                (q.meta as { locked?: boolean; tier?: string } | null)?.locked &&
+                (q.meta as { tier?: string } | null)?.tier === "premium" ? (
+                  <PremiumLockedQuestion title={q.title} />
+                ) : isWideQuestion ? (
                   q.type === "coding" ? (
                     <CodingQuestion
                       question={q}
