@@ -305,9 +305,11 @@ export default function AttemptDetail() {
 
       <div className="space-y-4">
         {data.answers.length === 0 && (
-          <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-            Candidate did not answer any questions.
-          </div>
+          <EmptyState
+            icon={FileQuestion}
+            title="No answers submitted"
+            description="The candidate did not answer any questions during this attempt."
+          />
         )}
         {data.answers.map((a, i) => {
           const q = a.question;
