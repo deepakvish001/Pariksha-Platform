@@ -50,7 +50,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Library, Search, Upload, Sparkles, X } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
 
@@ -87,6 +88,69 @@ export default function QuestionBank() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  const duplicateQuestion = async (q: Question) => {
+    setDuplicatingId(q.id);
+    try {
+      const { data: newQ, error: qErr } = await supabase
+        .from("questions")
+        .insert({
+          org_id: q.org_id,
+          type: q.type,
+          title: `${q.title} (copy)`,
+          body_md: q.body_md,
+          language: q.language,
+          starter_code: q.starter_code,
+          points: q.points,
+          meta: (q.meta ?? {}) as never,
+        })
+        .select("*")
+        .single();
+      if (qErr || !newQ) throw qErr ?? new Error("Failed to duplicate question");
+
+      const [opts, tests] = await Promise.all([
+        supabase.from("mcq_options").select("*").eq("question_id", q.id).order("order_index", { ascending: true }),
+        supabase.from("question_test_cases").select("*").eq("question_id", q.id).order("order_index", { ascending: true }),
+      ]);
+      if (opts.error) throw opts.error;
+      if (tests.error) throw tests.error;
+
+      if (opts.data?.length) {
+        const { error } = await supabase.from("mcq_options").insert(
+          opts.data.map((o) => ({
+            question_id: newQ.id,
+            body: o.body,
+            is_correct: o.is_correct,
+            order_index: o.order_index,
+          })),
+        );
+        if (error) throw error;
+      }
+      if (tests.data?.length) {
+        const { error } = await supabase.from("question_test_cases").insert(
+          tests.data.map((t) => ({
+            question_id: newQ.id,
+            input: t.input,
+            expected_output: t.expected_output,
+            is_hidden: t.is_hidden,
+            weight: t.weight,
+            order_index: t.order_index,
+          })),
+        );
+        if (error) throw error;
+      }
+
+      qc.invalidateQueries({ queryKey: ["b2b", "questions", q.org_id] });
+      toast.success("Question duplicated");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to duplicate question";
+      toast.error(msg);
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
 
   const filtered = useMemo(() => {
     let list = questions ?? [];
@@ -393,6 +457,15 @@ export default function QuestionBank() {
                         ))}
                       </div>
                     </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => duplicateQuestion(q)}
+                      disabled={duplicatingId === q.id}
+                      title="Duplicate question"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
