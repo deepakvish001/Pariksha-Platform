@@ -132,57 +132,39 @@ function KpiCard({
       : `${directionWord} ${delta.value} ${unitLabel} vs the previous ${windowDays}-day window.`
     : `No baseline yet — there was no data in the previous ${windowDays}-day window.`;
 
-  return (
-    <GlassCard>
-      <div className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
-              {label}
-            </p>
-            <TooltipProvider delayDuration={150}>
-              <UiTooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={`How ${label} is calculated`}
-                    className="text-muted-foreground/60 hover:text-foreground transition-colors"
-                  >
-                    <Info className="h-3 w-3" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">
-                  {tooltipBody}
-                </TooltipContent>
-              </UiTooltip>
-            </TooltipProvider>
-          </div>
-          <div className="h-9 w-9 rounded-xl bg-[hsl(var(--primary))]/10 ring-1 ring-[hsl(var(--primary))]/20 grid place-items-center">
-            <Icon className="h-4 w-4 text-[hsl(var(--primary))]" />
-          </div>
-        </div>
+  const unitSuffix = delta?.unit === "pts" ? "pts" : "%";
+  const trendLabel = delta
+    ? delta.direction === "flat"
+      ? `Flat vs prev ${windowDays}d`
+      : `${delta.direction === "up" ? "+" : "-"}${delta.value}${unitSuffix} vs prev ${windowDays}d`
+    : undefined;
+  const tone: "default" | "success" | "danger" =
+    delta?.direction === "up" ? "success" : delta?.direction === "down" ? "danger" : "default";
 
-        <div className="mt-3 flex items-end gap-2">
-          <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
-          {delta && delta.direction !== "flat" && (
-            <span
-              className={`mb-1 inline-flex items-center gap-0.5 text-xs font-medium ${
-                delta.direction === "up" ? "text-emerald-400" : "text-rose-400"
-              }`}
-            >
-              {delta.direction === "up" ? (
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              ) : (
-                <ArrowDownRight className="h-3.5 w-3.5" />
-              )}
-              {delta.value}
-              {delta.unit}
-            </span>
-          )}
-        </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">vs prev {windowDays}d</p>
-      </div>
-    </GlassCard>
+  return (
+    <TooltipProvider delayDuration={150}>
+      <UiTooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <KpiTile
+              label={label}
+              value={value}
+              icon={Icon}
+              tone={tone}
+              trend={delta ? { direction: delta.direction, label: trendLabel! } : undefined}
+              hint={!delta ? `vs prev ${windowDays}d` : undefined}
+            />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">
+          {delta
+            ? delta.direction === "flat"
+              ? `Unchanged vs the previous ${windowDays}-day window.`
+              : `${delta.direction === "up" ? "Up" : "Down"} ${delta.value} ${delta.unit === "pts" ? "percentage points" : "percent"} vs the previous ${windowDays}-day window.`
+            : `No baseline yet — there was no data in the previous ${windowDays}-day window.`}
+        </TooltipContent>
+      </UiTooltip>
+    </TooltipProvider>
   );
 }
 
