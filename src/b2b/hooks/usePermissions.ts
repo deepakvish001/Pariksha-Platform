@@ -67,7 +67,14 @@ export function useMyOrgRole(orgId?: string | null) {
       if (error) throw error;
       return (data?.role as OrgMemberRole | undefined) ?? null;
     },
-    staleTime: 60_000,
+    // Resolve the member's role once per session — it cannot change without
+    // an admin action that already invalidates this query. This prevents the
+    // workspace from re-checking permissions on every navigation or click.
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 }
 
