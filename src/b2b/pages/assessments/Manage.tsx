@@ -695,7 +695,7 @@ export default function AssessmentManage() {
   );
 }
 
-function ParticipantRow({
+export function ParticipantRow({
   p,
   assessmentId,
   onForceSubmit,
