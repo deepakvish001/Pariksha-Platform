@@ -438,8 +438,9 @@ export default function QuestionBank() {
           ) : (
             <div className="grid gap-3">
               {filtered.map((q) => {
-                const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[] };
+                const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[]; archived?: boolean };
                 const status = meta.status ?? "published";
+                const archived = Boolean(meta.archived);
                 const diff = meta.difficulty;
                 const isSelected = selected.has(q.id);
                 return (
