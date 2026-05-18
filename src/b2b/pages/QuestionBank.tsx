@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { useMyOrganizations } from "../hooks/useOrg";
@@ -42,6 +42,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Library, Search, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
 
 const TYPES: { value: QuestionType; label: string }[] = [
   { value: "coding", label: "Coding" },
@@ -66,12 +67,23 @@ export default function QuestionBank() {
   const { data: questions } = useQuestions(org?.id);
   const del = useDeleteQuestion();
   const [editing, setEditing] = useState<Question | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardInitial, setWizardInitial] = useState<Question | undefined>(undefined);
+  const [legacyType, setLegacyType] = useState<QuestionType | undefined>(undefined);
+  const [legacyOpen, setLegacyOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | QuestionType>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     let list = questions ?? [];
     if (filter !== "all") list = list.filter((q) => q.type === filter);
+    if (statusFilter !== "all") {
+      list = list.filter((q) => {
+        const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
+        return s === statusFilter;
+      });
+    }
     const s = search.trim().toLowerCase();
     if (s) {
       list = list.filter(
@@ -82,7 +94,7 @@ export default function QuestionBank() {
       );
     }
     return list;
-  }, [questions, filter, search]);
+  }, [questions, filter, statusFilter, search]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: questions?.length ?? 0 };
@@ -96,6 +108,29 @@ export default function QuestionBank() {
 
   const empty = !questions?.length;
 
+  const openWizard = (q?: Question, type?: QuestionType) => {
+    setWizardInitial(q);
+    setLegacyType(type);
+    setWizardOpen(true);
+  };
+
+  const openEdit = (q: Question) => {
+    if (q.type === "coding" || q.type === "sql") {
+      openWizard(q);
+    } else {
+      setEditing(q);
+    }
+  };
+
+  const NewBtn = () => (
+    <Button
+      className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+      onClick={() => openWizard()}
+    >
+      <Plus className="h-4 w-4 mr-1" /> New question
+    </Button>
+  );
+
   return (
     <OrgShell
       title="Question Bank"
@@ -103,7 +138,7 @@ export default function QuestionBank() {
         <div className="flex items-center gap-2">
           <AIGenerateDialog orgId={org!.id} />
           <ImportQuestionsDialog orgId={org!.id} />
-          <NewQuestionDialog orgId={org!.id} />
+          <NewBtn />
         </div>
       }
     >
@@ -117,7 +152,7 @@ export default function QuestionBank() {
           <div className="mt-4 flex justify-center gap-2">
             <AIGenerateDialog orgId={org!.id} />
             <ImportQuestionsDialog orgId={org!.id} />
-            <NewQuestionDialog orgId={org!.id} />
+            <NewBtn />
           </div>
         </div>
       ) : (
@@ -142,14 +177,24 @@ export default function QuestionBank() {
                 );
               })}
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search questions…"
-                className="pl-8 h-9 text-sm"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+                <SelectTrigger className="h-9 w-32 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All status</SelectItem>
+                  <SelectItem value="draft">Drafts</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search questions…"
+                  className="pl-8 h-9 text-sm"
+                />
+              </div>
             </div>
           </div>
 
@@ -159,34 +204,81 @@ export default function QuestionBank() {
             </div>
           ) : (
             <div className="grid gap-3">
-              {filtered.map((q) => (
-                <div key={q.id} className="b2b-card p-4 flex items-center justify-between gap-3">
-                  <button onClick={() => setEditing(q)} className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{q.type}</Badge>
-                      <span className="font-medium truncate">{q.title}</span>
-                    </div>
-                    <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                      {q.points} pts {q.language ? `· ${q.language}` : ""}
-                    </div>
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (!confirm(`Delete "${q.title}"?`)) return;
-                      del.mutate({ id: q.id, org_id: q.org_id });
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+              {filtered.map((q) => {
+                const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[] };
+                const status = meta.status ?? "published";
+                const diff = meta.difficulty;
+                return (
+                  <div key={q.id} className="b2b-card p-4 flex items-center justify-between gap-3">
+                    <button onClick={() => openEdit(q)} className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline">{q.type}</Badge>
+                        {status === "draft" && (
+                          <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">Draft</Badge>
+                        )}
+                        {diff && (
+                          <Badge
+                            variant="outline"
+                            className={`capitalize ${
+                              diff === "easy"
+                                ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                                : diff === "hard"
+                                ? "border-rose-500/40 text-rose-600 dark:text-rose-400"
+                                : "border-amber-500/40 text-amber-600 dark:text-amber-400"
+                            }`}
+                          >
+                            {diff}
+                          </Badge>
+                        )}
+                        <span className="font-medium truncate">{q.title}</span>
+                      </div>
+                      <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1 flex items-center gap-2 flex-wrap">
+                        <span>{q.points} pts</span>
+                        {q.language && <span>· {q.language}</span>}
+                        {(meta.tags ?? []).slice(0, 4).map((t) => (
+                          <span key={t} className="px-1.5 py-0.5 rounded bg-[hsl(var(--secondary))] text-[10px]">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (!confirm(`Delete "${q.title}"?`)) return;
+                        del.mutate({ id: q.id, org_id: q.org_id });
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </>
       )}
       {editing && <QuestionEditorDialog question={editing} onClose={() => setEditing(null)} />}
+      <QuestionWizardDialog
+        orgId={org!.id}
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        initial={wizardInitial}
+        forceType={legacyType}
+        onCreateLegacy={(t) => {
+          // Fallback for non-guided types: open the simple legacy dialog.
+          setLegacyType(t);
+          setLegacyOpen(true);
+        }}
+      />
+      <NewQuestionDialog
+        orgId={org!.id}
+        forcedType={legacyType}
+        open={legacyOpen}
+        onOpenChange={(v) => { setLegacyOpen(v); if (!v) setLegacyType(undefined); }}
+        hideTrigger
+      />
     </OrgShell>
   );
 }
@@ -295,9 +387,24 @@ function ImportQuestionsDialog({ orgId }: { orgId: string }) {
   );
 }
 
-function NewQuestionDialog({ orgId }: { orgId: string }) {
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState<QuestionType>("mcq");
+function NewQuestionDialog({
+  orgId,
+  open: openProp,
+  onOpenChange,
+  forcedType,
+  hideTrigger,
+}: {
+  orgId: string;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  forcedType?: QuestionType;
+  hideTrigger?: boolean;
+}) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
+  const [type, setType] = useState<QuestionType>(forcedType ?? "mcq");
+  useEffect(() => { if (forcedType) setType(forcedType); }, [forcedType]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [points, setPoints] = useState(10);
@@ -307,11 +414,13 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
-          <Plus className="h-4 w-4 mr-1" /> New question
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+            <Plus className="h-4 w-4 mr-1" /> New question
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New question</DialogTitle>
