@@ -11,6 +11,7 @@ import { useContestSessionSigner } from "@/hooks/useContestSessionSigner";
 import SessionWatermark from "@/components/contests/SessionWatermark";
 import { LivenessChallengeDialog } from "@/components/contests/LivenessChallengeDialog";
 import { useLivenessChallenge } from "@/hooks/useLivenessChallenge";
+import { useBehavioralBaseline } from "@/hooks/useBehavioralBaseline";
 import TerminationLockout from "@/components/contests/TerminationLockout";
 import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
@@ -54,6 +55,8 @@ export default function ContestPlayProblem() {
     sessionId: session.sessionId ?? null,
     enabled: session.hasActive && !termination.terminated,
   });
+  // Layer 4 — keystroke + mouse rhythm baselining (silent, no UI).
+  useBehavioralBaseline(session.sessionId ?? null, session.hasActive && !termination.terminated);
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
   const { user } = useAuth();

@@ -2917,6 +2917,63 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_behavioral_baselines: {
+        Row: {
+          calibrated_at: string
+          contest_id: string
+          created_at: string
+          id: string
+          mean_inter_key_ms: number
+          mean_mouse_speed: number
+          sample_n: number
+          session_id: string
+          std_inter_key_ms: number
+          std_mouse_speed: number
+          user_id: string
+        }
+        Insert: {
+          calibrated_at?: string
+          contest_id: string
+          created_at?: string
+          id?: string
+          mean_inter_key_ms: number
+          mean_mouse_speed?: number
+          sample_n: number
+          session_id: string
+          std_inter_key_ms: number
+          std_mouse_speed?: number
+          user_id: string
+        }
+        Update: {
+          calibrated_at?: string
+          contest_id?: string
+          created_at?: string
+          id?: string
+          mean_inter_key_ms?: number
+          mean_mouse_speed?: number
+          sample_n?: number
+          session_id?: string
+          std_inter_key_ms?: number
+          std_mouse_speed?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_behavioral_baselines_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_behavioral_baselines_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_code_provenance: {
         Row: {
           char_count: number | null
