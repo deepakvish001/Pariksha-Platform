@@ -4098,6 +4098,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_session_seals: {
+        Row: {
+          components: Json
+          contest_id: string
+          hmac: string
+          root_hash: string
+          sealed_at: string
+          sealed_by: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          components?: Json
+          contest_id: string
+          hmac: string
+          root_hash: string
+          sealed_at?: string
+          sealed_by?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          components?: Json
+          contest_id?: string
+          hmac?: string
+          root_hash?: string
+          sealed_at?: string
+          sealed_by?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_session_seals_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_session_seals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_sessions: {
         Row: {
           client_fingerprint: Json | null
