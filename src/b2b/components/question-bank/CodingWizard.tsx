@@ -134,6 +134,13 @@ export function CodingWizard({
 
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
+  const { data: persistedTests } = useTestCases(questionId);
+  const testCount = persistedTests?.length ?? 0;
+  const hiddenCount = (persistedTests ?? []).filter((t) => t.is_hidden).length;
+  const sampleCount = testCount - hiddenCount;
+  const badWeightTest = (persistedTests ?? []).find(
+    (t) => !t.expected_output?.toString().trim() || (t.weight ?? 0) < 1,
+  );
 
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }));
 
@@ -141,13 +148,39 @@ export function CodingWizard({
     return [
       draft.title.trim().length > 0,
       draft.body_md.trim().length > 10 &&
-        draft.examples.some((e) => e.input.trim() || e.output.trim()),
+        draft.examples.some((e) => e.input.trim() && e.output.trim()),
       draft.allowed_languages.length > 0 &&
-        draft.allowed_languages.every((l) => (draft.starter_code[l] ?? "").length >= 0),
+        (draft.starter_code[draft.primary_language] ?? "").trim().length > 0 &&
+        draft.function_signature.trim().length > 0,
       true,
     ];
   }, [draft]);
   const canAdvance = canStep[step];
+
+  const publishErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (!draft.title.trim()) errs.push("Title is required.");
+    if (draft.body_md.trim().length < 10)
+      errs.push("Problem statement must be at least 10 characters.");
+    if (!draft.examples.some((e) => e.input.trim() && e.output.trim()))
+      errs.push("Add at least one worked example with both input and output.");
+    if (draft.allowed_languages.length === 0)
+      errs.push("Pick at least one allowed language.");
+    if (!draft.function_signature.trim())
+      errs.push("Function signature is required.");
+    if (!(draft.starter_code[draft.primary_language] ?? "").trim())
+      errs.push("Starter code for the primary language is required.");
+    if (!draft.reference_solution.code.trim())
+      errs.push("Reference solution is required.");
+    if (testCount === 0) errs.push("Add at least one test case.");
+    else {
+      if (sampleCount === 0) errs.push("Add at least one sample (visible) test.");
+      if (hiddenCount === 0) errs.push("Add at least one hidden test.");
+      if (badWeightTest)
+        errs.push("Every test needs a non-empty expected output and weight ≥ 1.");
+    }
+    return errs;
+  }, [draft, testCount, sampleCount, hiddenCount, badWeightTest]);
 
   const buildMeta = (status: "draft" | "published"): CodingMeta => ({
     status,
