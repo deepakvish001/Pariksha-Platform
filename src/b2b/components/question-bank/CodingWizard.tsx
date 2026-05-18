@@ -219,12 +219,26 @@ export function CodingWizard({
     if (draft.body_md.trim().length < 10)
       errs.push("Problem statement must be at least 10 characters.");
 
-    // Examples — must have at least one with BOTH input and output.
-    const goodExamples = draft.examples.filter(
-      (e) => e.input.trim() && e.output.trim(),
-    );
-    if (goodExamples.length === 0)
+    // Examples — every example must have BOTH input and output, and we need at least one.
+    if (draft.examples.length === 0) {
       errs.push("Add at least one worked example with both input and output.");
+    } else {
+      const incomplete: string[] = [];
+      draft.examples.forEach((e, i) => {
+        const hasIn = e.input.trim().length > 0;
+        const hasOut = e.output.trim().length > 0;
+        if (!hasIn && !hasOut) incomplete.push(`#${i + 1} (input + output)`);
+        else if (!hasIn) incomplete.push(`#${i + 1} (input)`);
+        else if (!hasOut) incomplete.push(`#${i + 1} (output)`);
+      });
+      if (incomplete.length === draft.examples.length) {
+        errs.push("Add at least one worked example with both input and output.");
+      } else if (incomplete.length > 0) {
+        errs.push(
+          `Worked example${incomplete.length === 1 ? "" : "s"} missing data: ${incomplete.join(", ")}.`,
+        );
+      }
+    }
 
     // Constraints — require at least one non-empty constraint line.
     const goodConstraints = draft.constraints.map((c) => c.trim()).filter(Boolean);
