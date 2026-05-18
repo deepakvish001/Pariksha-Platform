@@ -1,16 +1,12 @@
 /**
- * Role-gating contract for proctoring evidence + "Run AI review".
+ * Role-based access control contract for the college / company workspace.
  *
- * `useCanProctor(orgId)` is the single hook that gates the entire proctoring
- * surface in the college workspace:
- *   - AttemptInspector evidence panels
- *   - Proctoring page (timeline, snapshots, findings)
- *   - "Run AI review" action that invokes the assessment-snapshot-review
- *     edge function
+ * `useCan(orgId, capability)` is the single source of truth for "can this
+ * member do X?". Every capability is asserted against every role here so
+ * regressions in the matrix fail loudly.
  *
- * Only `owner`, `admin`, and `proctor` may pass. Recruiters and viewers must
- * be blocked client-side as a UX layer; the database RLS + edge function
- * 403 (covered in separate tests) is the source of truth.
+ * Server-side RLS enforces the same matrix in the database; this test
+ * only locks in the client-side gating used to hide buttons and routes.
  */
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -36,7 +32,13 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "user-1" } }),
 }));
 
-import { useCanProctor } from "@/b2b/hooks/usePermissions";
+import {
+  useCanProctor,
+  useCan,
+  CAPABILITY_MATRIX,
+  type Capability,
+} from "@/b2b/hooks/usePermissions";
+import type { OrgMemberRole } from "@/b2b/hooks/useMembers";
 
 const wrapper = () => {
   const qc = new QueryClient({
@@ -47,12 +49,24 @@ const wrapper = () => {
   );
 };
 
-const renderWithRole = async (role: string | null) => {
+const renderProctorWithRole = async (role: string | null) => {
   maybeSingleMock.mockResolvedValueOnce({
     data: role ? { role } : null,
     error: null,
   });
   const { result } = renderHook(() => useCanProctor("org-1"), {
+    wrapper: wrapper(),
+  });
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  return result.current;
+};
+
+const renderCanWithRole = async (role: string | null, cap: Capability) => {
+  maybeSingleMock.mockResolvedValueOnce({
+    data: role ? { role } : null,
+    error: null,
+  });
+  const { result } = renderHook(() => useCan("org-1", cap), {
     wrapper: wrapper(),
   });
   await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -67,7 +81,7 @@ describe("useCanProctor – role gating", () => {
   it.each(["owner", "admin", "proctor"] as const)(
     "allows %s to view evidence and run AI review",
     async (role) => {
-      const r = await renderWithRole(role);
+      const r = await renderProctorWithRole(role);
       expect(r.canProctor).toBe(true);
       expect(r.role).toBe(role);
     },
@@ -76,14 +90,14 @@ describe("useCanProctor – role gating", () => {
   it.each(["recruiter", "viewer"] as const)(
     "blocks %s from viewing evidence",
     async (role) => {
-      const r = await renderWithRole(role);
+      const r = await renderProctorWithRole(role);
       expect(r.canProctor).toBe(false);
       expect(r.role).toBe(role);
     },
   );
 
   it("blocks users with no membership row", async () => {
-    const r = await renderWithRole(null);
+    const r = await renderProctorWithRole(null);
     expect(r.canProctor).toBe(false);
     expect(r.role).toBeNull();
   });
@@ -92,8 +106,32 @@ describe("useCanProctor – role gating", () => {
     const { result } = renderHook(() => useCanProctor(null), {
       wrapper: wrapper(),
     });
-    // Query is disabled → never fires the supabase mock.
     expect(maybeSingleMock).not.toHaveBeenCalled();
     expect(result.current.canProctor).toBe(false);
+  });
+});
+
+describe("useCan – capability matrix", () => {
+  beforeEach(() => {
+    maybeSingleMock.mockReset();
+  });
+
+  const ROLES: OrgMemberRole[] = ["owner", "admin", "proctor", "recruiter", "viewer"];
+  const CAPS = Object.keys(CAPABILITY_MATRIX) as Capability[];
+
+  it.each(
+    CAPS.flatMap((cap) =>
+      ROLES.map((role) => ({ cap, role, expected: CAPABILITY_MATRIX[cap].includes(role) })),
+    ),
+  )("$role → $cap = $expected", async ({ cap, role, expected }) => {
+    const r = await renderCanWithRole(role, cap);
+    expect(r.allowed).toBe(expected);
+  });
+
+  it("denies every capability when there is no membership row", async () => {
+    for (const cap of CAPS) {
+      const r = await renderCanWithRole(null, cap);
+      expect(r.allowed).toBe(false);
+    }
   });
 });
