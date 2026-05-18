@@ -1,7 +1,7 @@
 import { useState, KeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, X, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, X, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Difficulty } from "./types";
 
