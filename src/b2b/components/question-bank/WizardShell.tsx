@@ -1,9 +1,16 @@
-import { ReactNode } from "react";
-import { Check } from "lucide-react";
+import { ReactNode, useState } from "react";
+import { Check, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export type PublishStatus = "draft" | "published";
 
