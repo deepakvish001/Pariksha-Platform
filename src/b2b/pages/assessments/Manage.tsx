@@ -715,27 +715,42 @@ function ParticipantRow({
   const canForceSubmit =
     !!p.attempt_id && p.status !== "submitted" && p.status !== "auto_submitted";
   const ev = evidence;
+  const navigate = useNavigate();
   const onRowClick = (e: React.MouseEvent) => {
     // Avoid triggering on action button clicks
     if ((e.target as HTMLElement).closest("[data-row-action]")) return;
+    if (detailHref) {
+      // Support cmd/ctrl/middle-click to open in new tab
+      if (e.metaKey || e.ctrlKey || (e as any).button === 1) {
+        window.open(detailHref, "_blank", "noopener,noreferrer");
+        return;
+      }
+      navigate(detailHref);
+      return;
+    }
     onOpen();
   };
 
   return (
-    <tr className="hover:bg-white/[0.02] cursor-pointer" onClick={onRowClick}>
+    <tr
+      className="hover:bg-white/[0.02] cursor-pointer"
+      onClick={onRowClick}
+      title={detailHref ? "Open full candidate details" : undefined}
+    >
       <td className="py-2.5 px-2 min-w-0">
         {detailHref ? (
           <a
             href={detailHref}
-            target="_blank"
-            rel="noopener noreferrer"
             data-row-action
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.metaKey || e.ctrlKey || e.button === 1) return; // let browser open new tab
+              e.preventDefault();
+              navigate(detailHref);
+            }}
             className="font-medium truncate hover:underline hover:text-primary inline-flex items-center gap-1"
-            title="Open full candidate details in a new tab"
           >
             {p.name ?? p.email}
-            <ExternalLink className="h-3 w-3 opacity-60" />
           </a>
         ) : (
           <div className="font-medium truncate">{p.name ?? p.email}</div>
