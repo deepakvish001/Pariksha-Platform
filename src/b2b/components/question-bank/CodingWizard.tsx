@@ -292,6 +292,13 @@ export function CodingWizard({
       }
       rightPane={<CodingPreview draft={draft} />}
     >
+      {wasPublished && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          <strong>Published question.</strong> Changes to the function signature, primary language,
+          allowed languages, or reference solution can invalidate hidden tests — you'll be asked to
+          confirm before saving.
+        </div>
+      )}
       {step === 0 && <BasicsStep draft={draft} patch={patch} />}
       {step === 1 && <ProblemStep draft={draft} patch={patch} />}
       {step === 2 && <CodeStep draft={draft} patch={patch} />}
