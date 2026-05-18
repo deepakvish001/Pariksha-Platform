@@ -74,6 +74,7 @@ export function WizardShell({
   const [historyOpen, setHistoryOpen] = useState(false);
   // Tick once a minute so the "Saved Xs ago" label stays current.
   const [now, setNow] = useState(() => Date.now());
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   useEffect(() => {
     if (!lastSavedAt) return;
     const id = setInterval(() => setNow(Date.now()), 15_000);
