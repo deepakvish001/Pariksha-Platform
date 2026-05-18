@@ -204,9 +204,11 @@ function SectionsPanel({ assessmentId, orgId }: { assessmentId: string; orgId: s
       </div>
 
       {!sections?.length && (
-        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-          No sections yet. Add one above to start composing the assessment.
-        </div>
+        <EmptyState
+          icon={FileQuestion}
+          title="No sections yet"
+          description="Add a section above to start composing this assessment (e.g. Coding round, Aptitude, Behavioral)."
+        />
       )}
 
       <div className="space-y-3">
