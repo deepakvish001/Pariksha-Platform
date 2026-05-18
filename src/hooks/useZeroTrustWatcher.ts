@@ -17,6 +17,53 @@ type Severity = "info" | "warn" | "high" | "critical";
 export function useZeroTrustWatcher(sessionId: string | null, enabled = true) {
   // Throttle map: category -> last sent timestamp (ms)
   const lastSentRef = useRef<Record<string, number>>({});
+  // Trust Gate attestation runs exactly once per session.
+  const attestedRef = useRef<string | null>(null);
+
+  // ---- One-shot Trust Gate attestation on activation ----
+  useEffect(() => {
+    if (!enabled || !sessionId) return;
+    if (attestedRef.current === sessionId) return;
+    attestedRef.current = sessionId;
+    (async () => {
+      try {
+        // Collect a lightweight environment snapshot. Heavier signals
+        // (selfie match, side-eye paired) are filled by their own steps;
+        // the engine evaluates failures by what's present.
+        let webglRenderer: string | null = null;
+        try {
+          const c = document.createElement("canvas");
+          const gl = (c.getContext("webgl") || c.getContext("experimental-webgl")) as WebGLRenderingContext | null;
+          const ext = gl?.getExtension("WEBGL_debug_renderer_info");
+          if (gl && ext) webglRenderer = gl.getParameter((ext as { UNMASKED_RENDERER_WEBGL: number }).UNMASKED_RENDERER_WEBGL) as string;
+        } catch { /* ignore */ }
+        const nav = navigator as Navigator & { webdriver?: boolean };
+        const automation: string[] = [];
+        if (nav.webdriver) automation.push("webdriver");
+        if (/HeadlessChrome/i.test(navigator.userAgent)) automation.push("headless");
+        const isExtended = (window.screen as unknown as { isExtended?: boolean }).isExtended;
+        const widthGap = window.outerWidth - window.innerWidth;
+        const heightGap = window.outerHeight - window.innerHeight;
+        const snapshot = {
+          single_monitor: isExtended === false ? true : isExtended === true ? false : null,
+          vm_detected: /(VirtualBox|VMware|QEMU|Xen|Parallels|Hyper-?V)/i.test(navigator.userAgent),
+          rdp_detected: /(RDP|TeamViewer|AnyDesk|VNC|Chrome Remote)/i.test(navigator.userAgent),
+          webgl_renderer: webglRenderer,
+          devtools_open: widthGap > 160 || heightGap > 160,
+          automation_flags: automation,
+          user_agent: navigator.userAgent,
+        };
+        await supabase.functions.invoke("contest-environment-attest", {
+          body: { session_id: sessionId, snapshot },
+        });
+      } catch {
+        // Attestation failure does not block the player — the gate will
+        // re-evaluate on next reload and the violation engine will
+        // independently catch critical signals.
+      }
+    })();
+  }, [enabled, sessionId]);
+
 
   // Always-fresh reporter so child hooks can `const { report } = useZeroTrustWatcher(...)`
   const report = useRef(async (
