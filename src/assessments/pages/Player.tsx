@@ -656,11 +656,11 @@ export default function Player() {
                   />
                 )
               ) : (
-                <Card>
-                  <CardContent className="p-8 text-sm text-muted-foreground">
-                    No questions in this assessment yet.
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  icon={FileQuestion}
+                  title="No questions yet"
+                  description="This assessment doesn't have any questions in this section. Please contact your administrator."
+                />
               )}
             </motion.div>
           </AnimatePresence>
