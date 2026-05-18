@@ -503,6 +503,15 @@ export default function QuestionBank() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => toggleArchive(q)}
+                      disabled={upd.isPending}
+                      title={archived ? "Restore question" : "Archive question"}
+                    >
+                      {archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         if (!confirm(`Delete "${q.title}"?`)) return;
                         del.mutate({ id: q.id, org_id: q.org_id });
