@@ -300,6 +300,7 @@ export function CodingWizard({
           draft={draft}
           patch={patch}
           questionId={questionId}
+          wasPublished={wasPublished}
           ensureQuestion={async () => {
             if (questionId) return questionId;
             const meta = buildMeta("draft");
