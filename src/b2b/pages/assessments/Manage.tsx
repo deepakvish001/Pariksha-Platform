@@ -746,9 +746,9 @@ function ParticipantRow({
         </div>
       </td>
       <td className="py-2.5 px-2">
-        <span className={`px-2 py-0.5 rounded-full text-[10px] ${STATUS_COLOR[p.status]}`}>
+        <StatusPill tone={STATUS_TONE[p.status]} pulse={p.status === "in_progress"}>
           {STATUS_LABEL[p.status]}
-        </span>
+        </StatusPill>
       </td>
       <td className="py-2.5 px-2">
         {p.status === "in_progress" ? (
