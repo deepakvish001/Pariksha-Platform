@@ -103,16 +103,42 @@ export function WizardShell({
         </div>
       </div>
 
-      <div className="border-t mt-4 pt-4 flex items-center justify-between gap-2">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          disabled={!onBack || current === 0 || saving}
-        >
-          Back
-        </Button>
+      <div className="border-t mt-4 pt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          {onSaveDraft && (
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            disabled={!onBack || current === 0 || saving}
+          >
+            Back
+          </Button>
+        </div>
+
+        {onStatusChange && (
+          <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-[hsl(var(--secondary))/0.4]">
+            <Label
+              htmlFor="wizard-publish-toggle"
+              className="text-xs cursor-pointer text-[hsl(var(--muted-foreground))]"
+            >
+              Status
+            </Label>
+            <Switch
+              id="wizard-publish-toggle"
+              checked={isPublished}
+              onCheckedChange={(v) => onStatusChange(v ? "published" : "draft")}
+              disabled={saving}
+            />
+            <Badge
+              variant={isPublished ? "default" : "outline"}
+              className="text-[10px] uppercase tracking-wide"
+            >
+              {isPublished ? "Published" : "Draft"}
+            </Badge>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          {onSaveDraft && !onStatusChange && (
             <Button variant="outline" onClick={onSaveDraft} disabled={saving}>
               {saving ? "Saving…" : "Save draft"}
             </Button>
@@ -127,11 +153,17 @@ export function WizardShell({
             </Button>
           ) : (
             <Button
-              onClick={onPublish}
+              onClick={isPublished ? onPublish : onSaveDraft}
               disabled={!canAdvance || saving}
               className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             >
-              {saving ? "Publishing…" : "Publish"}
+              {saving
+                ? isPublished
+                  ? "Publishing…"
+                  : "Saving…"
+                : isPublished
+                ? "Publish"
+                : "Save draft"}
             </Button>
           )}
         </div>
