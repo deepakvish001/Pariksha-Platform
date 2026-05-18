@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { verifySignedRequest, readSignedHeaders } from "../_shared/contest-signing.ts";
 
 /**
  * Single sink for all proctoring violation events.
@@ -26,6 +27,8 @@ const CRITICAL_AUTO_TERMINATE = new Set([
   "rdp_detected",
   "devtools_open",
   "side_eye_disconnected_grace_expired",
+  "signature_invalid",
+  "print_screen_attempt",
 ]);
 
 Deno.serve(async (req) => {
@@ -43,8 +46,24 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return json({ error: "Unauthorized" }, 401);
 
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.text();
+    const body = rawBody ? JSON.parse(rawBody) : {};
     const { session_id, category, severity, evidence_ref, meta } = body ?? {};
+
+    // Layer 5 — verify HMAC signature when present. Soft-fail (log) for now
+    // so a missing/bad signature gets recorded as its own violation but does
+    // not block the engine from processing legitimate unsigned legacy calls.
+    let signatureStatus: "valid" | "missing" | "invalid" = "missing";
+    let signatureReason: string | null = null;
+    if (readSignedHeaders(req)) {
+      const verify = await verifySignedRequest(req, rawBody);
+      if (verify.ok) {
+        signatureStatus = "valid";
+      } else {
+        signatureStatus = "invalid";
+        signatureReason = verify.reason;
+      }
+    }
 
     if (typeof session_id !== "string" || typeof category !== "string" || typeof severity !== "string") {
       return json({ error: "session_id, category, severity required" }, 400);
@@ -105,8 +124,28 @@ Deno.serve(async (req) => {
       session_id: session.id,
       type: category,
       severity,
-      meta: { ...(meta ?? {}), evidence_ref: evidence_ref ?? null, action, score: newScore },
+      meta: {
+        ...(meta ?? {}),
+        evidence_ref: evidence_ref ?? null,
+        action,
+        score: newScore,
+        signature: signatureStatus,
+        signature_reason: signatureReason,
+      },
     });
+
+    // Layer 5 — if signature was invalid (tampered/replayed), record a
+    // separate critical signature_invalid violation alongside the reported one.
+    if (signatureStatus === "invalid") {
+      await admin.from("contest_violations").insert({
+        contest_id: session.contest_id,
+        user_id: session.user_id,
+        session_id: session.id,
+        type: "signature_invalid",
+        severity: "critical",
+        meta: { reason: signatureReason, original_category: category },
+      });
+    }
 
     // Update running risk score
     await admin.from("contest_sessions").update({ risk_score: newScore }).eq("id", session.id);

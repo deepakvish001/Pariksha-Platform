@@ -87,6 +87,10 @@ export function useContestSessionSigner(sessionId: string | null | undefined) {
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+      // Clear global signer so unrelated pages don't reuse a dead key.
+      if ((window as unknown as { __contestSigner?: unknown }).__contestSigner) {
+        delete (window as unknown as { __contestSigner?: unknown }).__contestSigner;
+      }
     };
   }, [sessionId, requestKey]);
 
@@ -110,7 +114,30 @@ export function useContestSessionSigner(sessionId: string | null | undefined) {
     [sessionId],
   );
 
+  // Publish the signer globally so leaf hooks (useZeroTrustWatcher) can
+  // sign their violation-engine calls without prop-drilling.
+  useEffect(() => {
+    (window as unknown as { __contestSigner?: typeof sign }).__contestSigner = sign;
+  }, [sign]);
+
   const missedRotations = () => missedRotationsRef.current;
 
   return { ready, sign, missedRotations };
+}
+
+/**
+ * Sign any contest-* function invocation. Returns headers ready to merge
+ * into supabase.functions.invoke({ headers }). Safe to call even when the
+ * signer is not yet ready — returns null and the server will treat the
+ * request as unsigned (logged as such but not rejected during rollout).
+ */
+export async function signContestFunctionCall(
+  functionName: string,
+  body: unknown,
+): Promise<Record<string, string> | null> {
+  const signer = (window as unknown as {
+    __contestSigner?: (m: string, p: string, b: string) => Promise<Record<string, string> | null>;
+  }).__contestSigner;
+  if (!signer) return null;
+  return signer("POST", `/${functionName}`, JSON.stringify(body ?? {}));
 }

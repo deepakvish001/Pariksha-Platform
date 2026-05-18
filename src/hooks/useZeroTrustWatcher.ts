@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { signContestFunctionCall } from "@/hooks/useContestSessionSigner";
 
 type Severity = "info" | "warn" | "high" | "critical";
 
@@ -78,8 +79,11 @@ export function useZeroTrustWatcher(sessionId: string | null, enabled = true) {
     if (now - (lastSentRef.current[key] ?? 0) < throttleMs) return;
     lastSentRef.current[key] = now;
     try {
+      const body = { session_id: sessionId, category, severity, meta };
+      const headers = await signContestFunctionCall("contest-violation-engine", body);
       await supabase.functions.invoke("contest-violation-engine", {
-        body: { session_id: sessionId, category, severity, meta },
+        body,
+        ...(headers ? { headers } : {}),
       });
     } catch {
       // Engine outage must NOT crash the player. The DLQ will catch up.
@@ -95,8 +99,11 @@ export function useZeroTrustWatcher(sessionId: string | null, enabled = true) {
       if (now - (lastSentRef.current[key] ?? 0) < throttleMs) return;
       lastSentRef.current[key] = now;
       try {
+        const body = { session_id: sessionId, category, severity, meta };
+        const headers = await signContestFunctionCall("contest-violation-engine", body);
         await supabase.functions.invoke("contest-violation-engine", {
-          body: { session_id: sessionId, category, severity, meta },
+          body,
+          ...(headers ? { headers } : {}),
         });
       } catch { /* swallow */ }
     };
