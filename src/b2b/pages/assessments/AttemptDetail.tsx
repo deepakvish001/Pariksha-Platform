@@ -18,6 +18,17 @@ import { AttemptFeedbackPanel } from "../../components/AttemptFeedbackPanel";
 import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
 import { paths } from "@/lib/routing/paths";
+import { SectionCard } from "../../components/ui/SectionCard";
+import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
+
+const ATTEMPT_STATUS_TONE: Record<string, StatusTone> = {
+  in_progress: "live",
+  submitted: "success",
+  auto_submitted: "warning",
+  expired: "danger",
+  abandoned: "warning",
+  pending: "neutral",
+};
 
 export default function AttemptDetail() {
   const { id: idOrSlug, attemptId: attemptIdOrSlug } = useParams();
