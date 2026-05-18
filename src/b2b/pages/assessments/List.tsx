@@ -23,6 +23,8 @@ import { bucketAssessments, formatWindow, getScheduleState, type ScheduleState }
 import { useFlaggedAcrossOrg } from "../../hooks/useAssessmentLive";
 import { useCan } from "../../hooks/usePermissions";
 import { ShieldAlert } from "lucide-react";
+import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
+import { EmptyState } from "../../components/ui/EmptyState";
 
 type TabKey = "live" | "upcoming" | "drafts" | "closed" | "all";
 
@@ -45,12 +47,12 @@ function GlassCard({ children, className = "" }: { children: React.ReactNode; cl
   );
 }
 
-const STATE_PILL: Record<ScheduleState, string> = {
-  live: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 animate-pulse",
-  scheduled: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
-  draft: "bg-muted text-muted-foreground border border-white/10",
-  closed: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/30",
-  archived: "bg-zinc-700/30 text-zinc-400 border border-zinc-500/20",
+const STATE_TONE: Record<ScheduleState, StatusTone> = {
+  live: "live",
+  scheduled: "scheduled",
+  draft: "draft",
+  closed: "closed",
+  archived: "archived",
 };
 
 export default function B2BAssessmentsList() {
@@ -164,27 +166,29 @@ export default function B2BAssessmentsList() {
         </GlassCard>
 
         {aLoading ? null : !visible.length ? (
-          <GlassCard className="p-12 text-center">
-            <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
-            <p className="mt-3 font-medium">Nothing here yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {tab === "live"
+          <EmptyState
+            icon={FileText}
+            title="Nothing here yet"
+            description={
+              tab === "live"
                 ? "No live assessments right now. Publish one or schedule a window."
                 : tab === "upcoming"
                 ? "No scheduled assessments. Set a future start time on a published assessment."
                 : tab === "drafts"
                 ? "No drafts. Create a new assessment to start composing."
-                : "No matching assessments."}
-            </p>
-            {canWrite && (
-              <Button
-                className="mt-4 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-                onClick={() => navigate("/b2b/assessments/new")}
-              >
-                <Plus className="h-4 w-4 mr-1" /> New assessment
-              </Button>
-            )}
-          </GlassCard>
+                : "No matching assessments."
+            }
+            action={
+              canWrite && (
+                <Button
+                  className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                  onClick={() => navigate("/b2b/assessments/new")}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> New assessment
+                </Button>
+              )
+            }
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((a) => {
@@ -202,9 +206,9 @@ export default function B2BAssessmentsList() {
                         </span>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide ${STATE_PILL[state]}`}>
+                    <StatusPill tone={STATE_TONE[state]} pulse={state === "live"}>
                       {state}
-                    </span>
+                    </StatusPill>
                   </div>
 
                   <div className="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs">
