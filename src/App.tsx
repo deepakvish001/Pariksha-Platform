@@ -303,7 +303,7 @@ const App = () => (
                       <Route path="proctoring" element={<Navigate to="assessments" replace />} />
                       <Route path="team" element={<RequireOrgCapability cap="members.invite"><B2BTeam /></RequireOrgCapability>} />
                       <Route path="settings" element={<RequireOrgCapability cap="org.editSettings"><B2BSettings /></RequireOrgCapability>} />
-                      <Route path="insights/feedback" element={<B2BInsightsFeedback />
+                      <Route path="insights/feedback" element={<B2BInsightsFeedback />} />
                     </Route>
                   );
                 })}
