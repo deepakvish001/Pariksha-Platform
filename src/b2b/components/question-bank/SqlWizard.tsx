@@ -110,6 +110,21 @@ export function SqlWizard({
     [draft],
   );
 
+  const publishErrors = useMemo(() => {
+    const errs: string[] = [];
+    if (!draft.title.trim()) errs.push("Title is required.");
+    if (draft.schema_ddl.trim().length < 10)
+      errs.push("Schema DDL must include at least one CREATE TABLE.");
+    if (!/create\s+table/i.test(draft.schema_ddl))
+      errs.push("Schema must contain a CREATE TABLE statement.");
+    if (!draft.reference_query.trim())
+      errs.push("Reference query is required.");
+    else if (!/select/i.test(draft.reference_query))
+      errs.push("Reference query must be a SELECT statement.");
+    if (draft.points < 1) errs.push("Points must be at least 1.");
+    return errs;
+  }, [draft]);
+
   const buildMeta = (status: "draft" | "published"): SqlMeta => ({
     status,
     difficulty: draft.difficulty,
