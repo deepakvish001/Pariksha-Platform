@@ -18,6 +18,8 @@ export function isAnswered(
   const meta = qq.meta as { locked?: boolean; tier?: string } | null | undefined;
   if (meta?.locked && meta?.tier === "premium") return true;
   if (!a) return false;
+  // Explicitly skipped questions count as answered for palette/summary purposes.
+  if ((a as { skipped?: boolean }).skipped === true) return true;
   if (qq.type === "mcq" || qq.type === "true_false")
     return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
   if (qq.type === "subjective") {
