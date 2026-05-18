@@ -17,7 +17,7 @@ import AttemptSosHistoryPanel from "../../components/AttemptSosHistoryPanel";
 import { AttemptFeedbackPanel } from "../../components/AttemptFeedbackPanel";
 import { useCurrentOrg, useOrgBasePath } from "../../context/OrgContext";
 import { useCanProctor } from "../../hooks/usePermissions";
-import { paths } from "@/lib/routing/paths";
+import { paths, parseAttemptSegment, attemptSegment } from "@/lib/routing/paths";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
 import { EmptyState } from "../../components/ui/EmptyState";
