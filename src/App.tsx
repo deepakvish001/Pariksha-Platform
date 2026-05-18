@@ -30,6 +30,7 @@ import B2BAssessmentNew from "@/b2b/pages/assessments/New";
 import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
 import B2BAssessmentManage from "@/b2b/pages/assessments/Manage";
 import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
+import B2BCandidateDetail from "@/b2b/pages/assessments/CandidateDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 
 import B2BTeam from "@/b2b/pages/Team";
