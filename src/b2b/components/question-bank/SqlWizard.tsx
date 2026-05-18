@@ -296,6 +296,13 @@ export function SqlWizard({
 
       {step === 1 && (
         <div className="space-y-4">
+          {wasPublished && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              <strong>Published question.</strong> Changes to schema, seed data, dialect, the
+              reference query, or order sensitivity will alter grading. You'll be asked to confirm
+              before saving.
+            </div>
+          )}
           <div>
             <Label>Schema (DDL) <span className="text-rose-500">*</span></Label>
             <Textarea
