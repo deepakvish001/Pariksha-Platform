@@ -20,6 +20,8 @@ import { useCanProctor } from "../../hooks/usePermissions";
 import { paths } from "@/lib/routing/paths";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { FileQuestion } from "lucide-react";
 
 const ATTEMPT_STATUS_TONE: Record<string, StatusTone> = {
   in_progress: "live",
@@ -303,9 +305,11 @@ export default function AttemptDetail() {
 
       <div className="space-y-4">
         {data.answers.length === 0 && (
-          <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-            Candidate did not answer any questions.
-          </div>
+          <EmptyState
+            icon={FileQuestion}
+            title="No answers submitted"
+            description="The candidate did not answer any questions during this attempt."
+          />
         )}
         {data.answers.map((a, i) => {
           const q = a.question;
