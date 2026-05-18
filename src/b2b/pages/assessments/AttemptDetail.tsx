@@ -147,13 +147,8 @@ export default function AttemptDetail() {
       </nav>
 
       <div className="grid md:grid-cols-3 gap-4 mb-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5" /> Candidate profile
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-1">
+        <SectionCard icon={User} title="Candidate profile">
+          <div className="text-sm space-y-1">
             <div className="font-medium">{candName}</div>
             {candEmail && (
               <div className="text-xs text-muted-foreground flex items-center gap-1 truncate">
@@ -168,39 +163,50 @@ export default function AttemptDetail() {
             {candPhone && (
               <div className="text-xs text-muted-foreground truncate">{candPhone}</div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </SectionCard>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5" /> Assessment
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-1">
+        <SectionCard icon={FileText} title="Assessment">
+          <div className="text-sm space-y-1">
             <div className="font-medium truncate" title={assessment.title}>{assessment.title}</div>
             <div className="text-xs text-muted-foreground">Duration: {assessment.duration_min} min</div>
             <div className="text-xs text-muted-foreground">Questions: {data.answers.length}</div>
-            <div className="text-[10px] text-muted-foreground/80 truncate">
+            {durationMin !== null && (
+              <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                <Clock className="h-3 w-3" /> Took {durationMin} min
+              </div>
+            )}
+            <div className="text-[10px] text-muted-foreground/80 truncate pt-0.5">
               <code>/{assessmentSeg}/attempts/{attemptSeg}</code>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </SectionCard>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5" /> Status & score
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge>{data.attempt.status}</Badge>
+        <SectionCard icon={ShieldCheck} title="Status & score">
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusPill
+                tone={ATTEMPT_STATUS_TONE[data.attempt.status] ?? "neutral"}
+                pulse={data.attempt.status === "in_progress"}
+              >
+                {data.attempt.status?.replace(/_/g, " ")}
+              </StatusPill>
               <span className="text-xs text-muted-foreground">
-                Integrity: <b className="text-foreground">{data.attempt.integrity_score}</b>
+                Integrity:{" "}
+                <b
+                  className={
+                    data.attempt.integrity_score >= 80
+                      ? "text-emerald-300"
+                      : data.attempt.integrity_score >= 50
+                      ? "text-amber-300"
+                      : "text-rose-300"
+                  }
+                >
+                  {data.attempt.integrity_score}
+                </b>
               </span>
             </div>
-            <div className="text-2xl font-semibold leading-none">
+            <div className="text-[28px] font-semibold leading-none tabular-nums">
               {totals.earned}
               <span className="text-sm text-muted-foreground"> / {totals.max}</span>
             </div>
