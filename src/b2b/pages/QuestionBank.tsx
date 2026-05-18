@@ -118,6 +118,7 @@ function GlobalBankView({ org }: { org: { id: string; name?: string } }) {
   const base = useBasePath();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | QuestionType>("all");
+  const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
 
   const filtered = useMemo(() => {
     let list = questions ?? [];
@@ -126,6 +127,30 @@ function GlobalBankView({ org }: { org: { id: string; name?: string } }) {
     if (s) list = list.filter((q) => q.title.toLowerCase().includes(s) || (q.body_md ?? "").toLowerCase().includes(s));
     return [...list].sort((a, b) => ((a.tier ?? "free") === "premium" ? 0 : 1) - ((b.tier ?? "free") === "premium" ? 0 : 1));
   }, [questions, typeFilter, search]);
+
+  // Group filtered questions by category. A question may appear under multiple
+  // categories (one per tag in meta.tags). Questions with no tags fall under
+  // "Uncategorized".
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof filtered>();
+    for (const q of filtered) {
+      const tags = ((q.meta as { tags?: string[] } | null)?.tags ?? []).filter(Boolean);
+      const cats = tags.length ? tags : ["Uncategorized"];
+      for (const cat of cats) {
+        const arr = map.get(cat) ?? [];
+        arr.push(q);
+        map.set(cat, arr);
+      }
+    }
+    return [...map.entries()].sort(([a], [b]) => {
+      if (a === "Uncategorized") return 1;
+      if (b === "Uncategorized") return -1;
+      return a.localeCompare(b);
+    });
+  }, [filtered]);
+
+  const expandAll = () => setOpenCats(Object.fromEntries(grouped.map(([c]) => [c, true])));
+  const collapseAll = () => setOpenCats({});
 
   return (
     <OrgShell
@@ -152,13 +177,17 @@ function GlobalBankView({ org }: { org: { id: string; name?: string } }) {
       </div>
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-          <SelectTrigger className="h-9 w-[180px] text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {TYPE_CARDS.map((c) => (<SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+            <SelectTrigger className="h-9 w-[180px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {TYPE_CARDS.map((c) => (<SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>))}
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" onClick={expandAll} className="h-9 text-xs">Expand all</Button>
+          <Button variant="ghost" size="sm" onClick={collapseAll} className="h-9 text-xs">Collapse all</Button>
+        </div>
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search global questions…" className="pl-8 h-9 text-sm" />
@@ -167,42 +196,62 @@ function GlobalBankView({ org }: { org: { id: string; name?: string } }) {
 
       {isLoading ? (
         <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
-      ) : filtered.length === 0 ? (
+      ) : grouped.length === 0 ? (
         <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
           {questions?.length ? "No questions match your filters." : "The global bank is empty. Super-admins can add curated questions here."}
         </div>
       ) : (
-        <div className="b2b-card overflow-hidden divide-y divide-[hsl(var(--border))]">
-          {filtered.map((q) => {
-            const tier = (q.tier ?? "free") as "free" | "premium";
+        <div className="space-y-2">
+          {grouped.map(([category, items]) => {
+            const open = !!openCats[category];
             return (
-              <div key={q.id} className={`flex items-center gap-3 px-3 py-2.5 hover:bg-[hsl(var(--secondary))/0.4] ${tier === "premium" ? "border-l-2 border-l-amber-500/60" : ""}`}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className="capitalize text-[10px]">{q.type.replace("_", " ")}</Badge>
-                    <span className="font-medium truncate">{q.title}</span>
-                    <TierBadge tier={tier} />
-                  </div>
-                  {q.body_md && (
-                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-1">{q.body_md}</p>
-                  )}
-                </div>
-                <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">{q.points} pts</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={clone.isPending}
-                  onClick={async () => {
-                    try {
-                      await clone.mutateAsync({ question_id: q.id, target_org: org.id });
-                      toast.success("Cloned into your bank");
-                    } catch (e) {
-                      toast.error(e instanceof Error ? e.message : "Failed to clone");
-                    }
-                  }}
+              <div key={category} className="b2b-card overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setOpenCats((p) => ({ ...p, [category]: !p[category] }))}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-[hsl(var(--secondary))/0.4] transition-colors"
                 >
-                  <Copy className="h-4 w-4 mr-1" /> Clone
-                </Button>
+                  <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
+                  <span className="font-semibold text-sm capitalize">{category}</span>
+                  <Badge variant="secondary" className="ml-1 text-[10px]">{items.length}</Badge>
+                </button>
+                {open && (
+                  <div className="divide-y divide-[hsl(var(--border))] border-t border-[hsl(var(--border))]">
+                    {items.map((q) => {
+                      const tier = (q.tier ?? "free") as "free" | "premium";
+                      return (
+                        <div key={`${category}-${q.id}`} className={`flex items-center gap-3 px-3 py-2.5 hover:bg-[hsl(var(--secondary))/0.4] ${tier === "premium" ? "border-l-2 border-l-amber-500/60" : ""}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline" className="capitalize text-[10px]">{q.type.replace("_", " ")}</Badge>
+                              <span className="font-medium truncate">{q.title}</span>
+                              <TierBadge tier={tier} />
+                            </div>
+                            {q.body_md && (
+                              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-1">{q.body_md}</p>
+                            )}
+                          </div>
+                          <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">{q.points} pts</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={clone.isPending}
+                            onClick={async () => {
+                              try {
+                                await clone.mutateAsync({ question_id: q.id, target_org: org.id });
+                                toast.success("Cloned into your bank");
+                              } catch (e) {
+                                toast.error(e instanceof Error ? e.message : "Failed to clone");
+                              }
+                            }}
+                          >
+                            <Copy className="h-4 w-4 mr-1" /> Clone
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
