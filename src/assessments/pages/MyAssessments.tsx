@@ -1,77 +1,164 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMyInvites, useMyAttempts, claimInvite } from "@/b2b/hooks/useInvites";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  Inbox,
+  History,
+  Clock,
+  ArrowRight,
+  ArrowLeft,
+  FileCheck2,
+  PlayCircle,
+  AlertCircle,
+} from "lucide-react";
+import { SectionCard } from "@/b2b/components/ui/SectionCard";
+import { StatusPill, type StatusTone } from "@/b2b/components/ui/StatusPill";
+import { EmptyState } from "@/b2b/components/ui/EmptyState";
+
+const ATTEMPT_TONE: Record<string, StatusTone> = {
+  in_progress: "live",
+  submitted: "success",
+  expired: "danger",
+  abandoned: "warning",
+  pending: "neutral",
+};
 
 export default function MyAssessments() {
   const { data: invites } = useMyInvites();
   const { data: attempts } = useMyAttempts();
   const navigate = useNavigate();
 
+  const pendingCount =
+    invites?.filter((i: any) => i.status === "pending" || i.status === "claimed").length ?? 0;
+
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))] p-6 max-w-4xl mx-auto space-y-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">My assessments</h1>
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Home</Link>
-      </header>
+    <div className="min-h-screen bg-[hsl(var(--background))] relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-32 right-0 h-72 w-[500px] rounded-full bg-[hsl(var(--primary))]/10 blur-3xl" />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Invitations</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {!invites?.length && (
-            <p className="text-sm text-muted-foreground">No invitations yet.</p>
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* Header */}
+        <header className="flex items-center justify-between gap-3">
+          <div>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-3 w-3" /> Home
+            </Link>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight">My assessments</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Invitations and past attempts in one place.
+            </p>
+          </div>
+          {pendingCount > 0 && (
+            <div className="rounded-full border border-[hsl(var(--primary))]/30 bg-[hsl(var(--primary))]/10 px-3 py-1 text-xs font-semibold text-[hsl(var(--primary))]">
+              {pendingCount} ready to start
+            </div>
           )}
-          {invites?.map((i: any) => (
-            <div key={i.id} className="flex items-center justify-between border rounded-md p-3 text-sm">
-              <div className="min-w-0">
-                <div className="font-medium truncate">{i.assessment?.title ?? "Assessment"}</div>
-                <div className="text-xs text-muted-foreground">{i.assessment?.duration_min} min</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={i.status === "pending" ? "secondary" : "default"}>{i.status}</Badge>
-                {(i.status === "pending" || i.status === "claimed") && (
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        const a: any = await claimInvite(i.token);
-                        navigate(`/assessments/${a.id}/lobby`);
-                      } catch (err: any) {
-                        toast.error(err?.message ?? "Could not join");
-                      }
-                    }}
+        </header>
+
+        {/* Invitations */}
+        <SectionCard
+          icon={Inbox}
+          title="Invitations"
+          description="Tests recruiters have sent you"
+        >
+          {!invites?.length ? (
+            <EmptyState
+              icon={Inbox}
+              title="No invitations yet"
+              description="When a recruiter invites you to a test, it will appear here."
+            />
+          ) : (
+            <ul className="divide-y divide-[hsl(var(--border))]/40 -mx-5">
+              {invites.map((i: any) => {
+                const canStart = i.status === "pending" || i.status === "claimed";
+                return (
+                  <li
+                    key={i.id}
+                    className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
                   >
-                    {i.status === "claimed" ? "Resume" : "Start"}
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle className="text-base">Past attempts</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {!attempts?.length && (
-            <p className="text-sm text-muted-foreground">You haven't taken any assessments yet.</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate text-sm">
+                        {i.assessment?.title ?? "Assessment"}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {i.assessment?.duration_min ?? "—"} min
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <StatusPill tone={i.status === "pending" ? "scheduled" : i.status === "claimed" ? "live" : "neutral"}>
+                        {i.status}
+                      </StatusPill>
+                      {canStart && (
+                        <Button
+                          size="sm"
+                          className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                          onClick={async () => {
+                            try {
+                              const a: any = await claimInvite(i.token);
+                              navigate(`/assessments/${a.id}/lobby`);
+                            } catch (err: any) {
+                              toast.error(err?.message ?? "Could not join");
+                            }
+                          }}
+                        >
+                          {i.status === "claimed" ? (
+                            <>
+                              Resume <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="h-3.5 w-3.5 mr-1" /> Start
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          {attempts?.map((a: any) => (
-            <div key={a.id} className="flex items-center justify-between border rounded-md p-3 text-sm">
-              <div className="min-w-0">
-                <div className="font-medium truncate">{a.assessment?.title ?? "Assessment"}</div>
-                <div className="text-xs text-muted-foreground">
-                  {new Date(a.started_at).toLocaleString()}
-                </div>
-              </div>
-              <Badge variant="outline">{a.status}</Badge>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+        </SectionCard>
+
+        {/* Past attempts */}
+        <SectionCard icon={History} title="Past attempts" description="Your test history">
+          {!attempts?.length ? (
+            <EmptyState
+              icon={FileCheck2}
+              title="No attempts yet"
+              description="Completed tests will be listed here with date and status."
+            />
+          ) : (
+            <ul className="divide-y divide-[hsl(var(--border))]/40 -mx-5">
+              {attempts.map((a: any) => (
+                <li
+                  key={a.id}
+                  className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate text-sm">
+                      {a.assessment?.title ?? "Assessment"}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                      {a.started_at ? new Date(a.started_at).toLocaleString() : "—"}
+                    </div>
+                  </div>
+                  <StatusPill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>
+                    {a.status === "in_progress" && (
+                      <AlertCircle className="h-3 w-3" />
+                    )}
+                    {a.status?.replace(/_/g, " ")}
+                  </StatusPill>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+      </div>
     </div>
   );
 }
