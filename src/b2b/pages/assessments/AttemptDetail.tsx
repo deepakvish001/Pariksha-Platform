@@ -20,6 +20,8 @@ import { useCanProctor } from "../../hooks/usePermissions";
 import { paths } from "@/lib/routing/paths";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { FileQuestion } from "lucide-react";
 
 const ATTEMPT_STATUS_TONE: Record<string, StatusTone> = {
   in_progress: "live",
