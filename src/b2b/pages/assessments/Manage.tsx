@@ -19,6 +19,7 @@ import { RetentionCard } from "@/components/proctoring/RetentionCard";
 import { LiveProctorWall } from "../../components/LiveProctorWall";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
