@@ -77,6 +77,12 @@ export default function QuestionBank() {
   const filtered = useMemo(() => {
     let list = questions ?? [];
     if (filter !== "all") list = list.filter((q) => q.type === filter);
+    if (statusFilter !== "all") {
+      list = list.filter((q) => {
+        const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
+        return s === statusFilter;
+      });
+    }
     const s = search.trim().toLowerCase();
     if (s) {
       list = list.filter(
@@ -87,7 +93,7 @@ export default function QuestionBank() {
       );
     }
     return list;
-  }, [questions, filter, search]);
+  }, [questions, filter, statusFilter, search]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: questions?.length ?? 0 };
