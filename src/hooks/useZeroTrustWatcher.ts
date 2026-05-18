@@ -176,6 +176,52 @@ export function useZeroTrustWatcher(sessionId: string | null, enabled = true) {
     return () => document.removeEventListener("paste", onPaste, true);
   }, [enabled, sessionId]);
 
+  // ---- Window Management API: react to screens being added mid-test ----
+  useEffect(() => {
+    if (!enabled || !sessionId) return;
+    let cleanup: (() => void) | null = null;
+    (async () => {
+      try {
+        const wm = (window as unknown as { getScreenDetails?: () => Promise<{ screens: unknown[]; addEventListener: (e: string, h: () => void) => void; removeEventListener: (e: string, h: () => void) => void }> }).getScreenDetails;
+        if (!wm) return;
+        const details = await wm();
+        const onChange = () => {
+          if ((details.screens?.length ?? 1) > 1) {
+            void report.current("second_monitor", "critical", { source: "screens.onchange", count: details.screens.length }, 30_000);
+          }
+        };
+        details.addEventListener("screenschange", onChange);
+        onChange();
+        cleanup = () => details.removeEventListener("screenschange", onChange);
+      } catch { /* permission denied — silent */ }
+    })();
+    return () => { cleanup?.(); };
+  }, [enabled, sessionId]);
+
+  // ---- Periodic silent identity recheck (every 10 min) ----
+  useEffect(() => {
+    if (!enabled || !sessionId) return;
+    const recheck = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false });
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+        await new Promise((r) => setTimeout(r, 400));
+        const canvas = document.createElement("canvas");
+        canvas.width = 320; canvas.height = 240;
+        canvas.getContext("2d")?.drawImage(video, 0, 0, 320, 240);
+        const frame = canvas.toDataURL("image/jpeg", 0.6);
+        stream.getTracks().forEach((t) => t.stop());
+        await supabase.functions.invoke("contest-identity-verify", {
+          body: { session_id: sessionId, mode: "recheck", frame },
+        });
+      } catch { /* webcam unavailable — main proctoring will flag */ }
+    };
+    const id = window.setInterval(recheck, 10 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [enabled, sessionId]);
+
   // ---- Network offline as info (existing useOnline handles UX) ----
   useEffect(() => {
     if (!enabled || !sessionId) return;
