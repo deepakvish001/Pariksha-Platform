@@ -196,6 +196,7 @@ import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics"
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
 import PublicVerifyReport from "./pages/contests/PublicVerifyReport";
+import PublicSessionSealVerify from "./pages/contests/PublicSessionSealVerify";
 import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
 import AdminIntegrityQueue from "./pages/admin/contests/AdminIntegrityQueue";
 import AdminBlogList from "./pages/admin/blog/AdminBlogList";
@@ -514,6 +515,7 @@ const App = () => (
                   <Route path="blog/audit" element={<AdminBlogAudit />} />
                 </Route>
                 <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
+                <Route path="/verify-seal/:sessionId" element={<PublicSessionSealVerify />} />
 
                 {/* Arena - 1v1 battles */}
                 <Route path="/arena" element={<ProtectedRoute><ArenaLayout /></ProtectedRoute>}>
