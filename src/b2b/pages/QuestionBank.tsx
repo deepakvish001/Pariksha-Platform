@@ -219,6 +219,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
   const qc = useQueryClient();
 
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published" | "archived">("all");
+  const [tierFilter, setTierFilter] = useState<"all" | "free" | "premium">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
