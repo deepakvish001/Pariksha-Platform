@@ -1,5 +1,6 @@
-import { ReactNode, useState } from "react";
-import { Check, Eye } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
+import { Check, Cloud, CloudOff, Eye } from "lucide-react";
+import { formatRelative } from "./useWizardAutosave";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,7 @@ export function WizardShell({
   publishErrors,
   publishedPreview,
   publishedPreviewTitle,
+  lastSavedAt,
 }: {
   steps: WizardStep[];
   current: number;
@@ -52,10 +54,19 @@ export function WizardShell({
   publishErrors?: string[];
   publishedPreview?: ReactNode;
   publishedPreviewTitle?: string;
+  lastSavedAt?: Date | null;
 }) {
   const isPublished = status === "published";
   const blockedByValidation = isPublished && (publishErrors?.length ?? 0) > 0;
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Tick once a minute so the "Saved Xs ago" label stays current.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, [lastSavedAt]);
+  const savedLabel = formatRelative(lastSavedAt ?? null, now);
   return (
     <div className="flex flex-col h-full">
       <div className="grid md:grid-cols-[200px_1fr] gap-6 flex-1 min-h-0">
@@ -140,6 +151,22 @@ export function WizardShell({
           >
             Back
           </Button>
+          <div
+            className="hidden sm:flex items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))]"
+            title={
+              lastSavedAt
+                ? `Autosaved locally at ${lastSavedAt.toLocaleString()}`
+                : "Your edits will be autosaved to this browser"
+            }
+            aria-live="polite"
+          >
+            {lastSavedAt ? (
+              <Cloud className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <CloudOff className="h-3.5 w-3.5 opacity-60" />
+            )}
+            <span>{savedLabel}</span>
+          </div>
         </div>
 
         {onStatusChange && (
