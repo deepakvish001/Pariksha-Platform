@@ -173,6 +173,92 @@ export default function QuestionBank() {
     }
   };
 
+  const [exporting, setExporting] = useState(false);
+  const fetchExportData = async () => {
+    if (!org) return null;
+    const { data: qs, error: qErr } = await supabase
+      .from("questions")
+      .select("*")
+      .eq("org_id", org.id)
+      .order("created_at", { ascending: false });
+    if (qErr) throw qErr;
+    const ids = (qs ?? []).map((q) => q.id);
+    if (ids.length === 0) return { questions: [], options: [], testCases: [] };
+    const [optsRes, testsRes] = await Promise.all([
+      supabase.from("mcq_options").select("*").in("question_id", ids),
+      supabase.from("question_test_cases").select("*").in("question_id", ids),
+    ]);
+    if (optsRes.error) throw optsRes.error;
+    if (testsRes.error) throw testsRes.error;
+    return { questions: qs ?? [], options: optsRes.data ?? [], testCases: testsRes.data ?? [] };
+  };
+
+  const triggerDownload = (filename: string, mime: string, content: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const csvEscape = (v: unknown) => {
+    if (v === null || v === undefined) return "";
+    const s = typeof v === "string" ? v : typeof v === "object" ? JSON.stringify(v) : String(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const exportAs = async (format: "json" | "csv") => {
+    if (!org || exporting) return;
+    setExporting(true);
+    try {
+      const data = await fetchExportData();
+      if (!data) return;
+      const stamp = new Date().toISOString().slice(0, 10);
+      const base = `questions-${org.id.slice(0, 8)}-${stamp}`;
+      if (format === "json") {
+        triggerDownload(
+          `${base}.json`,
+          "application/json",
+          JSON.stringify({ exported_at: new Date().toISOString(), org_id: org.id, ...data }, null, 2),
+        );
+      } else {
+        const optsByQ = new Map<string, typeof data.options>();
+        const testsByQ = new Map<string, typeof data.testCases>();
+        data.options.forEach((o) => {
+          const arr = optsByQ.get(o.question_id) ?? [];
+          arr.push(o);
+          optsByQ.set(o.question_id, arr);
+        });
+        data.testCases.forEach((t) => {
+          const arr = testsByQ.get(t.question_id) ?? [];
+          arr.push(t);
+          testsByQ.set(t.question_id, arr);
+        });
+        const headers = [
+          "id", "type", "title", "body_md", "language", "starter_code",
+          "points", "meta", "created_at", "updated_at",
+          "mcq_options_json", "test_cases_json",
+        ];
+        const rows = data.questions.map((q) => [
+          q.id, q.type, q.title, q.body_md, q.language, q.starter_code,
+          q.points, q.meta, q.created_at, q.updated_at,
+          optsByQ.get(q.id) ?? [], testsByQ.get(q.id) ?? [],
+        ].map(csvEscape).join(","));
+        const csv = [headers.join(","), ...rows].join("\n");
+        triggerDownload(`${base}.csv`, "text/csv;charset=utf-8", csv);
+      }
+      toast.success(`Exported ${data.questions.length} question${data.questions.length === 1 ? "" : "s"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to export questions");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     let list = questions ?? [];
     if (filter !== "all") list = list.filter((q) => q.type === filter);
