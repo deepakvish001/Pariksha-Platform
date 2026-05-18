@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type PublishStatus = "draft" | "published";
 
@@ -64,6 +74,7 @@ export function WizardShell({
   const [historyOpen, setHistoryOpen] = useState(false);
   // Tick once a minute so the "Saved Xs ago" label stays current.
   const [now, setNow] = useState(() => Date.now());
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   useEffect(() => {
     if (!lastSavedAt) return;
     const id = setInterval(() => setNow(Date.now()), 15_000);
@@ -183,7 +194,14 @@ export function WizardShell({
             <Switch
               id="wizard-publish-toggle"
               checked={isPublished}
-              onCheckedChange={(v) => onStatusChange(v ? "published" : "draft")}
+              onCheckedChange={(v) => {
+                if (!v && isPublished) {
+                  // Block instant unpublish; require explicit confirmation.
+                  setConfirmUnpublish(true);
+                  return;
+                }
+                onStatusChange(v ? "published" : "draft");
+              }}
               disabled={saving}
             />
             <Badge
@@ -282,6 +300,28 @@ export function WizardShell({
           </DialogContent>
         </Dialog>
       )}
+
+      <AlertDialog open={confirmUnpublish} onOpenChange={setConfirmUnpublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this question?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Switching from Published back to Draft hides this question from candidates and removes it from any assessment that pulls live questions. In-flight attempts won't be affected, but you'll need to publish again before reusing it. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep published</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmUnpublish(false);
+                onStatusChange?.("draft");
+              }}
+            >
+              Move to draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
