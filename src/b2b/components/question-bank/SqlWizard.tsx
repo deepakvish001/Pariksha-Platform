@@ -19,6 +19,7 @@ import {
   type Question,
 } from "../../hooks/useQuestions";
 import { WizardShell, type WizardStep } from "./WizardShell";
+import { useWizardAutosave, loadAutosave, clearAutosave } from "./useWizardAutosave";
 import { DifficultyPicker, StringListEditor, TagInput, ValidationHint } from "./widgets";
 import { SQL_DIALECTS, type Difficulty, type SqlDialect, type SqlMeta } from "./types";
 
