@@ -106,6 +106,19 @@ export function WizardShell({
         </div>
       </div>
 
+      {blockedByValidation && (
+        <div className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2">
+          <div className="text-xs font-semibold text-rose-600 dark:text-rose-400 mb-1">
+            Fix the following to publish:
+          </div>
+          <ul className="text-xs text-rose-600/90 dark:text-rose-400/90 list-disc pl-5 space-y-0.5">
+            {publishErrors!.map((err) => (
+              <li key={err}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="border-t mt-4 pt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Button
@@ -157,7 +170,8 @@ export function WizardShell({
           ) : (
             <Button
               onClick={isPublished ? onPublish : onSaveDraft}
-              disabled={!canAdvance || saving}
+              disabled={!canAdvance || saving || blockedByValidation}
+              title={blockedByValidation ? "Resolve validation errors to publish" : undefined}
               className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             >
               {saving
