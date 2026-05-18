@@ -39,6 +39,7 @@ export default function ContestPlayProblem() {
   // Read-only stream health snapshot for the kiosk banner. The actual
   // recorders live inside SecureProblemHUD's useContestSecureMode hook.
   const streamHealth = useContestStreamHealth(session.sessionId ?? null);
+  const termination = useTerminationWatcher(session.sessionId ?? null);
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
   const { user } = useAuth();
