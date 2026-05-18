@@ -1,6 +1,11 @@
 import { ReactNode } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+
+export type PublishStatus = "draft" | "published";
 
 export type WizardStep = { key: string; label: string; description?: string };
 
