@@ -89,15 +89,27 @@ export function SqlWizard({
 }) {
   const [step, setStep] = useState(startStep);
   const initialDraft = useMemo(() => (initial ? fromQuestion(initial) : EMPTY), [initial]);
-  const [draft, setDraft] = useState<Draft>(initialDraft);
-  const [questionId, setQuestionId] = useState<string | undefined>(initial?.id);
-  const [saving, setSaving] = useState(false);
+  const autosaveKey = `sql:${initial?.id ?? "new"}`;
   const initialStatus: "draft" | "published" =
     ((initial?.meta as SqlMeta | undefined)?.status) === "published"
       ? "published"
       : "draft";
-  const [status, setStatus] = useState<"draft" | "published">(initialStatus);
+  const restored = useMemo(() => {
+    if (initial) return null;
+    return loadAutosave<Draft>(autosaveKey);
+  }, [initial, autosaveKey]);
+  const [draft, setDraft] = useState<Draft>(restored?.draft ?? initialDraft);
+  const [questionId, setQuestionId] = useState<string | undefined>(initial?.id);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<"draft" | "published">(
+    restored?.status ?? initialStatus,
+  );
   const wasPublished = initialStatus === "published";
+  useEffect(() => {
+    if (restored) toast.message("Restored your unsaved draft from this browser.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const { lastSavedAt } = useWizardAutosave(autosaveKey, draft, status);
 
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
