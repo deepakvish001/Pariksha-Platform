@@ -66,6 +66,12 @@ export default function AssessmentDetail() {
   }
 
   const isPublished = assessment.status === "published";
+  const STATUS_TONE: Record<string, StatusTone> = {
+    draft: "draft",
+    published: "live",
+    archived: "archived",
+    closed: "closed",
+  };
 
   return (
     <OrgShell
