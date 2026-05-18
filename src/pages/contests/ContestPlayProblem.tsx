@@ -7,6 +7,8 @@ import { useContestTabLock } from "@/hooks/useContestTabLock";
 import { useContestStreamHealth } from "@/hooks/useContestStreamHealth";
 import { useTerminationWatcher } from "@/hooks/useTerminationWatcher";
 import { useZeroTrustWatcher } from "@/hooks/useZeroTrustWatcher";
+import { useContestSessionSigner } from "@/hooks/useContestSessionSigner";
+import SessionWatermark from "@/components/contests/SessionWatermark";
 import TerminationLockout from "@/components/contests/TerminationLockout";
 import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";

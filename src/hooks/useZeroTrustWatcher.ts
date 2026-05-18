@@ -222,6 +222,44 @@ export function useZeroTrustWatcher(sessionId: string | null, enabled = true) {
     return () => window.clearInterval(id);
   }, [enabled, sessionId]);
 
+  // ---- Print Screen attempt (Layer 1) ----
+  // The browser cannot block PrintScreen at the OS level, but we can detect
+  // the keydown and flag it as a critical violation. Most candidates who do
+  // this lose the session immediately under `hard` enforcement.
+  useEffect(() => {
+    if (!enabled || !sessionId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen" || e.code === "PrintScreen") {
+        void report.current("print_screen_attempt", "critical", {}, 5_000);
+      }
+      // Snipping Tool / OS screenshot hotkeys (Win+Shift+S, Cmd+Shift+3/4/5)
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && /^(3|4|5|s|S)$/.test(e.key)) {
+        void report.current("os_screenshot_hotkey", "high", { key: e.key }, 5_000);
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("keyup", onKey, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("keyup", onKey, true);
+    };
+  }, [enabled, sessionId]);
+
+  // ---- Copy attempt (Layer 1 forensic) ----
+  useEffect(() => {
+    if (!enabled || !sessionId) return;
+    const onCopy = (e: ClipboardEvent) => {
+      const text = window.getSelection()?.toString() ?? "";
+      if (text.length > 40) {
+        void report.current("copy_attempt", "high", { chars: text.length }, 5_000);
+      } else if (text.length > 0) {
+        void report.current("copy_attempt", "warn", { chars: text.length }, 10_000);
+      }
+    };
+    document.addEventListener("copy", onCopy, true);
+    return () => document.removeEventListener("copy", onCopy, true);
+  }, [enabled, sessionId]);
+
   // ---- Network offline as info (existing useOnline handles UX) ----
   useEffect(() => {
     if (!enabled || !sessionId) return;
