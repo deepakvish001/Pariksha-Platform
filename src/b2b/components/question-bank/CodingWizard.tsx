@@ -13,7 +13,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Trash2, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import {
   useCreateQuestion,
@@ -876,75 +893,97 @@ function PersistedTestCases({
     ]);
   };
 
+  // Rewrite order_index for an entire group based on their new array order.
+  const reorderGroup = async (
+    group: NonNullable<typeof cases>,
+    fromId: string,
+    toId: string,
+  ) => {
+    const oldIndex = group.findIndex((c) => c.id === fromId);
+    const newIndex = group.findIndex((c) => c.id === toId);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+    const nextGroup = arrayMove(group, oldIndex, newIndex);
+    // Persist only rows whose order_index actually changed.
+    const writes = nextGroup
+      .map((t, i) => ({ t, newOrder: group[i].order_index }))
+      .filter(({ t, newOrder }) => t.order_index !== newOrder)
+      .map(({ t, newOrder }) =>
+        upsert.mutateAsync({
+          id: t.id,
+          question_id: t.question_id,
+          input: t.input,
+          expected_output: t.expected_output,
+          is_hidden: t.is_hidden,
+          weight: t.weight,
+          order_index: newOrder,
+        }),
+      );
+    await Promise.all(writes);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   const renderCase = (t: NonNullable<typeof cases>[number], list: NonNullable<typeof cases>) => {
     const pos = list.findIndex((x) => x.id === t.id);
     const isFirst = pos === 0;
     const isLast = pos === list.length - 1;
     return (
-      <div key={t.id} className="border rounded-md p-2.5 text-xs space-y-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Badge variant={t.is_hidden ? "secondary" : "outline"} className="gap-1">
-              {t.is_hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              {t.is_hidden ? "Hidden" : "Sample"} #{pos + 1}
-            </Badge>
-            <span className="text-[hsl(var(--muted-foreground))]">weight {t.weight}</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              disabled={isFirst || upsert.isPending}
-              onClick={() => move(t.id, -1)}
-              aria-label="Move up"
-            >
-              <ArrowUp className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              disabled={isLast || upsert.isPending}
-              onClick={() => move(t.id, 1)}
-              aria-label="Move down"
-            >
-              <ArrowDown className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (wasPublished) {
-                  const kind = t.is_hidden ? "hidden" : "sample";
-                  if (
-                    !window.confirm(
-                      `This question is PUBLISHED. Deleting a ${kind} test may change grading for past or in-flight attempts. Delete anyway?`,
-                    )
-                  )
-                    return;
-                }
-                del.mutate({ id: t.id, question_id: t.question_id });
-              }}
-              aria-label="Delete"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">In</div>
-            <pre className="whitespace-pre-wrap font-mono">{t.input || "—"}</pre>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">Out</div>
-            <pre className="whitespace-pre-wrap font-mono">{t.expected_output}</pre>
-          </div>
-        </div>
-      </div>
+      <SortableTestRow
+        key={t.id}
+        id={t.id}
+        position={pos + 1}
+        test={t}
+        isFirst={isFirst}
+        isLast={isLast}
+        busy={upsert.isPending}
+        onUp={() => move(t.id, -1)}
+        onDown={() => move(t.id, 1)}
+        onDelete={() => {
+          if (wasPublished) {
+            const kind = t.is_hidden ? "hidden" : "sample";
+            if (
+              !window.confirm(
+                `This question is PUBLISHED. Deleting a ${kind} test may change grading for past or in-flight attempts. Delete anyway?`,
+              )
+            )
+              return;
+          }
+          del.mutate({ id: t.id, question_id: t.question_id });
+        }}
+      />
     );
   };
+
+  const renderGroup = (
+    title: string,
+    group: NonNullable<typeof cases>,
+  ) =>
+    group.length === 0 ? null : (
+      <div className="space-y-2">
+        <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+          {title}
+        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e: DragEndEvent) => {
+            const { active, over } = e;
+            if (!over || active.id === over.id) return;
+            reorderGroup(group, String(active.id), String(over.id));
+          }}
+        >
+          <SortableContext
+            items={group.map((g) => g.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {group.map((t) => renderCase(t, group))}
+          </SortableContext>
+        </DndContext>
+      </div>
+    );
 
   return (
     <div className="space-y-3">
@@ -968,19 +1007,14 @@ function PersistedTestCases({
         </div>
       )}
 
-      {samples.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Sample (visible)</div>
-          {samples.map((t) => renderCase(t, samples))}
-        </div>
+      {(samples.length > 0 || hiddens.length > 0) && (
+        <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+          Drag the <GripVertical className="inline h-3 w-3 align-text-bottom" /> handle to reorder, or use the up/down arrows.
+        </p>
       )}
 
-      {hiddens.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Hidden</div>
-          {hiddens.map((t) => renderCase(t, hiddens))}
-        </div>
-      )}
+      {renderGroup("Sample (visible)", samples)}
+      {renderGroup("Hidden", hiddens)}
 
 
       <div className="border rounded-md p-3 space-y-2 bg-[hsl(var(--secondary))/0.3]">
@@ -1026,6 +1060,107 @@ function PersistedTestCases({
           >
             <Plus className="h-3.5 w-3.5 mr-1" /> Add test case
           </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type TestRow = {
+  id: string;
+  question_id: string;
+  input: string | null;
+  expected_output: string;
+  is_hidden: boolean;
+  weight: number;
+  order_index: number;
+};
+
+function SortableTestRow({
+  id,
+  position,
+  test,
+  isFirst,
+  isLast,
+  busy,
+  onUp,
+  onDown,
+  onDelete,
+}: {
+  id: string;
+  position: number;
+  test: TestRow;
+  isFirst: boolean;
+  isLast: boolean;
+  busy: boolean;
+  onUp: () => void;
+  onDown: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border rounded-md p-2.5 text-xs space-y-1 bg-[hsl(var(--background))]"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            className="cursor-grab active:cursor-grabbing text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] touch-none"
+            aria-label="Drag to reorder"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <Badge variant={test.is_hidden ? "secondary" : "outline"} className="gap-1">
+            {test.is_hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            {test.is_hidden ? "Hidden" : "Sample"} #{position}
+          </Badge>
+          <span className="text-[hsl(var(--muted-foreground))]">weight {test.weight}</span>
+        </div>
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            disabled={isFirst || busy}
+            onClick={onUp}
+            aria-label="Move up"
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            disabled={isLast || busy}
+            onClick={onDown}
+            aria-label="Move down"
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onDelete} aria-label="Delete">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">In</div>
+          <pre className="whitespace-pre-wrap font-mono">{test.input || "—"}</pre>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase text-[hsl(var(--muted-foreground))]">Out</div>
+          <pre className="whitespace-pre-wrap font-mono">{test.expected_output}</pre>
         </div>
       </div>
     </div>
