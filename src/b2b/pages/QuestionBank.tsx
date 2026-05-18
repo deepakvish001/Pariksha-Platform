@@ -448,7 +448,7 @@ export default function QuestionBank() {
                     key={q.id}
                     className={`b2b-card p-4 flex items-center justify-between gap-3 ${
                       isSelected ? "ring-1 ring-[hsl(var(--primary))/0.6]" : ""
-                    }`}
+                    } ${archived ? "opacity-70" : ""}`}
                   >
                     <Checkbox
                       checked={isSelected}
