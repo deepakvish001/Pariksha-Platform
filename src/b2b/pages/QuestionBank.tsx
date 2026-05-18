@@ -808,10 +808,21 @@ function EditView({ org }: { org: { id: string; name?: string } }) {
     );
   }
 
+  const tierBar = (
+    <div className="mb-4 b2b-card px-3 py-2 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-[hsl(var(--muted-foreground))]">Visibility tier:</span>
+        <TierBadge tier={(question.tier ?? "free") as "free" | "premium"} />
+      </div>
+      <TierToggle question={question} />
+    </div>
+  );
+
   // Coding & SQL use the existing multi-step wizard, full-page
   if (question.type === "coding") {
     return (
       <OrgShell title={`Edit · ${question.title}`} actions={<Button variant="ghost" size="sm" asChild><Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link></Button>}>
+        {tierBar}
         <div className="b2b-card p-4 md:p-6">
           <CodingWizard orgId={org.id} initial={question} onDone={backToList} onCancel={backToList} />
         </div>
@@ -821,6 +832,7 @@ function EditView({ org }: { org: { id: string; name?: string } }) {
   if (question.type === "sql") {
     return (
       <OrgShell title={`Edit · ${question.title}`} actions={<Button variant="ghost" size="sm" asChild><Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link></Button>}>
+        {tierBar}
         <div className="b2b-card p-4 md:p-6">
           <SqlWizard orgId={org.id} initial={question} onDone={backToList} onCancel={backToList} />
         </div>
@@ -838,6 +850,7 @@ function EditView({ org }: { org: { id: string; name?: string } }) {
         </Button>
       }
     >
+      {tierBar}
       <div className="b2b-card p-4 md:p-6 space-y-5">
         <div className="flex items-center gap-2">
           <Badge variant="outline">{question.type}</Badge>
