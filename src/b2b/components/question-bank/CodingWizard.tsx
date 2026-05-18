@@ -285,7 +285,10 @@ export function CodingWizard({
     hints: draft.hints.filter(Boolean),
   });
 
-  const persist = async (status: "draft" | "published") => {
+  const persist = async (
+    status: "draft" | "published",
+    opts?: { keepOpen?: boolean },
+  ) => {
     if (status === "published" && publishErrors.length > 0) {
       toast.error(
         `Can't publish yet — ${publishErrors.length} required field${
