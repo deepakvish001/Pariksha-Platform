@@ -126,6 +126,11 @@ export function CodingWizard({
   const [draft, setDraft] = useState<Draft>(initial ? fromQuestion(initial) : EMPTY);
   const [questionId, setQuestionId] = useState<string | undefined>(initial?.id);
   const [saving, setSaving] = useState(false);
+  const initialStatus: "draft" | "published" =
+    ((initial?.meta as CodingMeta | undefined)?.status) === "published"
+      ? "published"
+      : "draft";
+  const [status, setStatus] = useState<"draft" | "published">(initialStatus);
 
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
@@ -210,6 +215,8 @@ export function CodingWizard({
       onPublish={() => persist("published")}
       saving={saving}
       isLast={step === STEPS.length - 1}
+      status={status}
+      onStatusChange={setStatus}
       rightPane={<CodingPreview draft={draft} />}
     >
       {step === 0 && <BasicsStep draft={draft} patch={patch} />}

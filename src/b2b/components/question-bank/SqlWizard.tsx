@@ -90,6 +90,11 @@ export function SqlWizard({
   const [draft, setDraft] = useState<Draft>(initial ? fromQuestion(initial) : EMPTY);
   const [questionId, setQuestionId] = useState<string | undefined>(initial?.id);
   const [saving, setSaving] = useState(false);
+  const initialStatus: "draft" | "published" =
+    ((initial?.meta as SqlMeta | undefined)?.status) === "published"
+      ? "published"
+      : "draft";
+  const [status, setStatus] = useState<"draft" | "published">(initialStatus);
 
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
@@ -157,6 +162,8 @@ export function SqlWizard({
       onPublish={() => persist("published")}
       saving={saving}
       isLast={step === STEPS.length - 1}
+      status={status}
+      onStatusChange={setStatus}
       rightPane={
         <div className="space-y-3 text-xs">
           <div>

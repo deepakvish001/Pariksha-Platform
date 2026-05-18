@@ -1,6 +1,11 @@
 import { ReactNode } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+
+export type PublishStatus = "draft" | "published";
 
 export type WizardStep = { key: string; label: string; description?: string };
 
@@ -17,6 +22,8 @@ export function WizardShell({
   isLast,
   children,
   rightPane,
+  status,
+  onStatusChange,
 }: {
   steps: WizardStep[];
   current: number;
@@ -30,7 +37,10 @@ export function WizardShell({
   isLast?: boolean;
   children: ReactNode;
   rightPane?: ReactNode;
+  status?: PublishStatus;
+  onStatusChange?: (s: PublishStatus) => void;
 }) {
+  const isPublished = status === "published";
   return (
     <div className="flex flex-col h-full">
       <div className="grid md:grid-cols-[200px_1fr] gap-6 flex-1 min-h-0">
@@ -93,16 +103,42 @@ export function WizardShell({
         </div>
       </div>
 
-      <div className="border-t mt-4 pt-4 flex items-center justify-between gap-2">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          disabled={!onBack || current === 0 || saving}
-        >
-          Back
-        </Button>
+      <div className="border-t mt-4 pt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          {onSaveDraft && (
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            disabled={!onBack || current === 0 || saving}
+          >
+            Back
+          </Button>
+        </div>
+
+        {onStatusChange && (
+          <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-[hsl(var(--secondary))/0.4]">
+            <Label
+              htmlFor="wizard-publish-toggle"
+              className="text-xs cursor-pointer text-[hsl(var(--muted-foreground))]"
+            >
+              Status
+            </Label>
+            <Switch
+              id="wizard-publish-toggle"
+              checked={isPublished}
+              onCheckedChange={(v) => onStatusChange(v ? "published" : "draft")}
+              disabled={saving}
+            />
+            <Badge
+              variant={isPublished ? "default" : "outline"}
+              className="text-[10px] uppercase tracking-wide"
+            >
+              {isPublished ? "Published" : "Draft"}
+            </Badge>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          {onSaveDraft && !onStatusChange && (
             <Button variant="outline" onClick={onSaveDraft} disabled={saving}>
               {saving ? "Saving…" : "Save draft"}
             </Button>
@@ -117,11 +153,17 @@ export function WizardShell({
             </Button>
           ) : (
             <Button
-              onClick={onPublish}
+              onClick={isPublished ? onPublish : onSaveDraft}
               disabled={!canAdvance || saving}
               className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             >
-              {saving ? "Publishing…" : "Publish"}
+              {saving
+                ? isPublished
+                  ? "Publishing…"
+                  : "Saving…"
+                : isPublished
+                ? "Publish"
+                : "Save draft"}
             </Button>
           )}
         </div>
