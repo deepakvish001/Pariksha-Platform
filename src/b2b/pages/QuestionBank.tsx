@@ -564,6 +564,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
               <div className="hidden md:flex items-center gap-3 px-3 py-2 bg-[hsl(var(--secondary))/0.4] text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
                 <Checkbox checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false} onCheckedChange={toggleAllVisible} aria-label="Select all visible" className="shrink-0" />
                 <span className="flex-1">Title</span>
+                <span className="w-24">Tier</span>
                 <span className="w-16 text-right">Points</span>
                 <span className="w-24" />
               </div>
@@ -573,8 +574,9 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                 const archived = Boolean(meta.archived);
                 const diff = meta.difficulty;
                 const isSelected = selected.has(q.id);
+                const tier = (q.tier ?? "free") as "free" | "premium";
                 return (
-                  <div key={q.id} className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[hsl(var(--secondary))/0.4] ${isSelected ? "bg-[hsl(var(--primary))/0.06]" : ""} ${archived ? "opacity-70" : ""}`}>
+                  <div key={q.id} className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[hsl(var(--secondary))/0.4] ${isSelected ? "bg-[hsl(var(--primary))/0.06]" : ""} ${archived ? "opacity-70" : ""} ${tier === "premium" ? "border-l-2 border-l-amber-500/60" : ""}`}>
                     <Checkbox checked={isSelected} onCheckedChange={() => toggleOne(q.id)} aria-label={`Select ${q.title}`} className="shrink-0" />
                     <button onClick={() => navigate(`${base}/${typeKey}/${q.id}`)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -584,6 +586,7 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                         {diff && (
                           <Badge variant="outline" className={`capitalize ${diff === "easy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : diff === "hard" ? "border-rose-500/40 text-rose-600 dark:text-rose-400" : "border-amber-500/40 text-amber-600 dark:text-amber-400"}`}>{diff}</Badge>
                         )}
+                        <span className="md:hidden"><TierBadge tier={tier} /></span>
                       </div>
                       <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 flex items-center gap-2 flex-wrap">
                         {q.language && <span>{q.language}</span>}
@@ -592,13 +595,17 @@ function ListView({ org }: { org: { id: string; name?: string } }) {
                         ))}
                       </div>
                     </button>
+                    <span className="hidden md:flex w-24"><TierBadge tier={tier} /></span>
                     <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">{q.points}</span>
                     <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="sm" onClick={() => setTier(q, tier === "premium" ? "free" : "premium")} disabled={upd.isPending} title={tier === "premium" ? "Mark Free" : "Mark Premium"}>
+                        <Sparkles className={`h-4 w-4 ${tier === "premium" ? "text-amber-500" : ""}`} />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => duplicateQuestion(q)} disabled={duplicatingId === q.id} title="Duplicate question"><Copy className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => toggleArchive(q)} disabled={upd.isPending} title={archived ? "Restore question" : "Archive question"}>
                         {archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => { if (!confirm(`Delete "${q.title}"?`)) return; del.mutate({ id: q.id, org_id: q.org_id }); }} title="Delete question"><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => { if (!confirm(`Delete "${q.title}"?`)) return; if (q.org_id) del.mutate({ id: q.id, org_id: q.org_id }); }} title="Delete question"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </div>
                 );
