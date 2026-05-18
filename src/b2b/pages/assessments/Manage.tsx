@@ -715,19 +715,9 @@ function ParticipantRow({
   const canForceSubmit =
     !!p.attempt_id && p.status !== "submitted" && p.status !== "auto_submitted";
   const ev = evidence;
-  const navigate = useNavigate();
   const onRowClick = (e: React.MouseEvent) => {
     // Avoid triggering on action button clicks
     if ((e.target as HTMLElement).closest("[data-row-action]")) return;
-    if (detailHref) {
-      // Support cmd/ctrl/middle-click to open in new tab
-      if (e.metaKey || e.ctrlKey || (e as any).button === 1) {
-        window.open(detailHref, "_blank", "noopener,noreferrer");
-        return;
-      }
-      navigate(detailHref);
-      return;
-    }
     onOpen();
   };
 
@@ -735,26 +725,19 @@ function ParticipantRow({
     <tr
       className="hover:bg-white/[0.02] cursor-pointer"
       onClick={onRowClick}
-      title={detailHref ? "Open full candidate details" : undefined}
+      title="Open candidate details"
     >
       <td className="py-2.5 px-2 min-w-0">
-        {detailHref ? (
-          <a
-            href={detailHref}
-            data-row-action
-            onClick={(e) => {
-              e.stopPropagation();
-              if (e.metaKey || e.ctrlKey || e.button === 1) return; // let browser open new tab
-              e.preventDefault();
-              navigate(detailHref);
-            }}
-            className="font-medium truncate hover:underline hover:text-primary inline-flex items-center gap-1"
-          >
-            {p.name ?? p.email}
-          </a>
-        ) : (
-          <div className="font-medium truncate">{p.name ?? p.email}</div>
-        )}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
+          className="font-medium truncate text-left hover:underline hover:text-primary inline-flex items-center gap-1"
+        >
+          {p.name ?? p.email}
+        </button>
         <div className="text-muted-foreground text-[10px] truncate">
           {p.email}
           {p.external_id ? ` · ${p.external_id}` : ""}
