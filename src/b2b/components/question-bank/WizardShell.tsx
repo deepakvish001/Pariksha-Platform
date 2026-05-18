@@ -196,6 +196,17 @@ export function WizardShell({
         )}
 
         <div className="flex items-center gap-2">
+          {history && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHistoryOpen(true)}
+              disabled={saving}
+              title="View draft / publish history for this question"
+            >
+              <History className="h-4 w-4 mr-1" /> History
+            </Button>
+          )}
           {publishedPreview && (
             <Button
               variant="outline"
