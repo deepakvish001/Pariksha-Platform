@@ -266,6 +266,22 @@ export function WizardShell({
           </DialogContent>
         </Dialog>
       )}
+
+      {history && (
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-4 w-4" /> Status history
+              </DialogTitle>
+              <DialogDescription>
+                Every time this question is saved as a draft or published, a timestamped entry is recorded here.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-3">{history}</div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
