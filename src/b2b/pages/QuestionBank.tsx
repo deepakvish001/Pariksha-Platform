@@ -234,16 +234,6 @@ export default function QuestionBank() {
                 />
               </div>
             </div>
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search questions…"
-                  className="pl-8 h-9 text-sm"
-                />
-              </div>
-            </div>
           </div>
 
           {filtered.length === 0 ? (
