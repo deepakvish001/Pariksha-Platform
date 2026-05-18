@@ -905,9 +905,10 @@ function PersistedTestCases({
     const newIndex = group.findIndex((c) => c.id === toId);
     if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
     const nextGroup = arrayMove(group, oldIndex, newIndex);
-    // Compute target order_index per moved row (reuse original positions' indices).
+    // Re-index the whole group to contiguous 0..n-1 values so order_index
+    // stays clean within sample/hidden buckets after every reorder.
     const targets = nextGroup
-      .map((t, i) => ({ t, newOrder: group[i].order_index }))
+      .map((t, i) => ({ t, newOrder: i }))
       .filter(({ t, newOrder }) => t.order_index !== newOrder);
     if (targets.length === 0) return;
 
