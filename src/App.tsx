@@ -196,6 +196,7 @@ import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics"
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
 import PublicVerifyReport from "./pages/contests/PublicVerifyReport";
+import PublicSessionSealVerify from "./pages/contests/PublicSessionSealVerify";
 import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
 import AdminIntegrityQueue from "./pages/admin/contests/AdminIntegrityQueue";
 import AdminBlogList from "./pages/admin/blog/AdminBlogList";
