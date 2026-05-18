@@ -515,6 +515,7 @@ const App = () => (
                   <Route path="blog/audit" element={<AdminBlogAudit />} />
                 </Route>
                 <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
+                <Route path="/verify-seal/:sessionId" element={<PublicSessionSealVerify />} />
 
                 {/* Arena - 1v1 battles */}
                 <Route path="/arena" element={<ProtectedRoute><ArenaLayout /></ProtectedRoute>}>
