@@ -5,6 +5,8 @@ import { useMyOrganizations } from "../hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useQuestions,
+  useGlobalQuestions,
+  useCloneGlobalQuestion,
   useCreateQuestion,
   useUpdateQuestion,
   useDeleteQuestion,
@@ -18,6 +20,7 @@ import {
   type Question,
   type McqOption,
 } from "../hooks/useQuestions";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
