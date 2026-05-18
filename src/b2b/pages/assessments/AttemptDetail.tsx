@@ -37,9 +37,11 @@ export default function AttemptDetail() {
   const navigate = useNavigate();
   const { org } = useCurrentOrg();
   const basePath = useOrgBasePath();
+  // The attempt segment may be prefixed with a candidate slug; strip it for lookup.
+  const attemptKey = parseAttemptSegment(attemptIdOrSlug);
   // Resolve assessment first so the attempt query can be scoped by it.
   const { data: assessment } = useAssessment(idOrSlug, org?.id);
-  const { data, isLoading, error } = useAttemptDetail(attemptIdOrSlug, assessment?.id);
+  const { data, isLoading, error } = useAttemptDetail(attemptKey, assessment?.id);
   const grade = useGradeAnswer();
   const finalize = useFinalizeAttemptScore();
   const { data: events } = useAttemptEvents(data?.attempt.id);
