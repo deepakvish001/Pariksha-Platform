@@ -1,7 +1,7 @@
 import { useState, KeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, X, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, X, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Difficulty } from "./types";
 
@@ -107,16 +107,52 @@ export function StringListEditor({
   const update = (i: number, v: string) =>
     onChange(value.map((x, idx) => (idx === i ? v : x)));
   const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= value.length) return;
+    const next = value.slice();
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+  };
   return (
     <div className="space-y-2">
       {value.map((v, i) => (
-        <div key={i} className="flex gap-2">
+        <div key={i} className="flex items-center gap-1.5">
+          <span className="text-[10px] font-mono w-5 text-center text-[hsl(var(--muted-foreground))]">
+            {i + 1}
+          </span>
           <Input
             value={v}
             onChange={(e) => update(i, e.target.value)}
             placeholder={placeholder}
           />
-          <Button variant="ghost" size="sm" onClick={() => remove(i)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => move(i, -1)}
+            disabled={i === 0}
+            aria-label="Move up"
+            title="Move up"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => move(i, 1)}
+            disabled={i === value.length - 1}
+            aria-label="Move down"
+            title="Move down"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => remove(i)}
+            aria-label="Remove"
+            title="Remove"
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
