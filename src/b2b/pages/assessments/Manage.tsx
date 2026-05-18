@@ -99,7 +99,7 @@ const STATUS_TONE: Record<ParticipantStatus, StatusTone> = {
   in_progress: "live",
   submitted: "success",
   auto_submitted: "warning",
-  abandoned: "bg-rose-500/15 text-rose-300 border border-rose-500/30",
+  abandoned: "danger",
 };
 
 function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
