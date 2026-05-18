@@ -87,7 +87,8 @@ export function SqlWizard({
   onCancel: () => void;
 }) {
   const [step, setStep] = useState(startStep);
-  const [draft, setDraft] = useState<Draft>(initial ? fromQuestion(initial) : EMPTY);
+  const initialDraft = useMemo(() => (initial ? fromQuestion(initial) : EMPTY), [initial]);
+  const [draft, setDraft] = useState<Draft>(initialDraft);
   const [questionId, setQuestionId] = useState<string | undefined>(initial?.id);
   const [saving, setSaving] = useState(false);
   const initialStatus: "draft" | "published" =
@@ -95,6 +96,7 @@ export function SqlWizard({
       ? "published"
       : "draft";
   const [status, setStatus] = useState<"draft" | "published">(initialStatus);
+  const wasPublished = initialStatus === "published";
 
   const create = useCreateQuestion();
   const update = useUpdateQuestion();
@@ -125,6 +127,25 @@ export function SqlWizard({
     return errs;
   }, [draft]);
 
+  // Changes that could invalidate the expected result set used for grading.
+  const riskyChanges = useMemo(() => {
+    if (!wasPublished) return [] as string[];
+    const changes: string[] = [];
+    if (draft.dialect !== initialDraft.dialect)
+      changes.push(`Dialect changed (${initialDraft.dialect} → ${draft.dialect}).`);
+    if (draft.schema_ddl.trim() !== initialDraft.schema_ddl.trim())
+      changes.push("Schema (DDL) changed — every grading run depends on this.");
+    if (draft.seed_sql.trim() !== initialDraft.seed_sql.trim())
+      changes.push("Seed data changed — expected rows may differ.");
+    if (draft.reference_query.trim() !== initialDraft.reference_query.trim())
+      changes.push("Reference query changed — the expected result set will change.");
+    if (draft.order_sensitive !== initialDraft.order_sensitive)
+      changes.push(
+        `Order sensitivity toggled ${initialDraft.order_sensitive ? "off" : "on"}.`,
+      );
+    return changes;
+  }, [wasPublished, draft, initialDraft]);
+
   const buildMeta = (status: "draft" | "published"): SqlMeta => ({
     status,
     difficulty: draft.difficulty,
@@ -138,6 +159,14 @@ export function SqlWizard({
   });
 
   const persist = async (status: "draft" | "published") => {
+    if (riskyChanges.length > 0) {
+      const proceed = window.confirm(
+        `Heads up — you're editing a PUBLISHED SQL question and changed fields that affect grading:\n\n• ${riskyChanges.join(
+          "\n• ",
+        )}\n\nPast attempts won't be regraded automatically. Continue?`,
+      );
+      if (!proceed) return;
+    }
     setSaving(true);
     try {
       const meta = buildMeta(status);
