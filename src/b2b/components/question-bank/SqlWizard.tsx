@@ -188,6 +188,16 @@ export function SqlWizard({
   });
 
   const persist = async (status: "draft" | "published") => {
+    if (status === "published" && publishErrors.length > 0) {
+      toast.error(
+        `Can't publish yet — ${publishErrors.length} required field${
+          publishErrors.length === 1 ? "" : "s"
+        } incomplete. ${publishErrors[0]}`,
+      );
+      const firstIncomplete = canStep.findIndex((ok) => !ok);
+      if (firstIncomplete >= 0) setStep(firstIncomplete);
+      return;
+    }
     if (riskyChanges.length > 0) {
       const proceed = window.confirm(
         `Heads up — you're editing a PUBLISHED SQL question and changed fields that affect grading:\n\n• ${riskyChanges.join(
