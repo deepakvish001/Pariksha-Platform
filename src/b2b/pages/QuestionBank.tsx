@@ -304,6 +304,39 @@ export default function QuestionBank() {
             </div>
           </div>
 
+          {selected.size > 0 && (
+            <div className="sticky top-2 z-10 mb-3 flex items-center justify-between gap-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.95] backdrop-blur px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+                  onCheckedChange={toggleAllVisible}
+                  aria-label="Select all visible"
+                />
+                <span className="font-medium">{selected.size} selected</span>
+                <button
+                  onClick={toggleAllVisible}
+                  className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] underline-offset-2 hover:underline"
+                >
+                  {allVisibleSelected ? "Clear visible" : `Select all ${filteredIds.length} visible`}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                  <X className="h-4 w-4 mr-1" /> Clear
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setConfirmBulkDelete(true)}
+                  disabled={bulkDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete {selected.size}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {filtered.length === 0 ? (
             <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
               No questions match your filters.
@@ -314,8 +347,20 @@ export default function QuestionBank() {
                 const meta = (q.meta ?? {}) as { status?: string; difficulty?: string; tags?: string[] };
                 const status = meta.status ?? "published";
                 const diff = meta.difficulty;
+                const isSelected = selected.has(q.id);
                 return (
-                  <div key={q.id} className="b2b-card p-4 flex items-center justify-between gap-3">
+                  <div
+                    key={q.id}
+                    className={`b2b-card p-4 flex items-center justify-between gap-3 ${
+                      isSelected ? "ring-1 ring-[hsl(var(--primary))/0.6]" : ""
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleOne(q.id)}
+                      aria-label={`Select ${q.title}`}
+                      className="shrink-0"
+                    />
                     <button onClick={() => openEdit(q)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline">{q.type}</Badge>
