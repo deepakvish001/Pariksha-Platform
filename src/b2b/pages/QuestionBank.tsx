@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Routes, Route, useNavigate, useParams, Link } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { useMyOrganizations } from "../hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,7 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy, Archive, ArchiveRestore, Download } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload, Sparkles, X, Copy, Archive, ArchiveRestore, Download, ArrowLeft, ChevronRight, Code2, Database, ListChecks, PenLine, CheckSquare, Shuffle, Type as TypeIcon, Hash, SquareDashedBottom } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,7 +59,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { QuestionWizardDialog } from "../components/question-bank/QuestionWizardDialog";
+import { CodingWizard } from "../components/question-bank/CodingWizard";
+import { SqlWizard } from "../components/question-bank/SqlWizard";
+import { TYPE_CARDS } from "../components/question-bank/types";
 
 const TYPES: { value: QuestionType; label: string }[] = [
   { value: "coding", label: "Coding" },
@@ -73,29 +75,162 @@ const TYPES: { value: QuestionType; label: string }[] = [
   { value: "fill_blanks", label: "Fill in the blanks" },
 ];
 
-const FILTERS: { value: "all" | QuestionType; label: string }[] = [
-  { value: "all", label: "All" },
-  ...TYPES.map((t) => ({ value: t.value, label: t.label })),
-];
+
+
+
+const TYPE_ICONS: Record<string, typeof Code2> = {
+  code: Code2, database: Database, list: ListChecks, pen: PenLine,
+  check: CheckSquare, shuffle: Shuffle, type: TypeIcon, hash: Hash, blank: SquareDashedBottom,
+};
+
+function useBasePath(): string {
+  // Strip everything from "/question-bank" onward to get the base ("/b2b" or "/companies/:slug")
+  const path = typeof window !== "undefined" ? window.location.pathname : "/b2b/question-bank";
+  const idx = path.indexOf("/question-bank");
+  return idx >= 0 ? path.slice(0, idx) + "/question-bank" : "/b2b/question-bank";
+}
 
 export default function QuestionBank() {
   const { data: orgs, isLoading } = useMyOrganizations();
   const org = orgs?.[0];
-  const { data: questions } = useQuestions(org?.id);
+  if (isLoading) return null;
+  if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
+
+  return (
+    <Routes>
+      <Route index element={<HubView org={org!} />} />
+      <Route path=":type" element={<ListView org={org!} />} />
+      <Route path=":type/new" element={<NewView org={org!} />} />
+      <Route path=":type/:id" element={<EditView org={org!} />} />
+    </Routes>
+  );
+}
+
+// ─────────────────────────── HUB (cards per type) ───────────────────────────
+function HubView({ org }: { org: { id: string; name?: string } }) {
+  const { data: questions } = useQuestions(org.id);
+  const base = useBasePath();
+
+  const stats = useMemo(() => {
+    const byType: Record<string, { total: number; published: number; draft: number; archived: number }> = {};
+    TYPE_CARDS.forEach((c) => (byType[c.value] = { total: 0, published: 0, draft: 0, archived: 0 }));
+    let total = 0, published = 0, draft = 0, archived = 0;
+    (questions ?? []).forEach((q) => {
+      const m = (q.meta ?? {}) as { status?: string; archived?: boolean };
+      const bucket = byType[q.type] ?? (byType[q.type] = { total: 0, published: 0, draft: 0, archived: 0 });
+      bucket.total++; total++;
+      if (m.archived) { bucket.archived++; archived++; return; }
+      if ((m.status ?? "published") === "draft") { bucket.draft++; draft++; } else { bucket.published++; published++; }
+    });
+    return { byType, total, published, draft, archived };
+  }, [questions]);
+
+  return (
+    <OrgShell
+      title="Question Bank"
+      actions={
+        <div className="flex items-center gap-2">
+          <AIGenerateDialog orgId={org.id} />
+          <ImportQuestionsDialog orgId={org.id} />
+        </div>
+      }
+    >
+      {/* KPI strip */}
+      <div className="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {([
+          { label: "Total", value: stats.total, tone: "text-foreground" },
+          { label: "Published", value: stats.published, tone: "text-emerald-600 dark:text-emerald-400" },
+          { label: "Drafts", value: stats.draft, tone: "text-amber-600 dark:text-amber-400" },
+          { label: "Archived", value: stats.archived, tone: "text-slate-500 dark:text-slate-400" },
+        ] as const).map((k) => (
+          <div key={k.label} className="b2b-card px-4 py-3 flex items-baseline justify-between gap-2">
+            <span className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">{k.label}</span>
+            <span className={`text-xl font-semibold tabular-nums ${k.tone}`}>{k.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Type cards */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {TYPE_CARDS.map((card) => {
+          const Icon = TYPE_ICONS[card.icon] ?? Library;
+          const s = stats.byType[card.value] ?? { total: 0, published: 0, draft: 0, archived: 0 };
+          return (
+            <div
+              key={card.value}
+              className="b2b-card p-4 flex flex-col gap-3 hover:border-[hsl(var(--primary))]/60 transition-colors"
+            >
+              <Link to={`${base}/${card.value}`} className="flex items-start gap-3 group">
+                <div className="h-10 w-10 rounded-md bg-[hsl(var(--secondary))] grid place-items-center text-[hsl(var(--primary))] shrink-0">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-semibold truncate group-hover:text-[hsl(var(--primary))]">{card.label}</div>
+                    <ChevronRight className="h-4 w-4 text-[hsl(var(--muted-foreground))] opacity-0 group-hover:opacity-100 transition" />
+                  </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-2">{card.description}</p>
+                </div>
+              </Link>
+
+              <div className="grid grid-cols-4 gap-1 text-center">
+                {[
+                  { label: "Total", value: s.total, tone: "text-foreground" },
+                  { label: "Pub", value: s.published, tone: "text-emerald-600 dark:text-emerald-400" },
+                  { label: "Draft", value: s.draft, tone: "text-amber-600 dark:text-amber-400" },
+                  { label: "Arch", value: s.archived, tone: "text-slate-500 dark:text-slate-400" },
+                ].map((m) => (
+                  <div key={m.label} className="rounded-md bg-[hsl(var(--secondary))/0.5] px-2 py-1.5">
+                    <div className={`text-sm font-semibold tabular-nums ${m.tone}`}>{m.value}</div>
+                    <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">{m.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <Button asChild variant="outline" size="sm" className="flex-1">
+                  <Link to={`${base}/${card.value}`}>Open</Link>
+                </Button>
+                <Button asChild size="sm" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+                  <Link to={`${base}/${card.value}/new`}>
+                    <Plus className="h-4 w-4 mr-1" /> New
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </OrgShell>
+  );
+}
+
+// ─────────────────────────── LIST (type-scoped) ───────────────────────────
+function ListView({ org }: { org: { id: string; name?: string } }) {
+  const { type } = useParams<{ type: string }>();
+  const navigate = useNavigate();
+  const base = useBasePath();
+  const typeKey = type as QuestionType;
+  const validType = TYPES.some((t) => t.value === typeKey);
+
+  const { data: questions } = useQuestions(org.id);
   const del = useDeleteQuestion();
-  const [editing, setEditing] = useState<Question | null>(null);
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardInitial, setWizardInitial] = useState<Question | undefined>(undefined);
-  const [legacyType, setLegacyType] = useState<QuestionType | undefined>(undefined);
-  const [legacyOpen, setLegacyOpen] = useState(false);
-  const [filter, setFilter] = useState<"all" | QuestionType>("all");
+  const upd = useUpdateQuestion();
+  const qc = useQueryClient();
+
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published" | "archived">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
-  const qc = useQueryClient();
+  const [exporting, setExporting] = useState(false);
+
+  const typeCard = TYPE_CARDS.find((c) => c.value === typeKey);
+  const typeQuestions = useMemo(
+    () => (questions ?? []).filter((q) => q.type === typeKey),
+    [questions, typeKey],
+  );
 
   const duplicateQuestion = async (q: Question) => {
     setDuplicatingId(q.id);
@@ -103,17 +238,11 @@ export default function QuestionBank() {
       const { data: newQ, error: qErr } = await supabase
         .from("questions")
         .insert({
-          org_id: q.org_id,
-          type: q.type,
-          title: `${q.title} (copy)`,
-          body_md: q.body_md,
-          language: q.language,
-          starter_code: q.starter_code,
-          points: q.points,
-          meta: (q.meta ?? {}) as never,
+          org_id: q.org_id, type: q.type, title: `${q.title} (copy)`,
+          body_md: q.body_md, language: q.language, starter_code: q.starter_code,
+          points: q.points, meta: (q.meta ?? {}) as never,
         })
-        .select("*")
-        .single();
+        .select("*").single();
       if (qErr || !newQ) throw qErr ?? new Error("Failed to duplicate question");
 
       const [opts, tests] = await Promise.all([
@@ -122,43 +251,30 @@ export default function QuestionBank() {
       ]);
       if (opts.error) throw opts.error;
       if (tests.error) throw tests.error;
-
       if (opts.data?.length) {
         const { error } = await supabase.from("mcq_options").insert(
-          opts.data.map((o) => ({
-            question_id: newQ.id,
-            body: o.body,
-            is_correct: o.is_correct,
-            order_index: o.order_index,
-          })),
+          opts.data.map((o) => ({ question_id: newQ.id, body: o.body, is_correct: o.is_correct, order_index: o.order_index })),
         );
         if (error) throw error;
       }
       if (tests.data?.length) {
         const { error } = await supabase.from("question_test_cases").insert(
           tests.data.map((t) => ({
-            question_id: newQ.id,
-            input: t.input,
-            expected_output: t.expected_output,
-            is_hidden: t.is_hidden,
-            weight: t.weight,
-            order_index: t.order_index,
+            question_id: newQ.id, input: t.input, expected_output: t.expected_output,
+            is_hidden: t.is_hidden, weight: t.weight, order_index: t.order_index,
           })),
         );
         if (error) throw error;
       }
-
       qc.invalidateQueries({ queryKey: ["b2b", "questions", q.org_id] });
       toast.success("Question duplicated");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to duplicate question";
-      toast.error(msg);
+      toast.error(e instanceof Error ? e.message : "Failed to duplicate question");
     } finally {
       setDuplicatingId(null);
     }
   };
 
-  const upd = useUpdateQuestion();
   const toggleArchive = async (q: Question) => {
     const meta = (q.meta ?? {}) as Record<string, unknown>;
     const isArchived = Boolean(meta.archived);
@@ -173,85 +289,46 @@ export default function QuestionBank() {
     }
   };
 
-  const [exporting, setExporting] = useState(false);
-  const fetchExportData = async () => {
-    if (!org) return null;
-    const { data: qs, error: qErr } = await supabase
-      .from("questions")
-      .select("*")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: false });
-    if (qErr) throw qErr;
-    const ids = (qs ?? []).map((q) => q.id);
-    if (ids.length === 0) return { questions: [], options: [], testCases: [] };
-    const [optsRes, testsRes] = await Promise.all([
-      supabase.from("mcq_options").select("*").in("question_id", ids),
-      supabase.from("question_test_cases").select("*").in("question_id", ids),
-    ]);
-    if (optsRes.error) throw optsRes.error;
-    if (testsRes.error) throw testsRes.error;
-    return { questions: qs ?? [], options: optsRes.data ?? [], testCases: testsRes.data ?? [] };
-  };
-
-  const triggerDownload = (filename: string, mime: string, content: string) => {
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
+  // Export (scoped to current type)
   const csvEscape = (v: unknown) => {
     if (v === null || v === undefined) return "";
     const s = typeof v === "string" ? v : typeof v === "object" ? JSON.stringify(v) : String(v);
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-
+  const triggerDownload = (filename: string, mime: string, content: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
   const exportAs = async (format: "json" | "csv") => {
-    if (!org || exporting) return;
+    if (exporting || !typeQuestions.length) return;
     setExporting(true);
     try {
-      const data = await fetchExportData();
-      if (!data) return;
+      const ids = typeQuestions.map((q) => q.id);
+      const [optsRes, testsRes] = await Promise.all([
+        supabase.from("mcq_options").select("*").in("question_id", ids),
+        supabase.from("question_test_cases").select("*").in("question_id", ids),
+      ]);
+      if (optsRes.error) throw optsRes.error;
+      if (testsRes.error) throw testsRes.error;
       const stamp = new Date().toISOString().slice(0, 10);
-      const base = `questions-${org.id.slice(0, 8)}-${stamp}`;
+      const baseName = `questions-${typeKey}-${org.id.slice(0, 8)}-${stamp}`;
       if (format === "json") {
-        triggerDownload(
-          `${base}.json`,
-          "application/json",
-          JSON.stringify({ exported_at: new Date().toISOString(), org_id: org.id, ...data }, null, 2),
-        );
+        triggerDownload(`${baseName}.json`, "application/json",
+          JSON.stringify({ exported_at: new Date().toISOString(), org_id: org.id, type: typeKey, questions: typeQuestions, options: optsRes.data ?? [], testCases: testsRes.data ?? [] }, null, 2));
       } else {
-        const optsByQ = new Map<string, typeof data.options>();
-        const testsByQ = new Map<string, typeof data.testCases>();
-        data.options.forEach((o) => {
-          const arr = optsByQ.get(o.question_id) ?? [];
-          arr.push(o);
-          optsByQ.set(o.question_id, arr);
-        });
-        data.testCases.forEach((t) => {
-          const arr = testsByQ.get(t.question_id) ?? [];
-          arr.push(t);
-          testsByQ.set(t.question_id, arr);
-        });
-        const headers = [
-          "id", "type", "title", "body_md", "language", "starter_code",
-          "points", "meta", "created_at", "updated_at",
-          "mcq_options_json", "test_cases_json",
-        ];
-        const rows = data.questions.map((q) => [
-          q.id, q.type, q.title, q.body_md, q.language, q.starter_code,
-          q.points, q.meta, q.created_at, q.updated_at,
-          optsByQ.get(q.id) ?? [], testsByQ.get(q.id) ?? [],
-        ].map(csvEscape).join(","));
-        const csv = [headers.join(","), ...rows].join("\n");
-        triggerDownload(`${base}.csv`, "text/csv;charset=utf-8", csv);
+        const optsByQ = new Map<string, typeof optsRes.data>();
+        const testsByQ = new Map<string, typeof testsRes.data>();
+        (optsRes.data ?? []).forEach((o) => { const a = optsByQ.get(o.question_id) ?? []; a.push(o); optsByQ.set(o.question_id, a); });
+        (testsRes.data ?? []).forEach((t) => { const a = testsByQ.get(t.question_id) ?? []; a.push(t); testsByQ.set(t.question_id, a); });
+        const headers = ["id","type","title","body_md","language","starter_code","points","meta","created_at","updated_at","mcq_options_json","test_cases_json"];
+        const rows = typeQuestions.map((q) => [q.id,q.type,q.title,q.body_md,q.language,q.starter_code,q.points,q.meta,q.created_at,q.updated_at,optsByQ.get(q.id) ?? [],testsByQ.get(q.id) ?? []].map(csvEscape).join(","));
+        triggerDownload(`${baseName}.csv`, "text/csv;charset=utf-8", [headers.join(","), ...rows].join("\n"));
       }
-      toast.success(`Exported ${data.questions.length} question${data.questions.length === 1 ? "" : "s"}`);
+      toast.success(`Exported ${typeQuestions.length} question${typeQuestions.length === 1 ? "" : "s"}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to export questions");
     } finally {
@@ -259,122 +336,67 @@ export default function QuestionBank() {
     }
   };
 
-  const ExportBtn = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={exporting || !questions?.length}>
-          <Download className="h-4 w-4 mr-1" />
-          {exporting ? "Exporting…" : "Export"}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => void exportAs("json")}>Export as JSON</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => void exportAs("csv")}>Export as CSV</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
   const filtered = useMemo(() => {
-    let list = questions ?? [];
-    if (filter !== "all") list = list.filter((q) => q.type === filter);
+    let list = typeQuestions;
     const isArchived = (q: Question) => Boolean((q.meta as { archived?: boolean } | null)?.archived);
-    if (statusFilter === "archived") {
-      list = list.filter(isArchived);
-    } else {
+    if (statusFilter === "archived") list = list.filter(isArchived);
+    else {
       list = list.filter((q) => !isArchived(q));
       if (statusFilter !== "all") {
-        list = list.filter((q) => {
-          const s = ((q.meta as { status?: string } | null)?.status) ?? "published";
-          return s === statusFilter;
-        });
+        list = list.filter((q) => (((q.meta as { status?: string } | null)?.status) ?? "published") === statusFilter);
       }
     }
     const s = search.trim().toLowerCase();
     if (s) {
-      list = list.filter(
-        (q) =>
-          q.title.toLowerCase().includes(s) ||
-          (q.body_md ?? "").toLowerCase().includes(s) ||
-          (q.language ?? "").toLowerCase().includes(s),
-      );
+      list = list.filter((q) =>
+        q.title.toLowerCase().includes(s) ||
+        (q.body_md ?? "").toLowerCase().includes(s) ||
+        (q.language ?? "").toLowerCase().includes(s));
     }
     return list;
-  }, [questions, filter, statusFilter, search]);
+  }, [typeQuestions, statusFilter, search]);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: questions?.length ?? 0 };
-    TYPES.forEach((t) => (c[t.value] = 0));
-    (questions ?? []).forEach((q) => (c[q.type] = (c[q.type] ?? 0) + 1));
-    return c;
-  }, [questions]);
-
-  // Status counts respect the active type filter so the tab numbers match what's visible.
   const statusCounts = useMemo(() => {
-    const scope =
-      filter === "all"
-        ? questions ?? []
-        : (questions ?? []).filter((q) => q.type === filter);
-    let draft = 0;
-    let published = 0;
-    let archived = 0;
-    let active = 0;
-    for (const q of scope) {
+    let draft = 0, published = 0, archived = 0, active = 0;
+    for (const q of typeQuestions) {
       const meta = (q.meta ?? {}) as { status?: string; archived?: boolean };
-      if (meta.archived) {
-        archived++;
-        continue;
-      }
+      if (meta.archived) { archived++; continue; }
       active++;
-      const s = meta.status ?? "published";
-      if (s === "draft") draft++;
-      else published++;
+      if ((meta.status ?? "published") === "draft") draft++; else published++;
     }
     return { all: active, draft, published, archived };
-  }, [questions, filter]);
+  }, [typeQuestions]);
 
-  // Drop selected IDs that no longer exist (deleted elsewhere or filtered out of the dataset).
   useEffect(() => {
     if (selected.size === 0) return;
-    const live = new Set((questions ?? []).map((q) => q.id));
+    const live = new Set(typeQuestions.map((q) => q.id));
     let changed = false;
     const next = new Set<string>();
-    selected.forEach((id) => {
-      if (live.has(id)) next.add(id);
-      else changed = true;
-    });
+    selected.forEach((id) => { if (live.has(id)) next.add(id); else changed = true; });
     if (changed) setSelected(next);
-  }, [questions, selected]);
+  }, [typeQuestions, selected]);
 
   const filteredIds = useMemo(() => filtered.map((q) => q.id), [filtered]);
-  const allVisibleSelected =
-    filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
-  const someVisibleSelected =
-    filteredIds.some((id) => selected.has(id)) && !allVisibleSelected;
+  const allVisibleSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+  const someVisibleSelected = filteredIds.some((id) => selected.has(id)) && !allVisibleSelected;
 
-  const toggleOne = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  const toggleAllVisible = () =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (allVisibleSelected) filteredIds.forEach((id) => next.delete(id));
-      else filteredIds.forEach((id) => next.add(id));
-      return next;
-    });
+  const toggleOne = (id: string) => setSelected((prev) => {
+    const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next;
+  });
+  const toggleAllVisible = () => setSelected((prev) => {
+    const next = new Set(prev);
+    if (allVisibleSelected) filteredIds.forEach((id) => next.delete(id));
+    else filteredIds.forEach((id) => next.add(id));
+    return next;
+  });
   const clearSelection = () => setSelected(new Set());
 
   const runBulkDelete = async () => {
-    if (!org || selected.size === 0) return;
+    if (selected.size === 0) return;
     setBulkDeleting(true);
     const ids = Array.from(selected);
     try {
-      const results = await Promise.allSettled(
-        ids.map((id) => del.mutateAsync({ id, org_id: org.id })),
-      );
+      const results = await Promise.allSettled(ids.map((id) => del.mutateAsync({ id, org_id: org.id })));
       const failed = results.filter((r) => r.status === "rejected").length;
       const ok = results.length - failed;
       if (ok > 0) toast.success(`Deleted ${ok} question${ok === 1 ? "" : "s"}`);
@@ -386,89 +408,58 @@ export default function QuestionBank() {
     }
   };
 
+  if (!validType) return <Navigate to={base} replace />;
 
-  if (isLoading) return null;
-  if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
-
-  const empty = !questions?.length;
-
-  const openWizard = (q?: Question, type?: QuestionType) => {
-    setWizardInitial(q);
-    setLegacyType(type);
-    setWizardOpen(true);
-  };
-
-  const openEdit = (q: Question) => {
-    if (q.type === "coding" || q.type === "sql") {
-      openWizard(q);
-    } else {
-      setEditing(q);
-    }
-  };
-
-  const NewBtn = () => (
-    <Button
-      className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-      onClick={() => openWizard()}
-    >
-      <Plus className="h-4 w-4 mr-1" /> New question
-    </Button>
-  );
+  const empty = typeQuestions.length === 0;
 
   return (
     <OrgShell
-      title="Question Bank"
+      title={typeCard?.label ?? "Questions"}
       actions={
         <div className="flex items-center gap-2">
-          <ExportBtn />
-          <AIGenerateDialog orgId={org!.id} />
-          <ImportQuestionsDialog orgId={org!.id} />
-          <NewBtn />
+          <Button variant="ghost" size="sm" asChild>
+            <Link to={base}><ArrowLeft className="h-4 w-4 mr-1" /> All types</Link>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={exporting || empty}>
+                <Download className="h-4 w-4 mr-1" />
+                {exporting ? "Exporting…" : "Export"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => void exportAs("json")}>Export as JSON</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void exportAs("csv")}>Export as CSV</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+            onClick={() => navigate(`${base}/${typeKey}/new`)}
+          >
+            <Plus className="h-4 w-4 mr-1" /> New {typeCard?.label.toLowerCase() ?? "question"}
+          </Button>
         </div>
       }
     >
       {empty ? (
         <div className="b2b-card p-12 text-center">
           <Library className="h-8 w-8 mx-auto text-[hsl(var(--muted-foreground))]" />
-          <p className="mt-3 font-medium">No questions yet</p>
-          <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-            Build a reusable bank of coding, MCQ, SQL, and subjective questions.
-          </p>
-          <div className="mt-4 flex justify-center gap-2">
-            <AIGenerateDialog orgId={org!.id} />
-            <ImportQuestionsDialog orgId={org!.id} />
-            <NewBtn />
+          <p className="mt-3 font-medium">No {typeCard?.label.toLowerCase() ?? "questions"} yet</p>
+          <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{typeCard?.description}</p>
+          <div className="mt-4">
+            <Button
+              className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+              onClick={() => navigate(`${base}/${typeKey}/new`)}
+            >
+              <Plus className="h-4 w-4 mr-1" /> New question
+            </Button>
           </div>
         </div>
       ) : (
         <>
-          {/* KPI strip */}
-          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {([
-              { label: "Total", value: (questions?.length ?? 0), tone: "text-foreground" },
-              { label: "Published", value: statusCounts.published, tone: "text-emerald-600 dark:text-emerald-400" },
-              { label: "Drafts", value: statusCounts.draft, tone: "text-amber-600 dark:text-amber-400" },
-              { label: "Archived", value: statusCounts.archived, tone: "text-slate-500 dark:text-slate-400" },
-            ] as const).map((k) => (
-              <div
-                key={k.label}
-                className="b2b-card px-4 py-3 flex items-baseline justify-between gap-2"
-              >
-                <span className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-                  {k.label}
-                </span>
-                <span className={`text-xl font-semibold tabular-nums ${k.tone}`}>{k.value}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Toolbar */}
+          {/* Status tabs + search */}
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div
-              role="tablist"
-              aria-label="Filter by status"
-              className="inline-flex rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--secondary))/0.4] p-0.5 self-start"
-            >
+            <div role="tablist" aria-label="Filter by status" className="inline-flex rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--secondary))/0.4] p-0.5 self-start">
               {([
                 { value: "all", label: "All" },
                 { value: "draft", label: "Drafts" },
@@ -478,99 +469,41 @@ export default function QuestionBank() {
                 const active = statusFilter === opt.value;
                 const n = statusCounts[opt.value];
                 return (
-                  <button
-                    key={opt.value}
-                    role="tab"
-                    aria-selected={active}
+                  <button key={opt.value} role="tab" aria-selected={active}
                     onClick={() => setStatusFilter(opt.value)}
-                    className={`px-2.5 h-8 rounded text-xs font-medium transition-colors ${
-                      active
-                        ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm"
-                        : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                    }`}
-                  >
-                    {opt.label}
-                    <span className="ml-1.5 opacity-70">{n}</span>
+                    className={`px-2.5 h-8 rounded text-xs font-medium transition-colors ${active ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm" : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"}`}>
+                    {opt.label}<span className="ml-1.5 opacity-70">{n}</span>
                   </button>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Select value={filter} onValueChange={(v) => setFilter(v as "all" | QuestionType)}>
-                <SelectTrigger className="h-9 w-full sm:w-44 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FILTERS.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>
-                      {f.label}
-                      <span className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
-                        {counts[f.value] ?? 0}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search questions…"
-                  className="pl-8 h-9 text-sm"
-                />
-              </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search questions…" className="pl-8 h-9 text-sm" />
             </div>
           </div>
 
           {selected.size > 0 && (
             <div className="sticky top-2 z-10 mb-3 flex items-center justify-between gap-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.95] backdrop-blur px-3 py-2 shadow-sm">
               <div className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
-                  onCheckedChange={toggleAllVisible}
-                  aria-label="Select all visible"
-                />
+                <Checkbox checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false} onCheckedChange={toggleAllVisible} aria-label="Select all visible" />
                 <span className="font-medium">{selected.size} selected</span>
-                <button
-                  onClick={toggleAllVisible}
-                  className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] underline-offset-2 hover:underline"
-                >
-                  {allVisibleSelected ? "Clear visible" : `Select all ${filteredIds.length} visible`}
-                </button>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={clearSelection}>
-                  <X className="h-4 w-4 mr-1" /> Clear
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setConfirmBulkDelete(true)}
-                  disabled={bulkDeleting}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete {selected.size}
+                <Button variant="ghost" size="sm" onClick={clearSelection}><X className="h-4 w-4 mr-1" /> Clear</Button>
+                <Button variant="destructive" size="sm" onClick={() => setConfirmBulkDelete(true)} disabled={bulkDeleting}>
+                  <Trash2 className="h-4 w-4 mr-1" />Delete {selected.size}
                 </Button>
               </div>
             </div>
           )}
 
           {filtered.length === 0 ? (
-            <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-              No questions match your filters.
-            </div>
+            <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">No questions match your filters.</div>
           ) : (
             <div className="b2b-card overflow-hidden divide-y divide-[hsl(var(--border))]">
-              {/* List header row */}
               <div className="hidden md:flex items-center gap-3 px-3 py-2 bg-[hsl(var(--secondary))/0.4] text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
-                <Checkbox
-                  checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
-                  onCheckedChange={toggleAllVisible}
-                  aria-label="Select all visible"
-                  className="shrink-0"
-                />
-                <span className="w-16">Type</span>
+                <Checkbox checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false} onCheckedChange={toggleAllVisible} aria-label="Select all visible" className="shrink-0" />
                 <span className="flex-1">Title</span>
                 <span className="w-16 text-right">Points</span>
                 <span className="w-24" />
@@ -582,88 +515,31 @@ export default function QuestionBank() {
                 const diff = meta.difficulty;
                 const isSelected = selected.has(q.id);
                 return (
-                  <div
-                    key={q.id}
-                    className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[hsl(var(--secondary))/0.4] ${
-                      isSelected ? "bg-[hsl(var(--primary))/0.06]" : ""
-                    } ${archived ? "opacity-70" : ""}`}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleOne(q.id)}
-                      aria-label={`Select ${q.title}`}
-                      className="shrink-0"
-                    />
-                    <Badge variant="outline" className="shrink-0 hidden md:inline-flex w-16 justify-center">
-                      {q.type}
-                    </Badge>
-                    <button onClick={() => openEdit(q)} className="flex-1 min-w-0 text-left">
+                  <div key={q.id} className={`group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[hsl(var(--secondary))/0.4] ${isSelected ? "bg-[hsl(var(--primary))/0.06]" : ""} ${archived ? "opacity-70" : ""}`}>
+                    <Checkbox checked={isSelected} onCheckedChange={() => toggleOne(q.id)} aria-label={`Select ${q.title}`} className="shrink-0" />
+                    <button onClick={() => navigate(`${base}/${typeKey}/${q.id}`)} className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="md:hidden">{q.type}</Badge>
                         <span className="font-medium truncate">{q.title}</span>
-                        {status === "draft" && !archived && (
-                          <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">Draft</Badge>
-                        )}
-                        {archived && (
-                          <Badge className="bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30">Archived</Badge>
-                        )}
+                        {status === "draft" && !archived && (<Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">Draft</Badge>)}
+                        {archived && (<Badge className="bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/30">Archived</Badge>)}
                         {diff && (
-                          <Badge
-                            variant="outline"
-                            className={`capitalize ${
-                              diff === "easy"
-                                ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                                : diff === "hard"
-                                ? "border-rose-500/40 text-rose-600 dark:text-rose-400"
-                                : "border-amber-500/40 text-amber-600 dark:text-amber-400"
-                            }`}
-                          >
-                            {diff}
-                          </Badge>
+                          <Badge variant="outline" className={`capitalize ${diff === "easy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : diff === "hard" ? "border-rose-500/40 text-rose-600 dark:text-rose-400" : "border-amber-500/40 text-amber-600 dark:text-amber-400"}`}>{diff}</Badge>
                         )}
                       </div>
                       <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 flex items-center gap-2 flex-wrap">
                         {q.language && <span>{q.language}</span>}
                         {(meta.tags ?? []).slice(0, 3).map((t) => (
-                          <span key={t} className="px-1.5 py-0.5 rounded bg-[hsl(var(--secondary))] text-[10px]">
-                            {t}
-                          </span>
+                          <span key={t} className="px-1.5 py-0.5 rounded bg-[hsl(var(--secondary))] text-[10px]">{t}</span>
                         ))}
                       </div>
                     </button>
-                    <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">
-                      {q.points}
-                    </span>
+                    <span className="hidden md:inline-block w-16 text-right text-xs tabular-nums text-[hsl(var(--muted-foreground))]">{q.points}</span>
                     <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => duplicateQuestion(q)}
-                        disabled={duplicatingId === q.id}
-                        title="Duplicate question"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleArchive(q)}
-                        disabled={upd.isPending}
-                        title={archived ? "Restore question" : "Archive question"}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => duplicateQuestion(q)} disabled={duplicatingId === q.id} title="Duplicate question"><Copy className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => toggleArchive(q)} disabled={upd.isPending} title={archived ? "Restore question" : "Archive question"}>
                         {archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (!confirm(`Delete "${q.title}"?`)) return;
-                          del.mutate({ id: q.id, org_id: q.org_id });
-                        }}
-                        title="Delete question"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => { if (!confirm(`Delete "${q.title}"?`)) return; del.mutate({ id: q.id, org_id: q.org_id }); }} title="Delete question"><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </div>
                 );
@@ -672,46 +548,18 @@ export default function QuestionBank() {
           )}
         </>
       )}
-      {editing && <QuestionEditorDialog question={editing} onClose={() => setEditing(null)} />}
-      <QuestionWizardDialog
-        orgId={org!.id}
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        initial={wizardInitial}
-        forceType={legacyType}
-        onCreateLegacy={(t) => {
-          // Fallback for non-guided types: open the simple legacy dialog.
-          setLegacyType(t);
-          setLegacyOpen(true);
-        }}
-      />
-      <NewQuestionDialog
-        orgId={org!.id}
-        forcedType={legacyType}
-        open={legacyOpen}
-        onOpenChange={(v) => { setLegacyOpen(v); if (!v) setLegacyType(undefined); }}
-        hideTrigger
-      />
+
       <AlertDialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete {selected.size} question{selected.size === 1 ? "" : "s"}?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete {selected.size} question{selected.size === 1 ? "" : "s"}?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes the selected questions along with their tests, options, and history. Assessments that reference them may break. This action can't be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                void runBulkDelete();
-              }}
-              disabled={bulkDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void runBulkDelete(); }} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {bulkDeleting ? "Deleting…" : `Delete ${selected.size}`}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -720,6 +568,192 @@ export default function QuestionBank() {
     </OrgShell>
   );
 }
+
+// ─────────────────────────── NEW (full-page) ───────────────────────────
+function NewView({ org }: { org: { id: string; name?: string } }) {
+  const { type } = useParams<{ type: string }>();
+  const navigate = useNavigate();
+  const base = useBasePath();
+  const typeKey = type as QuestionType;
+  const typeCard = TYPE_CARDS.find((c) => c.value === typeKey);
+  if (!typeCard) return <Navigate to={base} replace />;
+
+  const backToList = () => navigate(`${base}/${typeKey}`);
+
+  return (
+    <OrgShell
+      title={`New ${typeCard.label.toLowerCase()} question`}
+      actions={
+        <Button variant="ghost" size="sm" asChild>
+          <Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link>
+        </Button>
+      }
+    >
+      <div className="b2b-card p-4 md:p-6">
+        {typeKey === "coding" && (
+          <CodingWizard orgId={org.id} onDone={backToList} onCancel={backToList} />
+        )}
+        {typeKey === "sql" && (
+          <SqlWizard orgId={org.id} onDone={backToList} onCancel={backToList} />
+        )}
+        {typeKey !== "coding" && typeKey !== "sql" && (
+          <SimpleNewForm orgId={org.id} type={typeKey} onDone={(id) => navigate(`${base}/${typeKey}/${id}`)} onCancel={backToList} />
+        )}
+      </div>
+    </OrgShell>
+  );
+}
+
+// Inline simple form (replaces NewQuestionDialog popup)
+function SimpleNewForm({
+  orgId, type, onDone, onCancel,
+}: { orgId: string; type: QuestionType; onDone: (id: string) => void; onCancel: () => void; }) {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [points, setPoints] = useState(10);
+  const create = useCreateQuestion();
+  const upsertOption = useUpsertMcqOption();
+
+  const submit = async () => {
+    const meta: Record<string, unknown> =
+      type === "matching" ? { pairs: [] } :
+      type === "short_answer" ? { accepted: [], case_sensitive: false, max_length: 200 } :
+      type === "true_false" ? { correct: true } :
+      type === "numerical" ? { expected: "", tolerance: 0, unit: "" } :
+      type === "fill_blanks" ? { blanks: [] } : {};
+    const q = await create.mutateAsync({
+      org_id: orgId, type, title: title.trim(),
+      body_md: body || undefined, points, meta,
+    });
+    if (type === "true_false") {
+      await upsertOption.mutateAsync({ question_id: q.id, body: "True", is_correct: true, order_index: 0 });
+      await upsertOption.mutateAsync({ question_id: q.id, body: "False", is_correct: false, order_index: 1 });
+    }
+    toast.success("Question created");
+    onDone(q.id);
+  };
+
+  return (
+    <div className="space-y-4 max-w-2xl">
+      <div>
+        <Label>Title</Label>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
+      </div>
+      <div>
+        <Label>Prompt (Markdown)</Label>
+        <Textarea value={body} onChange={(e) => setBody(e.target.value)} className="mt-1 min-h-[140px]" />
+      </div>
+      <div>
+        <Label>Points</Label>
+        <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1 w-32" />
+      </div>
+      {type === "true_false" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Two options (True / False) will be created. Set the correct one on the next screen.</p>}
+      {type === "matching" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Add Left → Right pairs on the next screen.</p>}
+      {type === "short_answer" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Add accepted answer variants on the next screen.</p>}
+      {type === "numerical" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Set the expected number, tolerance, and unit on the next screen.</p>}
+      {type === "fill_blanks" && <p className="text-xs text-[hsl(var(--muted-foreground))]">Use <code>{`{{1}}`}</code>, <code>{`{{2}}`}</code>… placeholders in the prompt and define each blank's answer on the next screen.</p>}
+      <div className="flex justify-end gap-2 pt-2 border-t border-[hsl(var(--border))]">
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button disabled={!title.trim() || create.isPending} onClick={submit}
+          className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+          {create.isPending ? "Creating…" : "Create question"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── EDIT (full-page) ───────────────────────────
+function EditView({ org }: { org: { id: string; name?: string } }) {
+  const { type, id } = useParams<{ type: string; id: string }>();
+  const navigate = useNavigate();
+  const base = useBasePath();
+  const typeKey = type as QuestionType;
+  const typeCard = TYPE_CARDS.find((c) => c.value === typeKey);
+  const { data: questions } = useQuestions(org.id);
+  const question = (questions ?? []).find((q) => q.id === id);
+  const { data: options } = useMcqOptions(
+    question && (question.type === "mcq" || question.type === "true_false") ? question.id : undefined,
+  );
+
+  const backToList = () => navigate(`${base}/${typeKey}`);
+
+  if (!typeCard) return <Navigate to={base} replace />;
+  if (!questions) return null;
+  if (!question) {
+    return (
+      <OrgShell title="Question not found" actions={<Button variant="ghost" size="sm" asChild><Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link></Button>}>
+        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">This question doesn't exist or was deleted.</div>
+      </OrgShell>
+    );
+  }
+
+  // Coding & SQL use the existing multi-step wizard, full-page
+  if (question.type === "coding") {
+    return (
+      <OrgShell title={`Edit · ${question.title}`} actions={<Button variant="ghost" size="sm" asChild><Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link></Button>}>
+        <div className="b2b-card p-4 md:p-6">
+          <CodingWizard orgId={org.id} initial={question} onDone={backToList} onCancel={backToList} />
+        </div>
+      </OrgShell>
+    );
+  }
+  if (question.type === "sql") {
+    return (
+      <OrgShell title={`Edit · ${question.title}`} actions={<Button variant="ghost" size="sm" asChild><Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link></Button>}>
+        <div className="b2b-card p-4 md:p-6">
+          <SqlWizard orgId={org.id} initial={question} onDone={backToList} onCancel={backToList} />
+        </div>
+      </OrgShell>
+    );
+  }
+
+  // All other types — inline editor body
+  return (
+    <OrgShell
+      title={`Edit · ${question.title}`}
+      actions={
+        <Button variant="ghost" size="sm" asChild>
+          <Link to={`${base}/${typeKey}`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to list</Link>
+        </Button>
+      }
+    >
+      <div className="b2b-card p-4 md:p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">{question.type}</Badge>
+          <h2 className="text-base font-semibold truncate">{question.title}</h2>
+        </div>
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">Edit the answer key below. Changes are saved automatically.</p>
+
+        {question.body_md && (
+          <div className="text-sm text-[hsl(var(--muted-foreground))] whitespace-pre-wrap border rounded-md p-3 bg-[hsl(var(--secondary))]">
+            {question.body_md}
+          </div>
+        )}
+
+        {question.type === "mcq" && <McqEditor questionId={question.id} />}
+        {question.type === "true_false" && <TrueFalseEditor question={question} />}
+        {question.type === "matching" && <MatchingEditor question={question} />}
+        {question.type === "short_answer" && <ShortAnswerEditor question={question} />}
+        {question.type === "numerical" && <NumericalEditor question={question} />}
+        {question.type === "fill_blanks" && <FillBlanksEditor question={question} />}
+        {question.type === "subjective" && (
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Subjective answers are graded manually from the results dashboard.
+          </p>
+        )}
+
+        <div className="border-t pt-4 mt-2">
+          <h4 className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2">Candidate preview</h4>
+          <div className="border rounded-md p-3 bg-[hsl(var(--background))]">
+            <CandidatePreview question={question} options={options ?? []} />
+          </div>
+        </div>
+      </div>
+    </OrgShell>
+  );
+}
+
 
 function ImportQuestionsDialog({ orgId }: { orgId: string }) {
   const [open, setOpen] = useState(false);

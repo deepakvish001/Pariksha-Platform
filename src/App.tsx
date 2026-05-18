@@ -277,7 +277,7 @@ const App = () => (
                 <Route path="/b2b/assessments/:id/manage" element={<ProtectedRoute><B2BAssessmentManage /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/attempts/:attemptId" element={<ProtectedRoute><B2BAttemptDetail /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/candidates/:candidateSeg" element={<ProtectedRoute><B2BCandidateDetail /></ProtectedRoute>} />
-                <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
+                <Route path="/b2b/question-bank/*" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
                 <Route path="/b2b/proctoring" element={<Navigate to="/b2b/assessments" replace />} />
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
                 <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
@@ -303,7 +303,7 @@ const App = () => (
                       <Route path="assessments/:id/manage" element={<RequireOrgCapability cap="assessments.write"><B2BAssessmentManage /></RequireOrgCapability>} />
                       <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
                       <Route path="assessments/:id/candidates/:candidateSeg" element={<B2BCandidateDetail />} />
-                      <Route path="question-bank" element={<B2BQuestionBank />} />
+                      <Route path="question-bank/*" element={<B2BQuestionBank />} />
                       <Route path="proctoring" element={<Navigate to="assessments" replace />} />
                       <Route path="team" element={<RequireOrgCapability cap="members.invite"><B2BTeam /></RequireOrgCapability>} />
                       <Route path="settings" element={<RequireOrgCapability cap="org.editSettings"><B2BSettings /></RequireOrgCapability>} />
