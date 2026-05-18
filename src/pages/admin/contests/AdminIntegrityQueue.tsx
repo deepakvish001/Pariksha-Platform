@@ -177,7 +177,7 @@ export default function AdminIntegrityQueue() {
                       {r.contest_title ?? r.contest_id.slice(0, 8)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">
-                      {r.candidate_email ?? r.user_id.slice(0, 8)}
+                      {r.candidate_name || r.user_id.slice(0, 8)}
                     </TableCell>
                     <TableCell className="text-xs">
                       <span className="font-mono">{r.reason ?? "—"}</span>
