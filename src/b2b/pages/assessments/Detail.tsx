@@ -19,7 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusPill, type StatusTone } from "../../components/ui/StatusPill";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { FileQuestion } from "lucide-react";
+import { SectionCard } from "../../components/ui/SectionCard";
+import { Switch } from "@/components/ui/switch";
+import { FileQuestion, Sliders, CalendarClock, ShieldCheck, EyeOff, Palette, AlertTriangle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -357,133 +359,113 @@ function SettingsPanel({
     windowState = `Closed at ${new Date(endMs).toLocaleString()}`;
   }
 
-  return (
-    <div className="b2b-card p-6 space-y-5 max-w-2xl">
-      <div>
-        <label className="text-sm font-medium">Title</label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium">Duration (min)</label>
-          <Input
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value) || 60)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Max attempts</label>
-          <Input
-            type="number"
-            value={maxAttempts}
-            onChange={(e) => setMaxAttempts(Number(e.target.value) || 1)}
-            className="mt-1"
-          />
-        </div>
-      </div>
+  const scheduleTone: StatusTone = windowState.startsWith("Live")
+    ? "live"
+    : windowState.startsWith("Closed")
+      ? "closed"
+      : windowState.startsWith("Opens")
+        ? "scheduled"
+        : "neutral";
 
-      <div className="border-t pt-4 space-y-3">
-        <div className="flex items-center justify-between">
+  return (
+    <div className="max-w-3xl space-y-5">
+      <SectionCard icon={Sliders} title="Basics" description="Title, duration, and how many times a candidate can attempt.">
+        <div className="space-y-4">
           <div>
-            <div className="text-sm font-medium">Schedule window</div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Leave empty to open immediately when published. Times are in your local timezone.
-            </p>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1.5" />
           </div>
-          <Badge variant="outline" className="text-[10px]">{windowState}</Badge>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Duration (min)</label>
+              <Input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value) || 60)}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max attempts</label>
+              <Input
+                type="number"
+                value={maxAttempts}
+                onChange={(e) => setMaxAttempts(Number(e.target.value) || 1)}
+                className="mt-1.5"
+              />
+            </div>
+          </div>
         </div>
+      </SectionCard>
+
+      <SectionCard
+        icon={CalendarClock}
+        title="Schedule window"
+        description="Leave empty to open immediately on publish. Times use your local timezone."
+        action={<StatusPill tone={scheduleTone} pulse={scheduleTone === "live"}>{windowState}</StatusPill>}
+      >
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-[hsl(var(--muted-foreground))]">Opens at</label>
+            <label className="text-xs text-muted-foreground">Opens at</label>
             <Input
               type="datetime-local"
               value={startsAt}
               onChange={(e) => setStartsAt(e.target.value)}
-              className="mt-1"
+              className="mt-1.5"
             />
           </div>
           <div>
-            <label className="text-xs text-[hsl(var(--muted-foreground))]">Closes at</label>
+            <label className="text-xs text-muted-foreground">Closes at</label>
             <Input
               type="datetime-local"
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
-              className="mt-1"
+              className="mt-1.5"
             />
           </div>
         </div>
-        {windowError && (
-          <p className="text-xs text-destructive">{windowError}</p>
-        )}
-      </div>
+        {windowError && <p className="mt-2 text-xs text-destructive">{windowError}</p>}
+      </SectionCard>
 
-      <div className="border-t pt-4 flex items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium">Proctoring</div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            Tracks tab switches, copy/paste, and fullscreen exits. Penalties reduce integrity score.
-          </p>
+      <SectionCard icon={ShieldCheck} title="Proctoring" description="Tracks tab switches, copy/paste, and fullscreen exits. Penalties reduce integrity score.">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="text-sm font-medium">Enable proctoring</div>
+          <Switch checked={proctoring} onCheckedChange={setProctoring} />
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={proctoring}
-          onClick={() => setProctoring((v) => !v)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            proctoring ? "bg-[hsl(var(--primary))]" : "bg-[hsl(var(--secondary))]"
-          }`}
-        >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-              proctoring ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
-        </button>
-      </div>
+        <AssessmentProctoringConfig
+          value={proctoringConfig}
+          enabled={proctoring}
+          onChange={(cfg) => setProctoringConfig(cfg)}
+        />
+      </SectionCard>
 
-      <AssessmentProctoringConfig
-        value={proctoringConfig}
-        enabled={proctoring}
-        onChange={(cfg) => setProctoringConfig(cfg)}
-      />
-
-      <div className="border-t pt-4 flex items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium">Show results to candidate</div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            When off, candidates only see a submission confirmation and feedback form — no score, breakdown, integrity, or receipt PDF.
-          </p>
+      <SectionCard
+        icon={EyeOff}
+        title="Candidate experience"
+        description="Control what candidates see after submitting their attempt."
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-sm font-medium">Show results to candidate</div>
+            <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+              When off, candidates only see a submission confirmation — no score, breakdown, integrity, or receipt PDF.
+            </p>
+          </div>
+          <Switch checked={showResults} onCheckedChange={setShowResults} />
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={showResults}
-          onClick={() => setShowResults((v) => !v)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            showResults ? "bg-[hsl(var(--primary))]" : "bg-[hsl(var(--secondary))]"
-          }`}
-        >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-              showResults ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
-        </button>
-      </div>
+      </SectionCard>
 
-      <div className="border-t pt-4 space-y-2">
-        <div className="text-sm font-medium">Brand color override</div>
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">
-          Optional. When set, this color is used for the invitation email of this assessment instead of your organization's default.
-        </p>
-        <div className="flex items-center gap-2">
+      <SectionCard
+        icon={Palette}
+        title="Brand color override"
+        description="Optional. Used for the invitation email of this assessment instead of your organization default."
+      >
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             type="color"
             value={/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalizedBrand) ? normalizedBrand : "#0f172a"}
             onChange={(e) => setBrandColor(e.target.value)}
-            className="h-9 w-12 rounded border border-[hsl(var(--border))] bg-transparent p-0.5 cursor-pointer"
+            className="h-9 w-12 rounded-md border border-[hsl(var(--border))] bg-transparent p-0.5 cursor-pointer"
             aria-label="Pick brand color"
           />
           <Input
@@ -493,22 +475,17 @@ function SettingsPanel({
             className="max-w-xs font-mono text-sm"
           />
           {normalizedBrand && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setBrandColor("")}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => setBrandColor("")}>
               Clear
             </Button>
           )}
         </div>
         {!isValidBrand && (
-          <p className="text-xs text-destructive">Use a hex color like #1e40af or leave empty.</p>
+          <p className="mt-2 text-xs text-destructive">Use a hex color like #1e40af or leave empty.</p>
         )}
-      </div>
+      </SectionCard>
 
-      <div className="flex gap-2 pt-2 border-t">
+      <div className="flex items-center justify-end gap-2 pt-2">
         <Button
           className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
           disabled={!!windowError || !isValidBrand}
@@ -532,10 +509,18 @@ function SettingsPanel({
         >
           Save changes
         </Button>
-        <Button variant="destructive" onClick={onDelete}>
-          <Trash2 className="h-4 w-4 mr-1" /> Delete assessment
-        </Button>
       </div>
+
+      <SectionCard
+        icon={AlertTriangle}
+        title="Danger zone"
+        description="Deleting an assessment removes its sections, invites, attempts, and proctoring evidence. This cannot be undone."
+        className="border-rose-500/30 bg-rose-500/[0.04]"
+      >
+        <Button variant="destructive" onClick={onDelete}>
+          <Trash2 className="h-4 w-4 mr-1.5" /> Delete assessment
+        </Button>
+      </SectionCard>
     </div>
   );
 }
