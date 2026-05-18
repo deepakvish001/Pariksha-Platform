@@ -166,27 +166,29 @@ export default function B2BAssessmentsList() {
         </GlassCard>
 
         {aLoading ? null : !visible.length ? (
-          <GlassCard className="p-12 text-center">
-            <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
-            <p className="mt-3 font-medium">Nothing here yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {tab === "live"
+          <EmptyState
+            icon={FileText}
+            title="Nothing here yet"
+            description={
+              tab === "live"
                 ? "No live assessments right now. Publish one or schedule a window."
                 : tab === "upcoming"
                 ? "No scheduled assessments. Set a future start time on a published assessment."
                 : tab === "drafts"
                 ? "No drafts. Create a new assessment to start composing."
-                : "No matching assessments."}
-            </p>
-            {canWrite && (
-              <Button
-                className="mt-4 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-                onClick={() => navigate("/b2b/assessments/new")}
-              >
-                <Plus className="h-4 w-4 mr-1" /> New assessment
-              </Button>
-            )}
-          </GlassCard>
+                : "No matching assessments."
+            }
+            action={
+              canWrite && (
+                <Button
+                  className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                  onClick={() => navigate("/b2b/assessments/new")}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> New assessment
+                </Button>
+              )
+            }
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((a) => {
@@ -204,9 +206,9 @@ export default function B2BAssessmentsList() {
                         </span>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide ${STATE_PILL[state]}`}>
+                    <StatusPill tone={STATE_TONE[state]} pulse={state === "live"}>
                       {state}
-                    </span>
+                    </StatusPill>
                   </div>
 
                   <div className="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs">
