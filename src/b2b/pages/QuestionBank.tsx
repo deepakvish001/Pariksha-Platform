@@ -194,14 +194,46 @@ export default function QuestionBank() {
               })}
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-                <SelectTrigger className="h-9 w-32 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All status</SelectItem>
-                  <SelectItem value="draft">Drafts</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                </SelectContent>
-              </Select>
+              <div
+                role="tablist"
+                aria-label="Filter by status"
+                className="inline-flex rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--secondary))/0.4] p-0.5"
+              >
+                {([
+                  { value: "all", label: "All" },
+                  { value: "draft", label: "Drafts" },
+                  { value: "published", label: "Published" },
+                ] as const).map((opt) => {
+                  const active = statusFilter === opt.value;
+                  const n = statusCounts[opt.value];
+                  return (
+                    <button
+                      key={opt.value}
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setStatusFilter(opt.value)}
+                      className={`px-2.5 h-8 rounded text-xs font-medium transition-colors ${
+                        active
+                          ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))] shadow-sm"
+                          : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                      }`}
+                    >
+                      {opt.label}
+                      <span className="ml-1.5 opacity-70">{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search questions…"
+                  className="pl-8 h-9 text-sm"
+                />
+              </div>
+            </div>
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
                 <Input
