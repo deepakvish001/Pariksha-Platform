@@ -176,12 +176,14 @@ export default function B2BAssessmentsList() {
                 ? "No drafts. Create a new assessment to start composing."
                 : "No matching assessments."}
             </p>
-            <Button
-              className="mt-4 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-              onClick={() => navigate("/b2b/assessments/new")}
-            >
-              <Plus className="h-4 w-4 mr-1" /> New assessment
-            </Button>
+            {canWrite && (
+              <Button
+                className="mt-4 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                onClick={() => navigate("/b2b/assessments/new")}
+              >
+                <Plus className="h-4 w-4 mr-1" /> New assessment
+              </Button>
+            )}
           </GlassCard>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
