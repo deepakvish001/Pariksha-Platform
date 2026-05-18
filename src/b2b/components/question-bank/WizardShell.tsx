@@ -131,8 +131,32 @@ export function WizardShell({
             <div className="grid lg:grid-cols-[1fr_320px] gap-4">
               <div className="min-w-0 space-y-4">{children}</div>
               <aside className="lg:border-l lg:pl-4">
-                <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2">
-                  Candidate sees
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <span className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+                    Candidate sees
+                  </span>
+                  {status && (
+                    <Badge
+                      variant={isPublished ? "default" : "outline"}
+                      className={`text-[10px] uppercase tracking-wide ${
+                        isPublished
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                      }`}
+                      title={
+                        isPublished
+                          ? "This question is live for candidates."
+                          : "This question is a draft and not visible to candidates."
+                      }
+                    >
+                      <span
+                        className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${
+                          isPublished ? "bg-emerald-500" : "bg-amber-500"
+                        }`}
+                      />
+                      {isPublished ? "Published" : "Draft"}
+                    </Badge>
+                  )}
                 </div>
                 {rightPane}
               </aside>
