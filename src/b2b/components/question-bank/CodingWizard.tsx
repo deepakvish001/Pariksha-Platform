@@ -268,6 +268,17 @@ export function CodingWizard({
   });
 
   const persist = async (status: "draft" | "published") => {
+    if (status === "published" && publishErrors.length > 0) {
+      toast.error(
+        `Can't publish yet — ${publishErrors.length} required field${
+          publishErrors.length === 1 ? "" : "s"
+        } incomplete. ${publishErrors[0]}`,
+      );
+      // Jump to the first step that's still incomplete to make it obvious.
+      const firstIncomplete = canStep.findIndex((ok) => !ok);
+      if (firstIncomplete >= 0) setStep(firstIncomplete);
+      return;
+    }
     if (riskyChanges.length > 0) {
       const proceed = window.confirm(
         `Heads up — you're editing a PUBLISHED question and made changes that could invalidate hidden tests:\n\n• ${riskyChanges.join(
