@@ -3249,6 +3249,44 @@ export type Database = {
           },
         ]
       }
+      contest_keystroke_baselines: {
+        Row: {
+          created_at: string
+          id: string
+          profile: Json
+          samples: number
+          session_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile: Json
+          samples?: number
+          session_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile?: Json
+          samples?: number
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_keystroke_baselines_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_keystroke_profiles: {
         Row: {
           burst_ratio: number
