@@ -5983,6 +5983,44 @@ export type Database = {
         }
         Relationships: []
       }
+      question_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          note: string | null
+          org_id: string
+          question_id: string
+          status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          note?: string | null
+          org_id: string
+          question_id: string
+          status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          note?: string | null
+          org_id?: string
+          question_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_status_history_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_test_cases: {
         Row: {
           created_at: string

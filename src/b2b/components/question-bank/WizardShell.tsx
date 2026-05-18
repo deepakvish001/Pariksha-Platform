@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Check, Cloud, CloudOff, Eye } from "lucide-react";
+import { Check, Cloud, CloudOff, Eye, History } from "lucide-react";
 import { formatRelative } from "./useWizardAutosave";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -36,6 +36,7 @@ export function WizardShell({
   publishedPreview,
   publishedPreviewTitle,
   lastSavedAt,
+  history,
 }: {
   steps: WizardStep[];
   current: number;
@@ -55,10 +56,12 @@ export function WizardShell({
   publishedPreview?: ReactNode;
   publishedPreviewTitle?: string;
   lastSavedAt?: Date | null;
+  history?: ReactNode;
 }) {
   const isPublished = status === "published";
   const blockedByValidation = isPublished && (publishErrors?.length ?? 0) > 0;
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   // Tick once a minute so the "Saved Xs ago" label stays current.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -193,6 +196,17 @@ export function WizardShell({
         )}
 
         <div className="flex items-center gap-2">
+          {history && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHistoryOpen(true)}
+              disabled={saving}
+              title="View draft / publish history for this question"
+            >
+              <History className="h-4 w-4 mr-1" /> History
+            </Button>
+          )}
           {publishedPreview && (
             <Button
               variant="outline"
@@ -249,6 +263,22 @@ export function WizardShell({
               </DialogDescription>
             </DialogHeader>
             <div className="mt-2">{publishedPreview}</div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {history && (
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-4 w-4" /> Status history
+              </DialogTitle>
+              <DialogDescription>
+                Every time this question is saved as a draft or published, a timestamped entry is recorded here.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-3">{history}</div>
           </DialogContent>
         </Dialog>
       )}
