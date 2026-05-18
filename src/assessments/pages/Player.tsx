@@ -548,6 +548,23 @@ export default function Player() {
   const totalDurationMs = paper.assessment.duration_min * 60_000;
   const goNext = () => setIdx((i) => Math.min(totalQ - 1, i + 1));
   const flagAndNext = () => { toggleFlag(); goNext(); };
+  const skipQuestion = (qid: string) => {
+    const target = flatQuestions.find((qq) => qq.id === qid);
+    const meta = target?.meta as { locked?: boolean; tier?: string } | null | undefined;
+    const isLockedPremium = meta?.locked && meta?.tier === "premium";
+    setAnswers((prev) => ({ ...prev, [qid]: { skipped: true, skipped_at: new Date().toISOString() } }));
+    // For locked premium questions the server trigger would reject the upsert,
+    // so we only track skip status locally. For all other questions, persist
+    // it via the regular save pipeline so it survives reload.
+    if (!isLockedPremium && attemptId) {
+      saveAnswer.mutate({
+        attempt_id: attemptId,
+        question_id: qid,
+        answer: { skipped: true, skipped_at: new Date().toISOString() },
+      });
+    }
+    goNext();
+  };
 
   return (
     <div className="theme-b2b min-h-screen flex flex-col bg-background select-none">
