@@ -386,9 +386,24 @@ function ImportQuestionsDialog({ orgId }: { orgId: string }) {
   );
 }
 
-function NewQuestionDialog({ orgId }: { orgId: string }) {
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState<QuestionType>("mcq");
+function NewQuestionDialog({
+  orgId,
+  open: openProp,
+  onOpenChange,
+  forcedType,
+  hideTrigger,
+}: {
+  orgId: string;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  forcedType?: QuestionType;
+  hideTrigger?: boolean;
+}) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
+  const [type, setType] = useState<QuestionType>(forcedType ?? "mcq");
+  useEffect(() => { if (forcedType) setType(forcedType); }, [forcedType]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [points, setPoints] = useState(10);
@@ -398,11 +413,13 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
-          <Plus className="h-4 w-4 mr-1" /> New question
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+            <Plus className="h-4 w-4 mr-1" /> New question
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New question</DialogTitle>
