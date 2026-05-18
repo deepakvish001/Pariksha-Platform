@@ -360,6 +360,10 @@ export default function Player() {
   };
 
   const setQuestionAnswer = (qid: string, ans: Record<string, unknown>) => {
+    // Hard guard: never persist answers for locked Premium questions.
+    const target = flatQuestions.find((qq) => qq.id === qid);
+    const meta = target?.meta as { locked?: boolean; tier?: string } | null | undefined;
+    if (meta?.locked && meta?.tier === "premium") return;
     setAnswers((prev) => ({ ...prev, [qid]: ans }));
     queueSave(qid, ans);
   };
