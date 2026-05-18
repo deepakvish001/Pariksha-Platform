@@ -179,6 +179,8 @@ const ContestEditor = () => {
               </SelectContent>
             </Select>
           </Field>
+          <Field label="Banner URL (optional)">
+            <Input value={form.banner_url ?? ""} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} />
           </Field>
           <Field label="Rules (Markdown)">
             <Textarea rows={6} value={form.rules_md} onChange={(e) => setForm({ ...form, rules_md: e.target.value })} />
