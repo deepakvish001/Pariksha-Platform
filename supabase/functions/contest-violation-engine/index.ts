@@ -122,8 +122,28 @@ Deno.serve(async (req) => {
       session_id: session.id,
       type: category,
       severity,
-      meta: { ...(meta ?? {}), evidence_ref: evidence_ref ?? null, action, score: newScore },
+      meta: {
+        ...(meta ?? {}),
+        evidence_ref: evidence_ref ?? null,
+        action,
+        score: newScore,
+        signature: signatureStatus,
+        signature_reason: signatureReason,
+      },
     });
+
+    // Layer 5 — if signature was invalid (tampered/replayed), record a
+    // separate critical signature_invalid violation alongside the reported one.
+    if (signatureStatus === "invalid") {
+      await admin.from("contest_violations").insert({
+        contest_id: session.contest_id,
+        user_id: session.user_id,
+        session_id: session.id,
+        type: "signature_invalid",
+        severity: "critical",
+        meta: { reason: signatureReason, original_category: category },
+      });
+    }
 
     // Update running risk score
     await admin.from("contest_sessions").update({ risk_score: newScore }).eq("id", session.id);
