@@ -294,7 +294,7 @@ export function StudentMetricsDrawer({
                 Recent applications
               </div>
               {appsLoading ? (
-                <Skeleton className="h-12 w-full" />
+                <ListSkeleton />
               ) : applications && applications.length ? (
                 <ul className="space-y-1.5">
                   {applications.map((a) => (
