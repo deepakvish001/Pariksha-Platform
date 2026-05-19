@@ -140,6 +140,23 @@ export default function B2BStudentDetail() {
               return title.includes(q) || status.includes(q);
             })
           : attempts;
+        const ts = (v?: string | null) => (v ? new Date(v).getTime() : 0);
+        const sorted = [...filtered].sort((a, b) => {
+          switch (jumpSort) {
+            case "started_desc":
+              return ts(b.started_at) - ts(a.started_at);
+            case "score_desc":
+              return (b.score_pct ?? -1) - (a.score_pct ?? -1);
+            case "score_asc": {
+              const av = a.score_pct ?? Number.POSITIVE_INFINITY;
+              const bv = b.score_pct ?? Number.POSITIVE_INFINITY;
+              return av - bv;
+            }
+            case "submitted_desc":
+            default:
+              return ts(b.submitted_at ?? b.started_at) - ts(a.submitted_at ?? a.started_at);
+          }
+        });
         return (
           <div className="b2b-card p-3 mb-4">
             <div className="mb-2 flex items-center gap-2 flex-wrap">
@@ -147,8 +164,33 @@ export default function B2BStudentDetail() {
                 <ExternalLink className="h-3 w-3" /> Jump to an attempt
               </div>
               <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                {filtered.length} of {attempts.length}
+                {sorted.length} of {attempts.length}
               </span>
+              <div className="ml-auto flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" aria-hidden="true" />
+                  <Input
+                    value={jumpQuery}
+                    onChange={(e) => setJumpQuery(e.target.value)}
+                    placeholder="Filter by title or status…"
+                    aria-label="Filter attempts"
+                    className="h-8 pl-7 text-xs"
+                  />
+                </div>
+                <Select value={jumpSort} onValueChange={(v) => setJumpSort(v as JumpSort)}>
+                  <SelectTrigger className="h-8 text-xs w-[170px]" aria-label="Sort attempts">
+                    <ArrowUpDown className="h-3 w-3 mr-1 opacity-60" aria-hidden="true" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="submitted_desc">Latest submission</SelectItem>
+                    <SelectItem value="started_desc">Latest started</SelectItem>
+                    <SelectItem value="score_desc">Score (high → low)</SelectItem>
+                    <SelectItem value="score_asc">Score (low → high)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
               <div className="ml-auto relative w-full sm:w-64">
                 <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" aria-hidden="true" />
                 <Input
