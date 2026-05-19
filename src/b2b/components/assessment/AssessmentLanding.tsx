@@ -61,6 +61,7 @@ export interface LandingAssessment {
   ends_at?: string | null;
   status: string;
   brand_color?: string | null;
+  type?: string | null;
 }
 
 interface Props {
