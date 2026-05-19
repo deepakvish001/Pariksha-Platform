@@ -68,6 +68,29 @@ export default function PublicStudentProfile({ kind }: { kind: "profile" | "shor
     fetchData();
   }, [token]);
 
+  // SEO: title, description, noindex (share links must never be indexed)
+  useEffect(() => {
+    const setMeta = (name: string, content: string) => {
+      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement("meta"); el.name = name; document.head.appendChild(el); }
+      el.content = content;
+    };
+    let title = "Placement Profile · Parikshaa";
+    let desc = "Shared placement profile.";
+    if (data) {
+      title = kind === "shortlist"
+        ? `Top ${data.students.length} candidates · ${data.org?.name || "Parikshaa"}`
+        : `${data.students[0]?.name || "Student"} · Placement Profile`;
+      desc = data.message?.trim()
+        || (kind === "shortlist"
+          ? `Shortlist of top candidates shared by ${data.org?.name || "the placement office"}.`
+          : `Placement readiness profile shared by ${data.org?.name || "the placement office"}.`);
+    }
+    document.title = title;
+    setMeta("description", desc.slice(0, 160));
+    setMeta("robots", "noindex,nofollow");
+  }, [data, kind]);
+
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center">
