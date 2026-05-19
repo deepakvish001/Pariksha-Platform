@@ -288,7 +288,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
   });
 
   // Current page of rankings — true server-side pagination + sort
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data, isLoading, refetch, isFetching, error: fetchError } = useQuery({
     queryKey: ["placement_rankings", orgId, filters, studentIdsParam, sortKey, page],
     enabled: driveReady,
     queryFn: async (): Promise<Ranking[]> => {
