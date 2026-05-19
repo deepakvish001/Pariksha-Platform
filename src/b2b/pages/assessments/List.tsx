@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useMyOrganizations } from "../../hooks/useOrg";
 import { useAssessments, type Assessment } from "../../hooks/useAssessments";
+import { getTemplate } from "../../lib/assessmentTemplates";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
