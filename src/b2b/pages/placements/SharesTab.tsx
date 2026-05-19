@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,9 +12,6 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
@@ -310,84 +308,15 @@ export function SharesTab({ orgId }: { orgId: string }) {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Recipient</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Student(s)</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead className="text-right">Views</TableHead>
-                <TableHead>Last opened</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {shares.isLoading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-6"><Loader2 className="h-4 w-4 animate-spin inline" /></TableCell></TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-6 text-sm text-muted-foreground">No shares match these filters.</TableCell></TableRow>
-              ) : filtered.map((r) => {
-                const st = statusOf(r);
-                const ids = r.student_ids?.length ? r.student_ids : (r.student_id ? [r.student_id] : []);
-                const firstName = studentNames.data?.[ids[0]] || "—";
-                const extra = ids.length > 1 ? ` +${ids.length - 1}` : "";
-                return (
-                  <TableRow key={r.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => setOpenShare(r)}>
-                    <TableCell>
-                      <div className="font-medium text-sm truncate max-w-[180px]">{r.recruiter_name || "Unnamed"}</div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[180px]">{r.recruiter_email || "—"}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px]">{r.kind === "profile" ? "Profile" : "Shortlist"}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger className="truncate max-w-[160px] text-left text-sm">
-                            {firstName}{extra}
-                          </TooltipTrigger>
-                          {ids.length > 1 && (
-                            <TooltipContent className="max-w-xs">
-                              {ids.map((id) => studentNames.data?.[id] || id).join(", ")}
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</TableCell>
-                    <TableCell>
-                      <div className="text-xs">{format(new Date(r.expires_at), "MMM d, yyyy")}</div>
-                      <Badge variant={st === "Active" ? "default" : "secondary"} className="text-[10px] mt-0.5">{st}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{r.view_count || 0}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {r.last_viewed_at ? formatDistanceToNow(new Date(r.last_viewed_at), { addSuffix: true }) : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyLink(r)}>
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setOpenShare(r)}>
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        {st === "Active" && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
-                            onClick={() => revoke.mutate(r.id)} disabled={revoke.isPending}>
-                            <Ban className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <VirtualizedShareList
+          rows={filtered}
+          isLoading={shares.isLoading}
+          studentNames={studentNames.data || {}}
+          onOpen={setOpenShare}
+          onCopy={copyLink}
+          onRevoke={(id) => revoke.mutate(id)}
+          revoking={revoke.isPending}
+        />
       </div>
 
       <ShareDetailsSheet
@@ -395,6 +324,124 @@ export function SharesTab({ orgId }: { orgId: string }) {
         studentNames={studentNames.data || {}}
         onClose={() => setOpenShare(null)}
       />
+    </div>
+  );
+}
+
+const GRID_COLS = "grid-cols-[minmax(180px,1.6fr)_90px_minmax(140px,1.4fr)_120px_140px_70px_120px_130px]";
+
+function VirtualizedShareList({
+  rows, isLoading, studentNames, onOpen, onCopy, onRevoke, revoking,
+}: {
+  rows: ShareRow[];
+  isLoading: boolean;
+  studentNames: Record<string, string>;
+  onOpen: (r: ShareRow) => void;
+  onCopy: (r: ShareRow) => void;
+  onRevoke: (id: string) => void;
+  revoking: boolean;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 64,
+    overscan: 8,
+  });
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[1020px]">
+        <div className={cn("grid", GRID_COLS, "px-2 py-2 border-b border-border/60 text-xs font-medium text-muted-foreground")}>
+          <div>Recipient</div>
+          <div>Type</div>
+          <div>Student(s)</div>
+          <div>Created</div>
+          <div>Expires</div>
+          <div className="text-right">Views</div>
+          <div>Last opened</div>
+          <div className="text-right">Actions</div>
+        </div>
+
+        {isLoading ? (
+          <div className="text-center py-8"><Loader2 className="h-4 w-4 animate-spin inline" /></div>
+        ) : rows.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">No shares match these filters.</div>
+        ) : (
+          <div
+            ref={parentRef}
+            className="overflow-y-auto"
+            style={{ height: Math.min(560, Math.max(240, rows.length * 64 + 8)) }}
+          >
+            <div style={{ height: rowVirtualizer.getTotalSize(), width: "100%", position: "relative" }}>
+              {rowVirtualizer.getVirtualItems().map((vi) => {
+                const r = rows[vi.index];
+                const st = statusOf(r);
+                const ids = r.student_ids?.length ? r.student_ids : (r.student_id ? [r.student_id] : []);
+                const firstName = studentNames[ids[0]] || "—";
+                const extra = ids.length > 1 ? ` +${ids.length - 1}` : "";
+                return (
+                  <div
+                    key={r.id}
+                    data-index={vi.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vi.start}px)` }}
+                    className={cn("grid", GRID_COLS, "items-center px-2 py-2 border-b border-border/40 hover:bg-muted/30 cursor-pointer text-sm")}
+                    onClick={() => onOpen(r)}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm truncate">{r.recruiter_name || "Unnamed"}</div>
+                      <div className="text-xs text-muted-foreground truncate">{r.recruiter_email || "—"}</div>
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="text-[10px]">{r.kind === "profile" ? "Profile" : "Shortlist"}</Badge>
+                    </div>
+                    <div className="min-w-0">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="truncate text-left text-sm w-full block">
+                            {firstName}{extra}
+                          </TooltipTrigger>
+                          {ids.length > 1 && (
+                            <TooltipContent className="max-w-xs">
+                              {ids.map((id) => studentNames[id] || id).join(", ")}
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</div>
+                    <div>
+                      <div className="text-xs">{format(new Date(r.expires_at), "MMM d, yyyy")}</div>
+                      <Badge variant={st === "Active" ? "default" : "secondary"} className="text-[10px] mt-0.5">{st}</Badge>
+                    </div>
+                    <div className="text-right tabular-nums font-medium">{r.view_count || 0}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {r.last_viewed_at ? formatDistanceToNow(new Date(r.last_viewed_at), { addSuffix: true }) : "—"}
+                    </div>
+                    <div className="text-right">
+                      <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCopy(r)}>
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpen(r)}>
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        {st === "Active" && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
+                            onClick={() => onRevoke(r.id)} disabled={revoking}>
+                            <Ban className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
