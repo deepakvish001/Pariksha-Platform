@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { OrgShell } from "../layouts/OrgShell";
@@ -7,7 +8,8 @@ import { useOrgStudent } from "../hooks/useOrgStudents";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, GraduationCap, Calendar, Activity, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Mail, GraduationCap, Calendar, Activity, ExternalLink, Search } from "lucide-react";
 
 function fmt(d?: string | null) {
   if (!d) return "—";
