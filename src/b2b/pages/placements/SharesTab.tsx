@@ -82,7 +82,8 @@ export function SharesTab({ orgId }: { orgId: string }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "profile" | "shortlist">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Expired" | "Revoked">("all");
-  const [days, setDays] = useState<"7" | "30" | "90" | "all">("30");
+  const [days, setDays] = useState<"7" | "30" | "90" | "all" | "custom">("30");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const studentFilter = params.get("student");
   const [openShare, setOpenShare] = useState<ShareRow | null>(null);
 
