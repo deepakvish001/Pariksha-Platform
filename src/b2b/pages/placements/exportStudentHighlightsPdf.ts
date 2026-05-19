@@ -291,13 +291,42 @@ export async function exportStudentHighlightsPdf({
   drawList("Recent Offers", offerLines, M, startY, colWidth);
   drawList("Recent Applications", appLines, M + colWidth + 16, startY, colWidth);
 
-  // Footer with page numbers (watermark already drawn beneath content via addPage hook)
+  // Header + footer applied to every page for consistency.
   const pageCount = doc.getNumberOfPages();
   const pageH = doc.internal.pageSize.getHeight();
   const pageW = doc.internal.pageSize.getWidth();
   const genStamp = format(generatedAt, "PPP p");
+  const cohort = [
+    ranking.branch,
+    ranking.batch_year ? String(ranking.batch_year) : null,
+    ranking.section ? `Sec ${ranking.section}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const headerName = ranking.full_name || ranking.email;
+
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
+
+    // Slim running header — skipped on page 1 because the rich header band
+    // already shows the same candidate / cohort info more prominently.
+    if (p > 1) {
+      doc.setFillColor(15, 15, 20);
+      doc.rect(0, 0, pageW, 28, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(245, 200, 90);
+      doc.text(headerName, M, 18);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(200, 200, 210);
+      if (cohort) {
+        doc.text(cohort, M + doc.getTextWidth(headerName) + 10, 18);
+      }
+      doc.setTextColor(170, 170, 180);
+      doc.text(`Exported ${genStamp}`, pageW - M, 18, { align: "right" });
+    }
+
+    // Footer
     const footerY = pageH - 24;
     doc.setDrawColor(230);
     doc.line(M, footerY - 8, pageW - M, footerY - 8);
