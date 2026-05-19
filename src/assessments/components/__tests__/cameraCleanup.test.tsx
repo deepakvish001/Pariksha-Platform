@@ -26,23 +26,30 @@ interface FakeTrack {
   stop: ReturnType<typeof vi.fn>;
 }
 
-function makeFakeStream(): { stream: MediaStream; tracks: FakeTrack[] } {
-  const tracks: FakeTrack[] = [
-    {
-      kind: "video",
-      readyState: "live",
-      stop: vi.fn(function (this: FakeTrack) { this.readyState = "ended"; }),
-    },
-  ];
+function makeFakeStream(
+  kinds: Array<"video" | "audio"> = ["video"],
+): { stream: MediaStream; tracks: FakeTrack[] } {
+  const tracks: FakeTrack[] = kinds.map((kind) => ({
+    kind,
+    readyState: "live" as const,
+    stop: vi.fn(function (this: FakeTrack) { this.readyState = "ended"; }),
+  }));
   // Minimal MediaStream surface used by the production code (getTracks /
-  // getVideoTracks). Cast through unknown to keep TS happy without pulling in
-  // a real WebRTC polyfill.
+  // getVideoTracks / getAudioTracks). Cast through unknown to keep TS happy
+  // without pulling in a real WebRTC polyfill.
   const stream = {
     getTracks: () => tracks,
     getVideoTracks: () => tracks.filter((t) => t.kind === "video"),
     getAudioTracks: () => tracks.filter((t) => t.kind === "audio"),
   } as unknown as MediaStream;
   return { stream, tracks };
+}
+
+function expectAllEnded(tracks: FakeTrack[]) {
+  for (const t of tracks) {
+    expect(t.stop).toHaveBeenCalledTimes(1);
+    expect(t.readyState).toBe("ended");
+  }
 }
 
 // ---- Mocks for CandidateDetailsStep --------------------------------------
