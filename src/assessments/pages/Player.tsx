@@ -179,8 +179,16 @@ export default function Player() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [attemptId, answers, saveAnswer, submitAttempt]
+    [attemptId, answers, saveAnswer, submitAttempt, stopCamStream]
   );
+
+  // Release the proctoring webcam as soon as the attempt is no longer active
+  // (terminal status from server) or after local submit.
+  useEffect(() => {
+    if (submitted || (paper && paper.attempt.status !== "in_progress")) {
+      stopCamStream();
+    }
+  }, [submitted, paper, stopCamStream]);
 
   // Auto-submit hooks (proctoring + timer share the same doSubmit)
   const doSubmitRef = useRef(doSubmit);
