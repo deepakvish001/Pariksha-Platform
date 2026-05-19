@@ -28,6 +28,8 @@ import B2BDashboard from "@/b2b/pages/Dashboard";
 import B2BAssessmentsList from "@/b2b/pages/assessments/List";
 import B2BAssessmentNew from "@/b2b/pages/assessments/New";
 import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
+import B2BAssessmentLanding from "@/b2b/pages/assessments/Landing";
+import StudentInviteLanding from "@/assessments/pages/InviteLanding";
 import B2BAssessmentManage from "@/b2b/pages/assessments/Manage";
 import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BCandidateDetail from "@/b2b/pages/assessments/CandidateDetail";
