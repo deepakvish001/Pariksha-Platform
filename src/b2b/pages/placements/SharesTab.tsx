@@ -88,7 +88,7 @@ export function SharesTab({ orgId }: { orgId: string }) {
   const [openShare, setOpenShare] = useState<ShareRow | null>(null);
 
   const shares = useQuery({
-    queryKey: ["org-shares", orgId, days, studentFilter],
+    queryKey: ["org-shares", orgId, days, studentFilter, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     refetchInterval: 30000,
     queryFn: async () => {
       let q = (supabase as any)
@@ -97,7 +97,10 @@ export function SharesTab({ orgId }: { orgId: string }) {
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
         .limit(500);
-      if (days !== "all") {
+      if (days === "custom") {
+        if (customRange?.from) q = q.gte("created_at", startOfDay(customRange.from).toISOString());
+        if (customRange?.to) q = q.lte("created_at", endOfDay(customRange.to).toISOString());
+      } else if (days !== "all") {
         const since = new Date(Date.now() - Number(days) * 86400 * 1000).toISOString();
         q = q.gte("created_at", since);
       }
