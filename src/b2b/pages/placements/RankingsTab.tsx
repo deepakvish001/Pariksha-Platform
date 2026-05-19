@@ -675,14 +675,18 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2"
-                          onClick={() => setShareTarget({ kind: "profile", studentId: r.student_id, studentName: r.full_name || r.email })}
-                        >
-                          <Share2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <QuickSharePopover
+                          orgId={orgId}
+                          studentId={r.student_id}
+                          studentName={r.full_name || r.email}
+                          onOpenFullDialog={() => setShareTarget({ kind: "profile", studentId: r.student_id, studentName: r.full_name || r.email })}
+                          trigger={
+                            <Button size="sm" variant="ghost" className="h-7 px-2">
+                              <Share2 className="h-3.5 w-3.5" />
+                            </Button>
+                          }
+                        />
+
                       </div>
                     </td>
                   </tr>
