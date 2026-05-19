@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export type ProctoringProfile = "off" | "basic" | "strict";
+
 export type Organization = {
   id: string;
   name: string;
@@ -11,6 +13,11 @@ export type Organization = {
   brand_color: string | null;
   owner_id: string;
   created_at: string;
+  default_duration_min: number | null;
+  default_proctoring: ProctoringProfile | null;
+  default_pass_mark: number | null;
+  allow_retake_default: boolean | null;
+  auto_release_results: boolean | null;
 };
 
 const ORG_QUERY_OPTS = {
