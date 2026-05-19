@@ -7,10 +7,14 @@ import { useCurrentOrg } from "../../context/OrgContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowLeft, Share2, Trophy, GraduationCap, Briefcase, Sparkles,
   FileText, Download, ExternalLink, Github, Linkedin, Globe, Copy,
-  ListChecks, UserCircle,
+  ListChecks, UserCircle, Search, ArrowUp, ArrowDown, ArrowUpDown, X,
 } from "lucide-react";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
