@@ -24,6 +24,21 @@ function fmt(d?: string | null) {
   try { return new Date(d).toLocaleDateString(); } catch { return "—"; }
 }
 
+// Single source of truth for what counts as a "completed" attempt status.
+// Backend writes 'submitted' on normal submit and 'auto_submitted' on timer
+// expiry; older / contest flows may also use 'completed', 'expired', 'graded',
+// or 'reviewed'. Keep this list in sync with any new terminal statuses.
+const COMPLETED_ATTEMPT_STATUSES = new Set([
+  "submitted",
+  "auto_submitted",
+  "completed",
+  "expired",
+  "graded",
+  "reviewed",
+]);
+const isCompletedStatus = (s?: string | null) =>
+  !!s && COMPLETED_ATTEMPT_STATUSES.has(String(s).toLowerCase());
+
 function useStudentAttempts(studentEmail?: string, orgId?: string) {
   return useQuery({
     queryKey: ["student-attempts", orgId, studentEmail],
