@@ -109,6 +109,7 @@ function formatDistance(ms: number): string {
 
 export function AssessmentLanding({
   mode,
+  chrome = "full",
   org,
   assessment,
   sections,
