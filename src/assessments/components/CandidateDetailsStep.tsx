@@ -232,11 +232,14 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
     }
   };
 
-  const startCamera = async () => {
+  const startCamera = async (deviceId?: string) => {
     setGlobalError(null);
+    setCamError(null);
     try {
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { width: 480, height: 360, facingMode: "user" },
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: 480, height: 360 }
+          : { width: 480, height: 360, facingMode: "user" },
         audio: false,
       });
       streamRef.current = s;
@@ -249,9 +252,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         }
       }, 50);
     } catch (err) {
-      setGlobalError(
-        err instanceof Error ? `Camera blocked: ${err.message}` : "Camera permission required",
-      );
+      setCamError(err);
     }
   };
 
