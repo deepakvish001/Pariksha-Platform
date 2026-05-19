@@ -1,5 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useMyInvites, useMyAttempts, claimInvite } from "@/b2b/hooks/useInvites";
+import {
+  useOpenOrgAssessments,
+  useEnrollOpenOrg,
+} from "@/assessments/hooks/useOpenOrgAssessments";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -11,10 +15,13 @@ import {
   FileCheck2,
   PlayCircle,
   AlertCircle,
+  Sparkles,
+  Building2,
 } from "lucide-react";
 import { SectionCard } from "@/b2b/components/ui/SectionCard";
 import { StatusPill, type StatusTone } from "@/b2b/components/ui/StatusPill";
 import { EmptyState } from "@/b2b/components/ui/EmptyState";
+import { getTemplate } from "@/b2b/lib/assessmentTemplates";
 
 const ATTEMPT_TONE: Record<string, StatusTone> = {
   in_progress: "live",
