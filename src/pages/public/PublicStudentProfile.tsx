@@ -193,10 +193,23 @@ export default function PublicStudentProfile({ kind }: { kind: "profile" | "shor
                 ))}
               </div>
 
-              {s.show_contact && s.email && (
-                <Button asChild size="sm" variant="outline" className="w-full">
-                  <a href={`mailto:${s.email}`}><Mail className="h-3.5 w-3.5 mr-1.5" />{s.email}</a>
-                </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {s.show_contact && s.email && (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={`mailto:${s.email}`}><Mail className="h-3.5 w-3.5 mr-1.5" />{s.email}</a>
+                  </Button>
+                )}
+                {s.show_resume && s.resume_url && (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={s.resume_url} target="_blank" rel="noreferrer"><FileText className="h-3.5 w-3.5 mr-1.5" />View resume</a>
+                  </Button>
+                )}
+              </div>
+              {!s.show_contact && !s.show_resume && (
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground italic">
+                  <EyeOff className="h-3 w-3" />
+                  Contact and resume hidden by the sender — request access from the placement office.
+                </div>
               )}
             </div>
           ))}
