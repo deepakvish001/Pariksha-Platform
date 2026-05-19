@@ -39,6 +39,45 @@ function buildUrl(token: string, kind: "profile" | "shortlist") {
   return `${window.location.origin}${path}`;
 }
 
+type LinkStatus = "active" | "expired" | "revoked";
+
+function deriveStatus(row: { revoked_at?: string | null; expires_at: string }): LinkStatus {
+  if (row.revoked_at) return "revoked";
+  if (new Date(row.expires_at).getTime() < Date.now()) return "expired";
+  return "active";
+}
+
+function StatusPill({ status, expiresAt }: { status: LinkStatus; expiresAt?: string }) {
+  const map = {
+    active: {
+      icon: CheckCircle2,
+      label: expiresAt
+        ? `Active · expires ${formatDistanceToNow(new Date(expiresAt), { addSuffix: true })}`
+        : "Active",
+      cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+    },
+    expired: {
+      icon: Clock,
+      label: "Expired",
+      cls: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+    },
+    revoked: {
+      icon: XCircle,
+      label: "Revoked",
+      cls: "border-destructive/40 bg-destructive/10 text-destructive",
+    },
+  } as const;
+  const { icon: Icon, label, cls } = map[status];
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
 export function ShareDialog({
   orgId, target, onClose,
 }: { orgId: string; target: Target; onClose: () => void }) {
