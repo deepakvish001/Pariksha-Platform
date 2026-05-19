@@ -43,6 +43,18 @@ export async function getPostLoginPath(userId: string): Promise<string> {
     if (memberOrg) {
       return "/b2b/dashboard";
     }
+
+    // 3b. Enrolled student in a college?
+    const { data: studentRow } = await supabase
+      .from("org_students")
+      .select("id")
+      .eq("user_id", userId)
+      .in("status", ["invited", "active"])
+      .limit(1)
+      .maybeSingle();
+    if (studentRow) {
+      return "/my/college";
+    }
   } catch (err) {
     console.error("Failed to resolve post-login path:", err);
   }
