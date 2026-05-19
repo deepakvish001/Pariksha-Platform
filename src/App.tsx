@@ -43,6 +43,7 @@ import B2BPricing from "@/b2b/pages/Pricing";
 import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { RequireOrgCapability } from "@/b2b/components/RequireOrgCapability";
 import B2BStudents from "@/b2b/pages/Students";
+import B2BPlacements from "@/b2b/pages/placements/PlacementsDashboard";
 import B2BStudentDetail from "@/b2b/pages/StudentDetail";
 import MyCollege from "@/pages/MyCollege";
 import JoinStudent from "@/pages/JoinStudent";
@@ -293,6 +294,7 @@ const App = () => (
                 <Route path="/b2b/insights/feedback" element={<ProtectedRoute><B2BInsightsFeedback /></ProtectedRoute>} />
                 <Route path="/b2b/students" element={<ProtectedRoute><B2BStudents /></ProtectedRoute>} />
                 <Route path="/b2b/students/:studentId" element={<ProtectedRoute><B2BStudentDetail /></ProtectedRoute>} />
+                <Route path="/b2b/placements" element={<ProtectedRoute><B2BPlacements /></ProtectedRoute>} />
 
                 {/* Student-facing college home */}
                 <Route path="/my/college" element={<ProtectedRoute><MyCollege /></ProtectedRoute>} />
@@ -326,6 +328,7 @@ const App = () => (
                       <Route path="insights/feedback" element={<B2BInsightsFeedback />} />
                       <Route path="students" element={<RequireOrgCapability cap="members.invite"><B2BStudents /></RequireOrgCapability>} />
                       <Route path="students/:studentId" element={<RequireOrgCapability cap="members.invite"><B2BStudentDetail /></RequireOrgCapability>} />
+                      <Route path="placements" element={<B2BPlacements />} />
                     </Route>
                   );
                 })}
