@@ -1617,6 +1617,9 @@ export type Database = {
       }
       b2b_org_invites: {
         Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          capabilities: string[]
           created_at: string
           email: string
           expires_at: string
@@ -1624,9 +1627,13 @@ export type Database = {
           inviter_id: string
           org_id: string
           revoked: boolean
+          role_preset: string
           token: string
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          capabilities?: string[]
           created_at?: string
           email: string
           expires_at: string
@@ -1634,9 +1641,13 @@ export type Database = {
           inviter_id: string
           org_id: string
           revoked?: boolean
+          role_preset?: string
           token: string
         }
         Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          capabilities?: string[]
           created_at?: string
           email?: string
           expires_at?: string
@@ -1644,6 +1655,7 @@ export type Database = {
           inviter_id?: string
           org_id?: string
           revoked?: boolean
+          role_preset?: string
           token?: string
         }
         Relationships: [
@@ -5618,6 +5630,45 @@ export type Database = {
         }
         Relationships: []
       }
+      org_member_capabilities: {
+        Row: {
+          capability: string
+          created_at: string
+          id: string
+          member_id: string
+          org_id: string
+        }
+        Insert: {
+          capability: string
+          created_at?: string
+          id?: string
+          member_id: string
+          org_id: string
+        }
+        Update: {
+          capability?: string
+          created_at?: string
+          id?: string
+          member_id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_member_capabilities_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "org_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_member_capabilities_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_members: {
         Row: {
           created_at: string
@@ -8135,6 +8186,7 @@ export type Database = {
         Args: { p_email: string; p_external_id: string; p_name: string }
         Returns: Database["public"]["Enums"]["invite_source"]
       }
+      accept_b2b_org_invite: { Args: { _token: string }; Returns: string }
       acknowledge_logout: { Args: never; Returns: undefined }
       admin_achievement_stats: {
         Args: never
@@ -8875,6 +8927,7 @@ export type Database = {
         }
         Returns: Json
       }
+      b2b_my_role: { Args: { _org_id: string }; Returns: string }
       b2b_user_owns_org: { Args: { _org_id: string }; Returns: boolean }
       backfill_assessment_invite_sources: {
         Args: never
@@ -9089,6 +9142,34 @@ export type Database = {
             }
             Returns: string
           }
+      create_b2b_org_invite: {
+        Args: {
+          _capabilities: string[]
+          _email: string
+          _org_id: string
+          _role_preset?: string
+        }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          capabilities: string[]
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          inviter_id: string
+          org_id: string
+          revoked: boolean
+          role_preset: string
+          token: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "b2b_org_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       ensure_player_rating: { Args: { _user: string }; Returns: undefined }
       get_ai_insight_feedback_summary: {
         Args: { _org_id: string }
@@ -9391,6 +9472,10 @@ export type Database = {
         Returns: string
       }
       section_org: { Args: { _section: string }; Returns: string }
+      set_member_capabilities: {
+        Args: { _capabilities: string[]; _member_id: string }
+        Returns: undefined
+      }
       sideeye_purge_old_data: { Args: never; Returns: Json }
       sideeye_sweep_stale_status: { Args: never; Returns: Json }
       sideeye_unified_risk_score: {

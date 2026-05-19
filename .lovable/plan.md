@@ -1,70 +1,66 @@
 ## Goal
 
-1. Tag every question as **Free** or **Premium** (chosen at create / upload / AI-generate time).
-2. Show the tier as a badge in the Question Bank list + filter; the tabular list emphasizes Premium vs Normal.
-3. Gate candidate access — Premium questions are only attemptable by candidates whose org/account has `premium` access.
-4. Make `/b2b/question-bank` double as a **Super-Admin curated global bank**: super-admins see and edit a shared pool that every org can pull from.
+Turn the Team page into a real teacher-management workspace where Owners/Admins can:
 
-## Data model (one migration)
+1. Add a specific teacher by email and send them a unique join link (only that email can use it).
+2. Pick exactly which capabilities each teacher gets (custom checkboxes, not just a role).
+3. Manage, revoke, and audit access from one screen.
 
-`questions` table — add:
-- `tier text not null default 'free' check (tier in ('free','premium'))`
-- `is_global boolean not null default false` — true rows belong to the curated global bank (no org gate)
-- `global_curated_by uuid null` (super-admin user id, for audit)
-- index on `(tier)` and partial index on `(is_global) where is_global = true`
+---
 
-RLS additions on `questions`:
-- Existing org policies stay for `is_global = false`.
-- New SELECT policy: anyone authenticated may read rows where `is_global = true`.
-- New INSERT/UPDATE/DELETE policy for `is_global = true`: only `has_role(auth.uid(),'admin')` (existing `user_roles` table + `has_role` function).
-- Mirror policies on `mcq_options` and `question_test_cases` keyed off parent `questions.is_global`.
+## What changes for the user
 
-Candidate gating:
-- Add `profiles.is_premium boolean default false` (or reuse if already present — will check before migration).
-- Add SQL helper `public.user_is_premium(uid uuid) returns boolean security definer`.
-- On the assessment attempt path (server-side check in the existing attempts/serve-paper edge function): if question.tier = 'premium' and `!user_is_premium(candidate)`, omit/replace with a "Premium locked" placeholder.
+**New Team page sections**
+- **Members** — current list, now showing each person's resolved capabilities as small chips, with an "Edit access" button per row.
+- **Pending invites** — email, who invited them, expires-in countdown, "Copy link", "Resend", "Revoke".
+- **Invite a teacher** dialog — email field + capability checkboxes grouped by area (Assessments, Question Bank, Proctoring, Results, Members, Org settings). Optional "Preset" dropdown (Admin / Proctor / Recruiter / Viewer / Custom) that pre-fills the boxes; user can tweak afterward.
 
-## Frontend changes (all in `src/b2b`)
+**Per-teacher custom capabilities**
+- Replaces the "role only" model with a stored list of capability keys per member (role still kept as a label/preset for display).
+- "Edit access" reuses the same checkbox grid; saving updates the member's capabilities immediately and invalidates the cached permission query so the UI reflects it on next navigation.
 
-**Types**
-- Extend `Question` in `useQuestions.ts` with `tier: 'free'|'premium'` and `is_global: boolean`.
-- New hook flag: `useQuestions(orgId, type, { scope: 'org' | 'global' | 'all' })`. Super-admin in admin mode uses `'global'`; non-admin uses `'org'`.
+**Targeted, single-use join link**
+- Invite stores: `org_id`, `email` (lower-cased), `capabilities[]`, `role_preset`, `inviter_id`, `token`, `expires_at` (default 7 days), `revoked`, `accepted_at`, `accepted_by`.
+- Link format: `/b2b/join/:token`.
+- Acceptance rule: the signed-in user's email must equal `invite.email` (case-insensitive). If not, show "This invite was sent to another email. Sign in with that address." No one else can consume it. Once accepted, token is burned (`accepted_at` set, link 410s).
 
-**Create / Upload / AI Generate — ask tier**
-- `SimpleNewForm` and `CodingWizard`/`SqlWizard`: add a small **Tier** segmented control (Free / Premium) in the meta panel, default Free.
-- CSV/JSON import on Question Bank: parse optional `tier` column; if missing show a one-time dialog "Set tier for imported questions" with Free / Premium / Per-row.
-- AI Generate flow: add Tier toggle in the prompt panel, persisted into the generated rows.
+**Who can do what**
+- Only Owners and Admins see the "Invite a teacher", "Edit access", and "Revoke" controls (matches existing `members.invite` / `members.removeOrEdit` capabilities). Promote-to-Owner stays Owner-only.
 
-**Hub + List UI**
-- Hub cards already show counts per type — add a small "Premium / Free" mini-split below counts.
-- List view (`ListView` in `QuestionBank.tsx`):
-  - New filter dropdown **Tier**: All / Premium only / Free only (default All, sorted Premium-first).
-  - Default sort: Premium rows pinned to top, then by `created_at desc` (user phrased this as "in tabular list show premium not free one normal questions and premium questions" — interpreted as Premium grouped/highlighted above normal).
-  - New column **Tier** with a gold `Premium` pill and a muted `Free` pill (semantic tokens, not hardcoded colors — extend `--accent-premium` in `index.css`).
-  - Row action + bulk action: **Set tier → Free / Premium**.
+---
 
-**Admin mode (super-admin only)**
-- Detect via existing `useUserRole().isAdmin`.
-- Add a top-of-page switch on `/b2b/question-bank`: **Org bank ↔ Global bank**. Hidden for non-admins.
-- Global mode: `useQuestions` scope `'global'`, writes set `is_global = true` and skip `org_id` (column made nullable for global rows OR uses a sentinel global org — will use nullable `org_id` with policy `org_id is null and is_global`).
-- Org users get a read-only "Browse global bank" tab inside the hub that lets them **Clone to org** (server function `clone_global_question(qid, target_org)` copies row + options + tests into their org, tier preserved).
+## Technical section
 
-**Editor**
-- `EditView`: show Tier control. In global mode it edits the global row; in org mode it edits the org row.
+**DB migration (new tool call)**
+- New table `org_member_capabilities` — `id, org_id, member_id (fk org_members), capability text, created_at`. Unique `(member_id, capability)`. RLS: select if `useMyOrgRole(org_id)` returns any role; insert/delete only if caller has `members.removeOrEdit` (security-definer helper).
+- Extend `b2b_org_invites`: add `capabilities text[] not null default '{}'`, `role_preset text`, `accepted_at timestamptz`, `accepted_by uuid`. Keep existing columns.
+- RPC `accept_b2b_org_invite(_token text)` — SECURITY DEFINER. Validates: not revoked, not expired, not already accepted, `auth.email() = invite.email`. Inserts/updates `org_members` with `role = role_preset` (default `viewer`), bulk-inserts `org_member_capabilities` rows, marks invite accepted.
+- RPC `create_b2b_org_invite(_org_id, _email, _capabilities text[], _role_preset text)` — SECURITY DEFINER. Checks caller has `members.invite` cap; inserts row; returns token.
+- RPC `set_member_capabilities(_member_id uuid, _capabilities text[])` — SECURITY DEFINER. Checks caller has `members.removeOrEdit`; replaces capability rows atomically.
 
-## Out of scope
-- Billing / actually granting `profiles.is_premium`. The toggle exists; payment flow is separate.
-- Changing existing assessment authoring UI beyond what's needed to keep paper generation honest.
-- Bulk migration of existing questions — they all default to `tier='free'`, `is_global=false`.
+**Capability resolution (frontend)**
+- New hook `useMyOrgCapabilities(orgId)` — queries `org_member_capabilities` for the current member; cached with the existing `staleTime: Infinity` pattern from `useOrg.ts`.
+- Update `useCan(orgId, cap)`:
+  - If the member has any rows in `org_member_capabilities`, allow when `cap` is in that set.
+  - Otherwise fall back to the existing `CAPABILITY_MATRIX[role]` (keeps every current member working without backfill).
+- Invalidate both `b2b/my-org-role` and `b2b/my-capabilities` queries on edits.
 
-## Files touched
+**New / changed files**
+- `src/b2b/hooks/useOrgInvites.ts` — `useOrgInvites`, `useCreateOrgInvite`, `useRevokeOrgInvite`, `useResendOrgInvite` (calls existing transactional email function with the join URL).
+- `src/b2b/hooks/useMemberCapabilities.ts` — `useMemberCapabilities(memberId)`, `useSetMemberCapabilities()`.
+- `src/b2b/hooks/usePermissions.ts` — extend `useCan` as above; export `ALL_CAPABILITIES` grouped for the checkbox UI; add `useMyOrgCapabilities`.
+- `src/b2b/pages/Team.tsx` — add Pending Invites card, Invite dialog, Edit Access dialog, capability chips per member.
+- `src/b2b/components/team/InviteTeacherDialog.tsx`, `EditMemberAccessDialog.tsx`, `CapabilityCheckboxGrid.tsx` — new presentational components.
+- `src/b2b/pages/JoinOrg.tsx` + route `/b2b/join/:token` — accept flow; if not signed in, redirect to login with `redirect=` back to itself; on success, navigate to `/b2b` workspace and toast.
+- Edge function (existing `send-transactional-email` or a small new `send-org-invite-email`) — sends the join link to `invite.email`. Reuses Lovable email infrastructure already configured for the project.
 
-- migration (new) — schema + RLS + `clone_global_question` RPC + `user_is_premium` helper
-- `src/b2b/hooks/useQuestions.ts` — types, scope param, clone mutation
-- `src/b2b/pages/QuestionBank.tsx` — Tier filter, column, admin scope switch, bulk action, hub split
-- `src/b2b/components/question-bank/QuestionWizardDialog.tsx` (+ Coding/Sql wizards + SimpleNewForm + AI Generate panel) — Tier control
-- Import CSV/JSON parser inside `QuestionBank.tsx` — tier handling
-- `src/b2b/hooks/usePermissions.ts` — no change; reuse `useUserRole`
-- Assessment paper serve edge function — premium gate (will read and patch in the build step)
+**Layout / look**
+- Matches existing `b2b-card` styling and the gradient page title pattern already used in `Team.tsx`. Capability chips reuse `Badge variant="outline"`. Dialog uses the same shadcn primitives already imported elsewhere in `/b2b`.
 
-## Approve to proceed and I'll run the migration first, then ship the UI.
+---
+
+## Out of scope (call out, don't build)
+
+- Scoping to specific assessments/classes (you chose pure capability checkboxes — no per-resource ACL this round).
+- Bulk teacher CSV import (can be added later mirroring `assessment_invites` bulk flow).
+- Audit log surfacing (rows are written but no UI tab yet).

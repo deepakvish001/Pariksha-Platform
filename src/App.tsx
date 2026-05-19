@@ -34,6 +34,7 @@ import B2BCandidateDetail from "@/b2b/pages/assessments/CandidateDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 
 import B2BTeam from "@/b2b/pages/Team";
+import B2BJoinOrg from "@/b2b/pages/JoinOrg";
 import B2BSettings from "@/b2b/pages/Settings";
 import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
 import B2BPricing from "@/b2b/pages/Pricing";
@@ -268,6 +269,7 @@ const App = () => (
 
                 {/* B2B (Parikshaa for Teams) */}
                 <Route path="/b2b" element={<B2BLanding />} />
+                <Route path="/b2b/join/:token" element={<B2BJoinOrg />} />
                 <Route path="/pricing" element={<B2BPricing />} />
                 <Route path="/b2b/onboarding" element={<ProtectedRoute><B2BOnboarding /></ProtectedRoute>} />
                 <Route path="/b2b/dashboard" element={<ProtectedRoute><B2BDashboard /></ProtectedRoute>} />
