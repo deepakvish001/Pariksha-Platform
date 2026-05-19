@@ -56,6 +56,8 @@ export default function B2BStudentDetail() {
   const { data: agg } = useStudentAttempts(student?.email, org?.id);
 
   const [jumpQuery, setJumpQuery] = useState("");
+  type JumpSort = "submitted_desc" | "started_desc" | "score_desc" | "score_asc";
+  const [jumpSort, setJumpSort] = useState<JumpSort>("submitted_desc");
 
   if (!org) return <Navigate to="/b2b/onboarding" replace />;
   if (isLoading) return <OrgShell title="Student"><div className="p-6 text-sm">Loading…</div></OrgShell>;
