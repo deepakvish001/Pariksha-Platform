@@ -148,7 +148,7 @@ export default function B2BStudentDetail() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="completed">Completed (submitted)</SelectItem>
+            <SelectItem value="completed">Completed (all)</SelectItem>
             {statusOptions.map((s) => (
               <SelectItem key={s} value={s}>
                 {s.replace(/_/g, " ")}
