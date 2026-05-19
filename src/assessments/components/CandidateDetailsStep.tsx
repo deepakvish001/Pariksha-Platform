@@ -513,7 +513,8 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
                     setSelfieUrl(null);
                     setSelfieChecks([]);
                     setGlobalError(null);
-                    startCamera();
+                    setCamError(null);
+                    void startCamera();
                   }}
                   disabled={busy}
                 >
