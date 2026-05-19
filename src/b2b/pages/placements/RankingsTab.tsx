@@ -591,9 +591,41 @@ export function RankingsTab({ orgId }: { orgId: string }) {
           </GlassCard>
         )
       ) : !visible.length ? (
-        <GlassCard className="p-10 text-center text-muted-foreground">
-          No students match these filters. Try clearing filters or click <strong>Recompute</strong> to build the leaderboard.
-        </GlassCard>
+        (() => {
+          const hasFilters =
+            !!debouncedSearch ||
+            batch !== "all" || branch !== "all" || section !== "all" ||
+            driveId !== "all" || status !== "all" || Number(minScore) > 0;
+          const hasAnyData = (data?.length || 0) > 0;
+          return (
+            <GlassCard className="p-10 text-center">
+              <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-[hsl(var(--muted))]/40 grid place-items-center">
+                {hasAnyData
+                  ? <Search className="h-5 w-5 text-muted-foreground" />
+                  : <Trophy className="h-5 w-5 text-amber-400/80" />}
+              </div>
+              <div className="text-sm font-medium">
+                {hasAnyData ? "No students match these filters" : "Leaderboard is empty"}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                {hasAnyData
+                  ? "Try adjusting or clearing the filters above to see more candidates."
+                  : "Run Recompute to score your students and build the placement leaderboard."}
+              </div>
+              <div className="mt-4 inline-flex gap-2">
+                {hasFilters && hasAnyData && (
+                  <Button size="sm" variant="outline" onClick={clearFilters}>Clear filters</Button>
+                )}
+                {!hasAnyData && (
+                  <Button size="sm" onClick={() => recompute.mutate()} disabled={recompute.isPending}>
+                    <Sparkles className={`h-4 w-4 mr-1.5 ${recompute.isPending ? "animate-spin" : ""}`} />
+                    Recompute scores
+                  </Button>
+                )}
+              </div>
+            </GlassCard>
+          );
+        })()
       ) : view === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {rendered.map((r, i) => {
