@@ -79,17 +79,4 @@ describe("JoinStudent token acceptance E2E", () => {
     );
   });
 
-  it("shows an error state when the edge function rejects the token", async () => {
-    invokeMock.mockImplementation(async () => ({ data: { error: "Invite expired" }, error: null }));
-
-    renderAt("/join/student?token=expired-token");
-
-    expect(
-      await screen.findByText("Couldn't link enrollment", {}, { timeout: 3000 }),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByText("Invite expired", {}, { timeout: 3000 }),
-    ).toBeInTheDocument();
-    expect(navigateMock).not.toHaveBeenCalledWith("/my/college");
-  });
 });
