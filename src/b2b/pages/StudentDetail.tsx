@@ -55,6 +55,8 @@ export default function B2BStudentDetail() {
   const { data: student, isLoading } = useOrgStudent(studentId);
   const { data: agg } = useStudentAttempts(student?.email, org?.id);
 
+  const [jumpQuery, setJumpQuery] = useState("");
+
   if (!org) return <Navigate to="/b2b/onboarding" replace />;
   if (isLoading) return <OrgShell title="Student"><div className="p-6 text-sm">Loading…</div></OrgShell>;
   if (!student) return <OrgShell title="Student"><div className="p-6 text-sm">Not found.</div></OrgShell>;
