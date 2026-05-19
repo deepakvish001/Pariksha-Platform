@@ -18,9 +18,15 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Copy, Eye, Ban, ExternalLink, Loader2, Share2, Globe, Smartphone, Monitor,
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import type { DateRange } from "react-day-picker";
+import {
+  Copy, Eye, Ban, ExternalLink, Loader2, Share2, Globe, Smartphone, Monitor, CalendarIcon, X,
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, startOfDay, endOfDay } from "date-fns";
 import { toast } from "sonner";
 
 type ShareRow = {
@@ -76,12 +82,13 @@ export function SharesTab({ orgId }: { orgId: string }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "profile" | "shortlist">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Expired" | "Revoked">("all");
-  const [days, setDays] = useState<"7" | "30" | "90" | "all">("30");
+  const [days, setDays] = useState<"7" | "30" | "90" | "all" | "custom">("30");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const studentFilter = params.get("student");
   const [openShare, setOpenShare] = useState<ShareRow | null>(null);
 
   const shares = useQuery({
-    queryKey: ["org-shares", orgId, days, studentFilter],
+    queryKey: ["org-shares", orgId, days, studentFilter, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     refetchInterval: 30000,
     queryFn: async () => {
       let q = (supabase as any)
@@ -90,7 +97,10 @@ export function SharesTab({ orgId }: { orgId: string }) {
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
         .limit(500);
-      if (days !== "all") {
+      if (days === "custom") {
+        if (customRange?.from) q = q.gte("created_at", startOfDay(customRange.from).toISOString());
+        if (customRange?.to) q = q.lte("created_at", endOfDay(customRange.to).toISOString());
+      } else if (days !== "all") {
         const since = new Date(Date.now() - Number(days) * 86400 * 1000).toISOString();
         q = q.gte("created_at", since);
       }
@@ -231,15 +241,63 @@ export function SharesTab({ orgId }: { orgId: string }) {
                 <SelectItem value="Revoked">Revoked</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={days} onValueChange={(v: any) => setDays(v)}>
-              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+            <Select
+              value={days}
+              onValueChange={(v: any) => {
+                setDays(v);
+                if (v !== "custom") setCustomRange(undefined);
+                else if (!customRange) setCustomRange({ from: new Date(Date.now() - 30 * 86400 * 1000), to: new Date() });
+              }}
+            >
+              <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="7">Last 7 days</SelectItem>
                 <SelectItem value="30">Last 30 days</SelectItem>
                 <SelectItem value="90">Last 90 days</SelectItem>
                 <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="custom">Custom range…</SelectItem>
               </SelectContent>
             </Select>
+            {days === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "h-9 justify-start text-left font-normal gap-2",
+                      !customRange?.from && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    {customRange?.from ? (
+                      customRange.to ? (
+                        <>{format(customRange.from, "MMM d")} – {format(customRange.to, "MMM d, yyyy")}</>
+                      ) : (
+                        format(customRange.from, "MMM d, yyyy")
+                      )
+                    ) : (
+                      <span>Pick dates</span>
+                    )}
+                    {customRange?.from && (
+                      <X
+                        className="h-3.5 w-3.5 ml-1 text-muted-foreground hover:text-foreground"
+                        onClick={(e) => { e.stopPropagation(); setCustomRange(undefined); }}
+                      />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="range"
+                    selected={customRange}
+                    onSelect={setCustomRange}
+                    numberOfMonths={2}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         </div>
 
