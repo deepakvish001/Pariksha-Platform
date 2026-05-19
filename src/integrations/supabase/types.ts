@@ -7938,6 +7938,8 @@ export type Database = {
       }
       student_share_links: {
         Row: {
+          allow_contact: boolean
+          allow_resume: boolean
           created_at: string
           created_by: string
           expires_at: string
@@ -7955,6 +7957,8 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          allow_contact?: boolean
+          allow_resume?: boolean
           created_at?: string
           created_by?: string
           expires_at?: string
@@ -7972,6 +7976,8 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          allow_contact?: boolean
+          allow_resume?: boolean
           created_at?: string
           created_by?: string
           expires_at?: string
