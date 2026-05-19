@@ -861,20 +861,37 @@ export function RankingsTab({ orgId }: { orgId: string }) {
         </GlassCard>
       )}
 
-      {!isLoading && visible.length > 0 && (
-        <>
-          <div ref={sentinelRef} aria-hidden className="h-1" />
-          <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
+      {!isLoading && filteredCount > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-xs text-muted-foreground">
+          <span className="tabular-nums">
+            {filteredCount === 0
+              ? "No results"
+              : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filteredCount)} of ${filteredCount}`}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || isFetching}
+            >
+              Previous
+            </Button>
             <span className="tabular-nums">
-              Showing {rendered.length} of {filteredCount}
+              Page {page} of {totalPages}
             </span>
-            {hasMore && (
-              <Button size="sm" variant="outline" className="h-7" onClick={() => setPageCount((p) => p + 1)}>
-                Load more
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || isFetching}
+            >
+              Next
+            </Button>
           </div>
-        </>
+        </div>
       )}
 
 
