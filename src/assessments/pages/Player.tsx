@@ -172,6 +172,7 @@ export default function Player() {
       try {
         await submitAttempt.mutateAsync(attemptId);
         setSubmitted(true);
+        stopCamStream();
         toast.success(auto ? "Time's up — auto-submitted" : "Submitted successfully");
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : "Failed to submit");
