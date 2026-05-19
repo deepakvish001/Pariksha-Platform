@@ -317,7 +317,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
       const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
       const path = await uploadFile(file, "selfie");
       setSelfieUrl(path);
-      stopCamera();
+      stopCamera("capture_success");
     } catch (err) {
       setGlobalError(err instanceof Error ? err.message : "Capture failed");
     } finally {
