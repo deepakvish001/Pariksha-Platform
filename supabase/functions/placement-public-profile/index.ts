@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     const { data: link, error: linkErr } = await supa
       .from("student_share_links")
-      .select("id, org_id, kind, student_id, student_ids, expires_at, revoked_at, recruiter_name, message, view_count")
+      .select("id, org_id, kind, student_id, student_ids, expires_at, revoked_at, recruiter_name, message, view_count, allow_resume, allow_contact")
       .eq("token", token)
       .maybeSingle();
 
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
     const [{ data: students }, { data: org }, { data: scores }] = await Promise.all([
       supa.from("org_students")
-        .select("id, full_name, email, roll_number, branch, batch_year, section")
+        .select("id, full_name, email, roll_number, branch, batch_year, section, resume_url")
         .in("id", ids),
       supa.from("organizations").select("name, slug").eq("id", link.org_id).maybeSingle(),
       supa.from("placement_student_scores")
@@ -65,6 +65,9 @@ Deno.serve(async (req) => {
       .from("student_profile_preferences")
       .select("student_id, headline, allow_public_share, show_resume, show_contact")
       .in("student_id", ids);
+
+    const linkAllowResume = link.allow_resume !== false;
+    const linkAllowContact = link.allow_contact === true;
 
     const scoreById: Record<string, any> = {};
     (scores || []).forEach((s: any) => { scoreById[s.student_id] = s; });
