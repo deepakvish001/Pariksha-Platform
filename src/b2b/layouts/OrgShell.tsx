@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useEntityLabel } from "@/lib/routing/useBreadcrumbLabel";
+import { DualRoleBanner } from "../components/DualRoleBanner";
 import "../theme.css";
 
 type NavItem = {
@@ -304,7 +305,10 @@ export function OrgShell({
               </ol>
             </nav>
           </header>
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 b2b-scroll">{children}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 b2b-scroll">
+            <DualRoleBanner />
+            {children}
+          </div>
         </main>
       </div>
     </div>
