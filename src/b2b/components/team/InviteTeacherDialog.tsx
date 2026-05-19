@@ -163,7 +163,7 @@ export function InviteTeacherDialog({ open, onOpenChange, orgId }: Props) {
               </Button>
             </>
           ) : (
-            <Button onClick={() => onOpenChange(false)}>Done</Button>
+            <Button onClick={() => onOpenChange(false)}>Close</Button>
           )}
         </DialogFooter>
       </DialogContent>
