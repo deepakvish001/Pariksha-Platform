@@ -53,6 +53,28 @@ export async function exportStudentHighlightsPdf({
   const M = 40;
   let y = M;
 
+  // Document metadata — surfaced in PDF reader "Properties" dialogs.
+  const generatedAt = new Date();
+  const candidateName = ranking.full_name || ranking.email || "Candidate";
+  doc.setProperties({
+    title: `Candidate Highlights — ${candidateName}`,
+    subject: `HR-ready candidate highlights for ${candidateName} (generated ${generatedAt.toISOString()})`,
+    author: "Parikshaa Placements",
+    creator: "Parikshaa Placements",
+    keywords: [
+      "Parikshaa",
+      "Placements",
+      "Candidate Highlights",
+      "Confidential",
+      ranking.roll_number || "",
+      ranking.branch || "",
+      ranking.batch_year ? String(ranking.batch_year) : "",
+      `Generated:${generatedAt.toISOString()}`,
+    ]
+      .filter(Boolean)
+      .join(", "),
+  });
+
   // Draw the diagonal CONFIDENTIAL watermark BEFORE any content so it sits
   // underneath everything else (jsPDF has no z-index — draw order wins).
   const drawWatermark = () => {
