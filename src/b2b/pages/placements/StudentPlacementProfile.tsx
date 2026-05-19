@@ -47,6 +47,9 @@ export default function StudentPlacementProfile() {
   const { org, isLoading: orgLoading } = useCurrentOrg();
   const [shareOpen, setShareOpen] = useState(false);
   const [resumeOpen, setResumeOpen] = useState(false);
+  const [daSearch, setDaSearch] = useState("");
+  const [daStage, setDaStage] = useState<string>("all");
+  const [daSort, setDaSort] = useState<{ key: "title" | "stage" | "last"; dir: "asc" | "desc" }>({ key: "last", dir: "desc" });
 
   const { data: student, isLoading: studentLoading } = useQuery({
     queryKey: ["org_student", studentId],
