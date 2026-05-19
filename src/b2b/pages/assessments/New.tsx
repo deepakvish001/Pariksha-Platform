@@ -47,7 +47,7 @@ export default function AssessmentNew() {
     if (!title.trim()) return toast.error("Title is required");
     try {
       const a = await create.mutateAsync({
-        org_id: org.id,
+        org_id: org!.id,
         title: title.trim(),
         description: description.trim() || undefined,
         duration_min: duration,
