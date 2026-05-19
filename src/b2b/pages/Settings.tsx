@@ -227,17 +227,12 @@ export default function B2BSettings() {
         );
       case "defaults":
         return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Assessment defaults"
-            description="Set the defaults that every new assessment will inherit. Saves admins from re-picking the same options every time."
-            fields={[
-              "Default duration (minutes)",
-              "Default proctoring profile: off / standard / strict",
-              "Default pass mark (%)",
-              "Allow candidate retake by default",
-              "Auto-release results to candidates",
-            ]}
+          <DefaultsSection
+            canEdit={canEdit}
+            state={defaults}
+            setState={setDefaults}
+            durationError={defaultsDirty || defaults.duration !== orgDefaults.duration ? durationError : null}
+            passMarkError={defaultsDirty || defaults.passMark !== orgDefaults.passMark ? passMarkError : null}
           />
         );
       case "security":
