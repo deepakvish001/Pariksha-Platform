@@ -1,12 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Determines where a user should land after authenticating, based on their role:
- * - Admin role        -> /admin (admin panel)
- * - Owns a company org -> /b2b/dashboard (company dashboard)
- * - Owns a college org -> /b2b/dashboard (college dashboard)
- * - Member of an org   -> /b2b/dashboard
- * - Otherwise (student) -> /learn
+ * Determines where a user should land after authenticating.
+ *
+ * Priority (first match wins — checks are sequential, not merged):
+ *   1. Platform admin (user_roles.role = 'admin')           -> /admin
+ *   2. Owner of any organization (organizations.owner_id)   -> /b2b/dashboard
+ *   3. Member of any organization (org_members)             -> /b2b/dashboard
+ *   4. Enrolled student of a college (org_students)         -> /my/college
+ *   5. Default (regular learner)                            -> /learn
+ *
+ * Dual-role note:
+ *   A user who is BOTH a college admin/member AND an enrolled student
+ *   (e.g. a TA, or an admin who self-enrolled with the same email) will
+ *   ALWAYS land on /b2b/dashboard because rules 2–3 are evaluated before
+ *   rule 4. They can still reach their student view manually via /my/college
+ *   — the OrgShell surfaces a banner linking there when this case applies.
  */
 export async function getPostLoginPath(userId: string): Promise<string> {
   try {
