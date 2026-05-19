@@ -34,6 +34,7 @@ import B2BCandidateDetail from "@/b2b/pages/assessments/CandidateDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 
 import B2BTeam from "@/b2b/pages/Team";
+import B2BJoinOrg from "@/b2b/pages/JoinOrg";
 import B2BSettings from "@/b2b/pages/Settings";
 import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
 import B2BPricing from "@/b2b/pages/Pricing";
