@@ -215,6 +215,7 @@ export default function B2BSettings() {
     setLogoUrl(org.logo_url ?? "");
     setBrandColor(org.brand_color ?? "");
     setDefaults(orgToDefaults(org));
+    setSecurity(orgToSecurity(org));
   };
 
   const onDelete = async () => {
