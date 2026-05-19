@@ -16,6 +16,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
 } from "recharts";
 import { ShareDialog } from "./ShareDialog";
+import { ResumePreviewDialog } from "./ResumePreviewDialog";
 import { toast } from "sonner";
 
 function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -41,6 +42,7 @@ export default function StudentPlacementProfile() {
   const { studentId } = useParams<{ studentId: string }>();
   const { org, isLoading: orgLoading } = useCurrentOrg();
   const [shareOpen, setShareOpen] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
 
   const { data: student, isLoading: studentLoading } = useQuery({
     queryKey: ["org_student", studentId],
@@ -409,10 +411,8 @@ export default function StudentPlacementProfile() {
                   <>
                     <div className="text-xs text-muted-foreground mb-2">Resume on file</div>
                     <div className="flex gap-2">
-                      <Button asChild size="sm" variant="outline">
-                        <a href={profile.resume_url} target="_blank" rel="noreferrer">
-                          <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> View
-                        </a>
+                      <Button size="sm" variant="outline" onClick={() => setResumeOpen(true)}>
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> View
                       </Button>
                       <Button asChild size="sm">
                         <a href={profile.resume_url} download>
@@ -569,6 +569,12 @@ export default function StudentPlacementProfile() {
           onClose={() => setShareOpen(false)}
         />
       )}
+      <ResumePreviewDialog
+        open={resumeOpen}
+        onOpenChange={setResumeOpen}
+        url={profile?.resume_url || null}
+        studentName={student?.full_name || student?.email}
+      />
     </OrgShell>
   );
 }
