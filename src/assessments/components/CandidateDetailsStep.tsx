@@ -562,7 +562,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
                 <Button size="sm" onClick={captureSelfie} disabled={busy}>
                   <Camera className="h-3.5 w-3.5 mr-1" /> Capture
                 </Button>
-                <Button size="sm" variant="ghost" onClick={stopCamera} disabled={busy}>
+                <Button size="sm" variant="ghost" onClick={() => stopCamera("user_cancel")} disabled={busy}>
                   Cancel
                 </Button>
               </div>
