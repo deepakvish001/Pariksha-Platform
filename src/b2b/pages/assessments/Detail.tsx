@@ -245,6 +245,7 @@ function SectionQuestions({ sectionId, orgId }: { sectionId: string; orgId: stri
   const add = useAddQuestionToSection();
   const remove = useRemoveQuestionFromSection();
   const [pick, setPick] = useState<string>("");
+  const [aiOpen, setAiOpen] = useState(false);
 
   const used = new Set((rows ?? []).map((r: any) => r.question?.id));
   const available = (bank ?? []).filter((q) => !used.has(q.id));
