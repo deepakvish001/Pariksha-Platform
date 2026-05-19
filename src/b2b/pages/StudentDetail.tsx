@@ -169,6 +169,8 @@ export default function B2BStudentDetail() {
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="completed">Completed (all)</SelectItem>
+            <SelectItem value="needs_grading">Needs grading</SelectItem>
+            <SelectItem value="low_integrity">Low integrity (&lt; 70%)</SelectItem>
             {statusOptions.map((s) => (
               <SelectItem key={s} value={s}>
                 {s.replace(/_/g, " ")}
