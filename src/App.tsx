@@ -28,6 +28,8 @@ import B2BDashboard from "@/b2b/pages/Dashboard";
 import B2BAssessmentsList from "@/b2b/pages/assessments/List";
 import B2BAssessmentNew from "@/b2b/pages/assessments/New";
 import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
+import B2BAssessmentLanding from "@/b2b/pages/assessments/Landing";
+import StudentInviteLanding from "@/assessments/pages/InviteLanding";
 import B2BAssessmentManage from "@/b2b/pages/assessments/Manage";
 import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BCandidateDetail from "@/b2b/pages/assessments/CandidateDetail";
@@ -275,7 +277,8 @@ const App = () => (
                 <Route path="/b2b/dashboard" element={<ProtectedRoute><B2BDashboard /></ProtectedRoute>} />
                 <Route path="/b2b/assessments" element={<ProtectedRoute><B2BAssessmentsList /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/new" element={<ProtectedRoute><B2BAssessmentNew /></ProtectedRoute>} />
-                <Route path="/b2b/assessments/:id" element={<ProtectedRoute><B2BAssessmentDetail /></ProtectedRoute>} />
+                <Route path="/b2b/assessments/:id" element={<ProtectedRoute><B2BAssessmentLanding /></ProtectedRoute>} />
+                <Route path="/b2b/assessments/:id/edit" element={<ProtectedRoute><B2BAssessmentDetail /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/manage" element={<ProtectedRoute><B2BAssessmentManage /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/attempts/:attemptId" element={<ProtectedRoute><B2BAttemptDetail /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id/candidates/:candidateSeg" element={<ProtectedRoute><B2BCandidateDetail /></ProtectedRoute>} />
@@ -301,7 +304,8 @@ const App = () => (
                       <Route index element={<B2BDashboard />} />
                       <Route path="assessments" element={<B2BAssessmentsList />} />
                       <Route path="assessments/new" element={<RequireOrgCapability cap="assessments.write"><B2BAssessmentNew /></RequireOrgCapability>} />
-                      <Route path="assessments/:id" element={<B2BAssessmentDetail />} />
+                      <Route path="assessments/:id" element={<B2BAssessmentLanding />} />
+                      <Route path="assessments/:id/edit" element={<B2BAssessmentDetail />} />
                       <Route path="assessments/:id/manage" element={<RequireOrgCapability cap="assessments.write"><B2BAssessmentManage /></RequireOrgCapability>} />
                       <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
                       <Route path="assessments/:id/candidates/:candidateSeg" element={<B2BCandidateDetail />} />
@@ -315,7 +319,8 @@ const App = () => (
                 })}
 
                 {/* Student-side assessments */}
-                <Route path="/assessments/join/:token" element={<StudentJoin />} />
+                <Route path="/assessments/join/:token" element={<StudentInviteLanding />} />
+                <Route path="/assessments/join/:token/claim" element={<StudentJoin />} />
                 <Route path="/assessments/sidecam/:token" element={<StudentSideCamera />} />
                 <Route path="/assessments/sidecam/:token/upload/:questionId" element={<StudentSideCameraUpload />} />
                 <Route path="/assessments/integrity-policy" element={<IntegrityPolicy />} />
