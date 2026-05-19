@@ -39,6 +39,27 @@ const DEFAULT_SECURITY: SecurityState = {
   sessionMinutes: 1440,
 };
 
+const DEFAULT_NOTIFICATIONS: NotificationsState = {
+  digestEmails: [],
+  proctoringEmails: [],
+  slackWebhook: "",
+  dailySummary: false,
+};
+
+function orgToNotifications(org: {
+  notify_emails: string[] | null;
+  proctoring_alert_emails: string[] | null;
+  slack_webhook_url: string | null;
+  daily_summary_enabled: boolean | null;
+}): NotificationsState {
+  return {
+    digestEmails: org.notify_emails ?? [],
+    proctoringEmails: org.proctoring_alert_emails ?? [],
+    slackWebhook: org.slack_webhook_url ?? "",
+    dailySummary: org.daily_summary_enabled ?? false,
+  };
+}
+
 function orgToDefaults(org: {
   default_duration_min: number | null;
   default_proctoring: string | null;
