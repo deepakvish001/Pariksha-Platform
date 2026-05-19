@@ -367,20 +367,7 @@ export default function B2BSettings() {
           />
         );
       case "audit":
-        return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Audit log"
-            description="Read-only log of who did what in this organization. Filter by person and action, export to CSV."
-            fields={[
-              "Member added / removed",
-              "Capability changes",
-              "Assessment published or unpublished",
-              "Invite created or revoked",
-              "Org settings changed",
-            ]}
-          />
-        );
+        return <AuditSection orgId={org.id} />;
       case "danger":
         return <DangerSection org={org} isOwner={isOwner} deleting={deleting} onDelete={onDelete} />;
     }
