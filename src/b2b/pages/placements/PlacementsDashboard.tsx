@@ -430,6 +430,12 @@ export default function PlacementsDashboard() {
         {isLoading && (
           <div className="text-center text-xs text-muted-foreground py-4">Loading…</div>
         )}
+          </TabsContent>
+
+          <TabsContent value="rankings">
+            <RankingsTab orgId={org.id} />
+          </TabsContent>
+        </Tabs>
       </div>
     </OrgShell>
   );
