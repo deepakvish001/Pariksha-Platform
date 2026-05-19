@@ -109,6 +109,29 @@ export default function StudentPlacementProfile() {
     },
   });
 
+  const { data: shareActivity } = useQuery({
+    queryKey: ["share-activity", studentId, org?.id],
+    enabled: !!studentId && !!org?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("student_share_links")
+        .select("id, view_count, last_viewed_at, revoked_at, expires_at")
+        .eq("org_id", org!.id)
+        .contains("student_ids", [studentId!]);
+      if (error) throw error;
+      const rows = (data || []) as Array<{ view_count: number; last_viewed_at: string | null; revoked_at: string | null; expires_at: string }>;
+      const totalShares = rows.length;
+      const totalOpens = rows.reduce((s, r) => s + (r.view_count || 0), 0);
+      const lastOpened = rows.reduce<string | null>((acc, r) => {
+        if (!r.last_viewed_at) return acc;
+        if (!acc) return r.last_viewed_at;
+        return new Date(r.last_viewed_at) > new Date(acc) ? r.last_viewed_at : acc;
+      }, null);
+      const active = rows.filter((r) => !r.revoked_at && new Date(r.expires_at) > new Date()).length;
+      return { totalShares, totalOpens, lastOpened, active };
+    },
+  });
+
   const { data: orgTotal } = useQuery({
     queryKey: ["org_students_count", org?.id],
     enabled: !!org?.id,
