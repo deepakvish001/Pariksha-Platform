@@ -304,7 +304,8 @@ const App = () => (
                       <Route index element={<B2BDashboard />} />
                       <Route path="assessments" element={<B2BAssessmentsList />} />
                       <Route path="assessments/new" element={<RequireOrgCapability cap="assessments.write"><B2BAssessmentNew /></RequireOrgCapability>} />
-                      <Route path="assessments/:id" element={<B2BAssessmentDetail />} />
+                      <Route path="assessments/:id" element={<B2BAssessmentLanding />} />
+                      <Route path="assessments/:id/edit" element={<B2BAssessmentDetail />} />
                       <Route path="assessments/:id/manage" element={<RequireOrgCapability cap="assessments.write"><B2BAssessmentManage /></RequireOrgCapability>} />
                       <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
                       <Route path="assessments/:id/candidates/:candidateSeg" element={<B2BCandidateDetail />} />
