@@ -7,6 +7,7 @@ import { Loader2, Upload, Camera, CheckCircle2, RefreshCw, XCircle } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CameraStatusIndicator } from "./CameraStatusIndicator";
+import { CameraPermissionHelp } from "./CameraPermissionHelp";
 
 // ---- Image validation helpers ----
 interface CheckResult { ok: boolean; label: string; detail?: string }
@@ -192,6 +193,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   const [busy, setBusy] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [camError, setCamError] = useState<unknown | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -232,11 +234,14 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
     }
   };
 
-  const startCamera = async () => {
+  const startCamera = async (deviceId?: string) => {
     setGlobalError(null);
+    setCamError(null);
     try {
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { width: 480, height: 360, facingMode: "user" },
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: 480, height: 360 }
+          : { width: 480, height: 360, facingMode: "user" },
         audio: false,
       });
       streamRef.current = s;
@@ -249,9 +254,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         }
       }, 50);
     } catch (err) {
-      setGlobalError(
-        err instanceof Error ? `Camera blocked: ${err.message}` : "Camera permission required",
-      );
+      setCamError(err);
     }
   };
 
@@ -510,7 +513,8 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
                     setSelfieUrl(null);
                     setSelfieChecks([]);
                     setGlobalError(null);
-                    startCamera();
+                    setCamError(null);
+                    void startCamera();
                   }}
                   disabled={busy}
                 >
@@ -536,8 +540,14 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
                 </Button>
               </div>
             </div>
+          ) : camError ? (
+            <CameraPermissionHelp
+              error={camError}
+              onRetry={() => startCamera()}
+              onDeviceChange={(id) => startCamera(id)}
+            />
           ) : (
-            <Button size="sm" variant="outline" onClick={startCamera} disabled={busy}>
+            <Button size="sm" variant="outline" onClick={() => void startCamera()} disabled={busy}>
               <Camera className="h-3.5 w-3.5 mr-1" /> Start camera
             </Button>
           )}

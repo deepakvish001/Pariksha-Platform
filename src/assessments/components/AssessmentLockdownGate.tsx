@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { describeRulesForCandidate, type ProctoringConfig } from "../lib/proctoringConfig";
 import { SideCameraPairing } from "./SideCameraPairing";
 import { CandidateDetailsStep } from "./CandidateDetailsStep";
+import { CameraPermissionHelp } from "./CameraPermissionHelp";
 
 interface Props {
   attemptId: string;
@@ -35,6 +36,8 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   const [userId, setUserId] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [camError, setCamError] = useState<unknown | null>(null);
+  const [preferredDeviceId, setPreferredDeviceId] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -56,22 +59,22 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
       .then(() => {});
   };
 
-  const requestCamera = async () => {
+  const requestCamera = async (deviceId?: string) => {
     setBusy(true);
     setError(null);
+    setCamError(null);
     try {
+      const id = deviceId ?? preferredDeviceId;
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { width: 320, height: 240, facingMode: "user" },
+        video: id
+          ? { deviceId: { exact: id }, width: 320, height: 240 }
+          : { width: 320, height: 240, facingMode: "user" },
         audio: false,
       });
       setStream(s);
       log("webcam_grant");
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? `Camera blocked: ${e.message}. Allow camera in your browser to continue.`
-          : "Camera permission required."
-      );
+      setCamError(e);
       log("webcam_deny", { error: String(e) });
     } finally {
       setBusy(false);
@@ -179,11 +182,32 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Camera active
                 </span>
               </div>
+            ) : camError ? (
+              <CameraPermissionHelp
+                error={camError}
+                busy={busy}
+                onRetry={() => requestCamera(preferredDeviceId)}
+                onDeviceChange={(id) => {
+                  setPreferredDeviceId(id);
+                  return requestCamera(id);
+                }}
+              />
             ) : (
-              <Button size="sm" onClick={requestCamera} disabled={busy || !detailsDone}>
-                <Camera className="h-4 w-4 mr-2" />
-                Allow camera access
-              </Button>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  We'll briefly use your camera to verify you're the candidate, then keep it on
+                  for proctoring during the test. Your browser will pop up a permission prompt —
+                  please click <b>Allow</b>.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => void requestCamera()}
+                  disabled={busy || !detailsDone}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Allow camera access
+                </Button>
+              </div>
             )}
           </Step>
 
