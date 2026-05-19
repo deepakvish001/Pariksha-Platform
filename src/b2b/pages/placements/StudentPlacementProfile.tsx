@@ -244,6 +244,44 @@ export default function StudentPlacementProfile() {
     return "bg-[hsl(var(--muted))]/30 text-muted-foreground border-[hsl(var(--border))]/60";
   };
 
+  const daStages = useMemo(() => {
+    const s = new Set<string>();
+    (applications || []).forEach((a: any) => a.stage && s.add(a.stage));
+    return Array.from(s).sort();
+  }, [applications]);
+
+  const filteredApps = useMemo(() => {
+    const q = daSearch.trim().toLowerCase();
+    let list = (applications || []).filter((a: any) => {
+      const title = (a.drive?.title || "").toLowerCase();
+      const rec = (a.drive?.recruiter?.name || "").toLowerCase();
+      if (q && !title.includes(q) && !rec.includes(q)) return false;
+      if (daStage !== "all" && a.stage !== daStage) return false;
+      return true;
+    });
+    const dir = daSort.dir === "asc" ? 1 : -1;
+    list = [...list].sort((a: any, b: any) => {
+      if (daSort.key === "title") {
+        return (a.drive?.title || "").localeCompare(b.drive?.title || "") * dir;
+      }
+      if (daSort.key === "stage") {
+        return (a.stage || "").localeCompare(b.stage || "") * dir;
+      }
+      const ta = a.last_event_at ? new Date(a.last_event_at).getTime() : 0;
+      const tb = b.last_event_at ? new Date(b.last_event_at).getTime() : 0;
+      return (ta - tb) * dir;
+    });
+    return list;
+  }, [applications, daSearch, daStage, daSort]);
+
+  const toggleSort = (key: "title" | "stage" | "last") => {
+    setDaSort((s) => s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "last" ? "desc" : "asc" });
+  };
+  const SortIcon = ({ k }: { k: "title" | "stage" | "last" }) => {
+    if (daSort.key !== k) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
+    return daSort.dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
+
   return (
     <OrgShell
       title="Student Placement Profile"
