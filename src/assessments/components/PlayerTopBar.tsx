@@ -44,6 +44,7 @@ export function PlayerTopBar({
   deadlineMs,
   totalDurationMs,
   proctoring,
+  cameraActive = false,
   isPreview,
   submitting,
   online,
