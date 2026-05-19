@@ -93,7 +93,7 @@ export default function StudentPlacementProfile() {
         .select("id, stage, current_round, last_event_at, drive:placement_drives(title, recruiter:recruiters(name))")
         .eq("student_id", studentId!)
         .order("last_event_at", { ascending: false })
-        .limit(10);
+        .limit(100);
       return (data || []) as any[];
     },
   });
