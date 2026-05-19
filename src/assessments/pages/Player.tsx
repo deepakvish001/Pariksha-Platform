@@ -63,15 +63,51 @@ export default function Player() {
   const [camStream, setCamStream] = useState<MediaStream | null>(null);
 
   // Ensure the proctoring webcam is released when the test ends (submit,
-  // status change, or unmount). Without this, tracks linger and the browser
-  // keeps showing the "camera in use" indicator after submission.
-  const stopCamStream = useCallback(() => {
+  // status change, refresh, or unmount). Without this, tracks linger and the
+  // browser keeps showing the "camera in use" indicator after submission.
+  const stopCamStream = useCallback((reason: string = "manual") => {
     setCamStream((s) => {
-      s?.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+      if (!s) {
+        console.debug("[proctor-cam] stop skipped — no active stream", { reason, attemptId });
+        return null;
+      }
+      const tracks = s.getTracks();
+      tracks.forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+      console.info("[proctor-cam] released", {
+        reason,
+        attemptId,
+        trackCount: tracks.length,
+        kinds: tracks.map((t) => t.kind),
+      });
+      // Best-effort audit trail — fire and forget, never block teardown.
+      if (attemptId) {
+        try {
+          void supabase
+            .from("attempt_events")
+            .insert({
+              attempt_id: attemptId,
+              kind: "webcam_release",
+              payload: { reason, track_count: tracks.length } as never,
+            });
+        } catch { /* noop */ }
+      }
       return null;
     });
-  }, []);
-  useEffect(() => () => { stopCamStream(); }, [stopCamStream]);
+  }, [attemptId]);
+  useEffect(() => () => { stopCamStream("unmount"); }, [stopCamStream]);
+
+  // Catch hard navigations / refresh / tab close where React unmount may not
+  // fire fast enough — stop tracks synchronously before the page is torn down.
+  useEffect(() => {
+    const onPageHide = () => stopCamStream("pagehide");
+    const onBeforeUnload = () => stopCamStream("beforeunload");
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [stopCamStream]);
 
   const flatQuestions = useMemo<PaperQuestion[]>(
     () => (paper?.sections ?? []).flatMap((s) => s.questions),
