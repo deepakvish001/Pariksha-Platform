@@ -12,11 +12,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, RefreshCw, Download, Share2, Trophy, Loader2, ExternalLink,
-  Sparkles, LayoutGrid, List, Briefcase,
+  Sparkles, LayoutGrid, List, Briefcase, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShareDialog } from "./ShareDialog";
 import { QuickSharePopover } from "./QuickSharePopover";
+import { StudentMetricsDrawer } from "./StudentMetricsDrawer";
 
 type Ranking = {
   student_id: string;
@@ -150,6 +151,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     | { kind: "shortlist"; studentIds: string[] }
     | null
   >(null);
+  const [drawerStudent, setDrawerStudent] = useState<Ranking | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -632,6 +634,15 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                     <span>Offers <span className="text-foreground">{r.offers_count}</span></span>
                   </div>
                   <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setDrawerStudent(r)}
+                    >
+                      <BarChart3 className="h-3.5 w-3.5 mr-1" />
+                      Metrics
+                    </Button>
                     <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
                       <Link to={`/b2b/placements/students/${r.student_id}`}>
                         <ExternalLink className="h-3.5 w-3.5 mr-1" />
@@ -715,6 +726,15 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                     <td className="px-3 py-2"><StatusBadge r={r} /></td>
                     <td className="px-3 py-2 text-right">
                       <div className="inline-flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          onClick={() => setDrawerStudent(r)}
+                          title="View metrics"
+                        >
+                          <BarChart3 className="h-3.5 w-3.5" />
+                        </Button>
                         <Button asChild size="sm" variant="ghost" className="h-7 px-2">
                           <Link to={`/b2b/placements/students/${r.student_id}`}>
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -767,6 +787,15 @@ export function RankingsTab({ orgId }: { orgId: string }) {
           onClose={() => setShareTarget(null)}
         />
       )}
+
+      <StudentMetricsDrawer
+        open={!!drawerStudent}
+        onOpenChange={(v) => { if (!v) setDrawerStudent(null); }}
+        ranking={drawerStudent}
+        onShare={(r) => {
+          setShareTarget({ kind: "profile", studentId: r.student_id, studentName: r.full_name || r.email });
+        }}
+      />
     </div>
   );
 }
