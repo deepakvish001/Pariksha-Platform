@@ -459,6 +459,39 @@ export default function StudentPlacementProfile() {
           )}
         </GlassCard>
 
+        {/* Share activity */}
+        <GlassCard className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Share2 className="h-4 w-4 text-primary" /> Share activity
+            </h3>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/b2b/placements?tab=shares&student=${studentId}`}>
+                View all shares <ExternalLink className="h-3 w-3 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Shares created", value: shareActivity?.totalShares ?? 0 },
+              { label: "Active links", value: shareActivity?.active ?? 0 },
+              { label: "Total opens", value: shareActivity?.totalOpens ?? 0 },
+              {
+                label: "Last opened",
+                value: shareActivity?.lastOpened
+                  ? new Date(shareActivity.lastOpened).toLocaleDateString()
+                  : "—",
+              },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg border border-[hsl(var(--border))]/50 p-2 text-center">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                <div className="text-base font-semibold mt-0.5">{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+
         {/* Drive applications */}
         <GlassCard className="p-4">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
