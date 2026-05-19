@@ -58,17 +58,28 @@ export async function exportStudentHighlightsPdf({
   const drawWatermark = () => {
     const anyDoc = doc as any;
     const hasGState = !!anyDoc.GState && !!anyDoc.setGState;
-    if (hasGState) anyDoc.setGState(new anyDoc.GState({ opacity: 0.08 }));
+    // Slightly lower opacity so even where a tile clips a chart/table edge it
+    // stays a ghost rather than visible noise.
+    if (hasGState) anyDoc.setGState(new anyDoc.GState({ opacity: 0.06 }));
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(54);
+    doc.setFontSize(48);
     doc.setTextColor(120, 120, 130);
-    const tileX = 260;
-    const tileY = 200;
-    for (let xi = -1; xi < Math.ceil(W / tileX) + 1; xi++) {
-      for (let yi = -1; yi < Math.ceil(H / tileY) + 1; yi++) {
-        doc.text("CONFIDENTIAL", xi * tileX + 40, yi * tileY + 140, { angle: 32 });
+
+    // Place watermark rows in the "calm" vertical bands between key blocks
+    // (header band, KPI cards, secondary stats, breakdown bars, two-column
+    // lists, footer). Wider horizontal spacing prevents clustering over
+    // numeric columns. Staggered x-offset per row keeps the diagonal pattern
+    // from lining up under the same column twice.
+    const rows = [180, 360, 540, 720]; // pt — gaps between content sections
+    const tileX = 340;
+    for (let ri = 0; ri < rows.length; ri++) {
+      const yPos = rows[ri];
+      const xOffset = ri % 2 === 0 ? -40 : 120; // stagger
+      for (let xi = -1; xi < Math.ceil(W / tileX) + 1; xi++) {
+        doc.text("CONFIDENTIAL", xi * tileX + xOffset, yPos, { angle: 32 });
       }
     }
+
     if (hasGState) anyDoc.setGState(new anyDoc.GState({ opacity: 1 }));
     // Reset text defaults so subsequent content isn't affected.
     doc.setTextColor(20, 20, 20);
