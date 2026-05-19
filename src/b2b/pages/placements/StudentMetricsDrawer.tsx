@@ -259,7 +259,7 @@ export function StudentMetricsDrawer({
                 Recent offers
               </div>
               {offersLoading ? (
-                <Skeleton className="h-12 w-full" />
+                <ListSkeleton />
               ) : offers && offers.length ? (
                 <ul className="space-y-1.5">
                   {offers.map((o) => (
