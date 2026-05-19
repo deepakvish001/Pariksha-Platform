@@ -44,6 +44,8 @@ import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { RequireOrgCapability } from "@/b2b/components/RequireOrgCapability";
 import B2BStudents from "@/b2b/pages/Students";
 import B2BPlacements from "@/b2b/pages/placements/PlacementsDashboard";
+import B2BStudentPlacementProfile from "@/b2b/pages/placements/StudentPlacementProfile";
+import PublicStudentProfile from "@/pages/public/PublicStudentProfile";
 import B2BStudentDetail from "@/b2b/pages/StudentDetail";
 import MyCollege from "@/pages/MyCollege";
 import JoinStudent from "@/pages/JoinStudent";
