@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, RefreshCw, Download, Share2, Trophy, Loader2, ExternalLink,
-  Sparkles, LayoutGrid, List, Briefcase, BarChart3,
+  Sparkles, LayoutGrid, List, Briefcase, BarChart3, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShareDialog } from "./ShareDialog";
@@ -288,7 +288,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
   });
 
   // Current page of rankings — true server-side pagination + sort
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data, isLoading, refetch, isFetching, error: fetchError } = useQuery({
     queryKey: ["placement_rankings", orgId, filters, studentIdsParam, sortKey, page],
     enabled: driveReady,
     queryFn: async (): Promise<Ranking[]> => {
@@ -587,7 +587,26 @@ export function RankingsTab({ orgId }: { orgId: string }) {
       </div>
 
       {/* Body */}
-      {showSkeleton ? (
+      {fetchError && !showSkeleton ? (
+        <GlassCard className="p-10 text-center">
+          <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-red-500/10 grid place-items-center">
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+          </div>
+          <div className="text-sm font-medium">Could not load rankings</div>
+          <div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto break-words">
+            {(fetchError as Error)?.message || "Something went wrong while fetching the leaderboard. Please try again."}
+          </div>
+          <div className="mt-4 inline-flex flex-wrap justify-center gap-2">
+            <Button size="sm" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
+              Retry
+            </Button>
+            <Button size="sm" variant="outline" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          </div>
+        </GlassCard>
+      ) : showSkeleton ? (
         view === "cards" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
