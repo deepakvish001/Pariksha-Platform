@@ -715,6 +715,24 @@ export function RankingsTab({ orgId }: { orgId: string }) {
         </GlassCard>
       )}
 
+      {!isLoading && visible.length > 0 && (
+        <>
+          <div ref={sentinelRef} aria-hidden className="h-1" />
+          <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
+            <span className="tabular-nums">
+              Showing {rendered.length} of {filteredCount}
+            </span>
+            {hasMore && (
+              <Button size="sm" variant="outline" className="h-7" onClick={() => setPageCount((p) => p + 1)}>
+                Load more
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+
+
+
       {shareTarget && (
         <ShareDialog
           orgId={orgId}
