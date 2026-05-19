@@ -215,19 +215,47 @@ export async function exportStudentHighlightsPdf({
   drawList("Recent Offers", offerLines, M, startY, colWidth);
   drawList("Recent Applications", appLines, M + colWidth + 16, startY, colWidth);
 
-  // Footer
-  const footerY = doc.internal.pageSize.getHeight() - 24;
-  doc.setDrawColor(230);
-  doc.line(M, footerY - 8, W - M, footerY - 8);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(130, 130, 140);
-  doc.text(
-    `Generated ${format(new Date(), "PPP p")}  ·  Confidential — for recruiter use only`,
-    M,
-    footerY,
-  );
-  doc.text("Parikshaa Placements", W - M, footerY, { align: "right" });
+  // Watermark + footer with page numbers (applied to every page)
+  const pageCount = doc.getNumberOfPages();
+  const pageH = doc.internal.pageSize.getHeight();
+  const pageW = doc.internal.pageSize.getWidth();
+  const genStamp = format(new Date(), "PPP p");
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+
+    // Diagonal confidentiality watermark — repeated tiles for strong coverage
+    const gs: any = (doc as any).GState ? new (doc as any).GState({ opacity: 0.08 }) : null;
+    if (gs && (doc as any).setGState) (doc as any).setGState(gs);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(54);
+    doc.setTextColor(120, 120, 130);
+    const tileX = 260;
+    const tileY = 200;
+    for (let xi = -1; xi < Math.ceil(pageW / tileX) + 1; xi++) {
+      for (let yi = -1; yi < Math.ceil(pageH / tileY) + 1; yi++) {
+        doc.text("CONFIDENTIAL", xi * tileX + 40, yi * tileY + 140, { angle: 32 });
+      }
+    }
+    // Reset opacity for footer
+    if ((doc as any).GState && (doc as any).setGState) {
+      (doc as any).setGState(new (doc as any).GState({ opacity: 1 }));
+    }
+
+    // Footer
+    const footerY = pageH - 24;
+    doc.setDrawColor(230);
+    doc.line(M, footerY - 8, pageW - M, footerY - 8);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(130, 130, 140);
+    doc.text(
+      `Generated ${genStamp}  ·  Confidential — for recruiter use only`,
+      M,
+      footerY,
+    );
+    doc.text(`Page ${p} of ${pageCount}`, pageW / 2, footerY, { align: "center" });
+    doc.text("Parikshaa Placements", pageW - M, footerY, { align: "right" });
+  }
 
   const safeName = (ranking.full_name || ranking.email || "candidate")
     .replace(/[^a-z0-9]+/gi, "_")
