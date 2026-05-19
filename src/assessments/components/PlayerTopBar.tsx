@@ -20,6 +20,7 @@ interface Props {
   deadlineMs: number | null;
   totalDurationMs: number | null;
   proctoring: boolean;
+  cameraActive?: boolean;
   isPreview: boolean;
   submitting: boolean;
   online: boolean;
