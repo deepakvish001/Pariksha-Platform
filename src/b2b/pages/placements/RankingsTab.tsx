@@ -172,7 +172,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
       const { data, error } = await supabase.rpc("placement_rankings" as any, {
         _org_id: orgId,
         _filters: filters,
-        _limit: 500,
+        _limit: 2000,
         _offset: 0,
       });
       if (error) throw error;
