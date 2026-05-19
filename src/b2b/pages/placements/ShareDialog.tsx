@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Copy, Check, Link2, Loader2, Share2, MessageSquare,
   ChevronDown, History, Eye, Ban, FileText, Mail,
+  CheckCircle2, Clock, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
