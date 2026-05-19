@@ -118,6 +118,51 @@ export function StudentMetricsDrawer({
     },
   });
 
+  const { data: history, isLoading: historyLoading } = useQuery({
+    queryKey: ["drawer-history", studentId],
+    enabled: !!studentId && open,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("assessment_attempts")
+        .select("id, score, integrity_score, status, started_at, submitted_at, violations, assessment:assessments(title)")
+        .eq("user_id", studentId!)
+        .order("started_at", { ascending: false })
+        .limit(20);
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: integrity, isLoading: integrityLoading } = useQuery({
+    queryKey: ["drawer-integrity", studentId],
+    enabled: !!studentId && open,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const { data: attempts } = await supabase
+        .from("assessment_attempts")
+        .select("id")
+        .eq("user_id", studentId!)
+        .limit(100);
+      const ids = (attempts || []).map((a: any) => a.id);
+      if (!ids.length) return { bySeverity: [], total: 0, attempts: 0 };
+      const { data: findings } = await supabase
+        .from("assessment_proctor_findings")
+        .select("severity, attempt_id")
+        .in("attempt_id", ids);
+      const counts: Record<string, number> = { info: 0, low: 0, medium: 0, high: 0, critical: 0 };
+      (findings || []).forEach((f: any) => {
+        counts[f.severity] = (counts[f.severity] || 0) + 1;
+      });
+      const order = ["info", "low", "medium", "high", "critical"];
+      const bySeverity = order.map((k) => ({ severity: k, count: counts[k] || 0 }));
+      return { bySeverity, total: (findings || []).length, attempts: ids.length };
+    },
+  });
+
   const ListSkeleton = () => (
     <ul className="space-y-1.5" aria-hidden>
       {Array.from({ length: 3 }).map((_, i) => (
