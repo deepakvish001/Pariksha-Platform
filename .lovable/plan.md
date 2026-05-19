@@ -1,91 +1,107 @@
-# Rankings Tab — Ranked Student Cards
+# Internal Student Placement Profile — Enhanced
 
-The Rankings tab already exists as a dense table. This plan refactors it into a **card-based leaderboard** with stronger filters (org-wide / branch / drive) and richer per-student score context, while reusing the existing `placement_rankings` RPC and `ShareDialog`.
+The page already exists at `src/b2b/pages/placements/StudentPlacementProfile.tsx` (route `/b2b/placements/students/:studentId`) with a header, strengths radar, key stats, offers timeline, and Share dialog. This plan **augments** it with three things the user asked for:
 
-## Scope
+1. **Computed score breakdown** — show how the 0–100 score was built.
+2. **Resume link** — pull the linked user's resume and surface View / Download.
+3. **HR-ready highlights** — auto-generated, copy-paste-ready bullets for placement coordinators sending the candidate to recruiters.
 
-Frontend-only refactor of `src/b2b/pages/placements/RankingsTab.tsx`. No DB or RPC changes. The existing `placement_rankings(_org_id, _filters, _limit, _offset)` already returns every field we need (score, rank_in_org, rank_in_branch, assessment %, integrity, apps, shortlists, offers, status flags, scores jsonb).
+Frontend-only. No DB / RPC / edge-function changes. Reuses the existing `placement_student_scores.scores` jsonb (already returns `assessment_score`, `integrity`, `engagement`, `shortlist_rate`, `offer_factor`).
 
-## Filter Bar
+## File changes
 
-A single sticky toolbar at the top of the tab:
+Only `src/b2b/pages/placements/StudentPlacementProfile.tsx` is edited. New sections are added below the existing header; nothing existing is removed.
 
-- **Search** — name / email / roll (debounced 250ms)
-- **Batch year** — `Select`, populated from current dataset
-- **Branch** — `Select`, also drives the `rank_in_branch` context shown on cards
-- **Section** — `Select` (new; pass `section` through `_filters`)
-- **Drive** — `Select` of org drives (fetched from `placement_drives` where `org_id = orgId`, ordered by `opens_at desc`). Passed as `drive_id` in `_filters` so the RPC scopes apps/shortlists/offers to that drive when supported; if the RPC ignores it, we filter client-side on `applications_count > 0` for the drive via a secondary query (see Technical Notes).
-- **Status** — All / Placed / Multi-offer / Shortlisted / Unplaced
-- **Min score** — chips: Any · ≥40 · ≥60 · ≥80
-- **Sort** — Score (default) · Assessment avg · Offers · Recently active
-- **View toggle** — Cards (default) · Table (keeps existing dense table as fallback)
-- Right side: `Recompute`, `Refresh`, `Export CSV`, `Share selected (n)` (unchanged).
+## 1. Score breakdown card
 
-## Ranked Student Cards
+A new `GlassCard` placed beside the radar (replacing the current 2-column layout with a 3-column grid on `lg`).
 
-Replace the `<table>` with a responsive grid:
+Columns:
 
 ```text
-grid-cols-1  md:grid-cols-2  xl:grid-cols-3
+weight | metric          | raw % | contribution
+40%    | Assessment      |  82   | 32.8
+20%    | Integrity       |  95   | 19.0
+15%    | Applications    |  60   |  9.0
+10%    | Shortlisted     |  40   |  4.0
+15%    | Offer factor    | 100   | 15.0
+                                  ───────
+                          Total   79.8 / 100
 ```
 
-Each card (`GlassCard`) layout:
+- Source: `score.scores` jsonb (already populated by `placement_recompute_scores`).
+- Weights are the constants used in the RPC; hard-coded in the component as a `WEIGHTS` map so the UI stays in sync if the formula evolves.
+- Each row renders the metric label, a thin progress bar (raw %), and the weighted contribution. Total at the bottom matches `score.score`.
+
+## 2. Resume + linked-account card
+
+Below the breakdown, a `GlassCard` showing the linked user (if `org_students.user_id` is set):
+
+- Fetch `profiles` row via `supabase.from("profiles").select("id, full_name, avatar_url, resume_url, headline, location, github_url, linkedin_url, portfolio_url").eq("id", student.user_id).maybeSingle()`.
+- Render:
+  - Avatar + headline + location.
+  - Social links row (GitHub / LinkedIn / Portfolio) — only if present.
+  - **Resume row** — large button: `View resume` (opens `resume_url` in new tab) + `Download` (anchor with `download` attr). Falls back to `Resume not uploaded yet` empty state.
+- If `student.user_id` is null, show a muted "Student has not yet activated their Byteskill account" hint instead of the card.
+
+`profiles` already has public-read RLS on those fields (used across public profile pages), so no schema change is needed.
+
+## 3. HR-ready highlights card
+
+A `GlassCard` titled **HR-ready highlights** with a `Copy bullets` button (uses `navigator.clipboard.writeText`, `toast.success` on copy).
+
+Bullets are generated client-side from the data already in scope (`student`, `score`, `offers`, optionally `applications`). Each bullet is only included if its underlying signal is meaningful:
+
+- Top-3 rank: `Ranked #{rank_in_org} in {org.name} (top {percentile}% of placement cohort).`
+- Branch rank: `#{rank_in_branch} in {branch}.`
+- Assessment: `Average assessment score {avg_assessment_score}% across {assessments_taken} proctored tests.`
+- Integrity: `Assessment integrity {avg_integrity}% (proctored).`
+- Multi-offer: `Holds {offers_count} placement offers, including from {top_recruiter_names}.`
+- Top CTC: `Highest offer ₹{top_ctc/100000}L from {recruiter}.`
+- Engagement: `Applied to {applications_count} drives, shortlisted in {shortlisted_count}.`
+- Branch / batch: `{branch}, batch of {batch_year}.`
+- Dream offer flag if any.
+
+The card shows them as a list with checkboxes — the user can toggle bullets in/out before copying. The Copy button copies only checked bullets, joined with `\n• ` prefix.
+
+## 4. Drive applications mini-table (small, optional)
+
+Pulled in same screen because HR often asks "what stage are they in for X drive?":
+
+- `supabase.from("drive_applications").select("id, stage, current_round, last_event_at, drive:placement_drives(title, recruiter:recruiters(name))").eq("student_id", studentId).order("last_event_at", { ascending: false }).limit(10)`.
+- 4-column table: Drive · Recruiter · Stage · Last update. Empty state: "No drive activity yet."
+
+Placed at the bottom, above the existing Offers timeline.
+
+## Layout
 
 ```text
-┌──────────────────────────────────────────────┐
-│  #3 🏆       [Multi-offer]            ⋯ share │
-│                                              │
-│  Avatar  Name (link)                         │
-│          roll · branch · batch · section     │
-│                                              │
-│  ┌────────────┐   Rank context               │
-│  │   87       │   #3 of 412 in org           │
-│  │   /100     │   #1 of 68 in CSE            │
-│  │  ▰▰▰▰▰▰▱▱  │   Top 1% overall             │
-│  └────────────┘                              │
-│                                              │
-│  Assess 92 · Integrity 95 · Apps 7 · Off 2   │
-│  [bar: assess][bar: integrity][bar: skills]  │
-│                                              │
-│  ☐ Select    [View profile]   [Share to HR]  │
-└──────────────────────────────────────────────┘
+[ Back ]
+[ Header card (existing, kept as-is) ]
+
+[ Radar           |  Score breakdown |  Key stats ]   (lg:grid-cols-3)
+
+[ Resume + linked profile card                   ]
+
+[ HR-ready highlights (copy bullets)             ]
+
+[ Drive applications                              ]
+[ Offers timeline (existing)                      ]
 ```
 
-Details:
-
-- **Rank chip** (top-left) shows `#rank_in_org`, with a `Trophy` and gold/silver/bronze accent for ranks 1–3.
-- **Score donut** — circular SVG using `score`, color-coded via existing `scoreColor` (emerald / amber / orange / muted). Center shows the integer; sub-label `/100`.
-- **Rank context block**:
-  - `#rank_in_org of <total>` (total from dataset length when no pagination, otherwise from a count column)
-  - `#rank_in_branch of <branch total>` when branch is set on the student
-  - Percentile pill — `Top {round(rank_in_org/total*100)}%`
-- **Mini bars** — three thin `<div>` bars for assessment %, integrity %, and a derived "engagement" % (`min(100, (apps + 2*shortlisted + 4*offers) * 8)`). Pure presentational, no new data.
-- **Status badge** — reuse existing `StatusBadge`.
-- **Footer actions** — `Checkbox` (multi-select for shortlist), `View profile` link to `/b2b/placements/students/:id`, `Share to HR` opens `ShareDialog` with `kind: "profile"`.
-- **Skeleton** — 6 skeleton cards while loading.
-- **Empty state** — same copy as today, centered in a single card spanning all columns.
-
-## Header strip (above the grid)
-
-Three small `GlassCard` stats derived from the filtered dataset (no extra query):
-
-- **Avg score** of filtered students
-- **Top scorer** (name + score) with a `Trophy`
-- **Filtered count** with comparison to org total (e.g. `128 of 412`)
-
-This gives the "rank context across the org" that the user asked for.
+On `<lg`, everything stacks single-column.
 
 ## Technical Notes
 
-- Keep `placement_rankings` RPC call signature; just extend `filters` with `section` and `drive_id` keys. If the RPC currently ignores unknown keys it's a no-op and the client still narrows results via `useMemo` filtering for `drive_id` (skip if dataset has no drive context — we will simply omit the drive filter in v1 if the RPC does not honor it, and surface a small `Coming soon` hint on the Drive select tooltip). We will check the RPC body during implementation and either pass through or fall back to client-side narrowing.
-- Drives list: `supabase.from("placement_drives").select("id,title,status").eq("org_id", orgId).order("opens_at", { ascending: false })` — small additional `useQuery`.
-- View toggle persists in `localStorage` under `placements.rankings.view`.
-- Card grid is virtualization-free for v1 (limit 500 already enforced by the RPC).
-- All colors via existing semantic tokens (`hsl(var(--primary))`, `--muted`, `--border`); status accent colors reuse the existing `bg-emerald-500/15` style already present in the file.
-- No new files. Single refactor of `RankingsTab.tsx`. `ShareDialog`, `StatusBadge`, `scoreColor`, `GlassCard`, CSV export, and Recompute mutation are preserved.
+- All new queries are additional `useQuery` hooks alongside the existing ones (`profile`, `applications`).
+- All colors via semantic tokens (`hsl(var(--primary))`, etc.) — no hard-coded hex except the existing emerald/amber accents already in the file.
+- Type the score jsonb as `Record<string, number>` and read defensively (default 0).
+- Percentile calculation: needs org total — fetch `count` from `org_students` filtered by `org_id` (cheap head request). Cached per org.
+- No changes to `ShareDialog`, RPC contracts, or routing.
 
 ## Out of Scope
 
-- Backend changes (score formula, RPC additions, new tables).
-- The internal `StudentPlacementProfile` page and public share page.
-- Pagination — RPC limit of 500 is enough for v1.
+- Editing the score formula or adding new score components.
+- Recompute trigger UI (lives on Rankings tab).
+- Public/HR-facing view (already covered by `PublicStudentProfile.tsx`).
+- Resume upload UI for admins on behalf of students.
