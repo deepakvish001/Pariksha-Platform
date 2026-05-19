@@ -248,33 +248,13 @@ export async function exportStudentHighlightsPdf({
   drawList("Recent Offers", offerLines, M, startY, colWidth);
   drawList("Recent Applications", appLines, M + colWidth + 16, startY, colWidth);
 
-  // Watermark + footer with page numbers (applied to every page)
+  // Footer with page numbers (watermark already drawn beneath content via addPage hook)
   const pageCount = doc.getNumberOfPages();
   const pageH = doc.internal.pageSize.getHeight();
   const pageW = doc.internal.pageSize.getWidth();
   const genStamp = format(new Date(), "PPP p");
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
-
-    // Diagonal confidentiality watermark — repeated tiles for strong coverage
-    const gs: any = (doc as any).GState ? new (doc as any).GState({ opacity: 0.08 }) : null;
-    if (gs && (doc as any).setGState) (doc as any).setGState(gs);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(54);
-    doc.setTextColor(120, 120, 130);
-    const tileX = 260;
-    const tileY = 200;
-    for (let xi = -1; xi < Math.ceil(pageW / tileX) + 1; xi++) {
-      for (let yi = -1; yi < Math.ceil(pageH / tileY) + 1; yi++) {
-        doc.text("CONFIDENTIAL", xi * tileX + 40, yi * tileY + 140, { angle: 32 });
-      }
-    }
-    // Reset opacity for footer
-    if ((doc as any).GState && (doc as any).setGState) {
-      (doc as any).setGState(new (doc as any).GState({ opacity: 1 }));
-    }
-
-    // Footer
     const footerY = pageH - 24;
     doc.setDrawColor(230);
     doc.line(M, footerY - 8, pageW - M, footerY - 8);
