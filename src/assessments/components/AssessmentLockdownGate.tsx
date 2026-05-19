@@ -59,22 +59,22 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
       .then(() => {});
   };
 
-  const requestCamera = async () => {
+  const requestCamera = async (deviceId?: string) => {
     setBusy(true);
     setError(null);
+    setCamError(null);
     try {
+      const id = deviceId ?? preferredDeviceId;
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { width: 320, height: 240, facingMode: "user" },
+        video: id
+          ? { deviceId: { exact: id }, width: 320, height: 240 }
+          : { width: 320, height: 240, facingMode: "user" },
         audio: false,
       });
       setStream(s);
       log("webcam_grant");
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? `Camera blocked: ${e.message}. Allow camera in your browser to continue.`
-          : "Camera permission required."
-      );
+      setCamError(e);
       log("webcam_deny", { error: String(e) });
     } finally {
       setBusy(false);
