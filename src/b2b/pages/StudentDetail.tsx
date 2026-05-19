@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { OrgShell } from "../layouts/OrgShell";
 import { useCurrentOrg } from "../context/OrgContext";
@@ -82,7 +82,21 @@ export default function B2BStudentDetail() {
   type JumpSort = "submitted_desc" | "started_desc" | "score_desc" | "score_asc";
   const [jumpSort, setJumpSort] = useState<JumpSort>("submitted_desc");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // URL-persisted status filter so admins can share a filtered view.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusFilter = searchParams.get("status") || "all";
+  const setStatusFilter = (next: string) => {
+    setSearchParams(
+      (prev) => {
+        const sp = new URLSearchParams(prev);
+        if (!next || next === "all") sp.delete("status");
+        else sp.set("status", next);
+        return sp;
+      },
+      { replace: true },
+    );
+  };
 
   if (!org) return <Navigate to="/b2b/onboarding" replace />;
   if (isLoading) return <OrgShell title="Student"><div className="p-6 text-sm">Loading…</div></OrgShell>;
@@ -90,12 +104,18 @@ export default function B2BStudentDetail() {
 
   const allAttempts = agg?.attempts ?? [];
   const statusOptions = Array.from(new Set(allAttempts.map((a) => String(a.status ?? "")).filter(Boolean))).sort();
-  const attempts =
-    statusFilter === "all"
-      ? allAttempts
-      : statusFilter === "completed"
-        ? allAttempts.filter((a) => isCompletedStatus(a.status))
-        : allAttempts.filter((a) => a.status === statusFilter);
+  // Preset filters operate on the full attempt set.
+  const isNeedsGrading = (a: any) =>
+    isCompletedStatus(a.status) && (a.score_pct == null);
+  const isLowIntegrity = (a: any) =>
+    a.integrity_score != null && Number(a.integrity_score) < 70;
+  const attempts = (() => {
+    if (statusFilter === "all") return allAttempts;
+    if (statusFilter === "completed") return allAttempts.filter((a) => isCompletedStatus(a.status));
+    if (statusFilter === "needs_grading") return allAttempts.filter(isNeedsGrading);
+    if (statusFilter === "low_integrity") return allAttempts.filter(isLowIntegrity);
+    return allAttempts.filter((a) => a.status === statusFilter);
+  })();
   const completed = attempts.filter((a) => isCompletedStatus(a.status)).length;
   const inProgress = attempts.filter((a) => a.status === "in_progress").length;
   const avgScore = (() => {
@@ -149,6 +169,8 @@ export default function B2BStudentDetail() {
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="completed">Completed (all)</SelectItem>
+            <SelectItem value="needs_grading">Needs grading</SelectItem>
+            <SelectItem value="low_integrity">Low integrity (&lt; 70%)</SelectItem>
             {statusOptions.map((s) => (
               <SelectItem key={s} value={s}>
                 {s.replace(/_/g, " ")}
