@@ -5767,6 +5767,8 @@ export type Database = {
           expires_at: string
           id: string
           invited_by: string | null
+          last_send_attempt_at: string | null
+          last_send_error: string | null
           last_sent_at: string | null
           org_id: string
           revoked: boolean
@@ -5782,6 +5784,8 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string | null
+          last_send_attempt_at?: string | null
+          last_send_error?: string | null
           last_sent_at?: string | null
           org_id: string
           revoked?: boolean
@@ -5797,6 +5801,8 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string | null
+          last_send_attempt_at?: string | null
+          last_send_error?: string | null
           last_sent_at?: string | null
           org_id?: string
           revoked?: boolean
