@@ -67,12 +67,20 @@ export default function B2BStudentDetail() {
   type JumpSort = "submitted_desc" | "started_desc" | "score_desc" | "score_asc";
   const [jumpSort, setJumpSort] = useState<JumpSort>("submitted_desc");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   if (!org) return <Navigate to="/b2b/onboarding" replace />;
   if (isLoading) return <OrgShell title="Student"><div className="p-6 text-sm">Loading…</div></OrgShell>;
   if (!student) return <OrgShell title="Student"><div className="p-6 text-sm">Not found.</div></OrgShell>;
 
-  const attempts = agg?.attempts ?? [];
+  const allAttempts = agg?.attempts ?? [];
+  const statusOptions = Array.from(new Set(allAttempts.map((a) => String(a.status ?? "")).filter(Boolean))).sort();
+  const attempts =
+    statusFilter === "all"
+      ? allAttempts
+      : statusFilter === "completed"
+        ? allAttempts.filter((a) => a.status === "submitted" || a.status === "auto_submitted")
+        : allAttempts.filter((a) => a.status === statusFilter);
   const completed = attempts.filter((a) => a.status === "submitted" || a.status === "auto_submitted").length;
   const inProgress = attempts.filter((a) => a.status === "in_progress").length;
   const avgScore = (() => {
@@ -85,6 +93,7 @@ export default function B2BStudentDetail() {
     if (!scored.length) return null;
     return Math.round(scored.reduce((s, a) => s + Number(a.integrity_score), 0) / scored.length);
   })();
+  const filterActive = statusFilter !== "all";
 
   return (
     <OrgShell
