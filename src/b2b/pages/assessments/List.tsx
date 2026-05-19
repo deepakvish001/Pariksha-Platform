@@ -66,6 +66,7 @@ export default function B2BAssessmentsList() {
 
   const [tab, setTab] = useState<TabKey>("live");
   const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<AssessmentType | "all">("all");
 
   const buckets = useMemo(() => bucketAssessments(assessments ?? []), [assessments]);
   const tabCounts: Record<TabKey, number> = {
@@ -76,6 +77,16 @@ export default function B2BAssessmentsList() {
     all: assessments?.length ?? 0,
   };
 
+  const typeCounts = useMemo(() => {
+    const c: Record<string, number> = { all: assessments?.length ?? 0 };
+    for (const t of ASSESSMENT_TYPES) c[t] = 0;
+    for (const a of assessments ?? []) {
+      const t = ((a as any).type as AssessmentType) ?? "placement_mock";
+      c[t] = (c[t] ?? 0) + 1;
+    }
+    return c;
+  }, [assessments]);
+
   const visible = useMemo(() => {
     let list: Assessment[];
     if (tab === "live") list = buckets.live;
@@ -83,9 +94,12 @@ export default function B2BAssessmentsList() {
     else if (tab === "drafts") list = buckets.drafts;
     else if (tab === "closed") list = buckets.closed;
     else list = assessments ?? [];
+    if (typeFilter !== "all") {
+      list = list.filter((a) => (((a as any).type as AssessmentType) ?? "placement_mock") === typeFilter);
+    }
     const q = query.trim().toLowerCase();
     return q ? list.filter((a) => a.title.toLowerCase().includes(q)) : list;
-  }, [tab, buckets, assessments, query]);
+  }, [tab, buckets, assessments, query, typeFilter]);
 
   if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
