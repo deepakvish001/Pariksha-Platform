@@ -255,114 +255,268 @@ export function StudentMetricsDrawer({
               <Stat label="Offers" value={r.offers_count} tone={r.offers_count ? "text-emerald-400" : ""} />
             </div>
 
-            {/* Radar + breakdown */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
-                <div className="text-xs font-medium mb-1 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
-                  Component radar
-                </div>
-                <div className="h-44">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData} outerRadius="75%">
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                      <Radar
-                        dataKey="value"
-                        stroke="hsl(var(--primary))"
-                        fill="hsl(var(--primary))"
-                        fillOpacity={0.25}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3 space-y-2">
-                <div className="text-xs font-medium mb-1">Weighted breakdown</div>
-                {WEIGHTS.map((w) => {
-                  const v = Math.max(0, Math.min(100, Number(r.scores?.[w.key] ?? 0)));
-                  const contrib = v * w.weight;
-                  return (
-                    <div key={w.key} className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-muted-foreground">
-                          {w.label} <span className="opacity-60">· w {Math.round(w.weight * 100)}%</span>
-                        </span>
-                        <span className="tabular-nums">
-                          {Math.round(v)} <span className="text-muted-foreground">→ {contrib.toFixed(1)}</span>
-                        </span>
-                      </div>
-                      <div className="h-1 rounded-full bg-[hsl(var(--muted))]/40 overflow-hidden">
-                        <div className="h-full rounded-full bg-[hsl(var(--primary))]" style={{ width: `${v}%` }} />
-                      </div>
+            <Tabs defaultValue="overview" className="mt-4">
+              <TabsList className="grid grid-cols-3 h-8">
+                <TabsTrigger value="overview" className="text-[11px]">Overview</TabsTrigger>
+                <TabsTrigger value="history" className="text-[11px]">
+                  <LineChartIcon className="h-3 w-3 mr-1" /> History
+                </TabsTrigger>
+                <TabsTrigger value="integrity" className="text-[11px]">
+                  <ShieldAlert className="h-3 w-3 mr-1" /> Integrity
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="mt-3 space-y-3">
+                {/* Radar + breakdown */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
+                    <div className="text-xs font-medium mb-1 flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
+                      Component radar
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Recent offers */}
-            <div className="mt-4 rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
-              <div className="text-xs font-medium mb-2 flex items-center gap-1.5">
-                <Briefcase className="h-3.5 w-3.5 text-amber-400" />
-                Recent offers
-              </div>
-              {offersLoading ? (
-                <ListSkeleton />
-              ) : offers && offers.length ? (
-                <ul className="space-y-1.5">
-                  {offers.map((o) => (
-                    <li key={o.id} className="flex items-center justify-between gap-2 text-xs">
-                      <div className="min-w-0">
-                        <div className="truncate font-medium">{o.role_title || "Offer"}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">
-                          {o.recruiter?.name || "—"}
-                          {o.offered_at && ` · ${format(new Date(o.offered_at), "MMM d, yyyy")}`}
+                    <div className="h-44">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={radarData} outerRadius="75%">
+                          <PolarGrid stroke="hsl(var(--border))" />
+                          <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                          <Radar dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.25} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3 space-y-2">
+                    <div className="text-xs font-medium mb-1">Weighted breakdown</div>
+                    {WEIGHTS.map((w) => {
+                      const v = Math.max(0, Math.min(100, Number(r.scores?.[w.key] ?? 0)));
+                      const contrib = v * w.weight;
+                      return (
+                        <div key={w.key} className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground">
+                              {w.label} <span className="opacity-60">· w {Math.round(w.weight * 100)}%</span>
+                            </span>
+                            <span className="tabular-nums">
+                              {Math.round(v)} <span className="text-muted-foreground">→ {contrib.toFixed(1)}</span>
+                            </span>
+                          </div>
+                          <div className="h-1 rounded-full bg-[hsl(var(--muted))]/40 overflow-hidden">
+                            <div className="h-full rounded-full bg-[hsl(var(--primary))]" style={{ width: `${v}%` }} />
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {o.ctc && (
-                          <span className="tabular-nums text-emerald-400">
-                            ₹{(Number(o.ctc) / 100000).toFixed(1)}L
-                          </span>
-                        )}
-                        {o.is_dream_offer && <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[9px]">Dream</Badge>}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-[11px] text-muted-foreground">No offers yet.</div>
-              )}
-            </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {/* Recent applications */}
-            <div className="mt-3 rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
-              <div className="text-xs font-medium mb-2 flex items-center gap-1.5">
-                <Briefcase className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
-                Recent applications
-              </div>
-              {appsLoading ? (
-                <ListSkeleton />
-              ) : applications && applications.length ? (
-                <ul className="space-y-1.5">
-                  {applications.map((a) => (
-                    <li key={a.id} className="flex items-center justify-between gap-2 text-xs">
-                      <div className="min-w-0">
-                        <div className="truncate font-medium">{a.drive?.title || "Drive"}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">
-                          {a.stage || "—"}{a.current_round ? ` · R${a.current_round}` : ""}
-                          {a.last_event_at && ` · ${format(new Date(a.last_event_at), "MMM d")}`}
-                        </div>
+                {/* Recent offers */}
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
+                  <div className="text-xs font-medium mb-2 flex items-center gap-1.5">
+                    <Briefcase className="h-3.5 w-3.5 text-amber-400" />
+                    Recent offers
+                  </div>
+                  {offersLoading ? (
+                    <ListSkeleton />
+                  ) : offers && offers.length ? (
+                    <ul className="space-y-1.5">
+                      {offers.map((o) => (
+                        <li key={o.id} className="flex items-center justify-between gap-2 text-xs">
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{o.role_title || "Offer"}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              {o.recruiter?.name || "—"}
+                              {o.offered_at && ` · ${format(new Date(o.offered_at), "MMM d, yyyy")}`}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {o.ctc && (
+                              <span className="tabular-nums text-emerald-400">
+                                ₹{(Number(o.ctc) / 100000).toFixed(1)}L
+                              </span>
+                            )}
+                            {o.is_dream_offer && <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[9px]">Dream</Badge>}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground">No offers yet.</div>
+                  )}
+                </div>
+
+                {/* Recent applications */}
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
+                  <div className="text-xs font-medium mb-2 flex items-center gap-1.5">
+                    <Briefcase className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
+                    Recent applications
+                  </div>
+                  {appsLoading ? (
+                    <ListSkeleton />
+                  ) : applications && applications.length ? (
+                    <ul className="space-y-1.5">
+                      {applications.map((a) => (
+                        <li key={a.id} className="flex items-center justify-between gap-2 text-xs">
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{a.drive?.title || "Drive"}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              {a.stage || "—"}{a.current_round ? ` · R${a.current_round}` : ""}
+                              {a.last_event_at && ` · ${format(new Date(a.last_event_at), "MMM d")}`}
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] shrink-0">{a.stage || "active"}</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground">No applications yet.</div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="history" className="mt-3 space-y-3">
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
+                  <div className="text-xs font-medium mb-2 flex items-center gap-1.5">
+                    <LineChartIcon className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
+                    Score & integrity over time
+                  </div>
+                  {historyLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : history && history.length ? (
+                    <div className="h-44">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={[...history]
+                            .slice()
+                            .reverse()
+                            .map((h: any) => ({
+                              date: h.submitted_at || h.started_at,
+                              label: format(new Date(h.submitted_at || h.started_at), "MMM d"),
+                              score: h.score != null ? Number(h.score) : null,
+                              integrity: h.integrity_score != null ? Number(h.integrity_score) : null,
+                            }))}
+                          margin={{ top: 4, right: 8, left: -16, bottom: 0 }}
+                        >
+                          <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 3" vertical={false} />
+                          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                          <ReTooltip
+                            contentStyle={{
+                              background: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              fontSize: 11,
+                              borderRadius: 8,
+                            }}
+                          />
+                          <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} name="Score" connectNulls />
+                          <Line type="monotone" dataKey="integrity" stroke="hsl(45 90% 55%)" strokeWidth={2} dot={{ r: 2 }} name="Integrity" connectNulls />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground">No assessment attempts yet.</div>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
+                  <div className="text-xs font-medium mb-2">Recent attempts</div>
+                  {historyLoading ? (
+                    <ListSkeleton />
+                  ) : history && history.length ? (
+                    <ul className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                      {history.map((h: any) => (
+                        <li key={h.id} className="flex items-center justify-between gap-2 text-xs">
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{h.assessment?.title || "Assessment"}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              {format(new Date(h.submitted_at || h.started_at), "MMM d, yyyy")}
+                              {" · "}{h.status}
+                              {h.violations ? ` · ${h.violations} violations` : ""}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 tabular-nums">
+                            <span className={scoreColor(Number(h.score ?? 0))}>
+                              {h.score != null ? Math.round(Number(h.score)) : "—"}
+                            </span>
+                            <span className="text-muted-foreground">/</span>
+                            <span className={scoreColor(Number(h.integrity_score ?? 0))}>
+                              {h.integrity_score != null ? Math.round(Number(h.integrity_score)) : "—"}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground">No attempts recorded.</div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="integrity" className="mt-3 space-y-3">
+                <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-medium flex items-center gap-1.5">
+                      <ShieldAlert className="h-3.5 w-3.5 text-amber-400" />
+                      Findings by severity
+                    </div>
+                    {integrity && (
+                      <div className="text-[10px] text-muted-foreground tabular-nums">
+                        {integrity.total} findings · {integrity.attempts} attempts
                       </div>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{a.stage || "active"}</Badge>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-[11px] text-muted-foreground">No applications yet.</div>
-              )}
-            </div>
+                    )}
+                  </div>
+                  {integrityLoading ? (
+                    <Skeleton className="h-40 w-full" />
+                  ) : integrity && integrity.total > 0 ? (
+                    <div className="h-44">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={integrity.bySeverity} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                          <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 3" vertical={false} />
+                          <XAxis dataKey="severity" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                          <ReTooltip
+                            contentStyle={{
+                              background: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              fontSize: 11,
+                              borderRadius: 8,
+                            }}
+                          />
+                          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                            {integrity.bySeverity.map((s: any) => (
+                              <Cell
+                                key={s.severity}
+                                fill={
+                                  s.severity === "critical" ? "hsl(0 75% 55%)"
+                                  : s.severity === "high" ? "hsl(15 85% 55%)"
+                                  : s.severity === "medium" ? "hsl(38 90% 55%)"
+                                  : s.severity === "low" ? "hsl(200 70% 55%)"
+                                  : "hsl(var(--muted-foreground))"
+                                }
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground">No integrity findings recorded.</div>
+                  )}
+                </div>
+
+                {integrity && integrity.total > 0 && (
+                  <div className="rounded-xl border border-[hsl(var(--border))]/60 bg-[hsl(var(--card))]/40 p-3">
+                    <div className="text-xs font-medium mb-2">Category counts</div>
+                    <ul className="space-y-1.5">
+                      {integrity.bySeverity.map((s: any) => (
+                        <li key={s.severity} className="flex items-center justify-between text-xs">
+                          <span className="capitalize text-muted-foreground">{s.severity}</span>
+                          <span className="tabular-nums">{s.count}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </SheetContent>
