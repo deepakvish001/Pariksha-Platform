@@ -433,7 +433,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
             <Input
               placeholder="Search name, email, roll"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { preserveScroll(); setSearch(e.target.value); }}
               className="h-8 pl-8 w-[220px]"
             />
           </div>
