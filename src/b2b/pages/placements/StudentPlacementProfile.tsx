@@ -411,10 +411,8 @@ export default function StudentPlacementProfile() {
                   <>
                     <div className="text-xs text-muted-foreground mb-2">Resume on file</div>
                     <div className="flex gap-2">
-                      <Button asChild size="sm" variant="outline">
-                        <a href={profile.resume_url} target="_blank" rel="noreferrer">
-                          <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> View
-                        </a>
+                      <Button size="sm" variant="outline" onClick={() => setResumeOpen(true)}>
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> View
                       </Button>
                       <Button asChild size="sm">
                         <a href={profile.resume_url} download>
