@@ -269,6 +269,7 @@ const App = () => (
 
                 {/* B2B (Parikshaa for Teams) */}
                 <Route path="/b2b" element={<B2BLanding />} />
+                <Route path="/b2b/join/:token" element={<B2BJoinOrg />} />
                 <Route path="/pricing" element={<B2BPricing />} />
                 <Route path="/b2b/onboarding" element={<ProtectedRoute><B2BOnboarding /></ProtectedRoute>} />
                 <Route path="/b2b/dashboard" element={<ProtectedRoute><B2BDashboard /></ProtectedRoute>} />
