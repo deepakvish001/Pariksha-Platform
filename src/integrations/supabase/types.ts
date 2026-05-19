@@ -860,6 +860,7 @@ export type Database = {
           last_send_error: string | null
           last_sent_at: string | null
           name: string | null
+          org_student_id: string | null
           reminder_sent_at: string | null
           scheduled_send_at: string | null
           send_count: number
@@ -880,6 +881,7 @@ export type Database = {
           last_send_error?: string | null
           last_sent_at?: string | null
           name?: string | null
+          org_student_id?: string | null
           reminder_sent_at?: string | null
           scheduled_send_at?: string | null
           send_count?: number
@@ -900,6 +902,7 @@ export type Database = {
           last_send_error?: string | null
           last_sent_at?: string | null
           name?: string | null
+          org_student_id?: string | null
           reminder_sent_at?: string | null
           scheduled_send_at?: string | null
           send_count?: number
@@ -914,6 +917,13 @@ export type Database = {
             columns: ["assessment_id"]
             isOneToOne: false
             referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_invites_org_student_id_fkey"
+            columns: ["org_student_id"]
+            isOneToOne: false
+            referencedRelation: "org_students"
             referencedColumns: ["id"]
           },
         ]
@@ -5748,6 +5758,137 @@ export type Database = {
           },
         ]
       }
+      org_student_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          last_sent_at: string | null
+          org_id: string
+          revoked: boolean
+          send_count: number
+          student_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string | null
+          org_id: string
+          revoked?: boolean
+          send_count?: number
+          student_id: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string | null
+          org_id?: string
+          revoked?: boolean
+          send_count?: number
+          student_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_student_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_student_invites_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "org_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_students: {
+        Row: {
+          activated_at: string | null
+          batch_year: number | null
+          branch: string | null
+          created_at: string
+          email: string
+          enrolled_at: string
+          enrolled_by: string | null
+          full_name: string | null
+          id: string
+          last_active_at: string | null
+          metadata: Json
+          org_id: string
+          roll_number: string | null
+          section: string | null
+          status: Database["public"]["Enums"]["org_student_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          batch_year?: number | null
+          branch?: string | null
+          created_at?: string
+          email: string
+          enrolled_at?: string
+          enrolled_by?: string | null
+          full_name?: string | null
+          id?: string
+          last_active_at?: string | null
+          metadata?: Json
+          org_id: string
+          roll_number?: string | null
+          section?: string | null
+          status?: Database["public"]["Enums"]["org_student_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          batch_year?: number | null
+          branch?: string | null
+          created_at?: string
+          email?: string
+          enrolled_at?: string
+          enrolled_by?: string | null
+          full_name?: string | null
+          id?: string
+          last_active_at?: string | null
+          metadata?: Json
+          org_id?: string
+          roll_number?: string | null
+          section?: string | null
+          status?: Database["public"]["Enums"]["org_student_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_students_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           allow_retake_default: boolean | null
@@ -9531,6 +9672,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_org_student: { Args: { _org_id: string }; Returns: boolean }
       log_org_audit: {
         Args: {
           _action: string
@@ -9710,6 +9852,7 @@ export type Database = {
       invite_source: "email" | "link" | "bulk_upload" | "manual" | "api"
       invite_status: "pending" | "claimed" | "submitted" | "expired"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer" | "proctor"
+      org_student_status: "invited" | "active" | "suspended" | "alumni"
       org_type: "college" | "company"
       participation_mode: "invite" | "roster" | "open_org"
       proctoring_level: "off" | "light" | "standard" | "strict"
@@ -9889,6 +10032,7 @@ export const Constants = {
       invite_source: ["email", "link", "bulk_upload", "manual", "api"],
       invite_status: ["pending", "claimed", "submitted", "expired"],
       org_member_role: ["owner", "admin", "recruiter", "viewer", "proctor"],
+      org_student_status: ["invited", "active", "suspended", "alumni"],
       org_type: ["college", "company"],
       participation_mode: ["invite", "roster", "open_org"],
       proctoring_level: ["off", "light", "standard", "strict"],

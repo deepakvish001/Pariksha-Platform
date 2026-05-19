@@ -42,6 +42,10 @@ import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
 import B2BPricing from "@/b2b/pages/Pricing";
 import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { RequireOrgCapability } from "@/b2b/components/RequireOrgCapability";
+import B2BStudents from "@/b2b/pages/Students";
+import B2BStudentDetail from "@/b2b/pages/StudentDetail";
+import MyCollege from "@/pages/MyCollege";
+import JoinStudent from "@/pages/JoinStudent";
 import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
 import ParikshaaOverview from "@/admin/parikshaa/Overview";
 import ParikshaaUsers from "@/admin/parikshaa/Users";
@@ -287,6 +291,12 @@ const App = () => (
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
                 <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
                 <Route path="/b2b/insights/feedback" element={<ProtectedRoute><B2BInsightsFeedback /></ProtectedRoute>} />
+                <Route path="/b2b/students" element={<ProtectedRoute><B2BStudents /></ProtectedRoute>} />
+                <Route path="/b2b/students/:studentId" element={<ProtectedRoute><B2BStudentDetail /></ProtectedRoute>} />
+
+                {/* Student-facing college home */}
+                <Route path="/my/college" element={<ProtectedRoute><MyCollege /></ProtectedRoute>} />
+                <Route path="/join/student" element={<JoinStudent />} />
 
                 {/* Vanity org workspaces — members only, slug-resolved */}
                 {(["companies", "colleges"] as const).map((seg) => {
@@ -314,6 +324,8 @@ const App = () => (
                       <Route path="team" element={<RequireOrgCapability cap="members.invite"><B2BTeam /></RequireOrgCapability>} />
                       <Route path="settings" element={<RequireOrgCapability cap="org.editSettings"><B2BSettings /></RequireOrgCapability>} />
                       <Route path="insights/feedback" element={<B2BInsightsFeedback />} />
+                      <Route path="students" element={<RequireOrgCapability cap="members.invite"><B2BStudents /></RequireOrgCapability>} />
+                      <Route path="students/:studentId" element={<RequireOrgCapability cap="members.invite"><B2BStudentDetail /></RequireOrgCapability>} />
                     </Route>
                   );
                 })}
