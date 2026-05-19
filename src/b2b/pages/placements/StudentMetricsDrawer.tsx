@@ -253,21 +253,85 @@ export function StudentMetricsDrawer({
               <Button size="sm" className="h-8" onClick={() => onShare(r)}>
                 <Share2 className="h-3.5 w-3.5 mr-1.5" /> Share with HR
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8"
-                onClick={async () => {
-                  try {
-                    await exportStudentHighlightsPdf({ ranking: r, offers: offers || [], applications: applications || [] });
-                    toast.success("PDF downloaded");
-                  } catch (e: any) {
-                    toast.error(e?.message || "Could not export PDF");
-                  }
-                }}
-              >
-                <FileDown className="h-3.5 w-3.5 mr-1.5" /> Export PDF
-              </Button>
+              <div className="inline-flex h-8 items-stretch overflow-hidden rounded-md border bg-background">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 rounded-none border-r px-3"
+                  onClick={async () => {
+                    try {
+                      await exportStudentHighlightsPdf({
+                        ranking: r,
+                        offers: offers || [],
+                        applications: applications || [],
+                        watermark: wmPrefs,
+                      });
+                      toast.success("PDF downloaded");
+                    } catch (e: any) {
+                      toast.error(e?.message || "Could not export PDF");
+                    }
+                  }}
+                >
+                  <FileDown className="h-3.5 w-3.5 mr-1.5" /> Export PDF
+                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-none p-0"
+                      aria-label="PDF watermark settings"
+                    >
+                      <Settings2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-64 p-3">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="wm-enabled" className="text-xs font-medium">
+                            Confidential watermark
+                          </Label>
+                          <p className="text-[10px] text-muted-foreground">
+                            Diagonal stamp on every page
+                          </p>
+                        </div>
+                        <Switch
+                          id="wm-enabled"
+                          checked={wmPrefs.enabled}
+                          onCheckedChange={(v) =>
+                            setWmPrefs((p) => ({ ...p, enabled: v }))
+                          }
+                        />
+                      </div>
+                      <div className={wmPrefs.enabled ? "" : "opacity-50 pointer-events-none"}>
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <Label className="text-xs font-medium">Opacity</Label>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {Math.round(wmPrefs.opacity * 100)}%
+                          </span>
+                        </div>
+                        <Slider
+                          min={2}
+                          max={30}
+                          step={1}
+                          value={[Math.round(wmPrefs.opacity * 100)]}
+                          onValueChange={([v]) =>
+                            setWmPrefs((p) => ({ ...p, opacity: (v ?? 6) / 100 }))
+                          }
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                        onClick={() => setWmPrefs(DEFAULT_WM_PREFS)}
+                      >
+                        Reset to defaults
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
 
