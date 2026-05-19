@@ -284,16 +284,12 @@ export default function B2BSettings() {
         );
       case "security":
         return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Security & Access"
-            description="Lock down who can take your assessments and how your team signs in."
-            fields={[
-              "Allowed candidate email domains (e.g. @iitb.ac.in)",
-              "Require MFA for team members (owner only)",
-              "Team session length (8h / 24h / 7d)",
-              "Sign out all team sessions",
-            ]}
+          <SecuritySection
+            canEdit={canEdit}
+            isOwner={isOwner}
+            state={security}
+            setState={setSecurity}
+            domainError={domainError}
           />
         );
       case "notifications":
