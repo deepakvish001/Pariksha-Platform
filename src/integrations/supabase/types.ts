@@ -10371,6 +10371,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_share_view_count: {
+        Args: { p_share_id: string }
+        Returns: undefined
+      }
       is_blog_editor: { Args: { _uid: string }; Returns: boolean }
       is_institution_member: {
         Args: {

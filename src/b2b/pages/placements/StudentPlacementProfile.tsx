@@ -109,6 +109,29 @@ export default function StudentPlacementProfile() {
     },
   });
 
+  const { data: shareActivity } = useQuery({
+    queryKey: ["share-activity", studentId, org?.id],
+    enabled: !!studentId && !!org?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("student_share_links")
+        .select("id, view_count, last_viewed_at, revoked_at, expires_at")
+        .eq("org_id", org!.id)
+        .contains("student_ids", [studentId!]);
+      if (error) throw error;
+      const rows = (data || []) as Array<{ view_count: number; last_viewed_at: string | null; revoked_at: string | null; expires_at: string }>;
+      const totalShares = rows.length;
+      const totalOpens = rows.reduce((s, r) => s + (r.view_count || 0), 0);
+      const lastOpened = rows.reduce<string | null>((acc, r) => {
+        if (!r.last_viewed_at) return acc;
+        if (!acc) return r.last_viewed_at;
+        return new Date(r.last_viewed_at) > new Date(acc) ? r.last_viewed_at : acc;
+      }, null);
+      const active = rows.filter((r) => !r.revoked_at && new Date(r.expires_at) > new Date()).length;
+      return { totalShares, totalOpens, lastOpened, active };
+    },
+  });
+
   const { data: orgTotal } = useQuery({
     queryKey: ["org_students_count", org?.id],
     enabled: !!org?.id,
@@ -435,6 +458,39 @@ export default function StudentPlacementProfile() {
             </ul>
           )}
         </GlassCard>
+
+        {/* Share activity */}
+        <GlassCard className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Share2 className="h-4 w-4 text-primary" /> Share activity
+            </h3>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/b2b/placements?tab=shares&student=${studentId}`}>
+                View all shares <ExternalLink className="h-3 w-3 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Shares created", value: shareActivity?.totalShares ?? 0 },
+              { label: "Active links", value: shareActivity?.active ?? 0 },
+              { label: "Total opens", value: shareActivity?.totalOpens ?? 0 },
+              {
+                label: "Last opened",
+                value: shareActivity?.lastOpened
+                  ? new Date(shareActivity.lastOpened).toLocaleDateString()
+                  : "—",
+              },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg border border-[hsl(var(--border))]/50 p-2 text-center">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                <div className="text-base font-semibold mt-0.5">{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
 
         {/* Drive applications */}
         <GlassCard className="p-4">

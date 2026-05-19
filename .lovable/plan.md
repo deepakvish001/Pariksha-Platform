@@ -1,44 +1,58 @@
-# Public Share Profile — Wire in per-link permissions
+# Share Views — Capture & Display
 
-The route is already live:
+## Already in place
 
-- `/p/student/:token` and `/p/shortlist/:token` → `src/pages/public/PublicStudentProfile.tsx`
-- Resolver edge function: `supabase/functions/placement-public-profile/index.ts`
+The resolver (`placement-public-profile`) already records every open into `student_share_views` with `viewed_at`, sha256 `ip_hash`, `user_agent`, and `referrer`, and bumps `view_count` + `last_viewed_at` on `student_share_links`. The ShareDialog's "Recent shares" panel already shows `view_count`. So **capture is done** — this task is about making views visible to placement coordinators.
 
-Token lookup, **expiry** (`expires_at`), and **revocation** (`revoked_at`) are already enforced in the edge function with `404 not_found`, `410 revoked`, and `410 expired`, and the page already renders friendly lock screens for each case. View logging + counter update also already happen.
-
-What is **missing** is the per-link permission toggles the new ShareDialog now writes (`allow_resume`, `allow_contact`) — the resolver still only respects the global `student_profile_preferences`. This plan finishes that wiring and adds the resume link to the public view.
+The existing resolver has one fixable issue: the view-log insert and the counter update use unawaited `.then(() => {})` chains. On Deno edge runtime, the request can return before the writes flush. Switch to `EdgeRuntime.waitUntil(...)` so the writes are guaranteed to complete.
 
 ## Changes
 
-### 1. Edge function `placement-public-profile`
-- Select the new columns on `student_share_links`: `allow_resume`, `allow_contact`.
-- Select `resume_url` from `org_students` (plus existing fields).
-- For each student in the payload, apply **AND** logic between the link's toggle and the student's own preference:
-  - `show_contact = link.allow_contact && pref.show_contact === true`
-  - `show_resume  = link.allow_resume  && pref.show_resume  !== false` (default-on)
-- Add to each student in the payload:
-  - `resume_url: show_resume ? s.resume_url : null`
-  - `show_resume: boolean`
-- Keep the existing email-gating (`email` is still only set when `show_contact` is true).
-- Keep the revoked / expired short-circuits exactly as they are.
+### 1. Edge function fix — `placement-public-profile`
+- Wrap both background writes (`student_share_views` insert and `student_share_links` update) with `EdgeRuntime.waitUntil(...)` so views are reliably persisted.
+- Also bump `view_count` atomically via an `increment_share_view_count(share_id uuid)` SQL function (new migration). Right now only `last_viewed_at` is touched; `view_count` is never incremented, which is why counts stay at 0 in the dialog.
 
-### 2. Page `PublicStudentProfile.tsx`
-- Extend `StudentPayload` with `resume_url: string | null` and `show_resume: boolean`.
-- Add a "View resume" button next to the existing contact button when `show_resume && resume_url` — opens the PDF in a new tab. Uses the same outline style.
-- Tweak the lock-screen copy slightly to mention what to do next (already mostly fine, just polish).
-- Add a small footer line on each card when both toggles are off: "Contact and resume hidden by the sender." so HR knows to request access rather than thinking data is missing.
+### 2. Migration
+- Create `public.increment_share_view_count(p_share_id uuid)` SECURITY DEFINER, search_path = public — runs `UPDATE student_share_links SET view_count = view_count + 1, last_viewed_at = now() WHERE id = p_share_id`.
+- Grant EXECUTE to `service_role` (used by the edge function). No client exposure.
 
-### 3. SEO / share preview (small)
-- Add a `<title>` and `<meta name="description">` via a tiny inline `useEffect` (no Helmet dependency assumed). Title = `${student.name} · Placement Profile` for profile mode, or `Top ${n} candidates · ${org.name}` for shortlist mode. Description = the recruiter message if present, else a default blurb. `<meta name="robots" content="noindex,nofollow">` so share links never appear in search results.
+### 3. New page — Share Analytics
+A new third tab **"Shares"** on `PlacementsDashboard` (`src/b2b/pages/placements/PlacementsDashboard.tsx`) with a self-contained component `SharesTab.tsx` at `src/b2b/pages/placements/SharesTab.tsx`.
+
+**Table columns** (one row per `student_share_links`):
+- Recipient — recruiter name / email (or "Unnamed")
+- Type — Profile / Shortlist badge
+- Student(s) — student name(s) joined from `org_students` (truncated, hover tooltip for shortlists)
+- Created — relative time
+- Expires — date + Active / Expired / Revoked badge
+- Views — `view_count` with a small bar visualization
+- Last viewed — relative time
+- Actions — Copy link · View details · Revoke
+
+**Filters**: search (recipient/student), type, status (Active/Expired/Revoked), date range (last 7/30/90 days).
+
+**Details drawer** (Sheet from right): opens on "View details" and shows:
+- Link metadata (token, recruiter, message, permission toggles)
+- A timeline of individual view events from `student_share_views` (timestamp formatted as `MMM d, HH:mm`, masked IP hash like `a1b2c3…`, user agent short label parsed via a tiny `parseUA` helper into "Chrome on macOS", "Safari on iPhone" etc., and referrer hostname).
+- Top metrics: total views, unique IP hashes, first viewed, last viewed.
+
+### 4. Per-student rollup on `StudentPlacementProfile.tsx`
+Add a small **"Share activity"** card under HR-ready highlights:
+- Total shares created · total link opens · last opened (relative).
+- "View all shares" button that links to the Shares tab with that student pre-filtered (URL search param `?student=<id>`).
+
+### 5. RLS
+`student_share_views` already has org-admin SELECT; verify the same `org_id` join through `student_share_links` works for both the table list (using nested select `student_share_views(count)` and an aggregated query) and the details drawer (filter by `share_id`).
 
 ## Out of scope
+- Geolocation from IP (we only have hashes, by design).
+- CSV export of view events (can add later if requested).
+- Realtime push for new opens (poll on `useQuery` with `refetchInterval: 30s` is enough).
 
-- View-analytics dashboard (separate task).
-- Email delivery via Resend (separate task; not requested here).
-- Schema changes — `allow_resume` / `allow_contact` already exist from the prior ShareDialog migration.
+## Files
 
-## Files touched
-
-- `supabase/functions/placement-public-profile/index.ts` — add columns, AND-gate visibility, include resume_url.
-- `src/pages/public/PublicStudentProfile.tsx` — render resume button, hidden-data notice, SEO tags.
+- `supabase/functions/placement-public-profile/index.ts` — switch to `waitUntil` + call new RPC.
+- `supabase/migrations/<ts>_share_view_increment.sql` — new RPC.
+- `src/b2b/pages/placements/PlacementsDashboard.tsx` — add "Shares" tab trigger + content.
+- `src/b2b/pages/placements/SharesTab.tsx` — new, full list + details drawer.
+- `src/b2b/pages/placements/StudentPlacementProfile.tsx` — add "Share activity" card.

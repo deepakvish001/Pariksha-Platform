@@ -11,12 +11,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Briefcase, Building2, TrendingUp, Trophy, Sparkles, Users, IndianRupee, Star, RefreshCw,
+  Briefcase, Building2, TrendingUp, Trophy, Sparkles, Users, IndianRupee, Star, RefreshCw, Share2,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 import { RankingsTab } from "./RankingsTab";
+import { SharesTab } from "./SharesTab";
 
 type Filters = {
   batch_years?: number[];
@@ -182,11 +183,14 @@ export default function PlacementsDashboard() {
       }
     >
       <div className="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
-        <Tabs defaultValue="overview" className="space-y-5">
+        <Tabs value={sp.get("tab") || "overview"} onValueChange={(v) => { sp.set("tab", v); setSp(sp, { replace: true }); }} className="space-y-5">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="rankings">
               <Trophy className="h-3.5 w-3.5 mr-1.5" />Student Rankings
+            </TabsTrigger>
+            <TabsTrigger value="shares">
+              <Share2 className="h-3.5 w-3.5 mr-1.5" />Shares
             </TabsTrigger>
           </TabsList>
 
@@ -434,6 +438,10 @@ export default function PlacementsDashboard() {
 
           <TabsContent value="rankings">
             <RankingsTab orgId={org.id} />
+          </TabsContent>
+
+          <TabsContent value="shares">
+            <SharesTab orgId={org.id} />
           </TabsContent>
         </Tabs>
       </div>
