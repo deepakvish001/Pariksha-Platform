@@ -1,126 +1,91 @@
-# Placement Rankings & Shareable Student Profiles
+# Rankings Tab — Ranked Student Cards
 
-Build a ranking system on top of the Placements dashboard so colleges can identify top performers across all branches/batches and share polished profile pages with HR/recruiters.
+The Rankings tab already exists as a dense table. This plan refactors it into a **card-based leaderboard** with stronger filters (org-wide / branch / drive) and richer per-student score context, while reusing the existing `placement_rankings` RPC and `ShareDialog`.
 
-## What the user gets
+## Scope
 
-1. **Rankings tab** inside `/b2b/placements` — sortable, filterable leaderboard of every student in the org with a composite "Placement Score".
-2. **Student Placement Profile page** at `/b2b/placements/students/:studentId` — rich view college admins and the student themselves can see.
-3. **Public shareable profile** at `/p/student/:shareToken` — recruiter-safe, no-auth link with a watermark, expiry, and view tracking.
-4. **Bulk share to HR** — select N top students, generate a "shortlist link" and copy/email it to a recruiter.
+Frontend-only refactor of `src/b2b/pages/placements/RankingsTab.tsx`. No DB or RPC changes. The existing `placement_rankings(_org_id, _filters, _limit, _offset)` already returns every field we need (score, rank_in_org, rank_in_branch, assessment %, integrity, apps, shortlists, offers, status flags, scores jsonb).
 
-## Rankings tab
+## Filter Bar
 
-Sits as a new tab in PlacementsDashboard next to Overview.
+A single sticky toolbar at the top of the tab:
 
-Columns (all sortable, click row → profile):
-- Rank (#)
-- Student (avatar, name, roll no.)
-- Branch · Batch · Section
-- Placement Score (0–100, color-coded)
-- Assessments taken / avg score / avg integrity
-- DSA + Quiz mastery (from XP / SRS)
-- Resume strength %
-- Drives applied / shortlisted / offers
-- Status badge (Unplaced / Shortlisted / Placed / Multi-offer)
-- Actions: View profile · Share to HR · Add to shortlist
+- **Search** — name / email / roll (debounced 250ms)
+- **Batch year** — `Select`, populated from current dataset
+- **Branch** — `Select`, also drives the `rank_in_branch` context shown on cards
+- **Section** — `Select` (new; pass `section` through `_filters`)
+- **Drive** — `Select` of org drives (fetched from `placement_drives` where `org_id = orgId`, ordered by `opens_at desc`). Passed as `drive_id` in `_filters` so the RPC scopes apps/shortlists/offers to that drive when supported; if the RPC ignores it, we filter client-side on `applications_count > 0` for the drive via a secondary query (see Technical Notes).
+- **Status** — All / Placed / Multi-offer / Shortlisted / Unplaced
+- **Min score** — chips: Any · ≥40 · ≥60 · ≥80
+- **Sort** — Score (default) · Assessment avg · Offers · Recently active
+- **View toggle** — Cards (default) · Table (keeps existing dense table as fallback)
+- Right side: `Recompute`, `Refresh`, `Export CSV`, `Share selected (n)` (unchanged).
 
-Filters (reuse existing PlacementFilters context): batch, branch, section, status, score band, "has resume", "has offer", min assessments.
+## Ranked Student Cards
 
-Top of tab: "Top 10 across college", "Top 3 per branch" quick-view chips, plus CSV export and "Generate shortlist link" button.
-
-## Placement Score formula
-
-Stored in `placement_snapshots.scores jsonb` per student, recomputed nightly + on-demand:
+Replace the `<table>` with a responsive grid:
 
 ```text
-Score = 0.30 * assessment_score_pct
-      + 0.15 * assessment_integrity_pct
-      + 0.20 * skill_mastery (XP-tier + SRS mastery normalized)
-      + 0.15 * resume_strength (latest AI analysis 0–100)
-      + 0.10 * drive_engagement (applications & shortlist rate)
-      + 0.10 * offer_factor (placed/multi-offer boost)
+grid-cols-1  md:grid-cols-2  xl:grid-cols-3
 ```
 
-Each component is computed in SQL from existing tables (`assessment_attempts`, `user_xp`, `srs_*`, `resume_analyses`, `drive_applications`, `placement_offers`). Missing data → component = 0 with an "incomplete profile" hint shown in UI.
+Each card (`GlassCard`) layout:
 
-## Student Placement Profile (internal)
+```text
+┌──────────────────────────────────────────────┐
+│  #3 🏆       [Multi-offer]            ⋯ share │
+│                                              │
+│  Avatar  Name (link)                         │
+│          roll · branch · batch · section     │
+│                                              │
+│  ┌────────────┐   Rank context               │
+│  │   87       │   #3 of 412 in org           │
+│  │   /100     │   #1 of 68 in CSE            │
+│  │  ▰▰▰▰▰▰▱▱  │   Top 1% overall             │
+│  └────────────┘                              │
+│                                              │
+│  Assess 92 · Integrity 95 · Apps 7 · Off 2   │
+│  [bar: assess][bar: integrity][bar: skills]  │
+│                                              │
+│  ☐ Select    [View profile]   [Share to HR]  │
+└──────────────────────────────────────────────┘
+```
 
-Route: `/b2b/placements/students/:studentId` — visible to org admins/TPO/recruiter roles AND to the student themselves (if `org_students.user_id = auth.uid()`).
+Details:
 
-Sections:
-- Header card: avatar, name, roll/branch/batch, Placement Score gauge, status badge, rank-in-branch + rank-in-college
-- Strengths radar chart (the 6 score components)
-- Assessment history (table from existing `assessment_attempts`)
-- Skill mastery (DSA topics, languages, XP level)
-- Resume preview (latest template + AI strengths/weaknesses)
-- Drive timeline (applications, rounds, offers)
-- Top tags ("Top 5% in DSA", "Consistent integrity", "Resume-ready")
-- Share controls: "Generate HR link", "Copy public URL", "Revoke link"
+- **Rank chip** (top-left) shows `#rank_in_org`, with a `Trophy` and gold/silver/bronze accent for ranks 1–3.
+- **Score donut** — circular SVG using `score`, color-coded via existing `scoreColor` (emerald / amber / orange / muted). Center shows the integer; sub-label `/100`.
+- **Rank context block**:
+  - `#rank_in_org of <total>` (total from dataset length when no pagination, otherwise from a count column)
+  - `#rank_in_branch of <branch total>` when branch is set on the student
+  - Percentile pill — `Top {round(rank_in_org/total*100)}%`
+- **Mini bars** — three thin `<div>` bars for assessment %, integrity %, and a derived "engagement" % (`min(100, (apps + 2*shortlisted + 4*offers) * 8)`). Pure presentational, no new data.
+- **Status badge** — reuse existing `StatusBadge`.
+- **Footer actions** — `Checkbox` (multi-select for shortlist), `View profile` link to `/b2b/placements/students/:id`, `Share to HR` opens `ShareDialog` with `kind: "profile"`.
+- **Skeleton** — 6 skeleton cards while loading.
+- **Empty state** — same copy as today, centered in a single card spanning all columns.
 
-## Public shareable profile (HR-facing)
+## Header strip (above the grid)
 
-Route: `/p/student/:shareToken` — no login required; resolved via edge function `placement-public-profile`.
+Three small `GlassCard` stats derived from the filtered dataset (no extra query):
 
-- Clean recruiter-ready layout: name, branch/batch, headline, score highlights, key skills, resume download (if student opted in), achievements, contact button.
-- Hides: integrity raw scores, internal notes, exam attempt details — only curated highlights.
-- Watermarked "Shared by {College} via Parikshaa · Expires {date}".
-- View tracking: each open logged; college sees "Viewed by 3 recruiters, last opened 2h ago".
-- Student-side toggle to opt into sharing (default: requires admin generation, student notified).
+- **Avg score** of filtered students
+- **Top scorer** (name + score) with a `Trophy`
+- **Filtered count** with comparison to org total (e.g. `128 of 412`)
 
-## Bulk shortlist to HR
+This gives the "rank context across the org" that the user asked for.
 
-From Rankings tab → select rows → "Create shortlist link":
-- Generates `/p/shortlist/:token` listing the chosen students as cards (each linking to their public profile).
-- Optional message + recruiter email; if email provided, sends via existing Resend setup.
-- Expiry (default 30 days), revoke anytime.
+## Technical Notes
 
-## Technical details
+- Keep `placement_rankings` RPC call signature; just extend `filters` with `section` and `drive_id` keys. If the RPC currently ignores unknown keys it's a no-op and the client still narrows results via `useMemo` filtering for `drive_id` (skip if dataset has no drive context — we will simply omit the drive filter in v1 if the RPC does not honor it, and surface a small `Coming soon` hint on the Drive select tooltip). We will check the RPC body during implementation and either pass through or fall back to client-side narrowing.
+- Drives list: `supabase.from("placement_drives").select("id,title,status").eq("org_id", orgId).order("opens_at", { ascending: false })` — small additional `useQuery`.
+- View toggle persists in `localStorage` under `placements.rankings.view`.
+- Card grid is virtualization-free for v1 (limit 500 already enforced by the RPC).
+- All colors via existing semantic tokens (`hsl(var(--primary))`, `--muted`, `--border`); status accent colors reuse the existing `bg-emerald-500/15` style already present in the file.
+- No new files. Single refactor of `RankingsTab.tsx`. `ShareDialog`, `StatusBadge`, `scoreColor`, `GlassCard`, CSV export, and Recompute mutation are preserved.
 
-**New tables**
-- `placement_snapshots` (already in earlier migration) — extend with `student_id`, `score numeric`, `scores jsonb`, `rank_in_org`, `rank_in_branch`, `computed_at`. Indexed on `(org_id, score desc)`.
-- `student_share_links` — `id`, `org_id`, `student_id` (nullable for shortlists), `kind` enum(`profile`,`shortlist`), `token text unique`, `student_ids uuid[]` (for shortlists), `created_by`, `expires_at`, `revoked_at`, `recruiter_email`, `message`.
-- `student_share_views` — `share_id`, `viewed_at`, `ip_hash`, `user_agent`, `referrer`.
-- `student_profile_preferences` — `student_id`, `allow_public_share bool`, `show_resume bool`, `show_contact bool`, `headline text`.
+## Out of Scope
 
-**RLS**
-- Snapshots/shares: org admins via `is_org_member(...)`; students can read their own row via `org_students.user_id = auth.uid()`.
-- Public profile fetch uses an **edge function with service role** that validates token + expiry + revocation; no direct table SELECT for anon.
-
-**RPCs**
-- `placement_rankings(org_id, filters jsonb, sort text, limit, offset)` → ranked list with all columns.
-- `placement_score_recompute(org_id, student_id uuid default null)` → recompute one or all.
-- Nightly `pg_cron` job recomputes whole org snapshots at 02:00 IST.
-
-**Edge functions**
-- `placement-share-create` — issues token, stores row.
-- `placement-public-profile` — resolves token → curated payload.
-- `placement-share-email` — Resend email to recruiter with the link.
-
-**Frontend**
-- `src/b2b/pages/placements/RankingsTab.tsx` (TanStack Table, virtualized for >1k rows)
-- `src/b2b/pages/placements/StudentPlacementProfile.tsx`
-- `src/pages/public/PublicStudentProfile.tsx` + `PublicShortlist.tsx` (under `/p/...`)
-- `src/b2b/components/placements/PlacementScoreGauge.tsx`, `StrengthsRadar.tsx`, `ShareDialog.tsx`
-- New routes wired in `src/App.tsx`
-
-**Reuse**
-- Existing `OrgShell`, `PlacementFilters` URL state, recharts, `useOrgStudents`, `useAttempts`, resume analysis tables, XP/SRS hooks.
-
-## Build order
-
-1. Migration: snapshots score columns + `student_share_*` tables + RLS + rankings RPC
-2. `RankingsTab` with sort/filter/export
-3. Internal `StudentPlacementProfile` page
-4. Share dialog + `placement-share-create` edge function
-5. Public profile + shortlist pages + `placement-public-profile` edge function
-6. View tracking + recruiter email send
-7. Nightly recompute cron + on-demand refresh button
-8. Student-side opt-in preferences UI in their own dashboard
-
-## Open questions
-
-1. **Who can share to HR?** Only TPO/admins, or also faculty/recruiter role? Default: TPO + admin + owner.
-2. **Student consent**: should public share require explicit student opt-in, or admin-controlled with student notified? Default: admin can generate, student is notified and can revoke from their dashboard.
-3. **Contact exposure on public profile**: show email/phone by default or behind a "Request contact" button that emails the student? Default: behind button.
-4. **Score weights**: are the proposed weights OK or do you want to tune them (e.g. heavier on assessments for tech colleges)?
+- Backend changes (score formula, RPC additions, new tables).
+- The internal `StudentPlacementProfile` page and public share page.
+- Pagination — RPC limit of 500 is enough for v1.
