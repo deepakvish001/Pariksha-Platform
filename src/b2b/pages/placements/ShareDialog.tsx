@@ -374,8 +374,11 @@ export function ShareDialog({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="text-xs text-muted-foreground">
-              Share this link with HR · expires {format(new Date(share.expiresAt), "PPP")}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+              <StatusPill status="active" expiresAt={share.expiresAt} />
+              <span className="text-[11px] text-muted-foreground">
+                Expires {format(new Date(share.expiresAt), "PPP")}
+              </span>
             </div>
             <div className="flex gap-2">
               <Input value={shareUrl!} readOnly className="font-mono text-xs" />
