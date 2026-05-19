@@ -403,9 +403,25 @@ export function RankingsTab({ orgId }: { orgId: string }) {
   };
 
   const clearFilters = () => {
+    preserveScroll();
     setSearch(""); setBatch("all"); setBranch("all"); setSection("all");
     setDriveId("all"); setStatus("all"); setMinScore("0"); setSortKey("score");
   };
+
+  // Restore captured scroll position once the new layout has rendered.
+  useLayoutEffect(() => {
+    if (scrollRestoreRef.current == null) return;
+    const y = scrollRestoreRef.current;
+    scrollRestoreRef.current = null;
+    // Two rAFs: wait for paint after layout so taller/shorter lists settle first.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        window.scrollTo({ top: Math.min(y, maxY), behavior: "auto" });
+      });
+    });
+  }, [data, view]);
+
 
   return (
     <div className="space-y-4">
