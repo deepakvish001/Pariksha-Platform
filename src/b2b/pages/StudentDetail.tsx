@@ -131,6 +131,30 @@ export default function B2BStudentDetail() {
         <div className="b2b-card p-3"><div className="text-xs text-[hsl(var(--muted-foreground))]">Avg Integrity</div><div className="text-2xl font-semibold">{avgIntegrity != null ? `${avgIntegrity}%` : "—"}</div></div>
       </div>
 
+      {attempts.length === 0 && (
+        <div className="b2b-card p-6 mb-4 text-center">
+          <div className="mx-auto mb-3 h-10 w-10 rounded-full bg-[hsl(var(--muted))/0.4] flex items-center justify-center">
+            <ClipboardList className="h-5 w-5 text-[hsl(var(--muted-foreground))]" aria-hidden="true" />
+          </div>
+          <div className="font-semibold text-sm">No attempts yet</div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 max-w-md mx-auto">
+            {student.email} hasn't started any assessments. Create a new assessment or assign an existing one to get them started.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
+            <Button asChild size="sm">
+              <Link to={`${basePath}/assessments/new`}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Create assessment
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`${basePath}/assessments`}>
+                <Send className="h-3.5 w-3.5 mr-1" /> Assign existing
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {attempts.length > 0 && (() => {
         const q = jumpQuery.trim().toLowerCase();
         const filtered = q
