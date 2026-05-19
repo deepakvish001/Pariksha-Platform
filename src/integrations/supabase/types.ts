@@ -1615,6 +1615,44 @@ export type Database = {
           },
         ]
       }
+      b2b_org_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          org_id: string
+          target: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          org_id: string
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          org_id?: string
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_org_audit_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       b2b_org_invites: {
         Row: {
           accepted_at: string | null
@@ -9468,6 +9506,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_org_admin: { Args: { _org_id: string }; Returns: boolean }
       is_org_billing_admin: { Args: { _org_id: string }; Returns: boolean }
       is_org_member: {
         Args: {
@@ -9475,6 +9514,15 @@ export type Database = {
           _roles?: Database["public"]["Enums"]["org_member_role"][]
         }
         Returns: boolean
+      }
+      log_org_audit: {
+        Args: {
+          _action: string
+          _metadata?: Json
+          _org_id: string
+          _target?: string
+        }
+        Returns: string
       }
       next_unique_slug: {
         Args: {
