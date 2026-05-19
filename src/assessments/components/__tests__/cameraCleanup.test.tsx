@@ -128,6 +128,34 @@ describe("Selfie camera cleanup", () => {
     expect(tracks[0].stop).toHaveBeenCalledTimes(1);
     unmount();
   });
+
+  it("ends BOTH audio and video tracks on selfie-step unmount", async () => {
+    const { stream, tracks } = makeFakeStream(["video", "audio"]);
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    Object.defineProperty(globalThis.navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia, enumerateDevices: vi.fn().mockResolvedValue([]) },
+    });
+
+    const user = userEvent.setup();
+    const { unmount, getByRole } = render(
+      <CandidateDetailsStep
+        attemptId="11111111-1111-1111-1111-111111111111"
+        userId="u"
+        done={false}
+        onComplete={() => {}}
+      />,
+    );
+
+    await user.click(getByRole("button", { name: /start camera/i }));
+    tracks.forEach((t) => expect(t.stop).not.toHaveBeenCalled());
+
+    unmount();
+
+    expectAllEnded(tracks);
+    // sanity: make sure the helper actually saw both kinds.
+    expect(tracks.map((t) => t.kind).sort()).toEqual(["audio", "video"]);
+  });
 });
 
 // ---- Proctoring-camera harness -------------------------------------------
