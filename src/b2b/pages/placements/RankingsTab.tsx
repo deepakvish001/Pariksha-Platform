@@ -511,7 +511,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
         </GlassCard>
       ) : view === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {visible.map((r, i) => {
+          {rendered.map((r, i) => {
             const displayRank = r.rank_in_org ?? i + 1;
             const branchTotal = r.branch ? branchTotals.get(r.branch) || 0 : 0;
             const pct = orgTotal ? Math.max(1, Math.round((displayRank / orgTotal) * 100)) : null;
