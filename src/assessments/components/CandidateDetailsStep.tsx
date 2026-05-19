@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Camera, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CameraStatusIndicator } from "./CameraStatusIndicator";
 
 // ---- Image validation helpers ----
 interface CheckResult { ok: boolean; label: string; detail?: string }
