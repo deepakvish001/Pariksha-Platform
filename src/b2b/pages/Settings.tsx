@@ -309,7 +309,7 @@ export default function B2BSettings() {
       actions={
         canEdit && (
           <Button
-            disabled={!dirty || saving}
+            disabled={!canSave || saving}
             onClick={onSave}
             className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
           >
