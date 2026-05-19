@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, RefreshCw, Download, Share2, Trophy, Loader2, ExternalLink,
-  Sparkles, LayoutGrid, List, Briefcase, BarChart3,
+  Sparkles, LayoutGrid, List, Briefcase, BarChart3, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShareDialog } from "./ShareDialog";
