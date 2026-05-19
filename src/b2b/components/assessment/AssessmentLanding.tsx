@@ -65,6 +65,9 @@ export interface LandingAssessment {
 
 interface Props {
   mode: "admin" | "candidate";
+  /** "full" = own full-screen background + orbs (candidate flow).
+   *  "embedded" = no background, lives inside OrgShell (admin flow). */
+  chrome?: "full" | "embedded";
   org: LandingOrg;
   assessment: LandingAssessment;
   sections: LandingSection[];
