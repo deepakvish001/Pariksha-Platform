@@ -497,8 +497,8 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               <RefreshCw className={`h-4 w-4 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-            <Button size="sm" variant="outline" onClick={exportCsv} disabled={!visible.length}>
-              <Download className="h-4 w-4 mr-1.5" />CSV
+            <Button size="sm" variant="outline" onClick={exportCsv} disabled={!filteredCount || exporting}>
+              {exporting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}CSV
             </Button>
             <Button
               size="sm"
