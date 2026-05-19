@@ -11,7 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Briefcase, Building2, TrendingUp, Trophy, Sparkles, Users, IndianRupee, Star, RefreshCw,
+  Briefcase, Building2, TrendingUp, Trophy, Sparkles, Users, IndianRupee, Star, RefreshCw, Share2,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
