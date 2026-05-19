@@ -516,28 +516,116 @@ export function RankingsTab({ orgId }: { orgId: string }) {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <GlassCard key={i} className="p-4 space-y-3">
-                <Skeleton className="h-4 w-24" />
-                <div className="flex gap-3">
-                  <Skeleton className="h-20 w-20 rounded-full" />
-                  <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-12 rounded-md" />
+                  <div className="flex items-center gap-1.5">
+                    <Skeleton className="h-4 w-16 rounded-full" />
+                    <Skeleton className="h-4 w-4 rounded" />
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-20 w-20 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2 min-w-0">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
                     <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/3" />
                   </div>
                 </div>
-                <Skeleton className="h-8 w-full" />
+                <div className="grid grid-cols-3 gap-2">
+                  {Array.from({ length: 3 }).map((__, j) => (
+                    <div key={j} className="space-y-1">
+                      <Skeleton className="h-2.5 w-12" />
+                      <Skeleton className="h-1 w-full rounded-full" />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <Skeleton className="h-3 w-32" />
+                  <div className="flex gap-1">
+                    <Skeleton className="h-7 w-16 rounded-md" />
+                    <Skeleton className="h-7 w-16 rounded-md" />
+                  </div>
+                </div>
               </GlassCard>
             ))}
           </div>
         ) : (
-          <GlassCard className="p-10 text-center text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin inline" />
+          <GlassCard className="p-0 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-[hsl(var(--muted))]/30 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  {["", "#", "Student", "Branch · Batch", "Score", "Assess", "Avg %", "Integrity", "Apps", "Offers", "Status", "Actions"].map((h, i) => (
+                    <th key={i} className={`px-3 py-2 font-medium ${i >= 4 && i <= 9 ? "text-right" : "text-left"}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="border-t border-[hsl(var(--border))]/40">
+                    <td className="px-3 py-2"><Skeleton className="h-4 w-4 rounded" /></td>
+                    <td className="px-3 py-2"><Skeleton className="h-3 w-5" /></td>
+                    <td className="px-3 py-2">
+                      <Skeleton className="h-3.5 w-36 mb-1" />
+                      <Skeleton className="h-3 w-28" />
+                    </td>
+                    <td className="px-3 py-2"><Skeleton className="h-3 w-24" /></td>
+                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3.5 w-8" /></td>
+                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-6" /></td>
+                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-8" /></td>
+                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-8" /></td>
+                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-6" /></td>
+                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-6" /></td>
+                    <td className="px-3 py-2"><Skeleton className="h-4 w-16 rounded-full" /></td>
+                    <td className="px-3 py-2">
+                      <div className="flex justify-end gap-1">
+                        <Skeleton className="h-7 w-7 rounded-md" />
+                        <Skeleton className="h-7 w-7 rounded-md" />
+                        <Skeleton className="h-7 w-7 rounded-md" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </GlassCard>
         )
       ) : !visible.length ? (
-        <GlassCard className="p-10 text-center text-muted-foreground">
-          No students match these filters. Try clearing filters or click <strong>Recompute</strong> to build the leaderboard.
-        </GlassCard>
+        (() => {
+          const hasFilters =
+            !!debouncedSearch ||
+            batch !== "all" || branch !== "all" || section !== "all" ||
+            driveId !== "all" || status !== "all" || Number(minScore) > 0;
+          const hasAnyData = (data?.length || 0) > 0;
+          return (
+            <GlassCard className="p-10 text-center">
+              <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-[hsl(var(--muted))]/40 grid place-items-center">
+                {hasAnyData
+                  ? <Search className="h-5 w-5 text-muted-foreground" />
+                  : <Trophy className="h-5 w-5 text-amber-400/80" />}
+              </div>
+              <div className="text-sm font-medium">
+                {hasAnyData ? "No students match these filters" : "Leaderboard is empty"}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                {hasAnyData
+                  ? "Try adjusting or clearing the filters above to see more candidates."
+                  : "Run Recompute to score your students and build the placement leaderboard."}
+              </div>
+              <div className="mt-4 inline-flex gap-2">
+                {hasFilters && hasAnyData && (
+                  <Button size="sm" variant="outline" onClick={clearFilters}>Clear filters</Button>
+                )}
+                {!hasAnyData && (
+                  <Button size="sm" onClick={() => recompute.mutate()} disabled={recompute.isPending}>
+                    <Sparkles className={`h-4 w-4 mr-1.5 ${recompute.isPending ? "animate-spin" : ""}`} />
+                    Recompute scores
+                  </Button>
+                )}
+              </div>
+            </GlassCard>
+          );
+        })()
       ) : view === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {rendered.map((r, i) => {
