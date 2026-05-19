@@ -338,34 +338,57 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     else setSelected(new Set(visible.map((r) => r.student_id)));
   };
 
-  const exportCsv = () => {
-    if (!visible.length) return;
-    const headers = ["Rank", "Name", "Email", "Roll", "Branch", "Batch", "Section", "Score", "Assessments", "AvgScore", "Integrity", "Apps", "Shortlisted", "Offers", "Status"];
-    const rows = visible.map((r, i) => [
-      r.rank_in_org ?? i + 1,
-      r.full_name ?? "",
-      r.email,
-      r.roll_number ?? "",
-      r.branch ?? "",
-      r.batch_year ?? "",
-      r.section ?? "",
-      r.score,
-      r.assessments_taken,
-      r.avg_assessment_score?.toFixed(1) ?? "",
-      r.avg_integrity?.toFixed(1) ?? "",
-      r.applications_count,
-      r.shortlisted_count,
-      r.offers_count,
-      r.is_multi_offer ? "Multi-offer" : r.is_placed ? "Placed" : r.shortlisted_count ? "Shortlisted" : "Unplaced",
-    ]);
-    const csv = [headers, ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `placement-rankings-${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    if (!filteredCount) return;
+    setExporting(true);
+    try {
+      const all: Ranking[] = [];
+      const BATCH = 200;
+      for (let off = 0; off < filteredCount; off += BATCH) {
+        const { data, error } = await supabase.rpc("placement_rankings" as any, {
+          _org_id: orgId,
+          _filters: filters,
+          _limit: BATCH,
+          _offset: off,
+          _sort: sortKey,
+          _student_ids: studentIdsParam,
+        });
+        if (error) throw error;
+        all.push(...((data || []) as Ranking[]));
+        if (!data || (data as any[]).length < BATCH) break;
+      }
+      const headers = ["Rank", "Name", "Email", "Roll", "Branch", "Batch", "Section", "Score", "Assessments", "AvgScore", "Integrity", "Apps", "Shortlisted", "Offers", "Status"];
+      const rows = all.map((r, i) => [
+        r.rank_in_org ?? i + 1,
+        r.full_name ?? "",
+        r.email,
+        r.roll_number ?? "",
+        r.branch ?? "",
+        r.batch_year ?? "",
+        r.section ?? "",
+        r.score,
+        r.assessments_taken,
+        r.avg_assessment_score?.toFixed(1) ?? "",
+        r.avg_integrity?.toFixed(1) ?? "",
+        r.applications_count,
+        r.shortlisted_count,
+        r.offers_count,
+        r.is_multi_offer ? "Multi-offer" : r.is_placed ? "Placed" : r.shortlisted_count ? "Shortlisted" : "Unplaced",
+      ]);
+      const csv = [headers, ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `placement-rankings-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast.error(e?.message || "Export failed");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const clearFilters = () => {
