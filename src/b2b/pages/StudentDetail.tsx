@@ -225,18 +225,46 @@ export default function B2BStudentDetail() {
                 {sorted.map((a) => {
                   const title = agg?.assessments.get(a.assessment_id)?.title ?? "Attempt";
                   const when = a.submitted_at ?? a.started_at;
+                  const path = `${basePath}/assessments/${a.assessment_id}/attempts/${a.id}`;
+                  const copyUrl = async (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const url = `${window.location.origin}${path}`;
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      toast.success("Attempt link copied", { description: title });
+                      setCopiedId(a.id);
+                      window.setTimeout(() => setCopiedId((cur) => (cur === a.id ? null : cur)), 1500);
+                    } catch {
+                      toast.error("Couldn't copy link");
+                    }
+                  };
+                  const copied = copiedId === a.id;
                   return (
-                    <Link
+                    <div
                       key={a.id}
-                      to={`${basePath}/assessments/${a.assessment_id}/attempts/${a.id}`}
-                      className="text-xs px-2 py-1 rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))/0.4] flex items-center gap-1.5 max-w-[260px]"
-                      title={`${title} · ${a.status}`}
+                      className="text-xs rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))/0.4] flex items-center max-w-[300px] overflow-hidden"
                     >
-                      <span className="truncate">{title}</span>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{a.status}</Badge>
-                      {a.score_pct != null && <span className="text-[hsl(var(--muted-foreground))] shrink-0">{Math.round(a.score_pct)}%</span>}
-                      <span className="text-[hsl(var(--muted-foreground))] shrink-0">· {fmt(when)}</span>
-                    </Link>
+                      <Link
+                        to={path}
+                        className="px-2 py-1 flex items-center gap-1.5 min-w-0"
+                        title={`${title} · ${a.status}`}
+                      >
+                        <span className="truncate">{title}</span>
+                        <Badge variant="outline" className="text-[10px] shrink-0">{a.status}</Badge>
+                        {a.score_pct != null && <span className="text-[hsl(var(--muted-foreground))] shrink-0">{Math.round(a.score_pct)}%</span>}
+                        <span className="text-[hsl(var(--muted-foreground))] shrink-0">· {fmt(when)}</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={copyUrl}
+                        aria-label={`Copy link to ${title}`}
+                        title="Copy attempt link"
+                        className="px-1.5 py-1 border-l border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))/0.6] text-[hsl(var(--muted-foreground))] shrink-0"
+                      >
+                        {copied ? <Check className="h-3 w-3 text-[hsl(var(--primary))]" /> : <Link2 className="h-3 w-3" />}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
