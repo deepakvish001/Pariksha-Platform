@@ -9,7 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Mail, GraduationCap, Calendar, Activity, ExternalLink, Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, Mail, GraduationCap, Calendar, Activity, ExternalLink, Search, ArrowUpDown } from "lucide-react";
 
 function fmt(d?: string | null) {
   if (!d) return "—";
