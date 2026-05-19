@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { AssessmentProctoringConfig } from "../../components/AssessmentProctoringConfig";
 import ProctoringTriagePanel from "../../components/ProctoringTriagePanel";
 import type { ProctoringConfig } from "@/assessments/lib/proctoringConfig";
+import { PROCTORING_LABELS, type ProctoringLevel } from "../../lib/assessmentTemplates";
 import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
