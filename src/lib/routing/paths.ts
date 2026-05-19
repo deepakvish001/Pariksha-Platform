@@ -51,6 +51,8 @@ export const paths = {
     assessmentNew: (basePath: string) => `${basePath}/assessments/new`,
     assessment: (basePath: string, a: Identifiable) =>
       `${basePath}/assessments/${preferSlug(a)}`,
+    assessmentEdit: (basePath: string, a: Identifiable) =>
+      `${basePath}/assessments/${preferSlug(a)}/edit`,
     assessmentManage: (basePath: string, a: Identifiable) =>
       `${basePath}/assessments/${preferSlug(a)}/manage`,
     attempt: (
