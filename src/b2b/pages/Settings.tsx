@@ -391,7 +391,16 @@ export default function B2BSettings() {
       case "audit":
         return <AuditSection orgId={org.id} />;
       case "danger":
-        return <DangerSection org={org} isOwner={isOwner} deleting={deleting} onDelete={onDelete} />;
+        return (
+          <DangerSection
+            org={org}
+            isOwner={isOwner}
+            deleting={deleting}
+            onDelete={onDelete}
+            members={members ?? []}
+            currentUserId={user?.id}
+          />
+        );
     }
   };
 
