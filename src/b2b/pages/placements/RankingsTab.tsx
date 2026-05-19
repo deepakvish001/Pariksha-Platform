@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -172,7 +172,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
       const { data, error } = await supabase.rpc("placement_rankings" as any, {
         _org_id: orgId,
         _filters: filters,
-        _limit: 500,
+        _limit: 2000,
         _offset: 0,
       });
       if (error) throw error;
@@ -273,6 +273,24 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     ? visible.reduce((s, r) => s + r.score, 0) / filteredCount
     : 0;
   const topScorer = visible[0];
+
+  // Incremental rendering for large orgs
+  const PAGE_SIZE = 50;
+  const [pageCount, setPageCount] = useState(1);
+  useEffect(() => { setPageCount(1); }, [debouncedSearch, batch, branch, section, driveId, status, minScore, sortKey, view]);
+  const rendered = useMemo(() => visible.slice(0, pageCount * PAGE_SIZE), [visible, pageCount]);
+  const hasMore = rendered.length < visible.length;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setPageCount((p) => p + 1);
+    }, { rootMargin: "400px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, rendered.length]);
 
   const toggleAll = () => {
     if (!visible.length) return;
@@ -493,7 +511,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
         </GlassCard>
       ) : view === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {visible.map((r, i) => {
+          {rendered.map((r, i) => {
             const displayRank = r.rank_in_org ?? i + 1;
             const branchTotal = r.branch ? branchTotals.get(r.branch) || 0 : 0;
             const pct = orgTotal ? Math.max(1, Math.round((displayRank / orgTotal) * 100)) : null;
@@ -632,7 +650,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((r, i) => (
+                {rendered.map((r, i) => (
                   <tr key={r.student_id} className="border-t border-[hsl(var(--border))]/40 hover:bg-[hsl(var(--muted))]/10">
                     <td className="px-3 py-2">
                       <Checkbox
@@ -696,6 +714,24 @@ export function RankingsTab({ orgId }: { orgId: string }) {
           </div>
         </GlassCard>
       )}
+
+      {!isLoading && visible.length > 0 && (
+        <>
+          <div ref={sentinelRef} aria-hidden className="h-1" />
+          <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
+            <span className="tabular-nums">
+              Showing {rendered.length} of {filteredCount}
+            </span>
+            {hasMore && (
+              <Button size="sm" variant="outline" className="h-7" onClick={() => setPageCount((p) => p + 1)}>
+                Load more
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+
+
 
       {shareTarget && (
         <ShareDialog
