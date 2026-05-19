@@ -183,7 +183,7 @@ export default function PlacementsDashboard() {
       }
     >
       <div className="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
-        <Tabs defaultValue="overview" className="space-y-5">
+        <Tabs value={sp.get("tab") || "overview"} onValueChange={(v) => { sp.set("tab", v); setSp(sp, { replace: true }); }} className="space-y-5">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="rankings">
