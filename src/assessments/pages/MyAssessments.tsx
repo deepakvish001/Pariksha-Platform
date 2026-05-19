@@ -31,12 +31,33 @@ const ATTEMPT_TONE: Record<string, StatusTone> = {
   pending: "neutral",
 };
 
+type TypeKey = "placement_mock" | "academic_test" | "open_contest" | "other";
+
+const TYPE_GROUPS: { key: TypeKey; label: string; match: (t?: string) => boolean }[] = [
+  { key: "placement_mock", label: "Placement mocks", match: (t) => t === "placement_mock" || t === "placement" || t === "mock" },
+  { key: "academic_test", label: "Class & academic tests", match: (t) => t === "academic_test" || t === "class_test" || t === "academic" },
+  { key: "open_contest", label: "Open contests", match: (t) => t === "open_contest" || t === "contest" },
+  { key: "other", label: "Other assessments", match: () => true },
+];
+
+function groupByType<T extends { assessment?: { type?: string } | null }>(items: T[] | undefined) {
+  const buckets = new Map<TypeKey, T[]>();
+  TYPE_GROUPS.forEach((g) => buckets.set(g.key, []));
+  (items ?? []).forEach((it) => {
+    const t = it.assessment?.type;
+    const group = TYPE_GROUPS.find((g) => g.match(t))!;
+    buckets.get(group.key)!.push(it);
+  });
+  return buckets;
+}
+
 export default function MyAssessments() {
   const { data: invites } = useMyInvites();
   const { data: attempts } = useMyAttempts();
   const { data: openAssessments } = useOpenOrgAssessments();
   const enroll = useEnrollOpenOrg();
   const navigate = useNavigate();
+  const invitesByType = groupByType(invites as any[]);
 
   const pendingCount =
     invites?.filter((i: any) => i.status === "pending" || i.status === "claimed").length ?? 0;
@@ -80,63 +101,79 @@ export default function MyAssessments() {
               description="When a recruiter invites you to a test, it will appear here."
             />
           ) : (
-            <ul className="divide-y divide-[hsl(var(--border))]/40 -mx-5">
-              {invites.map((i: any) => {
-                const canStart = i.status === "pending" || i.status === "claimed";
-                const tpl = getTemplate(i.assessment?.type);
-                const TIcon = tpl.icon;
+            <div className="-mx-5 divide-y divide-[hsl(var(--border))]/40">
+              {TYPE_GROUPS.map((g) => {
+                const list = invitesByType.get(g.key) ?? [];
+                if (!list.length) return null;
                 return (
-                  <li
-                    key={i.id}
-                    className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate text-sm">
-                        {i.assessment?.title ?? "Assessment"}
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${tpl.badgeClass}`}>
-                          <TIcon className="h-3 w-3" /> {tpl.label}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {i.assessment?.duration_min ?? "—"} min
-                        </span>
-                      </div>
+                  <div key={g.key} className="px-5 py-3">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <span>{g.label}</span>
+                      <span className="rounded-full bg-white/[0.04] border border-[hsl(var(--border))]/40 px-1.5 py-0.5 text-[10px] tabular-nums">
+                        {list.length}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatusPill tone={i.status === "pending" ? "scheduled" : i.status === "claimed" ? "live" : "neutral"}>
-                        {i.status}
-                      </StatusPill>
-                      {canStart && (
-                        <Button
-                          size="sm"
-                          className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-                          onClick={async () => {
-                            try {
-                              const a: any = await claimInvite(i.token);
-                              navigate(`/assessments/${a.id}/lobby`);
-                            } catch (err: any) {
-                              toast.error(err?.message ?? "Could not join");
-                            }
-                          }}
-                        >
-                          {i.status === "claimed" ? (
-                            <>
-                              Resume <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                            </>
-                          ) : (
-                            <>
-                              <PlayCircle className="h-3.5 w-3.5 mr-1" /> Start
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </li>
+                    <ul className="divide-y divide-[hsl(var(--border))]/40">
+                      {list.map((i: any) => {
+                        const canStart = i.status === "pending" || i.status === "claimed";
+                        const tpl = getTemplate(i.assessment?.type);
+                        const TIcon = tpl.icon;
+                        return (
+                          <li
+                            key={i.id}
+                            className="flex items-center justify-between gap-3 py-3 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium truncate text-sm">
+                                {i.assessment?.title ?? "Assessment"}
+                              </div>
+                              <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${tpl.badgeClass}`}>
+                                  <TIcon className="h-3 w-3" /> {tpl.label}
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {i.assessment?.duration_min ?? "—"} min
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <StatusPill tone={i.status === "pending" ? "scheduled" : i.status === "claimed" ? "live" : "neutral"}>
+                                {i.status}
+                              </StatusPill>
+                              {canStart && (
+                                <Button
+                                  size="sm"
+                                  className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                                  onClick={async () => {
+                                    try {
+                                      const a: any = await claimInvite(i.token);
+                                      navigate(`/assessments/${a.id}/lobby`);
+                                    } catch (err: any) {
+                                      toast.error(err?.message ?? "Could not join");
+                                    }
+                                  }}
+                                >
+                                  {i.status === "claimed" ? (
+                                    <>
+                                      Resume <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <PlayCircle className="h-3.5 w-3.5 mr-1" /> Start
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           )}
         </SectionCard>
 
