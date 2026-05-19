@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { describeRulesForCandidate, type ProctoringConfig } from "../lib/proctoringConfig";
 import { SideCameraPairing } from "./SideCameraPairing";
 import { CandidateDetailsStep } from "./CandidateDetailsStep";
+import { CameraPermissionHelp } from "./CameraPermissionHelp";
 
 interface Props {
   attemptId: string;
