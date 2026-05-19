@@ -38,15 +38,30 @@ function statusLabel(r: Ranking) {
   return "Unplaced";
 }
 
+export type WatermarkOptions = {
+  /** Toggle the diagonal CONFIDENTIAL watermark on/off. Default: true. */
+  enabled?: boolean;
+  /** Opacity in [0, 1]. Clamped. Default: 0.06. */
+  opacity?: number;
+};
+
 export async function exportStudentHighlightsPdf({
   ranking,
   offers,
   applications,
+  watermark,
 }: {
   ranking: Ranking;
   offers: any[];
   applications: any[];
+  watermark?: WatermarkOptions;
 }) {
+  const wmEnabled = watermark?.enabled !== false;
+  const wmOpacity = Math.max(
+    0,
+    Math.min(1, watermark?.opacity ?? 0.06),
+  );
+
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
