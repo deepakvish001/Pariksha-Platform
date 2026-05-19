@@ -787,6 +787,15 @@ export function RankingsTab({ orgId }: { orgId: string }) {
           onClose={() => setShareTarget(null)}
         />
       )}
+
+      <StudentMetricsDrawer
+        open={!!drawerStudent}
+        onOpenChange={(v) => { if (!v) setDrawerStudent(null); }}
+        ranking={drawerStudent}
+        onShare={(r) => {
+          setShareTarget({ kind: "profile", studentId: r.student_id, studentName: r.full_name || r.email });
+        }}
+      />
     </div>
   );
 }
