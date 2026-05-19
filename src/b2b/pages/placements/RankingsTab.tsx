@@ -12,11 +12,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, RefreshCw, Download, Share2, Trophy, Loader2, ExternalLink,
-  Sparkles, LayoutGrid, List, Briefcase,
+  Sparkles, LayoutGrid, List, Briefcase, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShareDialog } from "./ShareDialog";
 import { QuickSharePopover } from "./QuickSharePopover";
+import { StudentMetricsDrawer } from "./StudentMetricsDrawer";
 
 type Ranking = {
   student_id: string;
