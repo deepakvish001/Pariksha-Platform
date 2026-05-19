@@ -84,7 +84,7 @@ describe("JoinStudent token acceptance E2E", () => {
     renderAt("/join/student?token=expired-token");
 
     expect(await screen.findByText("Couldn't link enrollment")).toBeInTheDocument();
-    expect(screen.getByText("Invite expired")).toBeInTheDocument();
+    expect(await screen.findByText("Invite expired")).toBeInTheDocument();
     expect(navigateMock).not.toHaveBeenCalledWith("/my/college");
   });
 });
