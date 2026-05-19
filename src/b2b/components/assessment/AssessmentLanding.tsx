@@ -223,6 +223,19 @@ export function AssessmentLanding({
             </StatusPill>
           </div>
 
+          {(() => {
+            const tpl = getTemplate(assessment.type as any);
+            const TIcon = tpl.icon;
+            return (
+              <div className="mb-3 inline-flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] font-medium ${tpl.badgeClass}`}>
+                  <TIcon className="h-3.5 w-3.5" /> {tpl.label}
+                </span>
+                <span className="text-[11px] text-[hsl(var(--muted-foreground))]">{tpl.tagline}</span>
+              </div>
+            );
+          })()}
+
           <h1 className="text-2xl md:text-4xl font-semibold tracking-tight leading-tight">
             <span className="bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent">
               {assessment.title}
