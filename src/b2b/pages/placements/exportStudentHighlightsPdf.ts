@@ -285,7 +285,7 @@ export async function exportStudentHighlightsPdf({
   const pageCount = doc.getNumberOfPages();
   const pageH = doc.internal.pageSize.getHeight();
   const pageW = doc.internal.pageSize.getWidth();
-  const genStamp = format(new Date(), "PPP p");
+  const genStamp = format(generatedAt, "PPP p");
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
     const footerY = pageH - 24;
