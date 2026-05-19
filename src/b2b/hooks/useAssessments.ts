@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { isUuid } from "@/lib/routing/slug";
 
 export type AssessmentStatus = "draft" | "published" | "archived";
@@ -75,6 +76,9 @@ export function useCreateAssessment() {
       duration_min?: number;
       proctoring_enabled?: boolean;
       show_results_to_candidate?: boolean;
+      type?: Database["public"]["Enums"]["assessment_type"];
+      participation_mode?: Database["public"]["Enums"]["participation_mode"];
+      proctoring_level?: Database["public"]["Enums"]["proctoring_level"];
     }) => {
       const { data, error } = await supabase
         .from("assessments")
@@ -85,6 +89,9 @@ export function useCreateAssessment() {
           duration_min: input.duration_min ?? 60,
           proctoring_enabled: input.proctoring_enabled ?? false,
           show_results_to_candidate: input.show_results_to_candidate ?? true,
+          ...(input.type ? { type: input.type } : {}),
+          ...(input.participation_mode ? { participation_mode: input.participation_mode } : {}),
+          ...(input.proctoring_level ? { proctoring_level: input.proctoring_level } : {}),
         })
         .select("*")
         .single();

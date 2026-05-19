@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useMyOrganizations } from "../../hooks/useOrg";
 import { useAssessments, type Assessment } from "../../hooks/useAssessments";
+import { getTemplate } from "../../lib/assessmentTemplates";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -198,7 +199,16 @@ export default function B2BAssessmentsList() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="font-medium truncate">{a.title}</div>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                        {(() => {
+                          const tpl = getTemplate((a as any).type);
+                          const TIcon = tpl.icon;
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${tpl.badgeClass}`}>
+                              <TIcon className="h-3 w-3" /> {tpl.label}
+                            </span>
+                          );
+                        })()}
                         <Clock className="h-3 w-3" /> {a.duration_min}m
                         <span>·</span>
                         <span className="truncate">

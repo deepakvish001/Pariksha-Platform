@@ -124,6 +124,7 @@ export default function AssessmentLandingPage() {
           ends_at: (assessment as { ends_at?: string | null }).ends_at ?? null,
           status: assessment.status,
           brand_color: (assessment as { brand_color?: string | null }).brand_color ?? null,
+          type: (assessment as { type?: string | null }).type ?? null,
         }}
         sections={landingSections}
         extraCards={

@@ -1306,13 +1306,16 @@ export type Database = {
           id: string
           max_attempts: number
           org_id: string
+          participation_mode: Database["public"]["Enums"]["participation_mode"]
           proctoring_config: Json
           proctoring_enabled: boolean
+          proctoring_level: Database["public"]["Enums"]["proctoring_level"]
           show_results_to_candidate: boolean
           slug: string | null
           starts_at: string | null
           status: Database["public"]["Enums"]["assessment_status"]
           title: string
+          type: Database["public"]["Enums"]["assessment_type"]
           updated_at: string
         }
         Insert: {
@@ -1327,13 +1330,16 @@ export type Database = {
           id?: string
           max_attempts?: number
           org_id: string
+          participation_mode?: Database["public"]["Enums"]["participation_mode"]
           proctoring_config?: Json
           proctoring_enabled?: boolean
+          proctoring_level?: Database["public"]["Enums"]["proctoring_level"]
           show_results_to_candidate?: boolean
           slug?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
           title: string
+          type?: Database["public"]["Enums"]["assessment_type"]
           updated_at?: string
         }
         Update: {
@@ -1348,13 +1354,16 @@ export type Database = {
           id?: string
           max_attempts?: number
           org_id?: string
+          participation_mode?: Database["public"]["Enums"]["participation_mode"]
           proctoring_config?: Json
           proctoring_enabled?: boolean
+          proctoring_level?: Database["public"]["Enums"]["proctoring_level"]
           show_results_to_candidate?: boolean
           slug?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
           title?: string
+          type?: Database["public"]["Enums"]["assessment_type"]
           updated_at?: string
         }
         Relationships: [
@@ -9105,6 +9114,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_open_org_assessment: {
+        Args: { _assessment_id: string }
+        Returns: {
+          invite_id: string
+          token: string
+        }[]
+      }
       clone_global_question: {
         Args: { _question_id: string; _target_org: string }
         Returns: string
@@ -9678,6 +9694,7 @@ export type Database = {
         | "proctor_admin"
         | "institution_admin"
       assessment_status: "draft" | "published" | "archived"
+      assessment_type: "placement_mock" | "academic" | "benchmark" | "contest"
       attempt_status:
         | "in_progress"
         | "submitted"
@@ -9694,6 +9711,8 @@ export type Database = {
       invite_status: "pending" | "claimed" | "submitted" | "expired"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer" | "proctor"
       org_type: "college" | "company"
+      participation_mode: "invite" | "roster" | "open_org"
+      proctoring_level: "off" | "light" | "standard" | "strict"
       question_type:
         | "coding"
         | "mcq"
@@ -9853,6 +9872,7 @@ export const Constants = {
         "institution_admin",
       ],
       assessment_status: ["draft", "published", "archived"],
+      assessment_type: ["placement_mock", "academic", "benchmark", "contest"],
       attempt_status: [
         "in_progress",
         "submitted",
@@ -9870,6 +9890,8 @@ export const Constants = {
       invite_status: ["pending", "claimed", "submitted", "expired"],
       org_member_role: ["owner", "admin", "recruiter", "viewer", "proctor"],
       org_type: ["college", "company"],
+      participation_mode: ["invite", "roster", "open_org"],
+      proctoring_level: ["off", "light", "standard", "strict"],
       question_type: [
         "coding",
         "mcq",
