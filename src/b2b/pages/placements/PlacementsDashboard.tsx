@@ -439,6 +439,10 @@ export default function PlacementsDashboard() {
           <TabsContent value="rankings">
             <RankingsTab orgId={org.id} />
           </TabsContent>
+
+          <TabsContent value="shares">
+            <SharesTab orgId={org.id} />
+          </TabsContent>
         </Tabs>
       </div>
     </OrgShell>
