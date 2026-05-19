@@ -51,7 +51,6 @@ describe("JoinStudent token acceptance E2E", () => {
   beforeEach(() => {
     invokeMock.mockReset();
     navigateMock.mockReset();
-    vi.useFakeTimers();
   });
 
   it("accepts the token, shows success, and redirects to /my/college", async () => {
@@ -72,11 +71,11 @@ describe("JoinStudent token acceptance E2E", () => {
     // Success UI rendered
     expect(await screen.findByText("You're in!")).toBeInTheDocument();
 
-    // Redirect fires after the 1200ms delay
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1300);
-    });
-    expect(navigateMock).toHaveBeenCalledWith("/my/college");
+    // Redirect fires after the 1200ms delay in the component
+    await waitFor(
+      () => expect(navigateMock).toHaveBeenCalledWith("/my/college"),
+      { timeout: 3000 },
+    );
   });
 
   it("shows an error state when the edge function rejects the token", async () => {
