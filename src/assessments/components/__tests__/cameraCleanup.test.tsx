@@ -257,4 +257,31 @@ describe("Proctoring camera cleanup", () => {
     rerender(<ProctorCamHarness stream={stream} submitted={true} status="completed" />);
     expect(tracks[0].stop).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    ["submit (local flag)", { submitted: true, status: "in_progress" }],
+    ["server completed", { submitted: false, status: "completed" }],
+    ["server auto_submitted", { submitted: false, status: "auto_submitted" }],
+    ["server timed_out", { submitted: false, status: "timed_out" }],
+  ])("ends BOTH audio and video proctoring tracks after %s", (_label, next) => {
+    const { stream, tracks } = makeFakeStream(["video", "audio"]);
+    const { rerender } = render(
+      <ProctorCamHarness stream={stream} submitted={false} status="in_progress" />,
+    );
+    tracks.forEach((t) => expect(t.stop).not.toHaveBeenCalled());
+
+    rerender(<ProctorCamHarness stream={stream} {...next} />);
+
+    expectAllEnded(tracks);
+    expect(tracks.map((t) => t.kind).sort()).toEqual(["audio", "video"]);
+  });
+
+  it("ends BOTH audio and video proctoring tracks on unmount", () => {
+    const { stream, tracks } = makeFakeStream(["video", "audio"]);
+    const { unmount } = render(
+      <ProctorCamHarness stream={stream} submitted={false} status="in_progress" />,
+    );
+    unmount();
+    expectAllEnded(tracks);
+  });
 });
