@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
       students: (students || []).map((s: any) => {
         const sc = scoreById[s.id] || {};
         const pr = prefById[s.id] || {};
+        const showContact = linkAllowContact && pr.show_contact === true;
+        const showResume = linkAllowResume && pr.show_resume !== false;
         return {
           id: s.id,
           name: s.full_name || s.email.split("@")[0],
@@ -104,8 +106,10 @@ Deno.serve(async (req) => {
           branch: s.branch,
           batch_year: s.batch_year,
           headline: pr.headline || null,
-          show_contact: pr.show_contact === true,
-          email: pr.show_contact === true ? s.email : null,
+          show_contact: showContact,
+          email: showContact ? s.email : null,
+          show_resume: showResume,
+          resume_url: showResume ? (s.resume_url || null) : null,
           score: Number(sc.score || 0),
           rank_in_org: sc.rank_in_org,
           rank_in_branch: sc.rank_in_branch,
