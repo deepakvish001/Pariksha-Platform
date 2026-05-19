@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Mail, GraduationCap, Calendar, Activity, ExternalLink, Search, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Mail, GraduationCap, Calendar, Activity, ExternalLink, Search, ArrowUpDown, ClipboardList, Plus, Send } from "lucide-react";
 
 function fmt(d?: string | null) {
   if (!d) return "—";
