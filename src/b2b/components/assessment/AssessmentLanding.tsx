@@ -161,25 +161,30 @@ export function AssessmentLanding({
       } as React.CSSProperties)
     : undefined;
 
+  const isFull = chrome === "full";
   return (
     <div
-      className="relative min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] pb-32"
+      className={cn(
+        "relative pb-32",
+        isFull && "min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]",
+      )}
       style={brandStyle}
     >
-      {/* Ambient orbs — match global B2B aesthetic */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -top-32 -left-20 h-[420px] w-[420px] rounded-full blur-3xl opacity-30"
-          style={{
-            background: brand
-              ? `radial-gradient(closest-side, ${brand}, transparent 70%)`
-              : "radial-gradient(closest-side, hsl(var(--primary) / 0.35), transparent 70%)",
-          }}
-        />
-        <div className="absolute top-1/3 -right-32 h-[480px] w-[480px] rounded-full bg-amber-500/10 blur-3xl" />
-      </div>
+      {isFull && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className="absolute -top-32 -left-20 h-[420px] w-[420px] rounded-full blur-3xl opacity-30"
+            style={{
+              background: brand
+                ? `radial-gradient(closest-side, ${brand}, transparent 70%)`
+                : "radial-gradient(closest-side, hsl(var(--primary) / 0.35), transparent 70%)",
+            }}
+          />
+          <div className="absolute top-1/3 -right-32 h-[480px] w-[480px] rounded-full bg-amber-500/10 blur-3xl" />
+        </div>
+      )}
 
-      <div className="relative max-w-5xl mx-auto px-4 md:px-6 pt-6 md:pt-10 space-y-6">
+      <div className={cn("relative mx-auto px-0 md:px-0 space-y-6", isFull && "max-w-5xl px-4 md:px-6 pt-6 md:pt-10")}>
         {topSlot}
 
         {/* Hero */}
