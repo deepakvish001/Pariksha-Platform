@@ -672,27 +672,41 @@ export function RankingsTab({ orgId }: { orgId: string }) {
             !!debouncedSearch ||
             batch !== "all" || branch !== "all" || section !== "all" ||
             driveId !== "all" || status !== "all" || Number(minScore) > 0;
-          const hasAnyData = (data?.length || 0) > 0;
+          // If filters are active, treat this as "no matches". Otherwise the
+          // org genuinely has no ranked students yet ("no data").
+          const mode: "no-matches" | "no-data" = hasFilters ? "no-matches" : "no-data";
           return (
             <GlassCard className="p-10 text-center">
               <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-[hsl(var(--muted))]/40 grid place-items-center">
-                {hasAnyData
+                {mode === "no-matches"
                   ? <Search className="h-5 w-5 text-muted-foreground" />
                   : <Trophy className="h-5 w-5 text-amber-400/80" />}
               </div>
               <div className="text-sm font-medium">
-                {hasAnyData ? "No students match these filters" : "Leaderboard is empty"}
+                {mode === "no-matches" ? "No students match these filters" : "Leaderboard is empty"}
               </div>
               <div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-                {hasAnyData
+                {mode === "no-matches"
                   ? "Try adjusting or clearing the filters above to see more candidates."
                   : "Run Recompute to score your students and build the placement leaderboard."}
               </div>
-              <div className="mt-4 inline-flex gap-2">
-                {hasFilters && hasAnyData && (
-                  <Button size="sm" variant="outline" onClick={clearFilters}>Clear filters</Button>
-                )}
-                {!hasAnyData && (
+              <div className="mt-4 inline-flex flex-wrap justify-center gap-2">
+                {mode === "no-matches" ? (
+                  <>
+                    <Button size="sm" variant="outline" onClick={clearFilters}>
+                      Clear filters
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => recompute.mutate()}
+                      disabled={recompute.isPending}
+                    >
+                      <Sparkles className={`h-4 w-4 mr-1.5 ${recompute.isPending ? "animate-spin" : ""}`} />
+                      Recompute scores
+                    </Button>
+                  </>
+                ) : (
                   <Button size="sm" onClick={() => recompute.mutate()} disabled={recompute.isPending}>
                     <Sparkles className={`h-4 w-4 mr-1.5 ${recompute.isPending ? "animate-spin" : ""}`} />
                     Recompute scores
