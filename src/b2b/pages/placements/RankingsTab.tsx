@@ -274,6 +274,24 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     : 0;
   const topScorer = visible[0];
 
+  // Incremental rendering for large orgs
+  const PAGE_SIZE = 50;
+  const [pageCount, setPageCount] = useState(1);
+  useEffect(() => { setPageCount(1); }, [debouncedSearch, batch, branch, section, driveId, status, minScore, sortKey, view]);
+  const rendered = useMemo(() => visible.slice(0, pageCount * PAGE_SIZE), [visible, pageCount]);
+  const hasMore = rendered.length < visible.length;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setPageCount((p) => p + 1);
+    }, { rootMargin: "400px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, rendered.length]);
+
   const toggleAll = () => {
     if (!visible.length) return;
     if (selected.size === visible.length) setSelected(new Set());
