@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useMyOrganizations } from "../../hooks/useOrg";
 import { useCreateAssessment } from "../../hooks/useAssessments";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AssessmentNew() {
@@ -19,10 +20,27 @@ export default function AssessmentNew() {
   const [proctoring, setProctoring] = useState(false);
   const [showResults, setShowResults] = useState(true);
   const create = useCreateAssessment();
+  const seededRef = useRef(false);
+
+  const org = orgs?.[0];
+
+  // Pre-fill from org defaults once, the first time the org loads.
+  useEffect(() => {
+    if (!org || seededRef.current) return;
+    seededRef.current = true;
+    if (typeof org.default_duration_min === "number" && org.default_duration_min > 0) {
+      setDuration(org.default_duration_min);
+    }
+    if (org.default_proctoring) {
+      setProctoring(org.default_proctoring !== "off");
+    }
+    if (typeof org.auto_release_results === "boolean") {
+      setShowResults(org.auto_release_results);
+    }
+  }, [org]);
 
   if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
-  const org = orgs[0];
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
