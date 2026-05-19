@@ -45,6 +45,23 @@ export function InviteTeacherDialog({ open, onOpenChange, orgId }: Props) {
     }
   }, [open]);
 
+  const isDirty = () => {
+    if (createdLink) return false;
+    if (email.trim().length > 0) return true;
+    if (preset !== "admin") return true;
+    const defaults = ROLE_CAPABILITY_PRESETS.admin;
+    if (caps.length !== defaults.length) return true;
+    return caps.some((c) => !defaults.includes(c));
+  };
+
+  const tryCancel = () => {
+    if (isDirty()) {
+      const ok = window.confirm("Discard this invite? Your unsent changes will be lost.");
+      if (!ok) return;
+    }
+    onOpenChange(false);
+  };
+
   const submit = () => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed || !trimmed.includes("@")) {
@@ -139,7 +156,7 @@ export function InviteTeacherDialog({ open, onOpenChange, orgId }: Props) {
         <DialogFooter>
           {!createdLink ? (
             <>
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={tryCancel}>Cancel</Button>
               <Button onClick={submit} disabled={create.isPending}>
                 <Send className="h-4 w-4 mr-2" />
                 {create.isPending ? "Sending…" : "Send invite"}
