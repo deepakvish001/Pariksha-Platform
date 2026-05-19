@@ -593,15 +593,13 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                         Profile
                       </Link>
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => setShareTarget({ kind: "profile", studentId: r.student_id, studentName: r.full_name || r.email })}
-                    >
-                      <Share2 className="h-3.5 w-3.5 mr-1" />
-                      Share
-                    </Button>
+                    <QuickSharePopover
+                      orgId={orgId}
+                      studentId={r.student_id}
+                      studentName={r.full_name || r.email}
+                      onOpenFullDialog={() => setShareTarget({ kind: "profile", studentId: r.student_id, studentName: r.full_name || r.email })}
+                    />
+
                   </div>
                 </div>
               </GlassCard>
