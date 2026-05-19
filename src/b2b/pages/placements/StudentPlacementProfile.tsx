@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -220,10 +222,25 @@ export default function StudentPlacementProfile() {
   }, [student, score, offers, profile, org, orgTotal, percentile]);
 
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
+  const [includeRank, setIncludeRank] = useState(true);
+  const [includeOffers, setIncludeOffers] = useState(true);
   const isOn = (id: string) => enabled[id] !== false;
 
+  const RANK_IDS = new Set(["rank", "branch_rank"]);
+  const OFFER_IDS = new Set(["offers", "top_ctc", "dream"]);
+
+  const visibleBullets = useMemo(
+    () =>
+      bullets.filter((b) => {
+        if (!includeRank && RANK_IDS.has(b.id)) return false;
+        if (!includeOffers && OFFER_IDS.has(b.id)) return false;
+        return true;
+      }),
+    [bullets, includeRank, includeOffers],
+  );
+
   const copyBullets = () => {
-    const text = bullets.filter((b) => isOn(b.id)).map((b) => `• ${b.text}`).join("\n");
+    const text = visibleBullets.filter((b) => isOn(b.id)).map((b) => `• ${b.text}`).join("\n");
     if (!text) {
       toast.error("Select at least one bullet.");
       return;
@@ -476,21 +493,45 @@ export default function StudentPlacementProfile() {
 
         {/* HR-ready highlights */}
         <GlassCard className="p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-primary" /> HR-ready highlights
             </h3>
-            <Button size="sm" onClick={copyBullets} disabled={!bullets.length}>
+            <Button size="sm" onClick={copyBullets} disabled={!visibleBullets.length}>
               <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy bullets
             </Button>
           </div>
-          {!bullets.length ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3 pb-3 border-b border-[hsl(var(--border))]/60">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="toggle-rank"
+                checked={includeRank}
+                onCheckedChange={setIncludeRank}
+              />
+              <Label htmlFor="toggle-rank" className="text-xs cursor-pointer">
+                Include rank & percentile
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="toggle-offers"
+                checked={includeOffers}
+                onCheckedChange={setIncludeOffers}
+              />
+              <Label htmlFor="toggle-offers" className="text-xs cursor-pointer">
+                Include offer details
+              </Label>
+            </div>
+          </div>
+          {!visibleBullets.length ? (
             <div className="text-sm text-muted-foreground py-4 text-center">
-              Not enough data yet — recompute scores or record activity to generate highlights.
+              {bullets.length
+                ? "All matching bullets are hidden — enable a toggle above."
+                : "Not enough data yet — recompute scores or record activity to generate highlights."}
             </div>
           ) : (
             <ul className="space-y-1.5">
-              {bullets.map((b) => (
+              {visibleBullets.map((b) => (
                 <li key={b.id} className="flex items-start gap-2 text-sm">
                   <Checkbox
                     checked={isOn(b.id)}
