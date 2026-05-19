@@ -26,23 +26,30 @@ interface FakeTrack {
   stop: ReturnType<typeof vi.fn>;
 }
 
-function makeFakeStream(): { stream: MediaStream; tracks: FakeTrack[] } {
-  const tracks: FakeTrack[] = [
-    {
-      kind: "video",
-      readyState: "live",
-      stop: vi.fn(function (this: FakeTrack) { this.readyState = "ended"; }),
-    },
-  ];
+function makeFakeStream(
+  kinds: Array<"video" | "audio"> = ["video"],
+): { stream: MediaStream; tracks: FakeTrack[] } {
+  const tracks: FakeTrack[] = kinds.map((kind) => ({
+    kind,
+    readyState: "live" as const,
+    stop: vi.fn(function (this: FakeTrack) { this.readyState = "ended"; }),
+  }));
   // Minimal MediaStream surface used by the production code (getTracks /
-  // getVideoTracks). Cast through unknown to keep TS happy without pulling in
-  // a real WebRTC polyfill.
+  // getVideoTracks / getAudioTracks). Cast through unknown to keep TS happy
+  // without pulling in a real WebRTC polyfill.
   const stream = {
     getTracks: () => tracks,
     getVideoTracks: () => tracks.filter((t) => t.kind === "video"),
     getAudioTracks: () => tracks.filter((t) => t.kind === "audio"),
   } as unknown as MediaStream;
   return { stream, tracks };
+}
+
+function expectAllEnded(tracks: FakeTrack[]) {
+  for (const t of tracks) {
+    expect(t.stop).toHaveBeenCalledTimes(1);
+    expect(t.readyState).toBe("ended");
+  }
 }
 
 // ---- Mocks for CandidateDetailsStep --------------------------------------
@@ -120,6 +127,34 @@ describe("Selfie camera cleanup", () => {
 
     expect(tracks[0].stop).toHaveBeenCalledTimes(1);
     unmount();
+  });
+
+  it("ends BOTH audio and video tracks on selfie-step unmount", async () => {
+    const { stream, tracks } = makeFakeStream(["video", "audio"]);
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    Object.defineProperty(globalThis.navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia, enumerateDevices: vi.fn().mockResolvedValue([]) },
+    });
+
+    const user = userEvent.setup();
+    const { unmount, getByRole } = render(
+      <CandidateDetailsStep
+        attemptId="11111111-1111-1111-1111-111111111111"
+        userId="u"
+        done={false}
+        onComplete={() => {}}
+      />,
+    );
+
+    await user.click(getByRole("button", { name: /start camera/i }));
+    tracks.forEach((t) => expect(t.stop).not.toHaveBeenCalled());
+
+    unmount();
+
+    expectAllEnded(tracks);
+    // sanity: make sure the helper actually saw both kinds.
+    expect(tracks.map((t) => t.kind).sort()).toEqual(["audio", "video"]);
   });
 });
 
@@ -221,5 +256,32 @@ describe("Proctoring camera cleanup", () => {
 
     rerender(<ProctorCamHarness stream={stream} submitted={true} status="completed" />);
     expect(tracks[0].stop).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["submit (local flag)", { submitted: true, status: "in_progress" }],
+    ["server completed", { submitted: false, status: "completed" }],
+    ["server auto_submitted", { submitted: false, status: "auto_submitted" }],
+    ["server timed_out", { submitted: false, status: "timed_out" }],
+  ])("ends BOTH audio and video proctoring tracks after %s", (_label, next) => {
+    const { stream, tracks } = makeFakeStream(["video", "audio"]);
+    const { rerender } = render(
+      <ProctorCamHarness stream={stream} submitted={false} status="in_progress" />,
+    );
+    tracks.forEach((t) => expect(t.stop).not.toHaveBeenCalled());
+
+    rerender(<ProctorCamHarness stream={stream} {...next} />);
+
+    expectAllEnded(tracks);
+    expect(tracks.map((t) => t.kind).sort()).toEqual(["audio", "video"]);
+  });
+
+  it("ends BOTH audio and video proctoring tracks on unmount", () => {
+    const { stream, tracks } = makeFakeStream(["video", "audio"]);
+    const { unmount } = render(
+      <ProctorCamHarness stream={stream} submitted={false} status="in_progress" />,
+    );
+    unmount();
+    expectAllEnded(tracks);
   });
 });
