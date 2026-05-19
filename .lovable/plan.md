@@ -1,128 +1,120 @@
-# Assessment Types for Colleges — Plan
 
-Today every assessment is one generic "exam". We will introduce a typed model so a TPO/faculty can pick the right shape and the platform configures sections, defaults, participation and proctoring accordingly.
+# College Student Enrollment + Dashboards
 
-## 1. Four assessment types (v1)
+Today the B2B layer has `organizations`, `org_members` (owner/admin/proctor/recruiter/viewer roles for *staff*), and `b2b_org_invites` for inviting staff. Students only exist transiently via `assessment_invites` per assessment. This plan introduces **persistent student enrollment** at the college level, a **student-facing college home**, and a **detailed admin view** of each enrolled student.
 
-Each type is a preset of: default sections, default duration, authoring sources, participation model, proctoring profile, results visibility, and analytics.
+## 1. Data model (new)
 
-| Type | Default shape | Default duration | Authoring | Participation | Proctoring | Result | Analytics focus |
-|---|---|---|---|---|---|---|---|
-| **Placement Mock** (company-pattern + coding) | Aptitude · CS Core MCQ · Coding (1–4) · optional Verbal | 90–150 min | Bank + Custom + AI from JD/company name | Invite link **or** roster | Standard / Strict | Released after deadline | Company-readiness score, sectional cutoffs, percentile |
-| **Academic Test** (unit / mid-sem / end-sem) | One section per chapter, faculty-defined | 30–120 min | Manual + Bank (subject-tagged) + AI from topic | Roster (class list) | Light / Standard | Instant or after deadline | Topic mastery per student, class average |
-| **Skill Benchmark / Diagnostic** | Adaptive across DSA, Aptitude, CS Core | 45–60 min | Bank only (curated diagnostic pool) | Open within college | Light | Instant with strengths/weaknesses | Batch heatmap, weak-topic ranking, dept-wise gaps |
-| **Coding Contest / Hackathon** | Coding-only, 2–6 problems, partial credit | 60 min – 48 hr | Bank + Custom + AI | Open within college (or invite for inter-college) | Light (contest) / Standard (graded) | Live leaderboard | Live rank, problem-wise solve rate, plagiarism flags |
+New tables in `public`:
 
-Each type is just a **template** — TPO can override every default after creating it.
+- **`org_students`** — one row per enrolled student in a college org.
+  - `org_id`, `email` (lowercased, unique with org_id), `user_id` (nullable until they sign up), `full_name`, `roll_number`, `branch`, `batch_year`, `section`, `status` (`invited` | `active` | `suspended` | `alumni`), `enrolled_by`, `enrolled_at`, `activated_at`, `metadata jsonb`.
+- **`org_student_invites`** — pending email invites with `token`, `expires_at`, `accepted_at`. Separate from staff `b2b_org_invites` so flows don't collide.
+- **`org_student_groups`** + **`org_student_group_members`** — optional cohorts (e.g., "CSE 2026", "Section B") so admins can target assessments to a group.
+- Extend `assessment_invites` linkage: add nullable `org_student_id` so attempts tie back to the enrollment record (no breaking change).
 
-## 2. Authoring: all four sources
+RLS:
+- College owners/admins/recruiters can CRUD `org_students` for their org.
+- The student themself can `SELECT` their own row (`auth.uid() = user_id`).
+- Use existing `is_org_member` + a new `is_org_student(org_id)` security-definer helper to avoid recursion.
 
-Available in every assessment type, surfaced contextually:
+Triggers:
+- On new auth user, match `email` against `org_students` and backfill `user_id` + flip status to `active`.
+- On `assessment_invites` insert where email matches an `org_students` row, auto-set `org_student_id`.
 
-- **Manual** — existing question editor (MCQ, multi-select, short answer, coding, subjective).
-- **Bank** — pick from Parikshaa's curated question bank with filters: topic, difficulty, company pattern, tags. Multi-select → add to section.
-- **Hybrid** — bank items + custom additions live in the same section ordering.
-- **AI-generated** — faculty/TPO enters a prompt (topic, JD, company, skill), AI drafts N questions via existing Gemini edge function, faculty reviews/edits/approves before adding. Reuses the existing AI content-gen infrastructure.
+## 2. Bulk enrollment UX (admin)
 
-A new "Add questions" sheet inside section editor exposes 4 tabs: **Write · Pick from Bank · Generate with AI · Import (CSV)**.
+New route: `/colleges/:slug/students` (and legacy `/b2b/students`).
 
-## 3. Participation: per-assessment mode
+- **Students table**: search, filter by status/branch/batch/group, sort. Columns: name, email, roll, branch, batch, status, last active, # assessments taken, avg score, integrity flags.
+- **Add students**:
+  - Single add (form).
+  - **Bulk CSV upload** with column mapping (email required; name/roll/branch/batch/section/group optional). Preview + dedupe (case-insensitive email). Validation via zod on client *and* server (edge function).
+  - **Paste list** (newline/comma-separated emails).
+- On submit → edge function `enroll-students` inserts into `org_students` (status `invited`), creates `org_student_invites` tokens, enqueues branded emails through the existing Lovable transactional email system (subject: "You've been enrolled at <College>").
+- Row actions: resend invite, edit details, change group, suspend, remove, export CSV.
 
-A new `participation_mode` field on `assessments`:
+## 3. Student onboarding & login
 
-- **`invite`** — current flow: tokenized links, email invites, 6-digit code.
-- **`roster`** — TPO uploads CSV (or selects from saved class rosters); only those emails can claim. Invite auto-created per row.
-- **`open_org`** — any verified member of the college org sees it on their dashboard "Open assessments" tab and can self-enroll. Enrollment creates an invite row on the fly.
+- Email contains a magic link `…/join/student?token=…` → page resolves token, ensures the user is signed in (login or signup with the invite email pre-filled), then calls RPC `accept_student_enrollment(token)` which links `user_id` and marks `active`.
+- If the student signs up via the normal flow with an email that already has an `org_students` row, the trigger auto-links — no token needed.
+- Post-login redirect (`getPostLoginPath`) gets a new branch: if the user has any `org_students` rows with status `active`, default to `/my/college` (their college home).
 
-Switching mode after publish is allowed (with a warning); existing invites are preserved.
+## 4. Student-facing pages (new)
 
-## 4. Proctoring: per-assessment level
+Route group under `/my/college` (and `/my/college/:slug` if a student belongs to more than one):
 
-A new `proctoring_level` field replaces the boolean `proctoring_enabled`:
+- **College Home**: branded header (org logo + brand color), college name, their roll/branch/batch/section, contact info, announcements (optional later).
+- **My Dashboard** (`/my/college/dashboard`):
+  - KPI strip: assessments assigned, completed, upcoming, avg score, current rank in batch (opt-in), integrity score.
+  - **Upcoming assessments** list (from `assessment_invites` joined to assessments where window is open or future) with "Start" CTA → existing player.
+  - **Past attempts** table: assessment, date, score, integrity, link to result page.
+  - **Skill breakdown** chart (reuse existing analytics) — strengths/weaknesses across attempted assessments.
+  - **Activity timeline**: invites received, attempts started/submitted, results released.
+- **My Profile (college)**: editable subset (name, phone). Admin-managed fields (roll/branch/batch) read-only.
 
-- **`off`** — no checks.
-- **`light`** — tab-switch + fullscreen + copy-paste detection only.
-- **`standard`** — webcam snapshots, screen capture, AI flags (existing pipeline).
-- **`strict`** — adds side-camera (existing Side Eye), ID photo at start, live monitor mandatory.
+Reuse existing assessment player & result pages — no changes there.
 
-The existing `proctoring_config` JSONB stays for fine-grained overrides; level is the easy preset.
+## 5. College admin "Students" detail dashboard
 
-## 5. UX flow
+New route: `/colleges/:slug/students/:studentId`.
 
-### New assessment wizard (replaces single-form `New.tsx`)
-```
-Step 1 — Pick a type           [Placement | Academic | Benchmark | Contest]
-Step 2 — Basics                 title, description, schedule, brand color
-Step 3 — Sections & questions   pre-filled by type; add via 4-tab sheet
-Step 4 — Participation          mode + invites/roster/open
-Step 5 — Proctoring & results   level preset + advanced toggles
-Step 6 — Review & publish       sends to existing Landing page
-```
-Each step is skippable to Landing as a draft.
+- **Header**: avatar, name, email, status pill, roll/branch/batch, groups, enrolled date, last login.
+- **KPI tiles**: assessments invited / attempted / completed, avg score, avg integrity, time spent total.
+- **Performance chart**: score over time (line) + per-skill radar.
+- **Assessments table**: every assignment with status (invited/in-progress/submitted/expired), score, integrity flags, proctoring summary, link to `AttemptDetail`.
+- **Integrity panel**: aggregated violation counts, links to flagged attempts (reuses `LiveProctorWall`/`ProctoringTriagePanel` styling).
+- **Admin actions**: assign to assessment, add to group, resend pending invites, suspend, remove, export PDF report.
 
-### Landing page (already built)
-Show a **type badge** in the hero (color-coded), plus type-specific hints (e.g. Placement → "company pattern", Contest → "live leaderboard").
+Also extend the existing **college dashboard** (`/b2b/dashboard` / `/colleges/:slug`) with:
+- "Enrolled students" KPI tile + "Active this week" sparkline.
+- "Students at risk" widget (low scores or integrity flags in last N days).
+- Quick action: "Enroll students".
 
-### Colleges dashboard
-On `/colleges/:slug/assessments`, add a top filter chip row: **All · Placement Mocks · Academic · Benchmarks · Contests · Drafts**. Each card shows the type badge and a type-appropriate KPI (e.g. Academic → class average; Contest → top rank; Benchmark → batch coverage %).
+## 6. Sidebar / nav
 
-### Student side
-`MyAssessments` groups by type so students see "Upcoming placement mocks", "Class tests", "Open contests" separately.
+Add to `DashboardSidebar` (college workspace):
+- **Students** → list page
+- **Groups** (under Students) → optional
+Student sidebar adds:
+- **My College** → college home
+- **My Dashboard** (already present logic, just routes here when they're a student)
 
-## 6. Out of scope (defer)
+## 7. Permissions
 
-- Adaptive engine for Benchmark type (v1 uses fixed diagnostic pool; adaptive comes later).
-- Hackathon team formation, submission uploads, judge panel (v1 contest is individual coding only).
-- Soft-skill / video / psychometric types (not in user's selected priorities).
-- Inter-college multi-org leaderboards.
-- Roster CSV → SSO auto-provisioning (v1: invite per email row).
+Extend `Capability` enum and `usePermissions` with:
+- `students.view`, `students.manage`, `students.invite`, `students.export`.
+Default to owner+admin; recruiter gets view+invite; viewer gets view only.
+
+## 8. Edge functions
+
+- `enroll-students` — validates payload (zod), upserts rows, generates tokens, enqueues invite emails (uses existing transactional email infra; no new secrets).
+- `accept-student-enrollment` — validates token, links user, marks active, returns redirect target.
+- `student-dashboard-stats` — aggregated counts for a student (used both by student self-view and admin detail page; RLS via security-definer).
+
+## 9. Tests
+
+- DB: RLS tests for `org_students` (student sees only self; admin sees org's students; cross-org isolation).
+- Hooks: `useEnrollStudents`, `useStudentDashboard` (vitest + msw-like supabase mocks).
+- E2E (Playwright):
+  - Admin uploads CSV → invite email queued → student accepts → appears as `active`.
+  - Student logs in → lands on `/my/college/dashboard` → sees upcoming assessment.
+  - Admin opens student detail → KPIs reflect a completed attempt.
+
+## 10. Rollout
+
+1. Migration + RLS + helper functions.
+2. `enroll-students` + `accept-student-enrollment` edge functions + email template.
+3. Admin Students list + bulk CSV.
+4. Student college home + dashboard + post-login routing.
+5. Admin student detail page + dashboard widgets.
+6. Tests + docs.
 
 ---
 
-## Technical section
+### Open questions before I build
 
-### Schema migration
-```sql
--- New enums
-CREATE TYPE assessment_type AS ENUM ('placement_mock','academic','benchmark','contest');
-CREATE TYPE participation_mode AS ENUM ('invite','roster','open_org');
-CREATE TYPE proctoring_level AS ENUM ('off','light','standard','strict');
-
-ALTER TABLE assessments
-  ADD COLUMN type assessment_type NOT NULL DEFAULT 'placement_mock',
-  ADD COLUMN participation_mode participation_mode NOT NULL DEFAULT 'invite',
-  ADD COLUMN proctoring_level proctoring_level NOT NULL DEFAULT 'off';
-
--- Backfill: existing rows → placement_mock + invite + (proctoring_enabled ? standard : off)
-UPDATE assessments
-   SET proctoring_level = CASE WHEN proctoring_enabled THEN 'standard' ELSE 'off' END;
-
--- Keep proctoring_enabled as a generated/derived column for back-compat (read-only)
--- (or leave it and dual-write in app for one release, then drop)
-CREATE INDEX idx_assessments_org_type ON assessments(org_id, type);
-```
-
-Plus a small helper RPC `claim_open_org_assessment(_assessment_id uuid)` for the `open_org` mode — creates an invite row for the caller after verifying org membership, then returns the token so the existing claim flow runs unchanged.
-
-### Code touchpoints
-- **`src/b2b/pages/assessments/New.tsx`** → split into a 6-step wizard (`NewWizard.tsx` + step components), first step is type picker.
-- **`src/b2b/lib/assessmentTemplates.ts`** (new) → per-type defaults (sections, duration, proctoring level, participation).
-- **`src/b2b/components/assessment/AssessmentLanding.tsx`** → render type badge + type-specific subtitle.
-- **`src/b2b/pages/assessments/List.tsx`** → type filter chips, type badge on cards, type-aware KPI.
-- **`src/b2b/pages/assessments/Detail.tsx` (editor)** → new "Add questions" sheet with Write / Bank / AI / Import tabs; reuses existing question editor for "Write".
-- **`src/b2b/components/assessment/ParticipationPanel.tsx`** (new) → invite vs roster vs open_org UI; roster tab adds CSV upload.
-- **`src/b2b/components/assessment/ProctoringPanel.tsx`** → swap boolean toggle for level radio + advanced collapse.
-- **`src/assessments/pages/MyAssessments.tsx`** → group by type; add "Open assessments in your college" section feeding from `open_org` type.
-- **`src/assessments/pages/InviteLanding.tsx`** → show type badge, type-specific copy.
-- **Edge function** `ai-generate-questions` (new, optional) → wraps existing Gemini gateway to draft N questions from a prompt; returns JSON the editor can preview/edit.
-- **`paths.ts`** → no new routes; wizard lives at `/b2b/assessments/new`, type picked as first step.
-
-### Rollout
-1. Migration + backfill (non-breaking; defaults preserve current behavior).
-2. Type picker + templates + wizard.
-3. Participation modes (roster CSV + open_org RPC).
-4. Proctoring level UI.
-5. AI question generation tab.
-6. Dashboard filters + student-side grouping.
-
-Steps 1–2 land first and unlock everything else.
+1. **Scope of the student dashboard now**: just college-assigned assessments, or also surface their general learn/practice activity already in the app?
+2. **Email-domain restriction**: should enrollment auto-restrict the student's signup to the college's `allowed_email_domains`? (The org table already has that column.)
+3. **Groups/cohorts**: include now, or ship enrollment + dashboards first and add groups in v2?
+4. **Multiple colleges per student**: realistic, or should we hard-cap to one active enrollment?
