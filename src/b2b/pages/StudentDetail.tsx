@@ -191,24 +191,13 @@ export default function B2BStudentDetail() {
                 </Select>
               </div>
             </div>
-              <div className="ml-auto relative w-full sm:w-64">
-                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" aria-hidden="true" />
-                <Input
-                  value={jumpQuery}
-                  onChange={(e) => setJumpQuery(e.target.value)}
-                  placeholder="Filter by title or status…"
-                  aria-label="Filter attempts"
-                  className="h-8 pl-7 text-xs"
-                />
-              </div>
-            </div>
-            {filtered.length === 0 ? (
+            {sorted.length === 0 ? (
               <div className="text-xs text-[hsl(var(--muted-foreground))] px-1 py-2">
                 No attempts match “{jumpQuery}”.
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {filtered.map((a) => {
+                {sorted.map((a) => {
                   const title = agg?.assessments.get(a.assessment_id)?.title ?? "Attempt";
                   const when = a.submitted_at ?? a.started_at;
                   return (
