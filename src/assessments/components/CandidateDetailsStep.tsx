@@ -255,10 +255,18 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   };
 
   const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
     streamRef.current = null;
     setCameraOn(false);
   };
+
+  // Safety net: always release the selfie camera when this step unmounts
+  // (e.g. user navigates away mid-capture). The selfie flow already calls
+  // stopCamera() on success.
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+    streamRef.current = null;
+  }, []);
 
   const captureSelfie = async () => {
     if (!videoRef.current) return;
