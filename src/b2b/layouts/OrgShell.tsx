@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, Menu, Home, ChevronRight } from "lucide-react";
+import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon, Menu, Home, ChevronRight, GraduationCap } from "lucide-react";
 import { useOrgBasePath, useCurrentOrg } from "../context/OrgContext";
 import { useCan, type Capability } from "../hooks/usePermissions";
 import { B2BBackdrop } from "../components/B2BBackdrop";
@@ -133,6 +133,7 @@ export function OrgShell({
     ? [
         { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false },
         { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false },
+        { to: "/b2b/students", label: "Students", icon: GraduationCap, exact: false },
         { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false },
         { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false, requires: "members.invite" },
         { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true, requires: "org.editSettings" },
@@ -140,6 +141,7 @@ export function OrgShell({
     : [
         { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true },
         { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false },
+        { to: `${base}/students`, label: "Students", icon: GraduationCap, exact: false },
         { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false },
         { to: `${base}/team`, label: "Team", icon: Users, exact: false, requires: "members.invite" },
         { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true, requires: "org.editSettings" },
