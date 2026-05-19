@@ -83,6 +83,9 @@ export function StudentMetricsDrawer({
   const { data: offers, isLoading: offersLoading } = useQuery({
     queryKey: ["drawer-offers", studentId],
     enabled: !!studentId && open,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("placement_offers")
@@ -97,6 +100,9 @@ export function StudentMetricsDrawer({
   const { data: applications, isLoading: appsLoading } = useQuery({
     queryKey: ["drawer-apps", studentId],
     enabled: !!studentId && open,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("drive_applications")
@@ -107,6 +113,20 @@ export function StudentMetricsDrawer({
       return (data || []) as any[];
     },
   });
+
+  const ListSkeleton = () => (
+    <ul className="space-y-1.5" aria-hidden>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <li key={i} className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-1">
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-2.5 w-1/3" />
+          </div>
+          <Skeleton className="h-4 w-10 shrink-0" />
+        </li>
+      ))}
+    </ul>
+  );
 
   const r = ranking;
   const radarData = r
