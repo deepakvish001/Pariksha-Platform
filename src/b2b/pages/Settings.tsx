@@ -186,14 +186,33 @@ export default function B2BSettings() {
     security.requireMfa !== orgSecurity.requireMfa ||
     security.sessionMinutes !== orgSecurity.sessionMinutes;
 
+  // Notifications validation
+  const orgNotifications = orgToNotifications(org);
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const allNotifyEmails = [...notifications.digestEmails, ...notifications.proctoringEmails];
+  const emailError = allNotifyEmails.some((e) => !EMAIL_RE.test(e))
+    ? "One of the recipient emails is invalid. Remove it and re-add."
+    : null;
+  const slackTrimmed = notifications.slackWebhook.trim();
+  const slackError =
+    slackTrimmed && !/^https:\/\/[^\s]+$/i.test(slackTrimmed)
+      ? "Webhook must be a full https:// URL."
+      : null;
+  const notificationsDirty =
+    !sameStringArray(notifications.digestEmails, orgNotifications.digestEmails) ||
+    !sameStringArray(notifications.proctoringEmails, orgNotifications.proctoringEmails) ||
+    slackTrimmed !== (orgNotifications.slackWebhook || "") ||
+    notifications.dailySummary !== orgNotifications.dailySummary;
+
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
     (normalizedBrand || "") !== (org.brand_color ?? "") ||
     defaultsDirty ||
-    securityDirty;
+    securityDirty ||
+    notificationsDirty;
 
-  const hasErrors = !!durationError || !!passMarkError || !!domainError;
+  const hasErrors = !!durationError || !!passMarkError || !!domainError || !!emailError || !!slackError;
   const canSave = dirty && !hasErrors && brandValidation.ok === true;
 
   const onSave = async () => {
