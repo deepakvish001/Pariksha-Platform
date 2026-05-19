@@ -20,7 +20,32 @@ import { GeneralSection } from "./settings/GeneralSection";
 import { BrandingSection } from "./settings/BrandingSection";
 import { ComingSoonSection } from "./settings/ComingSoonSection";
 import { DangerSection } from "./settings/DangerSection";
+import { DefaultsSection, type DefaultsState } from "./settings/DefaultsSection";
 import { validateHexColor } from "./settings/hexColor";
+
+const DEFAULT_DEFAULTS: DefaultsState = {
+  duration: "60",
+  proctoring: "basic",
+  passMark: "40",
+  allowRetake: false,
+  autoRelease: true,
+};
+
+function orgToDefaults(org: {
+  default_duration_min: number | null;
+  default_proctoring: string | null;
+  default_pass_mark: number | null;
+  allow_retake_default: boolean | null;
+  auto_release_results: boolean | null;
+}): DefaultsState {
+  return {
+    duration: org.default_duration_min != null ? String(org.default_duration_min) : DEFAULT_DEFAULTS.duration,
+    proctoring: (org.default_proctoring as DefaultsState["proctoring"]) ?? DEFAULT_DEFAULTS.proctoring,
+    passMark: org.default_pass_mark != null ? String(org.default_pass_mark) : DEFAULT_DEFAULTS.passMark,
+    allowRetake: org.allow_retake_default ?? DEFAULT_DEFAULTS.allowRetake,
+    autoRelease: org.auto_release_results ?? DEFAULT_DEFAULTS.autoRelease,
+  };
+}
 
 export default function B2BSettings() {
   const { user } = useAuth();
@@ -44,6 +69,7 @@ export default function B2BSettings() {
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [brandColor, setBrandColor] = useState("");
+  const [defaults, setDefaults] = useState<DefaultsState>(DEFAULT_DEFAULTS);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewSubject, setPreviewSubject] = useState<string>("");
@@ -56,6 +82,7 @@ export default function B2BSettings() {
       setName(org.name);
       setLogoUrl(org.logo_url ?? "");
       setBrandColor(org.brand_color ?? "");
+      setDefaults(orgToDefaults(org));
     }
   }, [org?.id]);
 
@@ -73,15 +100,43 @@ export default function B2BSettings() {
   const canEdit = isOwner || myRole === "admin";
   const normalizedBrand = brandColor.trim();
   const brandValidation = validateHexColor(normalizedBrand);
+
+  // Defaults validation
+  const orgDefaults = orgToDefaults(org);
+  const durationNum = defaults.duration.trim() === "" ? NaN : Number(defaults.duration);
+  const passMarkNum = defaults.passMark.trim() === "" ? NaN : Number(defaults.passMark);
+  const durationError =
+    !Number.isFinite(durationNum) || !Number.isInteger(durationNum) || durationNum < 5 || durationNum > 600
+      ? "Enter a whole number between 5 and 600."
+      : null;
+  const passMarkError =
+    !Number.isFinite(passMarkNum) || !Number.isInteger(passMarkNum) || passMarkNum < 0 || passMarkNum > 100
+      ? "Enter a whole number between 0 and 100."
+      : null;
+  const defaultsDirty =
+    defaults.duration !== orgDefaults.duration ||
+    defaults.proctoring !== orgDefaults.proctoring ||
+    defaults.passMark !== orgDefaults.passMark ||
+    defaults.allowRetake !== orgDefaults.allowRetake ||
+    defaults.autoRelease !== orgDefaults.autoRelease;
+
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
-    (normalizedBrand || "") !== (org.brand_color ?? "");
+    (normalizedBrand || "") !== (org.brand_color ?? "") ||
+    defaultsDirty;
+
+  const hasErrors = !!durationError || !!passMarkError;
+  const canSave = dirty && !hasErrors && brandValidation.ok === true;
 
   const onSave = async () => {
     if (!canEdit || !dirty) return;
     if (brandValidation.ok !== true) {
       toast.error((brandValidation as { ok: false; error: string }).error);
+      return;
+    }
+    if (hasErrors) {
+      toast.error(durationError ?? passMarkError ?? "Please fix the highlighted fields.");
       return;
     }
     setSaving(true);
@@ -93,6 +148,11 @@ export default function B2BSettings() {
         logo_url: logoUrl.trim() || null,
         brand_color: normalizedBrand || null,
         slug: newSlug,
+        default_duration_min: durationNum,
+        default_proctoring: defaults.proctoring,
+        default_pass_mark: passMarkNum,
+        allow_retake_default: defaults.allowRetake,
+        auto_release_results: defaults.autoRelease,
       })
       .eq("id", org.id);
     setSaving(false);
@@ -108,6 +168,7 @@ export default function B2BSettings() {
     setName(org.name);
     setLogoUrl(org.logo_url ?? "");
     setBrandColor(org.brand_color ?? "");
+    setDefaults(orgToDefaults(org));
   };
 
   const onDelete = async () => {
@@ -166,17 +227,12 @@ export default function B2BSettings() {
         );
       case "defaults":
         return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Assessment defaults"
-            description="Set the defaults that every new assessment will inherit. Saves admins from re-picking the same options every time."
-            fields={[
-              "Default duration (minutes)",
-              "Default proctoring profile: off / standard / strict",
-              "Default pass mark (%)",
-              "Allow candidate retake by default",
-              "Auto-release results to candidates",
-            ]}
+          <DefaultsSection
+            canEdit={canEdit}
+            state={defaults}
+            setState={setDefaults}
+            durationError={defaultsDirty || defaults.duration !== orgDefaults.duration ? durationError : null}
+            passMarkError={defaultsDirty || defaults.passMark !== orgDefaults.passMark ? passMarkError : null}
           />
         );
       case "security":
@@ -253,7 +309,7 @@ export default function B2BSettings() {
       actions={
         canEdit && (
           <Button
-            disabled={!dirty || saving}
+            disabled={!canSave || saving}
             onClick={onSave}
             className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
           >
@@ -286,7 +342,7 @@ export default function B2BSettings() {
             <Button
               size="sm"
               onClick={onSave}
-              disabled={saving}
+              disabled={!canSave || saving}
               className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             >
               <Save className="h-4 w-4 mr-1" />

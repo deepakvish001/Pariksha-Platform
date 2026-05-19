@@ -5703,10 +5703,15 @@ export type Database = {
       }
       organizations: {
         Row: {
+          allow_retake_default: boolean | null
           approved_at: string | null
           approved_by: string | null
+          auto_release_results: boolean | null
           brand_color: string | null
           created_at: string
+          default_duration_min: number | null
+          default_pass_mark: number | null
+          default_proctoring: string | null
           featured: boolean
           id: string
           logo_url: string | null
@@ -5718,10 +5723,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_retake_default?: boolean | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_release_results?: boolean | null
           brand_color?: string | null
           created_at?: string
+          default_duration_min?: number | null
+          default_pass_mark?: number | null
+          default_proctoring?: string | null
           featured?: boolean
           id?: string
           logo_url?: string | null
@@ -5733,10 +5743,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_retake_default?: boolean | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_release_results?: boolean | null
           brand_color?: string | null
           created_at?: string
+          default_duration_min?: number | null
+          default_pass_mark?: number | null
+          default_proctoring?: string | null
           featured?: boolean
           id?: string
           logo_url?: string | null

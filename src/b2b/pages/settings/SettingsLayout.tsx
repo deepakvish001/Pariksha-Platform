@@ -37,7 +37,7 @@ interface Section {
 export const SETTINGS_SECTIONS: Section[] = [
   { id: "general", label: "General", icon: Building2, description: "Organization profile and join link." },
   { id: "branding", label: "Branding & Email", icon: Palette, description: "Logo, brand color and invitation email." },
-  { id: "defaults", label: "Assessment defaults", icon: ClipboardList, description: "Defaults applied to every new assessment.", comingSoon: true },
+  { id: "defaults", label: "Assessment defaults", icon: ClipboardList, description: "Defaults applied to every new assessment." },
   { id: "security", label: "Security & Access", icon: ShieldCheck, description: "Allowed domains, MFA and team sessions.", comingSoon: true },
   { id: "notifications", label: "Notifications", icon: Bell, description: "Where result digests and alerts go.", comingSoon: true },
   { id: "integrations", label: "Integrations", icon: Plug, description: "Webhooks, custom domains and SSO.", comingSoon: true },

@@ -1,106 +1,39 @@
-## Goal
+## Step 2: Assessment Defaults + DB columns
 
-Turn `/b2b/settings` from a single scroll page into a proper **Settings hub** with focused sections, so admins can configure their org without hunting around — and add the controls a real college/recruiter admin actually needs.
+Add an "Assessment defaults" settings section backed by new columns on the `organizations` table. These defaults pre-fill new assessments so admins don't re-enter them every time.
 
-## What's there today
+### Database
 
-Single column with three blocks:
-1. Organization profile (name, logo URL, brand color, email preview)
-2. Candidate join link
-3. Danger zone (delete org)
+New columns on `public.organizations` (all nullable with sensible fallbacks in UI):
 
-That's it. No defaults, no security controls, no audit, no notifications.
+- `default_duration_min` int — default test length in minutes (fallback 60)
+- `default_proctoring` text — `off` | `basic` | `strict` (fallback `basic`)
+- `default_pass_mark` int — 0–100 percentage (fallback 40)
+- `allow_retake_default` boolean — default false
+- `auto_release_results` boolean — default true
 
-## Proposed structure — tabbed Settings
+No RLS changes needed — existing org policies already cover these columns.
 
-Replace the single column with a left-rail sub-nav inside `/b2b/settings`:
+### UI
 
-```text
-Settings
-├── General          (current "Organization profile" + join link)
-├── Branding & Email (logo, brand color, email sender name, preview, footer text)
-├── Assessment defaults
-├── Security & Access
-├── Notifications
-├── Integrations
-├── Audit log
-└── Danger zone
-```
+New file: `src/b2b/pages/settings/DefaultsSection.tsx`, wired into `SettingsLayout` under the existing "Defaults" tab (currently a ComingSoon placeholder).
 
-Each section is its own card; URL becomes `/b2b/settings/:section` so links are bookmarkable.
+Fields:
+- Duration — number input with min 5 / max 600, suffix "minutes"
+- Proctoring profile — Select with three options + short descriptions
+- Pass mark — number input 0–100, suffix "%"
+- Allow retakes by default — Switch
+- Auto-release results — Switch with helper "When off, results stay hidden until you publish them manually"
 
-## New sections — what each one does
+All fields participate in the existing dirty/save flow in `Settings.tsx` (sticky action bar, discard, toast). Validation: duration and pass mark must be within range; otherwise Save is disabled with an inline error.
 
-**General**
-- Display name, slug (read-only with copy), org type, created date.
-- Candidate join link with copy.
-- Time zone + locale (used for scheduling + email rendering).
+### Out of scope for this step
 
-**Branding & Email**
-- Logo, brand color (already exists, moved here).
-- Sender name shown in invite emails ("From: <name> via Parikshaa").
-- Custom email footer / signature (small textarea).
-- "Preview invitation email" button (already exists).
+Wiring these defaults into the actual assessment-creation flow — that's a follow-up once the values exist.
 
-**Assessment defaults**
-- Default duration (minutes).
-- Default proctoring profile: off / standard / strict (writes to org default that `New Assessment` reads).
-- Default pass mark (%).
-- Allow candidate retake by default? (toggle).
-- Auto-release results to candidate? (toggle).
+### Files
 
-**Security & Access**
-- Allowed candidate email domains (chip input, e.g. `@iitb.ac.in`). Empty = open.
-- Require MFA for team members (toggle, owner only).
-- Team session length (8h / 24h / 7d).
-- "Sign out all team sessions" button.
-
-**Notifications**
-- Where to send "assessment completed" digests: email list + optional Slack/webhook URL.
-- Daily summary email toggle.
-- Recipients for proctoring alerts.
-
-**Integrations**
-- Resend custom domain status (read-only, "Verified / Pending").
-- Webhook URL for results (with secret + "Send test event").
-- SSO / SAML placeholder card ("Contact us" CTA — wiring later).
-
-**Audit log**
-- Read-only paginated list of recent org actions: member added/removed, capabilities changed, assessment published, invite revoked, settings changed. Pulled from a new `b2b_org_audit` table. Filter by actor + action type. CSV export.
-
-**Danger zone**
-- Transfer ownership (owner picks another admin → confirm by typing org name).
-- Delete organization (already exists, keep guard rails).
-
-## Quality-of-life additions across all sections
-
-- **Unsaved-changes bar** sticky at the bottom: "You have unsaved changes — Save / Discard" (same pattern we used for the invite dialog).
-- **Field-level help** with a small `?` popover next to non-obvious settings.
-- **Per-section permissions** — sections the current member can't edit render as read-only with a lock chip ("Owner only").
-- **Search** at the top of Settings to jump to any field (small, optional).
-
-## Out of scope for this iteration
-
-- Billing/plan UI (no billing infra yet).
-- Full SSO/SAML implementation (placeholder card only).
-- Real-time audit log streaming (paginated fetch is enough).
-
-## Technical notes
-
-- New route shape: `/b2b/settings/:section` rendered by `B2BSettings.tsx` with a `<SettingsSidebar />` + `<Outlet />` style internal switch (no need for nested Router routes — keeps `App.tsx` clean).
-- New columns on `organizations`: `sender_name`, `email_footer`, `default_duration_min`, `default_proctoring`, `default_pass_mark`, `allow_retake_default`, `auto_release_results`, `allowed_email_domains text[]`, `require_mfa`, `team_session_minutes`, `results_webhook_url`, `results_webhook_secret`, `notify_emails text[]`, `slack_webhook_url`, `timezone`, `locale`.
-- New table `b2b_org_audit (id, org_id, actor_id, action, target, metadata jsonb, created_at)` with RLS: select if member of org with `org.editSettings`, insert via SECURITY DEFINER RPC `log_org_audit`.
-- Hook into existing mutations (invite create/revoke, member cap change, assessment publish, settings save) to call `log_org_audit`.
-- Reuse existing `useCan(orgId, cap)` for gating; introduce one new capability `org.viewAudit` (default included in admin + owner presets).
-- No changes to `OrgShell` nav — "Settings" entry stays, sub-nav lives inside the page.
-
-## Suggested build order (one PR each)
-
-1. Refactor page into tabbed shell with current content split into **General** and **Branding & Email**. No new fields yet.
-2. Add **Assessment defaults** + DB columns + wire `New Assessment` to read them.
-3. Add **Security & Access** + allowed-domains enforcement on candidate join.
-4. Add **Notifications** + webhook delivery edge function.
-5. Add **Audit log** table, RPC, and UI; backfill emitters in existing mutations.
-6. Add **Transfer ownership** in Danger zone.
-
-Want me to start with step 1 only, or scope a different first slice?
+- migration: add 5 columns to `organizations`
+- create `src/b2b/pages/settings/DefaultsSection.tsx`
+- edit `src/b2b/pages/settings/SettingsLayout.tsx` (swap ComingSoon → DefaultsSection)
+- edit `src/b2b/pages/Settings.tsx` (extend form state + save payload)
