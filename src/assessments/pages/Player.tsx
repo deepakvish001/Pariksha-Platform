@@ -598,6 +598,7 @@ export default function Player() {
         deadlineMs={deadline}
         totalDurationMs={totalDurationMs}
         proctoring={proctoringEnabled}
+        cameraActive={!!camStream && camStream.getVideoTracks().some((t) => t.readyState === "live")}
         isPreview={isPreview}
         submitting={submitAttempt.isPending}
         online={online}
