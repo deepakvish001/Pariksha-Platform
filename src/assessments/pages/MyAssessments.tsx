@@ -31,12 +31,33 @@ const ATTEMPT_TONE: Record<string, StatusTone> = {
   pending: "neutral",
 };
 
+type TypeKey = "placement_mock" | "academic_test" | "open_contest" | "other";
+
+const TYPE_GROUPS: { key: TypeKey; label: string; match: (t?: string) => boolean }[] = [
+  { key: "placement_mock", label: "Placement mocks", match: (t) => t === "placement_mock" || t === "placement" || t === "mock" },
+  { key: "academic_test", label: "Class & academic tests", match: (t) => t === "academic_test" || t === "class_test" || t === "academic" },
+  { key: "open_contest", label: "Open contests", match: (t) => t === "open_contest" || t === "contest" },
+  { key: "other", label: "Other assessments", match: () => true },
+];
+
+function groupByType<T extends { assessment?: { type?: string } | null }>(items: T[] | undefined) {
+  const buckets = new Map<TypeKey, T[]>();
+  TYPE_GROUPS.forEach((g) => buckets.set(g.key, []));
+  (items ?? []).forEach((it) => {
+    const t = it.assessment?.type;
+    const group = TYPE_GROUPS.find((g) => g.match(t))!;
+    buckets.get(group.key)!.push(it);
+  });
+  return buckets;
+}
+
 export default function MyAssessments() {
   const { data: invites } = useMyInvites();
   const { data: attempts } = useMyAttempts();
   const { data: openAssessments } = useOpenOrgAssessments();
   const enroll = useEnrollOpenOrg();
   const navigate = useNavigate();
+  const invitesByType = groupByType(invites as any[]);
 
   const pendingCount =
     invites?.filter((i: any) => i.status === "pending" || i.status === "claimed").length ?? 0;
