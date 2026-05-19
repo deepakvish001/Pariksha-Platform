@@ -138,6 +138,7 @@ export default function B2BSettings() {
       setBrandColor(org.brand_color ?? "");
       setDefaults(orgToDefaults(org));
       setSecurity(orgToSecurity(org));
+      setNotifications(orgToNotifications(org));
     }
   }, [org?.id]);
 
