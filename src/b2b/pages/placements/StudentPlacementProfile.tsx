@@ -42,6 +42,7 @@ export default function StudentPlacementProfile() {
   const { studentId } = useParams<{ studentId: string }>();
   const { org, isLoading: orgLoading } = useCurrentOrg();
   const [shareOpen, setShareOpen] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
 
   const { data: student, isLoading: studentLoading } = useQuery({
     queryKey: ["org_student", studentId],
