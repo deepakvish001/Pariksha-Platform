@@ -151,13 +151,16 @@ export function SharesTab({ orgId }: { orgId: string }) {
         const s = search.toLowerCase();
         const inRec = (r.recruiter_name || "").toLowerCase().includes(s)
           || (r.recruiter_email || "").toLowerCase().includes(s);
-        const inStu = (r.student_ids || [])
-          .some((id) => (studentNames.data?.[id] || "").toLowerCase().includes(s));
+        const ids = r.student_ids?.length ? r.student_ids : (r.student_id ? [r.student_id] : []);
+        const inStu = ids.some((id) =>
+          (studentNames.data?.[id] || "").toLowerCase().includes(s)
+          || (studentEmails[id] || "").toLowerCase().includes(s)
+        );
         if (!inRec && !inStu) return false;
       }
       return true;
     });
-  }, [shares.data, typeFilter, statusFilter, search, studentNames.data]);
+  }, [shares.data, typeFilter, statusFilter, search, studentInfo.data]);
 
   const revoke = useMutation({
     mutationFn: async (id: string) => {
