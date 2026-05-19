@@ -102,12 +102,48 @@ export default function B2BStudentDetail() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-        <div className="b2b-card p-3"><div className="text-xs text-[hsl(var(--muted-foreground))]">Invites</div><div className="text-2xl font-semibold">{agg?.invites.length ?? 0}</div></div>
-        <div className="b2b-card p-3"><div className="text-xs text-[hsl(var(--muted-foreground))]">Attempts</div><div className="text-2xl font-semibold">{attempts.length}</div></div>
-        <div className="b2b-card p-3"><div className="text-xs text-[hsl(var(--muted-foreground))]">Completed</div><div className="text-2xl font-semibold">{completed}</div></div>
+        <a href="#activity" className="b2b-card p-3 hover:bg-[hsl(var(--muted))/0.3] transition">
+          <div className="text-xs text-[hsl(var(--muted-foreground))]">Invites</div>
+          <div className="text-2xl font-semibold">{agg?.invites.length ?? 0}</div>
+        </a>
+        <a href="#activity" className="b2b-card p-3 hover:bg-[hsl(var(--muted))/0.3] transition">
+          <div className="text-xs text-[hsl(var(--muted-foreground))]">Attempts</div>
+          <div className="text-2xl font-semibold">{attempts.length}</div>
+        </a>
+        <a href="#activity" className="b2b-card p-3 hover:bg-[hsl(var(--muted))/0.3] transition">
+          <div className="text-xs text-[hsl(var(--muted-foreground))]">Completed</div>
+          <div className="text-2xl font-semibold">{completed}{inProgress ? <span className="text-xs text-[hsl(var(--muted-foreground))] ml-1">+{inProgress} live</span> : null}</div>
+        </a>
         <div className="b2b-card p-3"><div className="text-xs text-[hsl(var(--muted-foreground))]">Avg Score</div><div className="text-2xl font-semibold">{avgScore != null ? `${avgScore}%` : "—"}</div></div>
         <div className="b2b-card p-3"><div className="text-xs text-[hsl(var(--muted-foreground))]">Avg Integrity</div><div className="text-2xl font-semibold">{avgIntegrity != null ? `${avgIntegrity}%` : "—"}</div></div>
       </div>
+
+      {attempts.length > 0 && (
+        <div className="b2b-card p-3 mb-4">
+          <div className="text-xs text-[hsl(var(--muted-foreground))] mb-2 flex items-center gap-1">
+            <ExternalLink className="h-3 w-3" /> Jump to an attempt
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {attempts.map((a) => {
+              const title = agg?.assessments.get(a.assessment_id)?.title ?? "Attempt";
+              const when = a.submitted_at ?? a.started_at;
+              return (
+                <Link
+                  key={a.id}
+                  to={`${basePath}/assessments/${a.assessment_id}/attempts/${a.id}`}
+                  className="text-xs px-2 py-1 rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))/0.4] flex items-center gap-1.5 max-w-[260px]"
+                  title={`${title} · ${a.status}`}
+                >
+                  <span className="truncate">{title}</span>
+                  <Badge variant="outline" className="text-[10px] shrink-0">{a.status}</Badge>
+                  {a.score_pct != null && <span className="text-[hsl(var(--muted-foreground))] shrink-0">{Math.round(a.score_pct)}%</span>}
+                  <span className="text-[hsl(var(--muted-foreground))] shrink-0">· {fmt(when)}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="b2b-card overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-2">
