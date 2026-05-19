@@ -116,7 +116,7 @@ describe("CameraPermissionHelp", () => {
     );
 
     expect(screen.getByText(/permission was blocked/i)).toBeInTheDocument();
-    expect(screen.getByText(/allow camera access/i)).toBeInTheDocument();
+    expect(screen.getByText(/you'll need to allow camera access/i)).toBeInTheDocument();
     expect(screen.getByText("Permission denied")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /retry camera access/i }));
