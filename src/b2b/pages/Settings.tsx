@@ -222,7 +222,9 @@ export default function B2BSettings() {
       return;
     }
     if (hasErrors) {
-      toast.error(durationError ?? passMarkError ?? domainError ?? "Please fix the highlighted fields.");
+      toast.error(
+        durationError ?? passMarkError ?? domainError ?? emailError ?? slackError ?? "Please fix the highlighted fields.",
+      );
       return;
     }
     setSaving(true);
@@ -242,6 +244,10 @@ export default function B2BSettings() {
         allowed_email_domains: security.domains,
         require_mfa: isOwner ? security.requireMfa : orgSecurity.requireMfa,
         team_session_minutes: security.sessionMinutes,
+        notify_emails: notifications.digestEmails,
+        proctoring_alert_emails: notifications.proctoringEmails,
+        slack_webhook_url: slackTrimmed || null,
+        daily_summary_enabled: notifications.dailySummary,
       })
       .eq("id", org.id);
     setSaving(false);
@@ -259,6 +265,7 @@ export default function B2BSettings() {
     setBrandColor(org.brand_color ?? "");
     setDefaults(orgToDefaults(org));
     setSecurity(orgToSecurity(org));
+    setNotifications(orgToNotifications(org));
   };
 
   const onDelete = async () => {
