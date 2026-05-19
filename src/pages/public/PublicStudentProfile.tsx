@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Trophy, Loader2, GraduationCap, Sparkles, Building2, Mail, Clock } from "lucide-react";
+import { Trophy, Loader2, GraduationCap, Sparkles, Building2, Mail, Clock, FileText, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
