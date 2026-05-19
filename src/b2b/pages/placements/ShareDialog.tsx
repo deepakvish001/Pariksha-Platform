@@ -332,11 +332,7 @@ export function ShareDialog({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-2 space-y-2">
                   {recent.data.map((r: any) => {
-                    const status = r.revoked_at
-                      ? "Revoked"
-                      : new Date(r.expires_at) < new Date()
-                        ? "Expired"
-                        : "Active";
+                    const status = deriveStatus(r);
                     const url = buildUrl(r.token, r.kind);
                     return (
                       <div key={r.id} className="rounded-md border border-border p-2 text-xs">
@@ -350,9 +346,7 @@ export function ShareDialog({
                               {" · expires "}{format(new Date(r.expires_at), "MMM d")}
                             </div>
                           </div>
-                          <Badge variant={status === "Active" ? "default" : "secondary"} className="shrink-0">
-                            {status}
-                          </Badge>
+                          <StatusPill status={status} />
                         </div>
                         <div className="mt-2 flex items-center gap-2">
                           <span className="flex items-center gap-1 text-muted-foreground">
@@ -363,7 +357,7 @@ export function ShareDialog({
                               onClick={() => copy(url, "url").then(() => toast.success("Link copied"))}>
                               <Copy className="h-3 w-3" />
                             </Button>
-                            {status === "Active" && (
+                            {status === "active" && (
                               <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive"
                                 onClick={() => revoke.mutate(r.id)} disabled={revoke.isPending}>
                                 <Ban className="h-3 w-3" />
