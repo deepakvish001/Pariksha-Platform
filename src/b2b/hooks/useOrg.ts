@@ -18,6 +18,9 @@ export type Organization = {
   default_pass_mark: number | null;
   allow_retake_default: boolean | null;
   auto_release_results: boolean | null;
+  allowed_email_domains: string[] | null;
+  require_mfa: boolean | null;
+  team_session_minutes: number | null;
 };
 
 const ORG_QUERY_OPTS = {

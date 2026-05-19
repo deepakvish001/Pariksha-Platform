@@ -21,6 +21,7 @@ import { BrandingSection } from "./settings/BrandingSection";
 import { ComingSoonSection } from "./settings/ComingSoonSection";
 import { DangerSection } from "./settings/DangerSection";
 import { DefaultsSection, type DefaultsState } from "./settings/DefaultsSection";
+import { SecuritySection, type SecurityState } from "./settings/SecuritySection";
 import { validateHexColor } from "./settings/hexColor";
 
 const DEFAULT_DEFAULTS: DefaultsState = {
@@ -29,6 +30,12 @@ const DEFAULT_DEFAULTS: DefaultsState = {
   passMark: "40",
   allowRetake: false,
   autoRelease: true,
+};
+
+const DEFAULT_SECURITY: SecurityState = {
+  domains: [],
+  requireMfa: false,
+  sessionMinutes: 1440,
 };
 
 function orgToDefaults(org: {
@@ -45,6 +52,29 @@ function orgToDefaults(org: {
     allowRetake: org.allow_retake_default ?? DEFAULT_DEFAULTS.allowRetake,
     autoRelease: org.auto_release_results ?? DEFAULT_DEFAULTS.autoRelease,
   };
+}
+
+function orgToSecurity(org: {
+  allowed_email_domains: string[] | null;
+  require_mfa: boolean | null;
+  team_session_minutes: number | null;
+}): SecurityState {
+  const allowed = [480, 1440, 10080];
+  const session = org.team_session_minutes && allowed.includes(org.team_session_minutes)
+    ? org.team_session_minutes
+    : DEFAULT_SECURITY.sessionMinutes;
+  return {
+    domains: org.allowed_email_domains ?? [],
+    requireMfa: org.require_mfa ?? DEFAULT_SECURITY.requireMfa,
+    sessionMinutes: session,
+  };
+}
+
+function sameStringArray(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort();
+  const sb = [...b].sort();
+  return sa.every((v, i) => v === sb[i]);
 }
 
 export default function B2BSettings() {
@@ -70,6 +100,7 @@ export default function B2BSettings() {
   const [logoUrl, setLogoUrl] = useState("");
   const [brandColor, setBrandColor] = useState("");
   const [defaults, setDefaults] = useState<DefaultsState>(DEFAULT_DEFAULTS);
+  const [security, setSecurity] = useState<SecurityState>(DEFAULT_SECURITY);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewSubject, setPreviewSubject] = useState<string>("");
@@ -83,6 +114,7 @@ export default function B2BSettings() {
       setLogoUrl(org.logo_url ?? "");
       setBrandColor(org.brand_color ?? "");
       setDefaults(orgToDefaults(org));
+      setSecurity(orgToSecurity(org));
     }
   }, [org?.id]);
 
@@ -120,13 +152,24 @@ export default function B2BSettings() {
     defaults.allowRetake !== orgDefaults.allowRetake ||
     defaults.autoRelease !== orgDefaults.autoRelease;
 
+  // Security validation
+  const orgSecurity = orgToSecurity(org);
+  const domainError = security.domains.some((d) => !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d))
+    ? "One of the listed domains is invalid. Remove it and re-add."
+    : null;
+  const securityDirty =
+    !sameStringArray(security.domains, orgSecurity.domains) ||
+    security.requireMfa !== orgSecurity.requireMfa ||
+    security.sessionMinutes !== orgSecurity.sessionMinutes;
+
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
     (normalizedBrand || "") !== (org.brand_color ?? "") ||
-    defaultsDirty;
+    defaultsDirty ||
+    securityDirty;
 
-  const hasErrors = !!durationError || !!passMarkError;
+  const hasErrors = !!durationError || !!passMarkError || !!domainError;
   const canSave = dirty && !hasErrors && brandValidation.ok === true;
 
   const onSave = async () => {
@@ -136,7 +179,7 @@ export default function B2BSettings() {
       return;
     }
     if (hasErrors) {
-      toast.error(durationError ?? passMarkError ?? "Please fix the highlighted fields.");
+      toast.error(durationError ?? passMarkError ?? domainError ?? "Please fix the highlighted fields.");
       return;
     }
     setSaving(true);
@@ -153,6 +196,9 @@ export default function B2BSettings() {
         default_pass_mark: passMarkNum,
         allow_retake_default: defaults.allowRetake,
         auto_release_results: defaults.autoRelease,
+        allowed_email_domains: security.domains,
+        require_mfa: isOwner ? security.requireMfa : orgSecurity.requireMfa,
+        team_session_minutes: security.sessionMinutes,
       })
       .eq("id", org.id);
     setSaving(false);
@@ -169,6 +215,7 @@ export default function B2BSettings() {
     setLogoUrl(org.logo_url ?? "");
     setBrandColor(org.brand_color ?? "");
     setDefaults(orgToDefaults(org));
+    setSecurity(orgToSecurity(org));
   };
 
   const onDelete = async () => {
@@ -237,16 +284,12 @@ export default function B2BSettings() {
         );
       case "security":
         return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Security & Access"
-            description="Lock down who can take your assessments and how your team signs in."
-            fields={[
-              "Allowed candidate email domains (e.g. @iitb.ac.in)",
-              "Require MFA for team members (owner only)",
-              "Team session length (8h / 24h / 7d)",
-              "Sign out all team sessions",
-            ]}
+          <SecuritySection
+            canEdit={canEdit}
+            isOwner={isOwner}
+            state={security}
+            setState={setSecurity}
+            domainError={domainError}
           />
         );
       case "notifications":
