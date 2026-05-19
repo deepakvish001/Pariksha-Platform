@@ -25,6 +25,18 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CameraPermissionHelp, classifyCameraError } from "../CameraPermissionHelp";
 
+// jsdom's HTMLMediaElement has no play()/pause() — production code calls
+// videoRef.current.play().catch(...) inside a setTimeout, which would throw
+// "Cannot read properties of undefined" after the component unmounts.
+Object.defineProperty(HTMLMediaElement.prototype, "play", {
+  configurable: true,
+  value: () => Promise.resolve(),
+});
+Object.defineProperty(HTMLMediaElement.prototype, "pause", {
+  configurable: true,
+  value: () => {},
+});
+
 // ---- Selfie-flow mocks (must be declared before importing the component) -
 
 vi.mock("@/integrations/supabase/client", () => ({
