@@ -5758,6 +5758,66 @@ export type Database = {
           },
         ]
       }
+      org_student_invite_audit: {
+        Row: {
+          created_at: string
+          detail: string | null
+          email: string | null
+          id: string
+          invite_id: string | null
+          ip: string | null
+          org_id: string | null
+          result: string
+          student_id: string | null
+          token_prefix: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          email?: string | null
+          id?: string
+          invite_id?: string | null
+          ip?: string | null
+          org_id?: string | null
+          result: string
+          student_id?: string | null
+          token_prefix?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          email?: string | null
+          id?: string
+          invite_id?: string | null
+          ip?: string | null
+          org_id?: string | null
+          result?: string
+          student_id?: string | null
+          token_prefix?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_student_invite_audit_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "org_student_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_student_invite_audit_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_student_invites: {
         Row: {
           accepted_at: string | null
