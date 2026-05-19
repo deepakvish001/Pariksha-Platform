@@ -184,6 +184,24 @@ export function RankingsTab({ orgId }: { orgId: string }) {
   }, [debouncedSearch, batch, branch, section, driveId, status, minScore, sortKey, view]);
 
 
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(() => Math.max(1, Number(sp("page", "1")) || 1));
+
+  // Reset to page 1 whenever filters/sort change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, batch, branch, section, driveId, status, minScore, sortKey]);
+
+  // Persist page in URL
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (page > 1) next.set("page", String(page)); else next.delete("page");
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
   const filters = useMemo(() => {
     const f: Record<string, string | number> = {};
     if (debouncedSearch) f.search = debouncedSearch;
@@ -195,20 +213,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     return f;
   }, [debouncedSearch, batch, branch, section, status, minScore]);
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["placement_rankings", orgId, filters],
-    queryFn: async (): Promise<Ranking[]> => {
-      const { data, error } = await supabase.rpc("placement_rankings" as any, {
-        _org_id: orgId,
-        _filters: filters,
-        _limit: 2000,
-        _offset: 0,
-      });
-      if (error) throw error;
-      return (data || []) as Ranking[];
-    },
-  });
-
+  // Drives list (small)
   const { data: drives } = useQuery({
     queryKey: ["placement_drives_list", orgId],
     queryFn: async () => {
@@ -223,6 +228,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     },
   });
 
+  // Students for the selected drive (used as a server-side filter)
   const { data: driveStudentIds } = useQuery({
     queryKey: ["drive_applications_students", driveId],
     enabled: driveId !== "all",
@@ -232,7 +238,59 @@ export function RankingsTab({ orgId }: { orgId: string }) {
         .select("student_id")
         .eq("drive_id", driveId);
       if (error) throw error;
-      return new Set((data || []).map((r: any) => r.student_id as string));
+      return (data || []).map((r: any) => r.student_id as string);
+    },
+  });
+
+  const studentIdsParam = driveId !== "all" ? (driveStudentIds ?? []) : null;
+  const driveReady = driveId === "all" || driveStudentIds !== undefined;
+
+  // Distinct filter values (branches/batches/sections) — independent of page
+  const { data: filterValues } = useQuery({
+    queryKey: ["placement_rankings_filter_values", orgId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("placement_rankings_filter_values" as any, { _org_id: orgId });
+      if (error) throw error;
+      const row = (Array.isArray(data) ? data[0] : data) as
+        | { branches: string[]; batches: number[]; sections: string[] }
+        | null;
+      return row || { branches: [], batches: [], sections: [] };
+    },
+  });
+  const branches = filterValues?.branches || [];
+  const batches = filterValues?.batches || [];
+  const sections = filterValues?.sections || [];
+
+  // Total count for current filters (drives total + pagination)
+  const { data: totalCount } = useQuery({
+    queryKey: ["placement_rankings_count", orgId, filters, studentIdsParam],
+    enabled: driveReady,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("placement_rankings_count" as any, {
+        _org_id: orgId,
+        _filters: filters,
+        _student_ids: studentIdsParam,
+      });
+      if (error) throw error;
+      return Number(data) || 0;
+    },
+  });
+
+  // Current page of rankings — true server-side pagination + sort
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["placement_rankings", orgId, filters, studentIdsParam, sortKey, page],
+    enabled: driveReady,
+    queryFn: async (): Promise<Ranking[]> => {
+      const { data, error } = await supabase.rpc("placement_rankings" as any, {
+        _org_id: orgId,
+        _filters: filters,
+        _limit: PAGE_SIZE,
+        _offset: (page - 1) * PAGE_SIZE,
+        _sort: sortKey,
+        _student_ids: studentIdsParam,
+      });
+      if (error) throw error;
+      return (data || []) as Ranking[];
     },
   });
 
@@ -244,82 +302,35 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     onSuccess: () => {
       toast.success("Scores recomputed");
       qc.invalidateQueries({ queryKey: ["placement_rankings"] });
+      qc.invalidateQueries({ queryKey: ["placement_rankings_count"] });
     },
     onError: (e: any) => toast.error(e?.message || "Recompute failed"),
   });
 
-  const branches = useMemo(() => {
-    const s = new Set<string>();
-    (data || []).forEach((r) => r.branch && s.add(r.branch));
-    return Array.from(s).sort();
-  }, [data]);
-  const batches = useMemo(() => {
-    const s = new Set<number>();
-    (data || []).forEach((r) => r.batch_year && s.add(r.batch_year));
-    return Array.from(s).sort();
-  }, [data]);
-  const sections = useMemo(() => {
-    const s = new Set<string>();
-    (data || []).forEach((r) => r.section && s.add(r.section));
-    return Array.from(s).sort();
-  }, [data]);
-
   const engagementOf = (r: Ranking) =>
     Math.min(100, (r.applications_count + 2 * r.shortlisted_count + 4 * r.offers_count) * 8);
 
-  const visible = useMemo(() => {
-    let list = data || [];
-    if (driveId !== "all" && driveStudentIds) {
-      list = list.filter((r) => driveStudentIds.has(r.student_id));
-    }
-    const sorted = [...list].sort((a, b) => {
-      switch (sortKey) {
-        case "assessment":
-          return (b.avg_assessment_score ?? -1) - (a.avg_assessment_score ?? -1);
-        case "offers":
-          return b.offers_count - a.offers_count || b.score - a.score;
-        case "engagement":
-          return engagementOf(b) - engagementOf(a);
-        default:
-          return b.score - a.score;
-      }
-    });
-    return sorted;
-  }, [data, driveId, driveStudentIds, sortKey]);
+  // Server returns the page already filtered/sorted — render as-is
+  const visible = data || [];
+  const rendered = visible;
 
+  // Map of branch counts for the current page (used only for display hint)
   const branchTotals = useMemo(() => {
     const m = new Map<string, number>();
-    (data || []).forEach((r) => {
+    visible.forEach((r) => {
       if (!r.branch) return;
       m.set(r.branch, (m.get(r.branch) || 0) + 1);
     });
     return m;
-  }, [data]);
+  }, [visible]);
 
-  const orgTotal = data?.length || 0;
-  const filteredCount = visible.length;
-  const avgScore = filteredCount
-    ? visible.reduce((s, r) => s + r.score, 0) / filteredCount
+  const orgTotal = totalCount ?? 0;
+  const filteredCount = totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));
+  const avgScore = visible.length
+    ? visible.reduce((s, r) => s + r.score, 0) / visible.length
     : 0;
   const topScorer = visible[0];
-
-  // Incremental rendering for large orgs
-  const PAGE_SIZE = 50;
-  const [pageCount, setPageCount] = useState(1);
-  useEffect(() => { setPageCount(1); }, [debouncedSearch, batch, branch, section, driveId, status, minScore, sortKey, view]);
-  const rendered = useMemo(() => visible.slice(0, pageCount * PAGE_SIZE), [visible, pageCount]);
-  const hasMore = rendered.length < visible.length;
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!hasMore) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) setPageCount((p) => p + 1);
-    }, { rootMargin: "400px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasMore, rendered.length]);
 
   const toggleAll = () => {
     if (!visible.length) return;
