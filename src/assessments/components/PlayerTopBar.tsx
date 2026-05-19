@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { PlayerSosButton } from "./PlayerSosButton";
 import { PlayerSosStatus } from "./PlayerSosStatus";
 import { PlayerSosTimeline } from "./PlayerSosTimeline";
+import { CameraStatusIndicator } from "./CameraStatusIndicator";
 
 interface Props {
   title: string;
