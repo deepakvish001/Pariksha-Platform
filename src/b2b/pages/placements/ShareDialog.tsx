@@ -44,8 +44,8 @@ export function ShareDialog({
       } else {
         payload.student_ids = target.studentIds;
       }
-      const { data, error } = await supabase
-        .from("student_share_links" as any)
+      const { data, error } = await (supabase as any)
+        .from("student_share_links")
         .insert(payload)
         .select("token, kind")
         .single();
