@@ -258,6 +258,28 @@ export default function B2BSettings() {
     }
     toast.success("Organization updated");
     qc.invalidateQueries({ queryKey: ["b2b", "orgs"] });
+
+    // Best-effort audit log — failures here must not break the UX.
+    const changedSections: string[] = [];
+    if (
+      name.trim() !== org.name ||
+      (logoUrl || "") !== (org.logo_url ?? "") ||
+      (normalizedBrand || "") !== (org.brand_color ?? "")
+    ) changedSections.push("general+branding");
+    if (defaultsDirty) changedSections.push("defaults");
+    if (securityDirty) changedSections.push("security");
+    if (notificationsDirty) changedSections.push("notifications");
+    if (changedSections.length > 0) {
+      supabase.rpc("log_org_audit", {
+        _org_id: org.id,
+        _action: "settings.updated",
+        _target: changedSections.join(","),
+        _metadata: {},
+      }).then(({ error: e }) => {
+        if (e) console.warn("audit log failed", e.message);
+        else qc.invalidateQueries({ queryKey: ["b2b", "audit", org.id] });
+      });
+    }
   };
 
   const onDiscard = () => {
