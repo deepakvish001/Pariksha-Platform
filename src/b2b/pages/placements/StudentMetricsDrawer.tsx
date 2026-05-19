@@ -109,6 +109,16 @@ export function StudentMetricsDrawer({
 }) {
   const studentId = ranking?.student_id;
 
+  const [wmPrefs, setWmPrefs] = useState<WmPrefs>(() => loadWmPrefs());
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(WM_PREFS_KEY, JSON.stringify(wmPrefs));
+    } catch {
+      /* ignore quota / disabled storage */
+    }
+  }, [wmPrefs]);
+
+
   const { data: offers, isLoading: offersLoading } = useQuery({
     queryKey: ["drawer-offers", studentId],
     enabled: !!studentId && open,
