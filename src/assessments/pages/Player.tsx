@@ -62,6 +62,17 @@ export default function Player() {
   const [lockdownReady, setLockdownReady] = useState(false);
   const [camStream, setCamStream] = useState<MediaStream | null>(null);
 
+  // Ensure the proctoring webcam is released when the test ends (submit,
+  // status change, or unmount). Without this, tracks linger and the browser
+  // keeps showing the "camera in use" indicator after submission.
+  const stopCamStream = useCallback(() => {
+    setCamStream((s) => {
+      s?.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+      return null;
+    });
+  }, []);
+  useEffect(() => () => { stopCamStream(); }, [stopCamStream]);
+
   const flatQuestions = useMemo<PaperQuestion[]>(
     () => (paper?.sections ?? []).flatMap((s) => s.questions),
     [paper]
@@ -161,14 +172,23 @@ export default function Player() {
       try {
         await submitAttempt.mutateAsync(attemptId);
         setSubmitted(true);
+        stopCamStream();
         toast.success(auto ? "Time's up — auto-submitted" : "Submitted successfully");
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : "Failed to submit");
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [attemptId, answers, saveAnswer, submitAttempt]
+    [attemptId, answers, saveAnswer, submitAttempt, stopCamStream]
   );
+
+  // Release the proctoring webcam as soon as the attempt is no longer active
+  // (terminal status from server) or after local submit.
+  useEffect(() => {
+    if (submitted || (paper && paper.attempt.status !== "in_progress")) {
+      stopCamStream();
+    }
+  }, [submitted, paper, stopCamStream]);
 
   // Auto-submit hooks (proctoring + timer share the same doSubmit)
   const doSubmitRef = useRef(doSubmit);
