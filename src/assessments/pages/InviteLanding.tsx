@@ -35,6 +35,7 @@ type PreviewResponse =
         ends_at: string | null;
         status: string;
         brand_color: string | null;
+        type?: string | null;
       };
       sections: { id: string; title: string; description: string | null; question_count: number }[];
     }
