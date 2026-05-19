@@ -258,19 +258,46 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
     }
   };
 
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+  const stopCamera = (reason: string = "manual") => {
+    const s = streamRef.current;
+    if (!s) {
+      console.debug("[selfie-cam] stop skipped — no active stream", { reason, attemptId });
+      setCameraOn(false);
+      return;
+    }
+    const tracks = s.getTracks();
+    tracks.forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+    console.info("[selfie-cam] released", {
+      reason,
+      attemptId,
+      trackCount: tracks.length,
+      kinds: tracks.map((t) => t.kind),
+    });
     streamRef.current = null;
     setCameraOn(false);
   };
 
-  // Safety net: always release the selfie camera when this step unmounts
-  // (e.g. user navigates away mid-capture). The selfie flow already calls
-  // stopCamera() on success.
-  useEffect(() => () => {
-    streamRef.current?.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
-    streamRef.current = null;
-  }, []);
+  // Safety net: always release the selfie camera on unmount, refresh, tab
+  // close, or navigation away mid-capture. The capture-success path also
+  // calls stopCamera() explicitly.
+  useEffect(() => {
+    const release = (reason: string) => {
+      const s = streamRef.current;
+      if (!s) return;
+      s.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+      streamRef.current = null;
+      console.info("[selfie-cam] released", { reason, attemptId });
+    };
+    const onPageHide = () => release("pagehide");
+    const onBeforeUnload = () => release("beforeunload");
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      release("unmount");
+    };
+  }, [attemptId]);
 
   const captureSelfie = async () => {
     if (!videoRef.current) return;
@@ -290,7 +317,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
       const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
       const path = await uploadFile(file, "selfie");
       setSelfieUrl(path);
-      stopCamera();
+      stopCamera("capture_success");
     } catch (err) {
       setGlobalError(err instanceof Error ? err.message : "Capture failed");
     } finally {
@@ -535,7 +562,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
                 <Button size="sm" onClick={captureSelfie} disabled={busy}>
                   <Camera className="h-3.5 w-3.5 mr-1" /> Capture
                 </Button>
-                <Button size="sm" variant="ghost" onClick={stopCamera} disabled={busy}>
+                <Button size="sm" variant="ghost" onClick={() => stopCamera("user_cancel")} disabled={busy}>
                   Cancel
                 </Button>
               </div>
