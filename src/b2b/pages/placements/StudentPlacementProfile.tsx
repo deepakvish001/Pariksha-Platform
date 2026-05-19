@@ -222,10 +222,25 @@ export default function StudentPlacementProfile() {
   }, [student, score, offers, profile, org, orgTotal, percentile]);
 
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
+  const [includeRank, setIncludeRank] = useState(true);
+  const [includeOffers, setIncludeOffers] = useState(true);
   const isOn = (id: string) => enabled[id] !== false;
 
+  const RANK_IDS = new Set(["rank", "branch_rank"]);
+  const OFFER_IDS = new Set(["offers", "top_ctc", "dream"]);
+
+  const visibleBullets = useMemo(
+    () =>
+      bullets.filter((b) => {
+        if (!includeRank && RANK_IDS.has(b.id)) return false;
+        if (!includeOffers && OFFER_IDS.has(b.id)) return false;
+        return true;
+      }),
+    [bullets, includeRank, includeOffers],
+  );
+
   const copyBullets = () => {
-    const text = bullets.filter((b) => isOn(b.id)).map((b) => `• ${b.text}`).join("\n");
+    const text = visibleBullets.filter((b) => isOn(b.id)).map((b) => `• ${b.text}`).join("\n");
     if (!text) {
       toast.error("Select at least one bullet.");
       return;
