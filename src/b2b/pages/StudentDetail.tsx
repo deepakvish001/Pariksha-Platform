@@ -125,13 +125,46 @@ export default function B2BStudentDetail() {
         </div>
       </div>
 
+      <div className="mb-3 flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">Status filter</span>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-8 text-xs w-[180px]" aria-label="Filter attempts by status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="completed">Completed (submitted)</SelectItem>
+            {statusOptions.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s.replace(/_/g, " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {filterActive && (
+          <>
+            <Badge variant="outline" className="text-[10px]">
+              {attempts.length} of {allAttempts.length}
+            </Badge>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => setStatusFilter("all")}
+            >
+              Clear
+            </Button>
+          </>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
         <a href="#activity" className="b2b-card p-3 hover:bg-[hsl(var(--muted))/0.3] transition">
           <div className="text-xs text-[hsl(var(--muted-foreground))]">Invites</div>
           <div className="text-2xl font-semibold">{agg?.invites.length ?? 0}</div>
         </a>
         <a href="#activity" className="b2b-card p-3 hover:bg-[hsl(var(--muted))/0.3] transition">
-          <div className="text-xs text-[hsl(var(--muted-foreground))]">Attempts</div>
+          <div className="text-xs text-[hsl(var(--muted-foreground))]">Attempts{filterActive ? <span className="text-[10px] ml-1 opacity-70">(filtered)</span> : null}</div>
           <div className="text-2xl font-semibold">{attempts.length}</div>
         </a>
         <a href="#activity" className="b2b-card p-3 hover:bg-[hsl(var(--muted))/0.3] transition">
