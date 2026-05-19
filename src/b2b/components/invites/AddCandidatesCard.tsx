@@ -146,9 +146,15 @@ export function AddCandidatesCard({
     <div className="b2b-card p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <div className="text-sm font-medium">Add candidates</div>
+          <div className="text-sm font-medium">
+            {participationMode === "roster" ? "Upload class roster" : participationMode === "open_org" ? "Pre-seed candidates (optional)" : "Add candidates"}
+          </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            Paste, upload a CSV/Excel file, or add one candidate at a time.
+            {participationMode === "roster"
+              ? "Upload your class CSV — only listed students will be able to join this test."
+              : participationMode === "open_org"
+                ? "Open-org tests let any verified org member self-enroll. You can still pre-invite specific people here."
+                : "Paste, upload a CSV/Excel file, or add one candidate at a time."}
           </p>
         </div>
       </div>
