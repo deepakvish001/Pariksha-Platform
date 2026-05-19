@@ -20,7 +20,32 @@ import { GeneralSection } from "./settings/GeneralSection";
 import { BrandingSection } from "./settings/BrandingSection";
 import { ComingSoonSection } from "./settings/ComingSoonSection";
 import { DangerSection } from "./settings/DangerSection";
+import { DefaultsSection, type DefaultsState } from "./settings/DefaultsSection";
 import { validateHexColor } from "./settings/hexColor";
+
+const DEFAULT_DEFAULTS: DefaultsState = {
+  duration: "60",
+  proctoring: "basic",
+  passMark: "40",
+  allowRetake: false,
+  autoRelease: true,
+};
+
+function orgToDefaults(org: {
+  default_duration_min: number | null;
+  default_proctoring: string | null;
+  default_pass_mark: number | null;
+  allow_retake_default: boolean | null;
+  auto_release_results: boolean | null;
+}): DefaultsState {
+  return {
+    duration: org.default_duration_min != null ? String(org.default_duration_min) : DEFAULT_DEFAULTS.duration,
+    proctoring: (org.default_proctoring as DefaultsState["proctoring"]) ?? DEFAULT_DEFAULTS.proctoring,
+    passMark: org.default_pass_mark != null ? String(org.default_pass_mark) : DEFAULT_DEFAULTS.passMark,
+    allowRetake: org.allow_retake_default ?? DEFAULT_DEFAULTS.allowRetake,
+    autoRelease: org.auto_release_results ?? DEFAULT_DEFAULTS.autoRelease,
+  };
+}
 
 export default function B2BSettings() {
   const { user } = useAuth();
