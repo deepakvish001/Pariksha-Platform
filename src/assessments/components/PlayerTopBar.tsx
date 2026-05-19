@@ -161,9 +161,19 @@ export function PlayerTopBar({
             <div className="hidden md:block h-5 w-px bg-border mx-0.5" />
 
             {proctoring && (
-              <div className="hidden lg:flex items-center gap-1.5 text-[11px] px-2 h-7 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium">
-                <ShieldCheck className="h-3.5 w-3.5" /> Proctored
-              </div>
+              <CameraStatusIndicator
+                mode="proctoring"
+                active={cameraActive}
+                className="hidden lg:inline-flex"
+              />
+            )}
+            {proctoring && (
+              <CameraStatusIndicator
+                mode="proctoring"
+                active={cameraActive}
+                compact
+                className="lg:hidden"
+              />
             )}
             {proctoring && (
               <Tooltip>
