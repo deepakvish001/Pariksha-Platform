@@ -9654,6 +9654,10 @@ export type Database = {
         }
       }
       test_invite_source_heuristics: { Args: never; Returns: Json }
+      transfer_org_ownership: {
+        Args: { _new_owner_user_id: string; _org_id: string }
+        Returns: undefined
+      }
       user_is_premium: { Args: { _user_id: string }; Returns: boolean }
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
       validate_contest_submission: {
