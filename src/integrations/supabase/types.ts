@@ -5704,6 +5704,7 @@ export type Database = {
       organizations: {
         Row: {
           allow_retake_default: boolean | null
+          allowed_email_domains: string[] | null
           approved_at: string | null
           approved_by: string | null
           auto_release_results: boolean | null
@@ -5717,13 +5718,16 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          require_mfa: boolean | null
           slug: string
           status: string
+          team_session_minutes: number | null
           type: Database["public"]["Enums"]["org_type"]
           updated_at: string
         }
         Insert: {
           allow_retake_default?: boolean | null
+          allowed_email_domains?: string[] | null
           approved_at?: string | null
           approved_by?: string | null
           auto_release_results?: boolean | null
@@ -5737,13 +5741,16 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id: string
+          require_mfa?: boolean | null
           slug: string
           status?: string
+          team_session_minutes?: number | null
           type: Database["public"]["Enums"]["org_type"]
           updated_at?: string
         }
         Update: {
           allow_retake_default?: boolean | null
+          allowed_email_domains?: string[] | null
           approved_at?: string | null
           approved_by?: string | null
           auto_release_results?: boolean | null
@@ -5757,8 +5764,10 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string
+          require_mfa?: boolean | null
           slug?: string
           status?: string
+          team_session_minutes?: number | null
           type?: Database["public"]["Enums"]["org_type"]
           updated_at?: string
         }
