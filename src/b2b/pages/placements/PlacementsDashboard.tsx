@@ -17,6 +17,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 import { RankingsTab } from "./RankingsTab";
+import { SharesTab } from "./SharesTab";
 
 type Filters = {
   batch_years?: number[];
