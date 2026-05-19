@@ -7,7 +7,7 @@ import { useOrgStudent } from "../hooks/useOrgStudents";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, GraduationCap, Calendar, Activity } from "lucide-react";
+import { ArrowLeft, Mail, GraduationCap, Calendar, Activity, ExternalLink } from "lucide-react";
 
 function fmt(d?: string | null) {
   if (!d) return "—";
