@@ -100,16 +100,35 @@ export default function PublicStudentProfile({ kind }: { kind: "profile" | "shor
   }
 
   if (error || !data) {
-    const msg = error === "expired" ? "This share link has expired."
-      : error === "revoked" ? "This share link has been revoked."
-      : error === "not_found" ? "Share link not found."
-      : "Unable to load profile.";
+    const map: Record<string, { emoji: string; title: string; body: string }> = {
+      expired: {
+        emoji: "⌛",
+        title: "This share link has expired",
+        body: "For security, recruiter links expire automatically. Please ask the college TPO to send a fresh link.",
+      },
+      revoked: {
+        emoji: "🚫",
+        title: "This share link has been revoked",
+        body: "The placement office has turned this link off. Please contact the TPO for renewed access.",
+      },
+      not_found: {
+        emoji: "🔎",
+        title: "Share link not found",
+        body: "Double-check the URL or ask the placement office to resend it.",
+      },
+    };
+    const fallback = {
+      emoji: "🔒",
+      title: "Unable to load profile",
+      body: "Something went wrong loading this profile. Please try again or request a fresh link.",
+    };
+    const info = (error && map[error]) || fallback;
     return (
       <div className="min-h-screen grid place-items-center px-4">
         <div className="text-center max-w-sm">
-          <div className="text-4xl mb-3">🔒</div>
-          <h1 className="text-xl font-semibold mb-2">{msg}</h1>
-          <p className="text-sm text-muted-foreground">Please ask the college TPO for a fresh link.</p>
+          <div className="text-5xl mb-3">{info.emoji}</div>
+          <h1 className="text-xl font-semibold mb-2">{info.title}</h1>
+          <p className="text-sm text-muted-foreground">{info.body}</p>
         </div>
       </div>
     );
