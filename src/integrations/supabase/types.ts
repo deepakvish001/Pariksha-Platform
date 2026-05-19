@@ -5341,6 +5341,60 @@ export type Database = {
         }
         Relationships: []
       }
+      drive_applications: {
+        Row: {
+          applied_at: string
+          created_at: string
+          current_round: number
+          drive_id: string
+          id: string
+          last_event_at: string
+          notes: string | null
+          stage: Database["public"]["Enums"]["application_stage"]
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          current_round?: number
+          drive_id: string
+          id?: string
+          last_event_at?: string
+          notes?: string | null
+          stage?: Database["public"]["Enums"]["application_stage"]
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          current_round?: number
+          drive_id?: string
+          id?: string
+          last_event_at?: string
+          notes?: string | null
+          stage?: Database["public"]["Enums"]["application_stage"]
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_applications_drive_id_fkey"
+            columns: ["drive_id"]
+            isOneToOne: false
+            referencedRelation: "placement_drives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "org_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       featured_content: {
         Row: {
           ends_at: string | null
@@ -6123,6 +6177,326 @@ export type Database = {
         }
         Relationships: []
       }
+      placement_ai_runs: {
+        Row: {
+          cost_cents: number | null
+          created_at: string
+          filters: Json
+          id: string
+          kind: Database["public"]["Enums"]["placement_ai_kind"]
+          org_id: string
+          prompt: string | null
+          response: string | null
+          tokens: number | null
+          user_id: string | null
+        }
+        Insert: {
+          cost_cents?: number | null
+          created_at?: string
+          filters?: Json
+          id?: string
+          kind: Database["public"]["Enums"]["placement_ai_kind"]
+          org_id: string
+          prompt?: string | null
+          response?: string | null
+          tokens?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          cost_cents?: number | null
+          created_at?: string
+          filters?: Json
+          id?: string
+          kind?: Database["public"]["Enums"]["placement_ai_kind"]
+          org_id?: string
+          prompt?: string | null
+          response?: string | null
+          tokens?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_ai_runs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      placement_drives: {
+        Row: {
+          bond_months: number | null
+          closes_at: string | null
+          created_at: string
+          created_by: string
+          ctc_max: number | null
+          ctc_min: number | null
+          currency: string
+          drive_type: Database["public"]["Enums"]["drive_type"]
+          eligibility: Json
+          id: string
+          is_dream: boolean
+          location: string | null
+          notes: string | null
+          opens_at: string | null
+          org_id: string
+          recruiter_id: string
+          role_title: string | null
+          status: Database["public"]["Enums"]["drive_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bond_months?: number | null
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string
+          ctc_max?: number | null
+          ctc_min?: number | null
+          currency?: string
+          drive_type?: Database["public"]["Enums"]["drive_type"]
+          eligibility?: Json
+          id?: string
+          is_dream?: boolean
+          location?: string | null
+          notes?: string | null
+          opens_at?: string | null
+          org_id: string
+          recruiter_id: string
+          role_title?: string | null
+          status?: Database["public"]["Enums"]["drive_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          bond_months?: number | null
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string
+          ctc_max?: number | null
+          ctc_min?: number | null
+          currency?: string
+          drive_type?: Database["public"]["Enums"]["drive_type"]
+          eligibility?: Json
+          id?: string
+          is_dream?: boolean
+          location?: string | null
+          notes?: string | null
+          opens_at?: string | null
+          org_id?: string
+          recruiter_id?: string
+          role_title?: string | null
+          status?: Database["public"]["Enums"]["drive_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_drives_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placement_drives_recruiter_id_fkey"
+            columns: ["recruiter_id"]
+            isOneToOne: false
+            referencedRelation: "recruiters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      placement_offers: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string
+          ctc: number | null
+          currency: string
+          declined_at: string | null
+          drive_id: string | null
+          id: string
+          is_dream_offer: boolean
+          location: string | null
+          notes: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          offered_at: string
+          org_id: string
+          recruiter_id: string
+          role_title: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string
+          ctc?: number | null
+          currency?: string
+          declined_at?: string | null
+          drive_id?: string | null
+          id?: string
+          is_dream_offer?: boolean
+          location?: string | null
+          notes?: string | null
+          offer_type?: Database["public"]["Enums"]["offer_type"]
+          offered_at?: string
+          org_id: string
+          recruiter_id: string
+          role_title?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string
+          ctc?: number | null
+          currency?: string
+          declined_at?: string | null
+          drive_id?: string | null
+          id?: string
+          is_dream_offer?: boolean
+          location?: string | null
+          notes?: string | null
+          offer_type?: Database["public"]["Enums"]["offer_type"]
+          offered_at?: string
+          org_id?: string
+          recruiter_id?: string
+          role_title?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_offers_drive_id_fkey"
+            columns: ["drive_id"]
+            isOneToOne: false
+            referencedRelation: "placement_drives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placement_offers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placement_offers_recruiter_id_fkey"
+            columns: ["recruiter_id"]
+            isOneToOne: false
+            referencedRelation: "recruiters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placement_offers_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "org_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      placement_snapshots: {
+        Row: {
+          avg_ctc: number | null
+          batch_year: number
+          branch: string | null
+          dream_offers: number
+          id: string
+          is_public: boolean
+          median_ctc: number | null
+          multi_offer_count: number
+          org_id: string
+          placed_count: number
+          snapshot_at: string
+          top_ctc: number | null
+          total_eligible: number
+        }
+        Insert: {
+          avg_ctc?: number | null
+          batch_year: number
+          branch?: string | null
+          dream_offers?: number
+          id?: string
+          is_public?: boolean
+          median_ctc?: number | null
+          multi_offer_count?: number
+          org_id: string
+          placed_count?: number
+          snapshot_at?: string
+          top_ctc?: number | null
+          total_eligible?: number
+        }
+        Update: {
+          avg_ctc?: number | null
+          batch_year?: number
+          branch?: string | null
+          dream_offers?: number
+          id?: string
+          is_public?: boolean
+          median_ctc?: number | null
+          multi_offer_count?: number
+          org_id?: string
+          placed_count?: number
+          snapshot_at?: string
+          top_ctc?: number | null
+          total_eligible?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_snapshots_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      placement_views: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          is_shared: boolean
+          name: string
+          org_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_shared?: boolean
+          name: string
+          org_id: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_shared?: boolean
+          name?: string
+          org_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_views_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           key: string
@@ -6601,6 +6975,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      recruiters: {
+        Row: {
+          contacts: Json
+          created_at: string
+          created_by: string
+          first_visit_year: number | null
+          hq_city: string | null
+          id: string
+          is_repeat: boolean
+          last_visit_year: number | null
+          name: string
+          notes: string | null
+          org_id: string
+          sector: Database["public"]["Enums"]["recruiter_sector"]
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          contacts?: Json
+          created_at?: string
+          created_by?: string
+          first_visit_year?: number | null
+          hq_city?: string | null
+          id?: string
+          is_repeat?: boolean
+          last_visit_year?: number | null
+          name: string
+          notes?: string | null
+          org_id: string
+          sector?: Database["public"]["Enums"]["recruiter_sector"]
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          contacts?: Json
+          created_at?: string
+          created_by?: string
+          first_visit_year?: number | null
+          hq_city?: string | null
+          id?: string
+          is_repeat?: boolean
+          last_visit_year?: number | null
+          name?: string
+          notes?: string | null
+          org_id?: string
+          sector?: Database["public"]["Enums"]["recruiter_sector"]
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiters_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resume_analyses: {
         Row: {
@@ -9467,6 +9900,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      drive_org: { Args: { _drive: string }; Returns: string }
       ensure_player_rating: { Args: { _user: string }; Returns: undefined }
       get_ai_insight_feedback_summary: {
         Args: { _org_id: string }
@@ -9761,6 +10195,10 @@ export type Database = {
         Args: { _data?: Json; _message: string; _title: string; _type?: string }
         Returns: undefined
       }
+      placement_overview: {
+        Args: { _filters?: Json; _org: string }
+        Returns: Json
+      }
       preview_assessment_invite: { Args: { _token: string }; Returns: Json }
       preview_invite_source_backfill: {
         Args: never
@@ -9901,6 +10339,14 @@ export type Database = {
         | "proctor_reviewer"
         | "proctor_admin"
         | "institution_admin"
+      application_stage:
+        | "applied"
+        | "shortlisted"
+        | "in_rounds"
+        | "offered"
+        | "accepted"
+        | "rejected"
+        | "withdrew"
       assessment_status: "draft" | "published" | "archived"
       assessment_type: "placement_mock" | "academic" | "benchmark" | "contest"
       attempt_status:
@@ -9913,14 +10359,22 @@ export type Database = {
       blog_comment_status: "visible" | "hidden" | "reported" | "deleted"
       blog_post_status: "draft" | "scheduled" | "published" | "archived"
       contest_enforcement_mode: "open" | "standard" | "hard" | "custom"
+      drive_status: "upcoming" | "open" | "closed" | "cancelled"
+      drive_type: "on_campus" | "pool" | "off_campus" | "virtual"
       friendship_status: "pending" | "accepted" | "blocked"
       integrity_verdict: "pending" | "confirmed" | "disputed" | "inconclusive"
       invite_source: "email" | "link" | "bulk_upload" | "manual" | "api"
       invite_status: "pending" | "claimed" | "submitted" | "expired"
+      offer_type: "intern" | "fte" | "ppo"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer" | "proctor"
       org_student_status: "invited" | "active" | "suspended" | "alumni"
       org_type: "college" | "company"
       participation_mode: "invite" | "roster" | "open_org"
+      placement_ai_kind:
+        | "nl_query"
+        | "weekly_digest"
+        | "at_risk"
+        | "recruiter_outreach"
       proctoring_level: "off" | "light" | "standard" | "strict"
       question_type:
         | "coding"
@@ -9932,6 +10386,18 @@ export type Database = {
         | "short_answer"
         | "numerical"
         | "fill_blanks"
+      recruiter_sector:
+        | "tech"
+        | "consulting"
+        | "finance"
+        | "product"
+        | "core"
+        | "analytics"
+        | "startup"
+        | "psu"
+        | "edtech"
+        | "healthtech"
+        | "other"
       sos_delivery_status: "queued" | "sent" | "failed"
       sos_status: "open" | "acknowledged" | "resolved"
       study_year:
@@ -10080,6 +10546,15 @@ export const Constants = {
         "proctor_admin",
         "institution_admin",
       ],
+      application_stage: [
+        "applied",
+        "shortlisted",
+        "in_rounds",
+        "offered",
+        "accepted",
+        "rejected",
+        "withdrew",
+      ],
       assessment_status: ["draft", "published", "archived"],
       assessment_type: ["placement_mock", "academic", "benchmark", "contest"],
       attempt_status: [
@@ -10093,14 +10568,23 @@ export const Constants = {
       blog_comment_status: ["visible", "hidden", "reported", "deleted"],
       blog_post_status: ["draft", "scheduled", "published", "archived"],
       contest_enforcement_mode: ["open", "standard", "hard", "custom"],
+      drive_status: ["upcoming", "open", "closed", "cancelled"],
+      drive_type: ["on_campus", "pool", "off_campus", "virtual"],
       friendship_status: ["pending", "accepted", "blocked"],
       integrity_verdict: ["pending", "confirmed", "disputed", "inconclusive"],
       invite_source: ["email", "link", "bulk_upload", "manual", "api"],
       invite_status: ["pending", "claimed", "submitted", "expired"],
+      offer_type: ["intern", "fte", "ppo"],
       org_member_role: ["owner", "admin", "recruiter", "viewer", "proctor"],
       org_student_status: ["invited", "active", "suspended", "alumni"],
       org_type: ["college", "company"],
       participation_mode: ["invite", "roster", "open_org"],
+      placement_ai_kind: [
+        "nl_query",
+        "weekly_digest",
+        "at_risk",
+        "recruiter_outreach",
+      ],
       proctoring_level: ["off", "light", "standard", "strict"],
       question_type: [
         "coding",
@@ -10112,6 +10596,19 @@ export const Constants = {
         "short_answer",
         "numerical",
         "fill_blanks",
+      ],
+      recruiter_sector: [
+        "tech",
+        "consulting",
+        "finance",
+        "product",
+        "core",
+        "analytics",
+        "startup",
+        "psu",
+        "edtech",
+        "healthtech",
+        "other",
       ],
       sos_delivery_status: ["queued", "sent", "failed"],
       sos_status: ["open", "acknowledged", "resolved"],
