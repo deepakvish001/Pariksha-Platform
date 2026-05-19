@@ -297,6 +297,12 @@ const App = () => (
                 <Route path="/b2b/students" element={<ProtectedRoute><B2BStudents /></ProtectedRoute>} />
                 <Route path="/b2b/students/:studentId" element={<ProtectedRoute><B2BStudentDetail /></ProtectedRoute>} />
                 <Route path="/b2b/placements" element={<ProtectedRoute><B2BPlacements /></ProtectedRoute>} />
+                <Route path="/b2b/placements/students/:studentId" element={<ProtectedRoute><B2BStudentPlacementProfile /></ProtectedRoute>} />
+
+                {/* Public recruiter-facing share links (no auth) */}
+                <Route path="/p/student/:token" element={<PublicStudentProfile kind="profile" />} />
+                <Route path="/p/shortlist/:token" element={<PublicStudentProfile kind="shortlist" />} />
+
 
                 {/* Student-facing college home */}
                 <Route path="/my/college" element={<ProtectedRoute><MyCollege /></ProtectedRoute>} />
