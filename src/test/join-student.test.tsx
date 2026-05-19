@@ -80,7 +80,7 @@ describe("JoinStudent token acceptance E2E", () => {
   });
 
   it("shows an error state when the edge function rejects the token", async () => {
-    invokeMock.mockResolvedValue({ data: { error: "Invite expired" }, error: null });
+    invokeMock.mockImplementation(async () => ({ data: { error: "Invite expired" }, error: null }));
 
     renderAt("/join/student?token=expired-token");
 
