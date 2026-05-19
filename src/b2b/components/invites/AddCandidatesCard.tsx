@@ -28,12 +28,16 @@ export function AddCandidatesCard({
   existingEmails,
   onSubmit,
   busy,
+  participationMode,
 }: {
   existingEmails: Set<string>;
   onSubmit: (rows: ParsedRow[], mode: SendMode, scheduleAt?: string) => Promise<void> | void;
   busy?: boolean;
+  participationMode?: "invite" | "roster" | "open_org" | null;
 }) {
-  const [tab, setTab] = useState<"paste" | "upload" | "single">("paste");
+  const initialTab: "paste" | "upload" | "single" =
+    participationMode === "roster" ? "upload" : "paste";
+  const [tab, setTab] = useState<"paste" | "upload" | "single">(initialTab);
   const [bulk, setBulk] = useState("");
   const [single, setSingle] = useState({ email: "", name: "", external_id: "" });
   const [fileRows, setFileRows] = useState<ParsedRow[] | null>(null);
