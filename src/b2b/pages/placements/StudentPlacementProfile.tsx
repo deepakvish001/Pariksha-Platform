@@ -569,6 +569,12 @@ export default function StudentPlacementProfile() {
           onClose={() => setShareOpen(false)}
         />
       )}
+      <ResumePreviewDialog
+        open={resumeOpen}
+        onOpenChange={setResumeOpen}
+        url={profile?.resume_url || null}
+        studentName={student?.full_name || student?.email}
+      />
     </OrgShell>
   );
 }
