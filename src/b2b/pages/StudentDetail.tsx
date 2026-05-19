@@ -145,7 +145,7 @@ export default function B2BStudentDetail() {
         </div>
       )}
 
-      <div className="b2b-card overflow-hidden">
+      <div id="activity" className="b2b-card overflow-hidden scroll-mt-20">
         <div className="px-4 py-3 border-b flex items-center gap-2">
           <Activity className="h-4 w-4" /><span className="font-semibold text-sm">Assessment activity</span>
         </div>
