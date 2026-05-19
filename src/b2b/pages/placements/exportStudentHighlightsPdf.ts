@@ -49,8 +49,41 @@ export async function exportStudentHighlightsPdf({
 }) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
   const M = 40;
   let y = M;
+
+  // Draw the diagonal CONFIDENTIAL watermark BEFORE any content so it sits
+  // underneath everything else (jsPDF has no z-index — draw order wins).
+  const drawWatermark = () => {
+    const anyDoc = doc as any;
+    const hasGState = !!anyDoc.GState && !!anyDoc.setGState;
+    if (hasGState) anyDoc.setGState(new anyDoc.GState({ opacity: 0.08 }));
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(54);
+    doc.setTextColor(120, 120, 130);
+    const tileX = 260;
+    const tileY = 200;
+    for (let xi = -1; xi < Math.ceil(W / tileX) + 1; xi++) {
+      for (let yi = -1; yi < Math.ceil(H / tileY) + 1; yi++) {
+        doc.text("CONFIDENTIAL", xi * tileX + 40, yi * tileY + 140, { angle: 32 });
+      }
+    }
+    if (hasGState) anyDoc.setGState(new anyDoc.GState({ opacity: 1 }));
+    // Reset text defaults so subsequent content isn't affected.
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+  };
+
+  // Draw on page 1 first, and on every subsequent page automatically.
+  drawWatermark();
+  try {
+    doc.internal.events.subscribe("addPage", () => drawWatermark());
+  } catch {
+    /* event API unavailable — page 1 watermark still applied */
+  }
+
 
   // Header band
   doc.setFillColor(15, 15, 20);
