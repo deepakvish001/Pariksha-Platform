@@ -78,12 +78,85 @@ export function useMyOrgRole(orgId?: string | null) {
   });
 }
 
-/** Generic capability check. */
-export function useCan(orgId?: string | null, cap?: Capability) {
-  const { data: role, isLoading } = useMyOrgRole(orgId);
-  const allowed = !!cap && roleHasCapability(role ?? null, cap);
-  return { allowed, role: (role ?? null) as OrgMemberRole | null, isLoading };
+/** Per-member capability overrides (custom checkboxes). Returns null when the
+ * member has no override rows — callers fall back to the role matrix. */
+export function useMyOrgCapabilities(orgId?: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["b2b", "my-capabilities", orgId, user?.id],
+    enabled: !!orgId && !!user?.id,
+    queryFn: async (): Promise<string[] | null> => {
+      const { data: m } = await supabase
+        .from("org_members")
+        .select("id")
+        .eq("org_id", orgId!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (!m) return null;
+      const { data, error } = await supabase
+        .from("org_member_capabilities")
+        .select("capability")
+        .eq("member_id", m.id);
+      if (error) throw error;
+      const rows = (data ?? []) as { capability: string }[];
+      return rows.length === 0 ? null : rows.map((r) => r.capability);
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
 }
+
+/** Capability check — honours per-member overrides, falls back to role matrix. */
+export function useCan(orgId?: string | null, cap?: Capability) {
+  const { data: role, isLoading: roleLoading } = useMyOrgRole(orgId);
+  const { data: caps, isLoading: capsLoading } = useMyOrgCapabilities(orgId);
+  const allowed = !!cap && (
+    caps && caps.length > 0
+      ? caps.includes(cap)
+      : roleHasCapability(role ?? null, cap)
+  );
+  return { allowed, role: (role ?? null) as OrgMemberRole | null, isLoading: roleLoading || capsLoading };
+}
+
+/** Grouped capability catalogue rendered as checkboxes in the Team UI. */
+export const CAPABILITY_GROUPS: { label: string; caps: { key: Capability; label: string }[] }[] = [
+  { label: "Assessments", caps: [
+    { key: "assessments.write", label: "Create & edit assessments" },
+    { key: "assessments.publish", label: "Publish assessments" },
+  ]},
+  { label: "Question Bank", caps: [
+    { key: "questionBank.write", label: "Add & edit questions" },
+  ]},
+  { label: "Proctoring", caps: [
+    { key: "proctor.view", label: "View live proctoring & evidence" },
+    { key: "proctor.runAi", label: "Run AI review" },
+  ]},
+  { label: "Results & candidates", caps: [
+    { key: "results.exportPii", label: "Export results with PII" },
+  ]},
+  { label: "Team", caps: [
+    { key: "members.invite", label: "Invite teammates" },
+    { key: "members.removeOrEdit", label: "Edit roles & remove members" },
+  ]},
+  { label: "Organization", caps: [
+    { key: "org.editSettings", label: "Edit org settings" },
+    { key: "audit.view", label: "View audit log" },
+  ]},
+];
+
+/** Preset role → capability set for the dropdown shortcut. */
+export const ROLE_CAPABILITY_PRESETS: Record<OrgMemberRole, Capability[]> = {
+  owner: Object.keys(CAPABILITY_MATRIX) as Capability[],
+  admin: (Object.keys(CAPABILITY_MATRIX) as Capability[]).filter(
+    (c) => !["members.promoteToOwner", "org.manageBilling", "org.delete"].includes(c as string),
+  ),
+  proctor: ["proctor.view", "proctor.runAi"],
+  recruiter: ["results.exportPii"],
+  viewer: [],
+};
 
 /** Legacy convenience: proctoring evidence + Run AI review. */
 export function useCanProctor(orgId?: string | null) {
