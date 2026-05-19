@@ -634,6 +634,15 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                     <span>Offers <span className="text-foreground">{r.offers_count}</span></span>
                   </div>
                   <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setDrawerStudent(r)}
+                    >
+                      <BarChart3 className="h-3.5 w-3.5 mr-1" />
+                      Metrics
+                    </Button>
                     <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
                       <Link to={`/b2b/placements/students/${r.student_id}`}>
                         <ExternalLink className="h-3.5 w-3.5 mr-1" />
