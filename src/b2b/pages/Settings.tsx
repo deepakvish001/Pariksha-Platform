@@ -344,16 +344,12 @@ export default function B2BSettings() {
         );
       case "notifications":
         return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Notifications"
-            description="Pick where assessment results and proctoring alerts get delivered."
-            fields={[
-              "Email recipients for completion digests",
-              "Slack / webhook URL for instant alerts",
-              "Daily summary email toggle",
-              "Recipients for proctoring incidents",
-            ]}
+          <NotificationsSection
+            canEdit={canEdit}
+            state={notifications}
+            setState={setNotifications}
+            slackError={slackError}
+            emailError={emailError}
           />
         );
       case "integrations":
