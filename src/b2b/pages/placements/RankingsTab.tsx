@@ -501,14 +501,14 @@ export function RankingsTab({ orgId }: { orgId: string }) {
           <div className="ml-auto flex items-center gap-2">
             <div className="inline-flex rounded-md border border-[hsl(var(--border))]/60 overflow-hidden">
               <button
-                onClick={() => setView("cards")}
+                onClick={() => { preserveScroll(); setView("cards"); }}
                 className={`h-8 px-2 ${view === "cards" ? "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]" : "text-muted-foreground"}`}
                 aria-label="Card view"
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setView("table")}
+                onClick={() => { preserveScroll(); setView("table"); }}
                 className={`h-8 px-2 ${view === "table" ? "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]" : "text-muted-foreground"}`}
                 aria-label="Table view"
               >
