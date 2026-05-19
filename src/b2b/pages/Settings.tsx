@@ -23,6 +23,7 @@ import { DangerSection } from "./settings/DangerSection";
 import { DefaultsSection, type DefaultsState } from "./settings/DefaultsSection";
 import { SecuritySection, type SecurityState } from "./settings/SecuritySection";
 import { NotificationsSection, type NotificationsState } from "./settings/NotificationsSection";
+import { AuditSection } from "./settings/AuditSection";
 import { validateHexColor } from "./settings/hexColor";
 
 const DEFAULT_DEFAULTS: DefaultsState = {
@@ -257,6 +258,28 @@ export default function B2BSettings() {
     }
     toast.success("Organization updated");
     qc.invalidateQueries({ queryKey: ["b2b", "orgs"] });
+
+    // Best-effort audit log — failures here must not break the UX.
+    const changedSections: string[] = [];
+    if (
+      name.trim() !== org.name ||
+      (logoUrl || "") !== (org.logo_url ?? "") ||
+      (normalizedBrand || "") !== (org.brand_color ?? "")
+    ) changedSections.push("general+branding");
+    if (defaultsDirty) changedSections.push("defaults");
+    if (securityDirty) changedSections.push("security");
+    if (notificationsDirty) changedSections.push("notifications");
+    if (changedSections.length > 0) {
+      supabase.rpc("log_org_audit", {
+        _org_id: org.id,
+        _action: "settings.updated",
+        _target: changedSections.join(","),
+        _metadata: {},
+      }).then(({ error: e }) => {
+        if (e) console.warn("audit log failed", e.message);
+        else qc.invalidateQueries({ queryKey: ["b2b", "audit", org.id] });
+      });
+    }
   };
 
   const onDiscard = () => {
@@ -366,20 +389,7 @@ export default function B2BSettings() {
           />
         );
       case "audit":
-        return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Audit log"
-            description="Read-only log of who did what in this organization. Filter by person and action, export to CSV."
-            fields={[
-              "Member added / removed",
-              "Capability changes",
-              "Assessment published or unpublished",
-              "Invite created or revoked",
-              "Org settings changed",
-            ]}
-          />
-        );
+        return <AuditSection orgId={org.id} />;
       case "danger":
         return <DangerSection org={org} isOwner={isOwner} deleting={deleting} onDelete={onDelete} />;
     }

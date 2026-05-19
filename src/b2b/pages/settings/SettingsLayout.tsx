@@ -41,7 +41,7 @@ export const SETTINGS_SECTIONS: Section[] = [
   { id: "security", label: "Security & Access", icon: ShieldCheck, description: "Allowed domains, MFA and team sessions." },
   { id: "notifications", label: "Notifications", icon: Bell, description: "Where result digests and alerts go." },
   { id: "integrations", label: "Integrations", icon: Plug, description: "Webhooks, custom domains and SSO.", comingSoon: true },
-  { id: "audit", label: "Audit log", icon: History, description: "Who changed what, and when.", comingSoon: true },
+  { id: "audit", label: "Audit log", icon: History, description: "Who changed what, and when." },
   { id: "danger", label: "Danger zone", icon: AlertTriangle, description: "Transfer or delete this organization.", ownerOnly: true },
 ];
 
