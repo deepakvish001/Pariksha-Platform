@@ -123,6 +123,7 @@ export default function B2BSettings() {
   const [brandColor, setBrandColor] = useState("");
   const [defaults, setDefaults] = useState<DefaultsState>(DEFAULT_DEFAULTS);
   const [security, setSecurity] = useState<SecurityState>(DEFAULT_SECURITY);
+  const [notifications, setNotifications] = useState<NotificationsState>(DEFAULT_NOTIFICATIONS);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewSubject, setPreviewSubject] = useState<string>("");
