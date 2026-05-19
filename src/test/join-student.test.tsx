@@ -49,6 +49,7 @@ function renderAt(path: string) {
 
 describe("JoinStudent token acceptance E2E", () => {
   beforeEach(() => {
+    cleanup();
     invokeMock.mockReset();
     navigateMock.mockReset();
   });
