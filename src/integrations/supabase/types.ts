@@ -10420,33 +10420,77 @@ export type Database = {
         Args: { _filters?: Json; _org: string }
         Returns: Json
       }
-      placement_rankings: {
-        Args: {
-          _filters?: Json
-          _limit?: number
-          _offset?: number
-          _org_id: string
-        }
+      placement_rankings:
+        | {
+            Args: {
+              _filters?: Json
+              _limit?: number
+              _offset?: number
+              _org_id: string
+            }
+            Returns: {
+              applications_count: number
+              assessments_taken: number
+              avg_assessment_score: number
+              avg_integrity: number
+              batch_year: number
+              branch: string
+              email: string
+              full_name: string
+              is_multi_offer: boolean
+              is_placed: boolean
+              offers_count: number
+              rank_in_branch: number
+              rank_in_org: number
+              roll_number: string
+              score: number
+              scores: Json
+              section: string
+              shortlisted_count: number
+              student_id: string
+            }[]
+          }
+        | {
+            Args: {
+              _filters?: Json
+              _limit?: number
+              _offset?: number
+              _org_id: string
+              _sort?: string
+              _student_ids?: string[]
+            }
+            Returns: {
+              applications_count: number
+              assessments_taken: number
+              avg_assessment_score: number
+              avg_integrity: number
+              batch_year: number
+              branch: string
+              email: string
+              full_name: string
+              is_multi_offer: boolean
+              is_placed: boolean
+              offers_count: number
+              rank_in_branch: number
+              rank_in_org: number
+              roll_number: string
+              score: number
+              scores: Json
+              section: string
+              shortlisted_count: number
+              student_id: string
+            }[]
+          }
+      placement_rankings_count: {
+        Args: { _filters?: Json; _org_id: string; _student_ids?: string[] }
+        Returns: number
+      }
+      placement_rankings_filter_values: {
+        Args: { _org_id: string }
         Returns: {
-          applications_count: number
-          assessments_taken: number
-          avg_assessment_score: number
-          avg_integrity: number
-          batch_year: number
-          branch: string
-          email: string
-          full_name: string
-          is_multi_offer: boolean
-          is_placed: boolean
-          offers_count: number
-          rank_in_branch: number
-          rank_in_org: number
-          roll_number: string
-          score: number
-          scores: Json
-          section: string
-          shortlisted_count: number
-          student_id: string
+          batches: number[]
+          branches: string[]
+          sections: string[]
         }[]
       }
       placement_recompute_scores: { Args: { _org_id: string }; Returns: number }
