@@ -11,9 +11,11 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
 } from "recharts";
 import {
-  Trophy, ExternalLink, Share2, Briefcase, GraduationCap, Sparkles, Mail,
+  Trophy, ExternalLink, Share2, Briefcase, GraduationCap, Sparkles, Mail, FileDown,
 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+import { exportStudentHighlightsPdf } from "./exportStudentHighlightsPdf";
 
 type Ranking = {
   student_id: string;
