@@ -158,6 +158,17 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Scroll preservation: snapshot Y before filter/sort/view changes,
+  // restore after the resulting data/layout update so the viewport stays put.
+  const scrollRestoreRef = useRef<number | null>(null);
+  const preserveScroll = () => {
+    scrollRestoreRef.current = window.scrollY;
+  };
+  const withPreserve = <T,>(fn: (v: T) => void) => (v: T) => {
+    preserveScroll();
+    fn(v);
+  };
+
   useEffect(() => {
     localStorage.setItem("placements.rankings.view", view);
   }, [view]);
