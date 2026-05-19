@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -8,6 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, CartesianGrid,
@@ -15,11 +20,31 @@ import {
 } from "recharts";
 import {
   Trophy, ExternalLink, Share2, Briefcase, GraduationCap, Sparkles, Mail, FileDown,
-  LineChart as LineChartIcon, ShieldAlert,
+  LineChart as LineChartIcon, ShieldAlert, Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { exportStudentHighlightsPdf } from "./exportStudentHighlightsPdf";
+
+const WM_PREFS_KEY = "placements.pdf.watermark";
+type WmPrefs = { enabled: boolean; opacity: number };
+const DEFAULT_WM_PREFS: WmPrefs = { enabled: true, opacity: 0.06 };
+
+function loadWmPrefs(): WmPrefs {
+  if (typeof window === "undefined") return DEFAULT_WM_PREFS;
+  try {
+    const raw = window.localStorage.getItem(WM_PREFS_KEY);
+    if (!raw) return DEFAULT_WM_PREFS;
+    const parsed = JSON.parse(raw);
+    return {
+      enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : true,
+      opacity: Math.max(0, Math.min(1, Number(parsed.opacity) || DEFAULT_WM_PREFS.opacity)),
+    };
+  } catch {
+    return DEFAULT_WM_PREFS;
+  }
+}
+
 
 type Ranking = {
   student_id: string;
