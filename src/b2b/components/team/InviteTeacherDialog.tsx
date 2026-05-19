@@ -86,8 +86,11 @@ export function InviteTeacherDialog({ open, onOpenChange, orgId }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={(next) => { if (!next) tryCancel(); else onOpenChange(true); }}>
+      <DialogContent
+        className="max-w-2xl"
+        onEscapeKeyDown={(e) => { e.preventDefault(); tryCancel(); }}
+      >
         <DialogHeader>
           <DialogTitle>Invite a teacher</DialogTitle>
           <DialogDescription>
