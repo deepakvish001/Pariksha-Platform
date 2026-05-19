@@ -342,7 +342,7 @@ export default function B2BSettings() {
             <Button
               size="sm"
               onClick={onSave}
-              disabled={saving}
+              disabled={!canSave || saving}
               className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             >
               <Save className="h-4 w-4 mr-1" />
