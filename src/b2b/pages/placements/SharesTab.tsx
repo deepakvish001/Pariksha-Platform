@@ -120,20 +120,26 @@ export function SharesTab({ orgId }: { orgId: string }) {
     return Array.from(s);
   }, [shares.data]);
 
-  const studentNames = useQuery({
+  const studentInfo = useQuery({
     enabled: allStudentIds.length > 0,
-    queryKey: ["org-shares-names", orgId, allStudentIds.length, allStudentIds.slice(0, 5).join(",")],
+    queryKey: ["org-shares-info", orgId, allStudentIds.length, allStudentIds.slice(0, 5).join(",")],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("org_students")
         .select("id, full_name, email")
         .in("id", allStudentIds);
       if (error) throw error;
-      const map: Record<string, string> = {};
-      (data || []).forEach((s: any) => { map[s.id] = s.full_name || s.email?.split("@")[0] || "Student"; });
-      return map;
+      const names: Record<string, string> = {};
+      const emails: Record<string, string> = {};
+      (data || []).forEach((s: any) => {
+        names[s.id] = s.full_name || s.email?.split("@")[0] || "Student";
+        emails[s.id] = s.email || "";
+      });
+      return { names, emails };
     },
   });
+  const studentNames = { data: studentInfo.data?.names };
+  const studentEmails = studentInfo.data?.emails || {};
 
   const filtered = useMemo(() => {
     const rows = shares.data || [];
