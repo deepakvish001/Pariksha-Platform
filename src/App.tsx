@@ -294,6 +294,7 @@ const App = () => (
                 <Route path="/b2b/insights/feedback" element={<ProtectedRoute><B2BInsightsFeedback /></ProtectedRoute>} />
                 <Route path="/b2b/students" element={<ProtectedRoute><B2BStudents /></ProtectedRoute>} />
                 <Route path="/b2b/students/:studentId" element={<ProtectedRoute><B2BStudentDetail /></ProtectedRoute>} />
+                <Route path="/b2b/placements" element={<ProtectedRoute><B2BPlacements /></ProtectedRoute>} />
 
                 {/* Student-facing college home */}
                 <Route path="/my/college" element={<ProtectedRoute><MyCollege /></ProtectedRoute>} />
