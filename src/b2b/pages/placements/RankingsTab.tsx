@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,16 +126,21 @@ function MiniBar({ label, value, tone }: { label: string; value: number; tone: s
 
 export function RankingsTab({ orgId }: { orgId: string }) {
   const qc = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [batch, setBatch] = useState<string>("all");
-  const [branch, setBranch] = useState<string>("all");
-  const [section, setSection] = useState<string>("all");
-  const [driveId, setDriveId] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
-  const [minScore, setMinScore] = useState<string>("0");
-  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sp = (k: string, fallback: string) => searchParams.get(k) ?? fallback;
+
+  const [search, setSearch] = useState(() => sp("q", ""));
+  const [debouncedSearch, setDebouncedSearch] = useState(() => sp("q", "").trim());
+  const [batch, setBatch] = useState<string>(() => sp("batch", "all"));
+  const [branch, setBranch] = useState<string>(() => sp("branch", "all"));
+  const [section, setSection] = useState<string>(() => sp("section", "all"));
+  const [driveId, setDriveId] = useState<string>(() => sp("drive", "all"));
+  const [status, setStatus] = useState<string>(() => sp("status", "all"));
+  const [minScore, setMinScore] = useState<string>(() => sp("min", "0"));
+  const [sortKey, setSortKey] = useState<SortKey>(() => (sp("sort", "score") as SortKey));
   const [view, setView] = useState<"cards" | "table">(() => {
+    const fromUrl = searchParams.get("view");
+    if (fromUrl === "cards" || fromUrl === "table") return fromUrl;
     if (typeof window === "undefined") return "cards";
     return (localStorage.getItem("placements.rankings.view") as "cards" | "table") || "cards";
   });
@@ -154,6 +159,28 @@ export function RankingsTab({ orgId }: { orgId: string }) {
   useEffect(() => {
     localStorage.setItem("placements.rankings.view", view);
   }, [view]);
+
+  // Sync filter/sort/view state into URL so views are shareable
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    const set = (k: string, v: string, def: string) => {
+      if (v && v !== def) next.set(k, v); else next.delete(k);
+    };
+    set("q", debouncedSearch, "");
+    set("batch", batch, "all");
+    set("branch", branch, "all");
+    set("section", section, "all");
+    set("drive", driveId, "all");
+    set("status", status, "all");
+    set("min", minScore, "0");
+    set("sort", sortKey, "score");
+    set("view", view, "cards");
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, batch, branch, section, driveId, status, minScore, sortKey, view]);
+
 
   const filters = useMemo(() => {
     const f: Record<string, string | number> = {};
