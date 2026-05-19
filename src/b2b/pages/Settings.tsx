@@ -100,15 +100,43 @@ export default function B2BSettings() {
   const canEdit = isOwner || myRole === "admin";
   const normalizedBrand = brandColor.trim();
   const brandValidation = validateHexColor(normalizedBrand);
+
+  // Defaults validation
+  const orgDefaults = orgToDefaults(org);
+  const durationNum = defaults.duration.trim() === "" ? NaN : Number(defaults.duration);
+  const passMarkNum = defaults.passMark.trim() === "" ? NaN : Number(defaults.passMark);
+  const durationError =
+    !Number.isFinite(durationNum) || !Number.isInteger(durationNum) || durationNum < 5 || durationNum > 600
+      ? "Enter a whole number between 5 and 600."
+      : null;
+  const passMarkError =
+    !Number.isFinite(passMarkNum) || !Number.isInteger(passMarkNum) || passMarkNum < 0 || passMarkNum > 100
+      ? "Enter a whole number between 0 and 100."
+      : null;
+  const defaultsDirty =
+    defaults.duration !== orgDefaults.duration ||
+    defaults.proctoring !== orgDefaults.proctoring ||
+    defaults.passMark !== orgDefaults.passMark ||
+    defaults.allowRetake !== orgDefaults.allowRetake ||
+    defaults.autoRelease !== orgDefaults.autoRelease;
+
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
-    (normalizedBrand || "") !== (org.brand_color ?? "");
+    (normalizedBrand || "") !== (org.brand_color ?? "") ||
+    defaultsDirty;
+
+  const hasErrors = !!durationError || !!passMarkError;
+  const canSave = dirty && !hasErrors && brandValidation.ok === true;
 
   const onSave = async () => {
     if (!canEdit || !dirty) return;
     if (brandValidation.ok !== true) {
       toast.error((brandValidation as { ok: false; error: string }).error);
+      return;
+    }
+    if (hasErrors) {
+      toast.error(durationError ?? passMarkError ?? "Please fix the highlighted fields.");
       return;
     }
     setSaving(true);
@@ -120,6 +148,11 @@ export default function B2BSettings() {
         logo_url: logoUrl.trim() || null,
         brand_color: normalizedBrand || null,
         slug: newSlug,
+        default_duration_min: durationNum,
+        default_proctoring: defaults.proctoring,
+        default_pass_mark: passMarkNum,
+        allow_retake_default: defaults.allowRetake,
+        auto_release_results: defaults.autoRelease,
       })
       .eq("id", org.id);
     setSaving(false);
@@ -135,6 +168,7 @@ export default function B2BSettings() {
     setName(org.name);
     setLogoUrl(org.logo_url ?? "");
     setBrandColor(org.brand_color ?? "");
+    setDefaults(orgToDefaults(org));
   };
 
   const onDelete = async () => {
