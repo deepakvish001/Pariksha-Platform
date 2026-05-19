@@ -74,18 +74,28 @@ Deno.serve(async (req) => {
     const prefById: Record<string, any> = {};
     (prefs || []).forEach((p: any) => { prefById[p.student_id] = p; });
 
-    // Fire-and-forget view log + counter update
-    const ipHash = req.headers.get("x-forwarded-for") || "";
-    supa.from("student_share_views").insert({
-      share_id: link.id,
-      ip_hash: ipHash ? await sha256(ipHash) : null,
-      user_agent: req.headers.get("user-agent"),
-      referrer: req.headers.get("referer"),
-    }).then(() => {});
-    
-    supa.from("student_share_links")
-      .update({ last_viewed_at: new Date().toISOString() })
-      .eq("id", link.id).then(() => {});
+    // Persist the view + bump counter atomically; use waitUntil so the writes
+    // complete even after the response is flushed.
+    const ipRaw = req.headers.get("x-forwarded-for") || "";
+    const ipHash = ipRaw ? await sha256(ipRaw.split(",")[0].trim()) : null;
+    const ua = req.headers.get("user-agent");
+    const ref = req.headers.get("referer");
+    const persist = (async () => {
+      await supa.from("student_share_views").insert({
+        share_id: link.id,
+        ip_hash: ipHash,
+        user_agent: ua,
+        referrer: ref,
+      });
+      await supa.rpc("increment_share_view_count", { p_share_id: link.id });
+    })();
+    // @ts-ignore - EdgeRuntime is provided by Supabase Deno runtime
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(persist);
+    } else {
+      await persist;
+    }
       
 
     const payload = {
