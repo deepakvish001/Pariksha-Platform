@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShareDialog } from "./ShareDialog";
+import { QuickSharePopover } from "./QuickSharePopover";
 
 type Ranking = {
   student_id: string;
