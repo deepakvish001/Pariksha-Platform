@@ -77,15 +77,26 @@ export default function B2BAssessmentsList() {
     all: assessments?.length ?? 0,
   };
 
-  const typeCounts = useMemo(() => {
-    const c: Record<string, number> = { all: assessments?.length ?? 0 };
-    for (const t of ASSESSMENT_TYPES) c[t] = 0;
+  const typeStats = useMemo(() => {
+    const empty = () => ({ total: 0, live: 0, upcoming: 0, drafts: 0, closed: 0 });
+    const stats: Record<string, ReturnType<typeof empty>> = { all: empty() };
+    for (const t of ASSESSMENT_TYPES) stats[t] = empty();
+    const tag = (a: Assessment, bucket: keyof ReturnType<typeof empty>) => {
+      const t = ((a as any).type as AssessmentType) ?? "placement_mock";
+      stats[t][bucket] += 1;
+      stats.all[bucket] += 1;
+    };
     for (const a of assessments ?? []) {
       const t = ((a as any).type as AssessmentType) ?? "placement_mock";
-      c[t] = (c[t] ?? 0) + 1;
+      stats[t].total += 1;
+      stats.all.total += 1;
     }
-    return c;
-  }, [assessments]);
+    for (const a of buckets.live) tag(a, "live");
+    for (const a of buckets.upcoming) tag(a, "upcoming");
+    for (const a of buckets.drafts) tag(a, "drafts");
+    for (const a of buckets.closed) tag(a, "closed");
+    return stats;
+  }, [assessments, buckets]);
 
   const visible = useMemo(() => {
     let list: Assessment[];
