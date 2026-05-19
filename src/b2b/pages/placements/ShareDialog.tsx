@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Copy, Check, Link2, Loader2, Share2, MessageSquare,
   ChevronDown, History, Eye, Ban, FileText, Mail,
+  CheckCircle2, Clock, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
@@ -36,6 +37,45 @@ const PRESETS = [
 function buildUrl(token: string, kind: "profile" | "shortlist") {
   const path = kind === "profile" ? `/p/student/${token}` : `/p/shortlist/${token}`;
   return `${window.location.origin}${path}`;
+}
+
+type LinkStatus = "active" | "expired" | "revoked";
+
+function deriveStatus(row: { revoked_at?: string | null; expires_at: string }): LinkStatus {
+  if (row.revoked_at) return "revoked";
+  if (new Date(row.expires_at).getTime() < Date.now()) return "expired";
+  return "active";
+}
+
+function StatusPill({ status, expiresAt }: { status: LinkStatus; expiresAt?: string }) {
+  const map = {
+    active: {
+      icon: CheckCircle2,
+      label: expiresAt
+        ? `Active · expires ${formatDistanceToNow(new Date(expiresAt), { addSuffix: true })}`
+        : "Active",
+      cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+    },
+    expired: {
+      icon: Clock,
+      label: "Expired",
+      cls: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+    },
+    revoked: {
+      icon: XCircle,
+      label: "Revoked",
+      cls: "border-destructive/40 bg-destructive/10 text-destructive",
+    },
+  } as const;
+  const { icon: Icon, label, cls } = map[status];
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+    </span>
+  );
 }
 
 export function ShareDialog({
@@ -292,11 +332,7 @@ export function ShareDialog({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-2 space-y-2">
                   {recent.data.map((r: any) => {
-                    const status = r.revoked_at
-                      ? "Revoked"
-                      : new Date(r.expires_at) < new Date()
-                        ? "Expired"
-                        : "Active";
+                    const status = deriveStatus(r);
                     const url = buildUrl(r.token, r.kind);
                     return (
                       <div key={r.id} className="rounded-md border border-border p-2 text-xs">
@@ -310,9 +346,7 @@ export function ShareDialog({
                               {" · expires "}{format(new Date(r.expires_at), "MMM d")}
                             </div>
                           </div>
-                          <Badge variant={status === "Active" ? "default" : "secondary"} className="shrink-0">
-                            {status}
-                          </Badge>
+                          <StatusPill status={status} />
                         </div>
                         <div className="mt-2 flex items-center gap-2">
                           <span className="flex items-center gap-1 text-muted-foreground">
@@ -323,7 +357,7 @@ export function ShareDialog({
                               onClick={() => copy(url, "url").then(() => toast.success("Link copied"))}>
                               <Copy className="h-3 w-3" />
                             </Button>
-                            {status === "Active" && (
+                            {status === "active" && (
                               <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive"
                                 onClick={() => revoke.mutate(r.id)} disabled={revoke.isPending}>
                                 <Ban className="h-3 w-3" />
@@ -340,8 +374,11 @@ export function ShareDialog({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="text-xs text-muted-foreground">
-              Share this link with HR · expires {format(new Date(share.expiresAt), "PPP")}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+              <StatusPill status="active" expiresAt={share.expiresAt} />
+              <span className="text-[11px] text-muted-foreground">
+                Expires {format(new Date(share.expiresAt), "PPP")}
+              </span>
             </div>
             <div className="flex gap-2">
               <Input value={shareUrl!} readOnly className="font-mono text-xs" />
