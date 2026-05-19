@@ -144,6 +144,50 @@ export default function B2BAssessmentsList() {
             </div>
           </GlassCard>
         )}
+
+        {/* Per-type KPI strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {ASSESSMENT_TYPES.map((t) => {
+            const tpl = getTemplate(t);
+            const TIcon = tpl.icon;
+            const active = typeFilter === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(active ? "all" : t)}
+                className={`group text-left rounded-xl border px-3 py-2.5 transition-colors ${
+                  active
+                    ? "border-[hsl(var(--primary))]/50 bg-[hsl(var(--primary))]/[0.06]"
+                    : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border ${tpl.badgeClass}`}>
+                    <TIcon className="h-3.5 w-3.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] text-muted-foreground truncate">{tpl.label}</div>
+                    <div className="text-base font-semibold tabular-nums leading-tight">{typeCounts[t] ?? 0}</div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Type filter chip row */}
+        {typeFilter !== "all" && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Filtered by type:</span>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${getTemplate(typeFilter).badgeClass}`}>
+              {getTemplate(typeFilter).label}
+            </span>
+            <button onClick={() => setTypeFilter("all")} className="text-muted-foreground hover:text-foreground underline">
+              clear
+            </button>
+          </div>
+        )}
+
         {/* Tabs */}
         <GlassCard className="p-2">
           <div className="flex flex-wrap items-center gap-1">
