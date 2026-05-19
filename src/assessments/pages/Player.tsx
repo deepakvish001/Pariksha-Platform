@@ -208,7 +208,7 @@ export default function Player() {
       try {
         await submitAttempt.mutateAsync(attemptId);
         setSubmitted(true);
-        stopCamStream();
+        stopCamStream(auto ? "auto_submit" : "submit");
         toast.success(auto ? "Time's up — auto-submitted" : "Submitted successfully");
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : "Failed to submit");
@@ -219,10 +219,16 @@ export default function Player() {
   );
 
   // Release the proctoring webcam as soon as the attempt is no longer active
-  // (terminal status from server) or after local submit.
+  // (terminal status from server) or after local submit. Covers submitted,
+  // completed, auto_submitted, timed_out, abandoned, disqualified, etc.
   useEffect(() => {
-    if (submitted || (paper && paper.attempt.status !== "in_progress")) {
-      stopCamStream();
+    if (submitted) {
+      stopCamStream("local_submitted");
+      return;
+    }
+    const status = paper?.attempt.status;
+    if (status && status !== "in_progress") {
+      stopCamStream(`server_status:${status}`);
     }
   }, [submitted, paper, stopCamStream]);
 
