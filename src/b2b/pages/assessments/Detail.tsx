@@ -274,9 +274,9 @@ function SectionQuestions({ sectionId, orgId }: { sectionId: string; orgId: stri
           </div>
         );
       })}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Select value={pick} onValueChange={setPick}>
-          <SelectTrigger className="flex-1">
+          <SelectTrigger className="flex-1 min-w-[200px]">
             <SelectValue placeholder={available.length ? "Add question from bank…" : "Question bank empty"} />
           </SelectTrigger>
           <SelectContent>
@@ -301,7 +301,21 @@ function SectionQuestions({ sectionId, orgId }: { sectionId: string; orgId: stri
         >
           <Plus className="h-4 w-4 mr-1" /> Add
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => setAiOpen(true)}
+          className="border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10"
+        >
+          <Sparkles className="h-4 w-4 mr-1" /> Generate with AI
+        </Button>
       </div>
+      <AiGenerateQuestionsDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        orgId={orgId}
+        sectionId={sectionId}
+        existingCount={rows?.length ?? 0}
+      />
     </div>
   );
 }
