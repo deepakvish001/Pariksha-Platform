@@ -1,121 +1,126 @@
-## Placement Report Dashboard — Plan
+# Placement Rankings & Shareable Student Profiles
 
-A new B2B surface at `/colleges/:slug/placements` (and `/companies/:slug/placements` for parity) that turns Parikshaa's existing assessment data into a full **placement intelligence** dashboard, similar in spirit to Superset/Looker but purpose-built for college TPOs and leadership.
+Build a ranking system on top of the Placements dashboard so colleges can identify top performers across all branches/batches and share polished profile pages with HR/recruiters.
 
-### 1. Audience & layout
+## What the user gets
 
-Role-based shell on a single route. The current user's `org_members.role` (already in the schema) decides the default view; a small toggle lets them switch.
+1. **Rankings tab** inside `/b2b/placements` — sortable, filterable leaderboard of every student in the org with a composite "Placement Score".
+2. **Student Placement Profile page** at `/b2b/placements/students/:studentId` — rich view college admins and the student themselves can see.
+3. **Public shareable profile** at `/p/student/:shareToken` — recruiter-safe, no-auth link with a watermark, expiry, and view tracking.
+4. **Bulk share to HR** — select N top students, generate a "shortlist link" and copy/email it to a recruiter.
+
+## Rankings tab
+
+Sits as a new tab in PlacementsDashboard next to Overview.
+
+Columns (all sortable, click row → profile):
+- Rank (#)
+- Student (avatar, name, roll no.)
+- Branch · Batch · Section
+- Placement Score (0–100, color-coded)
+- Assessments taken / avg score / avg integrity
+- DSA + Quiz mastery (from XP / SRS)
+- Resume strength %
+- Drives applied / shortlisted / offers
+- Status badge (Unplaced / Shortlisted / Placed / Multi-offer)
+- Actions: View profile · Share to HR · Add to shortlist
+
+Filters (reuse existing PlacementFilters context): batch, branch, section, status, score band, "has resume", "has offer", min assessments.
+
+Top of tab: "Top 10 across college", "Top 3 per branch" quick-view chips, plus CSV export and "Generate shortlist link" button.
+
+## Placement Score formula
+
+Stored in `placement_snapshots.scores jsonb` per student, recomputed nightly + on-demand:
 
 ```text
-┌─ Placement Report ────────────── [TPO] [Leadership] [Public]
-├─ Global filter bar (sticky)
-│   Batch • Branch/Section • Date range • Drive status •
-│   CTC band • Sector • Student status   [Save view] [Reset]
-├─ KPI strip (changes per view)
-├─ Main grid
-│   TPO:        Operational tables + funnel + drill-downs
-│   Leadership: Trends + branch comparison + AI narrative
-│   Public:     Highlights + top recruiters + CTC distribution
-└─ AI dock (right rail)  — NL Q&A + saved insights
+Score = 0.30 * assessment_score_pct
+      + 0.15 * assessment_integrity_pct
+      + 0.20 * skill_mastery (XP-tier + SRS mastery normalized)
+      + 0.15 * resume_strength (latest AI analysis 0–100)
+      + 0.10 * drive_engagement (applications & shortlist rate)
+      + 0.10 * offer_factor (placed/multi-offer boost)
 ```
 
-### 2. Data model (new tables under `public.`)
+Each component is computed in SQL from existing tables (`assessment_attempts`, `user_xp`, `srs_*`, `resume_analyses`, `drive_applications`, `placement_offers`). Missing data → component = 0 with an "incomplete profile" hint shown in UI.
 
-Existing reusable tables: `organizations`, `org_members`, `org_students`, `assessments`, `assessment_attempts`, `assessment_invites`.
+## Student Placement Profile (internal)
 
-New tables to add (all org-scoped with strict RLS via `has_org_role`):
+Route: `/b2b/placements/students/:studentId` — visible to org admins/TPO/recruiter roles AND to the student themselves (if `org_students.user_id = auth.uid()`).
 
-- **recruiters** — `org_id`, `name`, `sector` (enum), `website`, `hq_city`, `notes`, `contacts jsonb[]`, `first_visit_year`, `last_visit_year`, `is_repeat bool`.
-- **placement_drives** — `org_id`, `recruiter_id`, `title`, `role_title`, `drive_type` (on_campus / pool / off_campus / virtual), `status` (upcoming / open / closed / cancelled), `opens_at`, `closes_at`, `eligibility jsonb` (min_cgpa, allowed_branches[], max_backlogs, batch_years[]), `ctc_min`, `ctc_max`, `currency`, `location`, `bond_months`.
-- **drive_eligibility** — view/materialised view that joins `org_students` × `placement_drives.eligibility` to compute the eligible pool per drive (used for funnel + shortlist screens).
-- **drive_applications** — `drive_id`, `student_id`, `applied_at`, `stage` (applied / shortlisted / round_n / offered / rejected / withdrew), `current_round`, `last_event_at`, `notes`.
-- **placement_offers** — `drive_id`, `student_id`, `recruiter_id`, `offered_at`, `accepted_at`, `declined_at`, `ctc`, `currency`, `role_title`, `location`, `offer_type` (intern / fte / ppo), `is_dream_offer bool`.
-- **placement_views** — saved filter sets per user (`org_id`, `user_id`, `name`, `filters jsonb`, `is_shared bool`).
-- **placement_ai_runs** — append-only log of AI Q&A and narrative generations (`org_id`, `user_id`, `kind`, `prompt`, `response`, `filters jsonb`, `tokens`, `cost_cents`).
-- **placement_snapshots** — nightly materialised aggregates per `(org_id, batch_year, branch)`: `placed_count`, `multi_offer_count`, `avg_ctc`, `median_ctc`, `top_ctc`, `dream_offers`, `total_eligible`. Powers fast leadership charts and the public report.
+Sections:
+- Header card: avatar, name, roll/branch/batch, Placement Score gauge, status badge, rank-in-branch + rank-in-college
+- Strengths radar chart (the 6 score components)
+- Assessment history (table from existing `assessment_attempts`)
+- Skill mastery (DSA topics, languages, XP level)
+- Resume preview (latest template + AI strengths/weaknesses)
+- Drive timeline (applications, rounds, offers)
+- Top tags ("Top 5% in DSA", "Consistent integrity", "Resume-ready")
+- Share controls: "Generate HR link", "Copy public URL", "Revoke link"
 
-Indexes on `(org_id, batch_year, branch)`, `(drive_id, stage)`, `(student_id, accepted_at)`. Triggers to flip `is_repeat` on `recruiters` when a second drive lands.
+## Public shareable profile (HR-facing)
 
-### 3. Filter system (URL-persisted, shareable)
+Route: `/p/student/:shareToken` — no login required; resolved via edge function `placement-public-profile`.
 
-A single `PlacementFilters` context that mirrors to `useSearchParams`. Every chart, KPI, table, and AI call reads from this single source:
+- Clean recruiter-ready layout: name, branch/batch, headline, score highlights, key skills, resume download (if student opted in), achievements, contact button.
+- Hides: integrity raw scores, internal notes, exam attempt details — only curated highlights.
+- Watermarked "Shared by {College} via Parikshaa · Expires {date}".
+- View tracking: each open logged; college sees "Viewed by 3 recruiters, last opened 2h ago".
+- Student-side toggle to opt into sharing (default: requires admin generation, student notified).
 
-- Multi-select: branch, section, batch year, drive status, sector, student status (placed / unplaced / multi_offer / accepted / declined).
-- Range: date range (drive close date or offer date — toggle), CTC band slider, CGPA band.
-- Free-text: recruiter name (with combobox autocomplete from `recruiters`).
-- Save current filter set → `placement_views` row → appears in a "Saved views" dropdown, shareable via URL `?view=<id>`.
+## Bulk shortlist to HR
 
-Server-side filtering done in a single `rpc('placement_overview', filters jsonb)` function that returns a typed payload of all KPI/series data the page needs in one round-trip — keeps the UI fast and the SQL central.
+From Rankings tab → select rows → "Create shortlist link":
+- Generates `/p/shortlist/:token` listing the chosen students as cards (each linking to their public profile).
+- Optional message + recruiter email; if email provided, sends via existing Resend setup.
+- Expiry (default 30 days), revoke anytime.
 
-### 4. KPIs & visuals (Recharts; same theme tokens as existing b2b cards)
+## Technical details
 
-TPO view:
-- KPIs: Eligible / Applied / Shortlisted / Offered / Accepted (5-stage funnel), Placement %, Multi-offer %, Avg & Median CTC, Highest CTC, Dream-offer count.
-- Tables: Live drives (with stage funnel mini-bars), Pending shortlists, Unplaced eligible students, Open offer decisions.
-- Drill-down: clicking a KPI or chart segment writes to filter context and reveals the underlying row list with bulk actions (email students, export CSV).
+**New tables**
+- `placement_snapshots` (already in earlier migration) — extend with `student_id`, `score numeric`, `scores jsonb`, `rank_in_org`, `rank_in_branch`, `computed_at`. Indexed on `(org_id, score desc)`.
+- `student_share_links` — `id`, `org_id`, `student_id` (nullable for shortlists), `kind` enum(`profile`,`shortlist`), `token text unique`, `student_ids uuid[]` (for shortlists), `created_by`, `expires_at`, `revoked_at`, `recruiter_email`, `message`.
+- `student_share_views` — `share_id`, `viewed_at`, `ip_hash`, `user_agent`, `referrer`.
+- `student_profile_preferences` — `student_id`, `allow_public_share bool`, `show_resume bool`, `show_contact bool`, `headline text`.
 
-Leadership view:
-- Year-over-year placement % line, branch comparison bar, CTC distribution histogram, sector mix donut, top-10 recruiters table, "Where we slipped" panel auto-filled by the AI narrative.
+**RLS**
+- Snapshots/shares: org admins via `is_org_member(...)`; students can read their own row via `org_students.user_id = auth.uid()`.
+- Public profile fetch uses an **edge function with service role** that validates token + expiry + revocation; no direct table SELECT for anon.
 
-Public/shareable report at `/colleges/:slug/placements/public`:
-- Pre-rendered from `placement_snapshots`, no auth, JSON-LD `Dataset` schema for SEO. Org admin toggles which batches/sections are public from Settings.
+**RPCs**
+- `placement_rankings(org_id, filters jsonb, sort text, limit, offset)` → ranked list with all columns.
+- `placement_score_recompute(org_id, student_id uuid default null)` → recompute one or all.
+- Nightly `pg_cron` job recomputes whole org snapshots at 02:00 IST.
 
-### 5. AI layer (Lovable AI Gateway, server-side only)
+**Edge functions**
+- `placement-share-create` — issues token, stores row.
+- `placement-public-profile` — resolves token → curated payload.
+- `placement-share-email` — Resend email to recruiter with the link.
 
-All AI calls live in **Supabase Edge Functions** with `LOVABLE_API_KEY`. Default model `google/gemini-3-flash-preview`; switch to `google/gemini-2.5-pro` for the weekly narrative.
+**Frontend**
+- `src/b2b/pages/placements/RankingsTab.tsx` (TanStack Table, virtualized for >1k rows)
+- `src/b2b/pages/placements/StudentPlacementProfile.tsx`
+- `src/pages/public/PublicStudentProfile.tsx` + `PublicShortlist.tsx` (under `/p/...`)
+- `src/b2b/components/placements/PlacementScoreGauge.tsx`, `StrengthsRadar.tsx`, `ShareDialog.tsx`
+- New routes wired in `src/App.tsx`
 
-a. **NL Q&A** — `placement-ai-query` edge function. AI SDK `streamText` + tool calling:
-   - Tool `get_overview(filters)` → calls `rpc('placement_overview', …)`.
-   - Tool `list_students(filters, limit)` → returns minimal student rows (PII-safe).
-   - Tool `compare_branches(batch_year)`.
-   - Tool `recruiter_history(recruiter_id)`.
-   - The model translates "how did CSE 2025 do vs 2024" into the right tool calls, then formats a markdown answer. Renders in the AI dock with chart suggestions (model returns optional `{chart: 'bar', x:'branch', y:'placed_pct'}` JSON via `Output.object`).
+**Reuse**
+- Existing `OrgShell`, `PlacementFilters` URL state, recharts, `useOrgStudents`, `useAttempts`, resume analysis tables, XP/SRS hooks.
 
-b. **Weekly narrative** — `placement-ai-digest` edge function, scheduled via `pg_cron` Mondays 06:00 IST. Pulls last 7 days of drives/offers, asks the model for a TPO-ready summary with sections: Wins / Risks / Branches falling behind / Recruiter follow-ups. Stored in `placement_ai_runs` and emailed via existing Resend setup; also pinned to the dashboard.
+## Build order
 
-c. **At-risk unplaced** — `placement-ai-atrisk` edge function. Hybrid score:
-   - Deterministic: low assessment readiness (existing `assessment_attempts`), low applications-per-eligible, no shortlists in 30 days, CGPA vs. recruiter floor gap.
-   - AI re-ranks the top 200 and produces a 1-line "why" + a suggested intervention per student (mock interview, specific roadmap, recruiter to target). Output via `Output.object` with a strict schema, stored as a `at_risk_snapshot` row refreshed nightly.
+1. Migration: snapshots score columns + `student_share_*` tables + RLS + rankings RPC
+2. `RankingsTab` with sort/filter/export
+3. Internal `StudentPlacementProfile` page
+4. Share dialog + `placement-share-create` edge function
+5. Public profile + shortlist pages + `placement-public-profile` edge function
+6. View tracking + recruiter email send
+7. Nightly recompute cron + on-demand refresh button
+8. Student-side opt-in preferences UI in their own dashboard
 
-d. **Recruiter outreach drafts** — modal on any recruiter row. Edge function pulls recruiter history + current open roles, generates a personalised email (subject + body) using past hiring patterns. User edits → "Copy" or "Send via Resend".
+## Open questions
 
-All AI runs logged to `placement_ai_runs` for audit, cost, and rate-limit telemetry. 429 and 402 surfaced as toasts.
-
-### 6. Routing, navigation, access
-
-- New route: `src/b2b/pages/placements/PlacementsDashboard.tsx`, nested under `OrgShell`.
-- Sub-routes: `/recruiters`, `/drives`, `/drives/:id`, `/offers`, `/reports/:viewId`, `/public` (no auth).
-- Sidebar: add a **Placements** group with icons (Briefcase, Building2, Trophy, Sparkles for AI dock).
-- RLS: every new table follows the existing `has_org_role(auth.uid(), org_id, role)` pattern. Public report uses an `is_public` flag on `placement_snapshots` and a SECURITY DEFINER view that strips PII.
-
-### 7. Imports & data entry
-
-- Drive / offer entry modal (Sheet + react-hook-form + zod).
-- CSV importer for legacy years: `placement-import` edge function parses CSV → maps to `org_students`, `placement_offers`, `recruiters` with a dry-run preview.
-- Webhook intake at `placement-webhook-in` so colleges can push from their ERP.
-
-### 8. Build order (incremental, each shippable)
-
-1. **Schema + RLS** — new tables, `rpc placement_overview`, snapshot job.
-2. **Filter context + URL sync + saved views** — wired to a stub `placement_overview` that returns mock data.
-3. **TPO dashboard** — KPI strip, funnel, live drives table, drill-downs.
-4. **Recruiter directory + drive/offer CRUD + CSV import.**
-5. **Leadership view + public report + JSON-LD SEO.**
-6. **AI dock — NL Q&A** (tool-calling, streaming, chart hinting).
-7. **Weekly narrative** (cron + email + pinned card).
-8. **At-risk predictions** (deterministic score → AI re-rank → suggestions).
-9. **Recruiter outreach drafts.**
-10. **Analytics polish** — cost dashboards for AI usage in admin.
-
-### Technical notes (for engineers, skip if non-technical)
-
-- Charts: Recharts; theme tokens from `src/b2b/theme.css` so dark-mode is automatic.
-- Tables: TanStack Table; reuse `Responsive table` pattern from project memory (no horizontal scroll).
-- Forms: react-hook-form + zod; existing Sheet pattern.
-- AI SDK: `@ai-sdk/openai-compatible` + `ai`, gateway at `https://ai.gateway.lovable.dev/v1`, `Lovable-API-Key` header. `streamText` with `stopWhen: stepCountIs(50)`; structured outputs via `Output.object`.
-- Embeddings (optional, phase 2): index drive descriptions and recruiter notes with `google/gemini-embedding-001` + pgvector(3072) for semantic recruiter search ("companies that hire similar to Razorpay").
-- Realtime: subscribe drives/offers via `supabase_realtime` so the funnel updates live during drive day.
-- i18n: every label through `useTranslation()`, locale JSON under `src/i18n/locales`.
-- Memory: add a new project memory `features/placements/system` once shipped.
-
-This plan keeps everything inside the existing org/auth model, reuses your assessment data for "readiness", and layers a focused AI surface on top instead of a generic chatbot.
+1. **Who can share to HR?** Only TPO/admins, or also faculty/recruiter role? Default: TPO + admin + owner.
+2. **Student consent**: should public share require explicit student opt-in, or admin-controlled with student notified? Default: admin can generate, student is notified and can revoke from their dashboard.
+3. **Contact exposure on public profile**: show email/phone by default or behind a "Request contact" button that emails the student? Default: behind button.
+4. **Score weights**: are the proposed weights OK or do you want to tune them (e.g. heavier on assessments for tech colleges)?
