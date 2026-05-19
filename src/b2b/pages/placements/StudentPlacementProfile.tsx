@@ -539,24 +539,86 @@ export default function StudentPlacementProfile() {
 
         {/* Drive applications */}
         <GlassCard className="p-4">
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
-            <Briefcase className="h-4 w-4 text-primary" /> Drive activity ({applications?.length ?? 0})
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Briefcase className="h-4 w-4 text-primary" /> Drive activity
+              <span className="text-muted-foreground font-normal">
+                ({filteredApps.length}{applications && filteredApps.length !== applications.length ? ` / ${applications.length}` : ""})
+              </span>
+            </h3>
+            {!!applications?.length && (
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={daSearch}
+                    onChange={(e) => setDaSearch(e.target.value)}
+                    placeholder="Search drive or recruiter…"
+                    className="h-8 pl-7 pr-7 w-56 text-xs"
+                  />
+                  {daSearch && (
+                    <button
+                      onClick={() => setDaSearch("")}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <Select value={daStage} onValueChange={setDaStage}>
+                  <SelectTrigger className="h-8 w-36 text-xs">
+                    <SelectValue placeholder="All stages" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All stages</SelectItem>
+                    {daStages.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {(daSearch || daStage !== "all") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={() => { setDaSearch(""); setDaStage("all"); }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           {!applications?.length ? (
             <div className="text-sm text-muted-foreground py-4 text-center">No drive activity yet.</div>
+          ) : !filteredApps.length ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">No events match your filters.</div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-[hsl(var(--border))]/40">
               <table className="w-full text-sm">
                 <thead className="bg-[hsl(var(--muted))]/30 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="text-left px-3 py-2 font-medium">Drive</th>
+                    <th className="text-left px-3 py-2 font-medium">
+                      <button onClick={() => toggleSort("title")} className="inline-flex items-center gap-1 hover:text-foreground">
+                        Drive <SortIcon k="title" />
+                      </button>
+                    </th>
                     <th className="text-left px-3 py-2 font-medium">Recruiter</th>
-                    <th className="text-left px-3 py-2 font-medium">Stage</th>
-                    <th className="text-right px-3 py-2 font-medium">Last update</th>
+                    <th className="text-left px-3 py-2 font-medium">
+                      <button onClick={() => toggleSort("stage")} className="inline-flex items-center gap-1 hover:text-foreground">
+                        Stage <SortIcon k="stage" />
+                      </button>
+                    </th>
+                    <th className="text-right px-3 py-2 font-medium">
+                      <button onClick={() => toggleSort("last")} className="inline-flex items-center gap-1 hover:text-foreground ml-auto">
+                        Last update <SortIcon k="last" />
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {applications.map((a: any) => (
+                  {filteredApps.map((a: any) => (
                     <tr key={a.id} className="border-t border-[hsl(var(--border))]/40">
                       <td className="px-3 py-2 font-medium">{a.drive?.title ?? "—"}</td>
                       <td className="px-3 py-2 text-muted-foreground">{a.drive?.recruiter?.name ?? "—"}</td>
