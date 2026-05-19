@@ -266,8 +266,32 @@ export default function B2BStudents() {
             Students you enroll here will receive an email invite and can sign in to see their college and dashboard.
           </p>
         </div>
-        <Button variant="outline" onClick={() => downloadCsv("students.csv", filtered)} disabled={filtered.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> Export
+        <Button
+          variant="outline"
+          onClick={() => {
+            const rows = filtered.map((s) => ({
+              email: s.email,
+              full_name: s.full_name ?? "",
+              roll_number: s.roll_number ?? "",
+              branch: s.branch ?? "",
+              batch_year: s.batch_year ?? "",
+              section: s.section ?? "",
+              status: s.status,
+              enrolled_at: s.enrolled_at ?? "",
+              activated_at: s.activated_at ?? "",
+            }));
+            const slug = (org as any)?.slug ?? "org";
+            const parts = [slug, "students"];
+            if (status !== "all") parts.push(status);
+            if (q) parts.push(q.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 24));
+            parts.push(new Date().toISOString().slice(0, 10));
+            downloadCsv(`${parts.join("_")}.csv`, rows);
+            toast.success(`Exported ${rows.length} student${rows.length === 1 ? "" : "s"}`);
+          }}
+          disabled={filtered.length === 0}
+          title={`Export ${filtered.length} filtered student${filtered.length === 1 ? "" : "s"} to CSV`}
+        >
+          <Download className="h-4 w-4 mr-2" /> Export CSV ({filtered.length})
         </Button>
         <EnrollDialog orgId={orgId!} basePath={basePath} />
       </div>
