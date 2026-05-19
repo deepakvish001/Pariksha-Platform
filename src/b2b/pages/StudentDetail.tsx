@@ -94,9 +94,9 @@ export default function B2BStudentDetail() {
     statusFilter === "all"
       ? allAttempts
       : statusFilter === "completed"
-        ? allAttempts.filter((a) => a.status === "submitted" || a.status === "auto_submitted")
+        ? allAttempts.filter((a) => isCompletedStatus(a.status))
         : allAttempts.filter((a) => a.status === statusFilter);
-  const completed = attempts.filter((a) => a.status === "submitted" || a.status === "auto_submitted").length;
+  const completed = attempts.filter((a) => isCompletedStatus(a.status)).length;
   const inProgress = attempts.filter((a) => a.status === "in_progress").length;
   const avgScore = (() => {
     const scored = attempts.filter((a) => a.score_pct != null);
