@@ -1,22 +1,26 @@
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { useMyOrganizations, slugify } from "../hooks/useOrg";
 import { useOrgMembers } from "../hooks/useMembers";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Building2, GraduationCap, Copy, AlertTriangle, Save, Eye } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Save } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  SETTINGS_SECTIONS,
+  SettingsLayout,
+  useActiveSettingsSection,
+  type SettingsSectionId,
+} from "./settings/SettingsLayout";
+import { GeneralSection } from "./settings/GeneralSection";
+import { BrandingSection } from "./settings/BrandingSection";
+import { ComingSoonSection } from "./settings/ComingSoonSection";
+import { DangerSection } from "./settings/DangerSection";
+import { validateHexColor } from "./settings/hexColor";
 
 export default function B2BSettings() {
   const { user } = useAuth();
@@ -25,6 +29,17 @@ export default function B2BSettings() {
   const { data: orgs, isLoading } = useMyOrganizations();
   const org = orgs?.[0];
   const { data: members } = useOrgMembers(org?.id);
+
+  const activeId = useActiveSettingsSection();
+  const [, setParams] = useSearchParams();
+  const setSection = (id: SettingsSectionId) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (id === "general") next.delete("section");
+      else next.set("section", id);
+      return next;
+    });
+  };
 
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
@@ -47,7 +62,7 @@ export default function B2BSettings() {
   if (isLoading) {
     return (
       <OrgShell title="Settings">
-        <div className="text-sm text-[hsl(var(--muted-foreground))]"></div>
+        <div className="text-sm text-[hsl(var(--muted-foreground))]" />
       </OrgShell>
     );
   }
@@ -58,17 +73,10 @@ export default function B2BSettings() {
   const canEdit = isOwner || myRole === "admin";
   const normalizedBrand = brandColor.trim();
   const brandValidation = validateHexColor(normalizedBrand);
-  const isValidBrand = brandValidation.ok;
-  // Expand `#abc` -> `#aabbcc` for the swatch preview, uppercase for display.
-  const brandPreview = isValidBrand && normalizedBrand
-    ? expandHex(normalizedBrand).toUpperCase()
-    : null;
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
     (normalizedBrand || "") !== (org.brand_color ?? "");
-
-  const joinUrl = `${window.location.origin}/assessments/join`;
 
   const onSave = async () => {
     if (!canEdit || !dirty) return;
@@ -96,6 +104,12 @@ export default function B2BSettings() {
     qc.invalidateQueries({ queryKey: ["b2b", "orgs"] });
   };
 
+  const onDiscard = () => {
+    setName(org.name);
+    setLogoUrl(org.logo_url ?? "");
+    setBrandColor(org.brand_color ?? "");
+  };
+
   const onDelete = async () => {
     if (!isOwner) return;
     if (!confirm(`Permanently delete "${org.name}"? This cannot be undone.`)) return;
@@ -113,7 +127,6 @@ export default function B2BSettings() {
   };
 
   const openPreview = async () => {
-    if (!org) return;
     setPreviewOpen(true);
     setPreviewLoading(true);
     setPreviewHtml(null);
@@ -133,11 +146,110 @@ export default function B2BSettings() {
     }
   };
 
-  const TypeIcon = org.type === "college" ? GraduationCap : Building2;
+  const activeMeta = SETTINGS_SECTIONS.find((s) => s.id === activeId)!;
+
+  const renderSection = () => {
+    switch (activeId) {
+      case "general":
+        return <GeneralSection org={org} canEdit={canEdit} name={name} setName={setName} />;
+      case "branding":
+        return (
+          <BrandingSection
+            canEdit={canEdit}
+            logoUrl={logoUrl}
+            setLogoUrl={setLogoUrl}
+            brandColor={brandColor}
+            setBrandColor={setBrandColor}
+            dirty={dirty}
+            onPreview={openPreview}
+          />
+        );
+      case "defaults":
+        return (
+          <ComingSoonSection
+            icon={activeMeta.icon}
+            title="Assessment defaults"
+            description="Set the defaults that every new assessment will inherit. Saves admins from re-picking the same options every time."
+            fields={[
+              "Default duration (minutes)",
+              "Default proctoring profile: off / standard / strict",
+              "Default pass mark (%)",
+              "Allow candidate retake by default",
+              "Auto-release results to candidates",
+            ]}
+          />
+        );
+      case "security":
+        return (
+          <ComingSoonSection
+            icon={activeMeta.icon}
+            title="Security & Access"
+            description="Lock down who can take your assessments and how your team signs in."
+            fields={[
+              "Allowed candidate email domains (e.g. @iitb.ac.in)",
+              "Require MFA for team members (owner only)",
+              "Team session length (8h / 24h / 7d)",
+              "Sign out all team sessions",
+            ]}
+          />
+        );
+      case "notifications":
+        return (
+          <ComingSoonSection
+            icon={activeMeta.icon}
+            title="Notifications"
+            description="Pick where assessment results and proctoring alerts get delivered."
+            fields={[
+              "Email recipients for completion digests",
+              "Slack / webhook URL for instant alerts",
+              "Daily summary email toggle",
+              "Recipients for proctoring incidents",
+            ]}
+          />
+        );
+      case "integrations":
+        return (
+          <ComingSoonSection
+            icon={activeMeta.icon}
+            title="Integrations"
+            description="Plug your assessments into the rest of your stack."
+            fields={[
+              "Verified email sender domain status",
+              "Results webhook URL + signing secret",
+              "SSO / SAML for team sign-in",
+            ]}
+          />
+        );
+      case "audit":
+        return (
+          <ComingSoonSection
+            icon={activeMeta.icon}
+            title="Audit log"
+            description="Read-only log of who did what in this organization. Filter by person and action, export to CSV."
+            fields={[
+              "Member added / removed",
+              "Capability changes",
+              "Assessment published or unpublished",
+              "Invite created or revoked",
+              "Org settings changed",
+            ]}
+          />
+        );
+      case "danger":
+        return <DangerSection org={org} isOwner={isOwner} deleting={deleting} onDelete={onDelete} />;
+    }
+  };
 
   return (
     <OrgShell
-      title={<><span className="bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent">{org.name}</span> <span className="text-[hsl(var(--muted-foreground))] font-normal">· Settings</span></>}
+      title={
+        <>
+          <span className="bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent">
+            {org.name}
+          </span>{" "}
+          <span className="text-[hsl(var(--muted-foreground))] font-normal">· Settings</span>
+        </>
+      }
       actions={
         canEdit && (
           <Button
@@ -151,147 +263,38 @@ export default function B2BSettings() {
         )
       }
     >
-      <div className="space-y-6 max-w-2xl">
-        <div className="b2b-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TypeIcon className="h-4 w-4" />
-            <h2 className="text-sm font-semibold">Organization profile</h2>
+      <SettingsLayout activeId={activeId} onSelect={setSection}>
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-lg font-semibold">{activeMeta.label}</h1>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">{activeMeta.description}</p>
           </div>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs">Display name</Label>
-              <Input
-                className="mt-1"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={!canEdit}
-                placeholder="Acme University"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Logo URL (optional)</Label>
-              <div className="mt-1 flex items-center gap-3">
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt="Org logo preview"
-                    className="h-10 w-10 rounded-md border border-[hsl(var(--border))] object-contain bg-white"
-                    onError={(e) => ((e.currentTarget.style.opacity = "0.3"))}
-                  />
-                ) : (
-                  <div className="h-10 w-10 rounded-md border border-dashed border-[hsl(var(--border))] grid place-items-center text-[10px] text-[hsl(var(--muted-foreground))]">
-                    Logo
-                  </div>
-                )}
-                <Input
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  disabled={!canEdit}
-                  placeholder="https://…/logo.png"
-                />
-              </div>
-              <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
-                Shown in invitation emails. Use a square PNG/SVG hosted on a public URL.
-              </p>
-            </div>
-            <div>
-              <Label className="text-xs">Brand color (optional)</Label>
-              <div className="mt-1 flex items-center gap-3">
-                <input
-                  type="color"
-                  value={/^#([0-9a-fA-F]{6})$/.test(normalizedBrand) ? normalizedBrand : "#0f172a"}
-                  onChange={(e) => setBrandColor(e.target.value)}
-                  disabled={!canEdit}
-                  className="h-10 w-12 rounded-md border border-[hsl(var(--border))] bg-transparent cursor-pointer disabled:cursor-not-allowed"
-                  aria-label="Pick brand color"
-                />
-                <Input
-                  value={brandColor}
-                  onChange={(e) => setBrandColor(e.target.value)}
-                  disabled={!canEdit}
-                  placeholder="#1f6feb"
-                  className="font-mono"
-                />
-              </div>
-              {brandValidation.ok !== true ? (
-                <p className="mt-1 text-[11px] text-destructive">{(brandValidation as { ok: false; error: string }).error}</p>
-              ) : brandPreview ? (
-                <div className="mt-1 flex items-center gap-2 text-[11px] text-[hsl(var(--muted-foreground))]">
-                  <span
-                    aria-hidden
-                    className="inline-block h-3 w-3 rounded-sm border border-[hsl(var(--border))]"
-                    style={{ background: brandPreview }}
-                  />
-                  <span>
-                    Looks good. Saving as <span className="font-mono text-[hsl(var(--foreground))]">{brandPreview}</span>.
-                  </span>
-                </div>
-              ) : null}
-              <p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">
-                Used for the header and call-to-action in invitation emails. Accepts <span className="font-mono">#RGB</span> or <span className="font-mono">#RRGGBB</span>.
-              </p>
-              <div className="mt-2">
-                <Button type="button" variant="outline" size="sm" onClick={openPreview}>
-                  <Eye className="h-3.5 w-3.5 mr-1.5" /> Preview invitation email
-                </Button>
-                {dirty && (
-                  <span className="ml-2 text-[11px] text-[hsl(var(--muted-foreground))]">
-                    Save changes first to preview with the latest values.
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Type</Label>
-                <div className="mt-1 text-sm capitalize">{org.type}</div>
-              </div>
-              <div>
-                <Label className="text-xs">Created</Label>
-                <div className="mt-1 text-sm">{new Date(org.created_at).toLocaleDateString()}</div>
-              </div>
-            </div>
-          </div>
+          {renderSection()}
         </div>
+      </SettingsLayout>
 
-        <div className="b2b-card p-5">
-          <h2 className="text-sm font-semibold mb-1">Candidate join link</h2>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-            Share with candidates so they can enter an invite code and start their assessment.
-          </p>
-          <div className="flex gap-2">
-            <Input value={joinUrl} readOnly className="font-mono text-xs" />
+      {/* Sticky unsaved-changes bar */}
+      {canEdit && dirty && (
+        <div className="fixed bottom-4 inset-x-0 z-40 px-4 pointer-events-none">
+          <div className="mx-auto max-w-3xl pointer-events-auto rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))]/95 backdrop-blur shadow-lg flex items-center gap-3 px-4 py-2.5">
+            <span className="text-xs text-[hsl(var(--muted-foreground))] flex-1">
+              You have unsaved changes.
+            </span>
+            <Button variant="ghost" size="sm" onClick={onDiscard} disabled={saving}>
+              Discard
+            </Button>
             <Button
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(joinUrl);
-                toast.success("Copied");
-              }}
+              size="sm"
+              onClick={onSave}
+              disabled={saving}
+              className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             >
-              <Copy className="h-4 w-4" />
+              <Save className="h-4 w-4 mr-1" />
+              {saving ? "Saving…" : "Save changes"}
             </Button>
-          </div>
-          <div className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">
-            Org slug: <code className="text-[hsl(var(--foreground))]">{org.slug}</code>
           </div>
         </div>
-
-        {isOwner && (
-          <div className="b2b-card p-5 border border-destructive/40">
-            <div className="flex items-center gap-2 mb-1 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <h2 className="text-sm font-semibold">Danger zone</h2>
-            </div>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-              Deleting this organization will permanently remove all of its assessments, invites, attempts, and member
-              access. This cannot be undone.
-            </p>
-            <Button variant="destructive" onClick={onDelete} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete organization"}
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl p-0 overflow-hidden">
@@ -324,72 +327,4 @@ export default function B2BSettings() {
       </Dialog>
     </OrgShell>
   );
-}
-
-/**
- * Validate a hex color string with actionable error messages.
- * Empty string is valid (means "use default" / not set).
- */
-function validateHexColor(input: string): { ok: true } | { ok: false; error: string } {
-  if (!input) return { ok: true };
-
-  if (/\s/.test(input)) {
-    return { ok: false, error: "Color can't contain spaces. Try something like #1F6FEB." };
-  }
-
-  if (!input.startsWith("#")) {
-    // Be helpful: people often paste 1f6feb without the #
-    if (/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(input)) {
-      return { ok: false, error: `Add a leading "#" — e.g. #${input}.` };
-    }
-    return { ok: false, error: 'Hex colors must start with "#" (e.g. #1F6FEB).' };
-  }
-
-  const body = input.slice(1);
-
-  if (body.length === 0) {
-    return { ok: false, error: "Add 3 or 6 hex digits after #, e.g. #1F6FEB." };
-  }
-
-  if (/[^0-9a-fA-F]/.test(body)) {
-    const bad = Array.from(new Set(body.match(/[^0-9a-fA-F]/g) ?? []))
-      .slice(0, 3)
-      .join(" ");
-    return {
-      ok: false,
-      error: `Only 0-9 and A-F are allowed. Remove: ${bad}.`,
-    };
-  }
-
-  if (body.length === 4 || body.length === 5) {
-    return {
-      ok: false,
-      error: `#${body} has ${body.length} digits. Use 3 (e.g. #1AF) or 6 (e.g. #11AAFF).`,
-    };
-  }
-
-  if (body.length === 7 || body.length === 8) {
-    return {
-      ok: false,
-      error: "Alpha channel (#RRGGBBAA) isn't supported. Use 6 hex digits.",
-    };
-  }
-
-  if (body.length !== 3 && body.length !== 6) {
-    return {
-      ok: false,
-      error: `#${body} has ${body.length} digits. Use 3 or 6 hex digits (e.g. #1F6FEB).`,
-    };
-  }
-
-  return { ok: true };
-}
-
-/** Expand `#abc` to `#aabbcc`. Assumes `value` is already a valid hex. */
-function expandHex(value: string): string {
-  const body = value.replace(/^#/, "");
-  if (body.length === 3) {
-    return "#" + body.split("").map((c) => c + c).join("");
-  }
-  return "#" + body;
 }
