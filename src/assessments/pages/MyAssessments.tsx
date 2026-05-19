@@ -1,5 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useMyInvites, useMyAttempts, claimInvite } from "@/b2b/hooks/useInvites";
+import {
+  useOpenOrgAssessments,
+  useEnrollOpenOrg,
+} from "@/assessments/hooks/useOpenOrgAssessments";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -11,10 +15,13 @@ import {
   FileCheck2,
   PlayCircle,
   AlertCircle,
+  Sparkles,
+  Building2,
 } from "lucide-react";
 import { SectionCard } from "@/b2b/components/ui/SectionCard";
 import { StatusPill, type StatusTone } from "@/b2b/components/ui/StatusPill";
 import { EmptyState } from "@/b2b/components/ui/EmptyState";
+import { getTemplate } from "@/b2b/lib/assessmentTemplates";
 
 const ATTEMPT_TONE: Record<string, StatusTone> = {
   in_progress: "live",
@@ -27,6 +34,8 @@ const ATTEMPT_TONE: Record<string, StatusTone> = {
 export default function MyAssessments() {
   const { data: invites } = useMyInvites();
   const { data: attempts } = useMyAttempts();
+  const { data: openAssessments } = useOpenOrgAssessments();
+  const enroll = useEnrollOpenOrg();
   const navigate = useNavigate();
 
   const pendingCount =
@@ -123,6 +132,71 @@ export default function MyAssessments() {
             </ul>
           )}
         </SectionCard>
+
+        {/* Open enrollment from your organizations */}
+        {openAssessments && openAssessments.length > 0 && (
+          <SectionCard
+            icon={Sparkles}
+            title="Open in your organization"
+            description="Self-enroll into these assessments"
+          >
+            <ul className="divide-y divide-[hsl(var(--border))]/40 -mx-5">
+              {openAssessments.map((a) => {
+                const tpl = getTemplate(a.type as any);
+                const TIcon = tpl.icon;
+                return (
+                  <li
+                    key={a.id}
+                    className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate text-sm">{a.title}</div>
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${tpl.badgeClass}`}>
+                          <TIcon className="h-3 w-3" /> {tpl.label}
+                        </span>
+                        {a.organization?.name && (
+                          <span className="inline-flex items-center gap-1">
+                            <Building2 className="h-3 w-3" /> {a.organization.name}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {a.duration_min} min
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={enroll.isPending}
+                      className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 shrink-0"
+                      onClick={async () => {
+                        try {
+                          const { token } = await enroll.mutateAsync(a.id);
+                          if (a.already_enrolled) {
+                            toast.success("Joining…");
+                          } else {
+                            toast.success("Enrolled");
+                          }
+                          const claimed: any = await claimInvite(token);
+                          navigate(`/assessments/${claimed.id}/lobby`);
+                        } catch (err: any) {
+                          toast.error(err?.message ?? "Could not join");
+                        }
+                      }}
+                    >
+                      {a.already_enrolled ? (
+                        <>Resume <ArrowRight className="h-3.5 w-3.5 ml-1" /></>
+                      ) : (
+                        <><PlayCircle className="h-3.5 w-3.5 mr-1" /> Join</>
+                      )}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </SectionCard>
+        )}
+
 
         {/* Past attempts */}
         <SectionCard icon={History} title="Past attempts" description="Your test history">
