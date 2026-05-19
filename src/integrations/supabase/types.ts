@@ -9537,6 +9537,7 @@ export type Database = {
         Args: { _data?: Json; _message: string; _title: string; _type?: string }
         Returns: undefined
       }
+      preview_assessment_invite: { Args: { _token: string }; Returns: Json }
       preview_invite_source_backfill: {
         Args: never
         Returns: {
