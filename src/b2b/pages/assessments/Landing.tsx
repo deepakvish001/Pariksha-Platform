@@ -105,6 +105,7 @@ export default function AssessmentLandingPage() {
     <OrgShell title="">
       <AssessmentLanding
         mode="admin"
+        chrome="embedded"
         org={{
           name: orgRow?.name ?? org?.name ?? "Your organization",
           logo_url: orgRow?.logo_url ?? null,
