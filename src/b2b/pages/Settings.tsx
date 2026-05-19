@@ -21,6 +21,7 @@ import { BrandingSection } from "./settings/BrandingSection";
 import { ComingSoonSection } from "./settings/ComingSoonSection";
 import { DangerSection } from "./settings/DangerSection";
 import { DefaultsSection, type DefaultsState } from "./settings/DefaultsSection";
+import { SecuritySection, type SecurityState } from "./settings/SecuritySection";
 import { validateHexColor } from "./settings/hexColor";
 
 const DEFAULT_DEFAULTS: DefaultsState = {
@@ -29,6 +30,12 @@ const DEFAULT_DEFAULTS: DefaultsState = {
   passMark: "40",
   allowRetake: false,
   autoRelease: true,
+};
+
+const DEFAULT_SECURITY: SecurityState = {
+  domains: [],
+  requireMfa: false,
+  sessionMinutes: 1440,
 };
 
 function orgToDefaults(org: {
@@ -45,6 +52,29 @@ function orgToDefaults(org: {
     allowRetake: org.allow_retake_default ?? DEFAULT_DEFAULTS.allowRetake,
     autoRelease: org.auto_release_results ?? DEFAULT_DEFAULTS.autoRelease,
   };
+}
+
+function orgToSecurity(org: {
+  allowed_email_domains: string[] | null;
+  require_mfa: boolean | null;
+  team_session_minutes: number | null;
+}): SecurityState {
+  const allowed = [480, 1440, 10080];
+  const session = org.team_session_minutes && allowed.includes(org.team_session_minutes)
+    ? org.team_session_minutes
+    : DEFAULT_SECURITY.sessionMinutes;
+  return {
+    domains: org.allowed_email_domains ?? [],
+    requireMfa: org.require_mfa ?? DEFAULT_SECURITY.requireMfa,
+    sessionMinutes: session,
+  };
+}
+
+function sameStringArray(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort();
+  const sb = [...b].sort();
+  return sa.every((v, i) => v === sb[i]);
 }
 
 export default function B2BSettings() {
