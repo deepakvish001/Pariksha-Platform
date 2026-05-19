@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { isUuid } from "@/lib/routing/slug";
 
 export type AssessmentStatus = "draft" | "published" | "archived";
