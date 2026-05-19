@@ -84,7 +84,6 @@ Deno.serve(async (req) => {
       .update({ last_viewed_at: new Date().toISOString() })
       .eq("id", link.id).then(() => {});
       
-    supa.rpc("noop_increment_share_view", { _id: link.id }).then(() => {}).catch(() => {});
 
     const payload = {
       kind: link.kind,
