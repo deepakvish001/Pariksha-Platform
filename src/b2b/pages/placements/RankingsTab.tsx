@@ -305,6 +305,21 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     },
   });
 
+  // Show skeleton state when filters/sort change (not for pagination/refetch),
+  // so the UI feels instant in response to filter/sort interactions.
+  const filtersKey = JSON.stringify({ filters, sortKey, studentIdsParam });
+  const [filtersChanging, setFiltersChanging] = useState(false);
+  const firstFiltersRef = useRef(filtersKey);
+  useEffect(() => {
+    if (firstFiltersRef.current === filtersKey) return;
+    firstFiltersRef.current = filtersKey;
+    setFiltersChanging(true);
+  }, [filtersKey]);
+  useEffect(() => {
+    if (!isFetching && filtersChanging) setFiltersChanging(false);
+  }, [isFetching, filtersChanging]);
+  const showSkeleton = isLoading || (filtersChanging && isFetching);
+
   const recompute = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc("placement_recompute_scores" as any, { _org_id: orgId });
