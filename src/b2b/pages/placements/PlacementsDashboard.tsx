@@ -189,6 +189,9 @@ export default function PlacementsDashboard() {
             <TabsTrigger value="rankings">
               <Trophy className="h-3.5 w-3.5 mr-1.5" />Student Rankings
             </TabsTrigger>
+            <TabsTrigger value="shares">
+              <Share2 className="h-3.5 w-3.5 mr-1.5" />Shares
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-5">
