@@ -151,6 +151,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     | { kind: "shortlist"; studentIds: string[] }
     | null
   >(null);
+  const [drawerStudent, setDrawerStudent] = useState<Ranking | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
