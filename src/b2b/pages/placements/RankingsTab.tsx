@@ -189,7 +189,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
         .order("opens_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data || []) as { id: string; title: string; status: string }[];
+      return ((data || []) as unknown) as { id: string; title: string; status: string }[];
     },
   });
 
