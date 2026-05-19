@@ -36,6 +36,8 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   const [userId, setUserId] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [camError, setCamError] = useState<unknown | null>(null);
+  const [preferredDeviceId, setPreferredDeviceId] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
