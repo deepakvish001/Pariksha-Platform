@@ -182,6 +182,15 @@ export default function PlacementsDashboard() {
       }
     >
       <div className="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+        <Tabs defaultValue="overview" className="space-y-5">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="rankings">
+              <Trophy className="h-3.5 w-3.5 mr-1.5" />Student Rankings
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-5">
         {/* Filter bar */}
         <GlassCard className="p-3 sm:p-4">
           <div className="flex flex-wrap items-center gap-2">
