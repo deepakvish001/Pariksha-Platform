@@ -449,10 +449,27 @@ function SettingsPanel({
         {windowError && <p className="mt-2 text-xs text-destructive">{windowError}</p>}
       </SectionCard>
 
-      <SectionCard icon={ShieldCheck} title="Proctoring" description="Tracks tab switches, copy/paste, and fullscreen exits. Penalties reduce integrity score.">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="text-sm font-medium">Enable proctoring</div>
-          <Switch checked={proctoring} onCheckedChange={setProctoring} />
+      <SectionCard icon={ShieldCheck} title="Proctoring" description="Pick a preset, then fine-tune signals below if needed.">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {(Object.keys(PROCTORING_LABELS) as ProctoringLevel[]).map((lvl) => {
+            const meta = PROCTORING_LABELS[lvl];
+            const active = proctoringLevel === lvl;
+            return (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => setProctoringLevel(lvl)}
+                className={`text-left rounded-lg border p-2.5 transition-colors ${
+                  active
+                    ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
+                    : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/40"
+                }`}
+              >
+                <div className="text-xs font-semibold capitalize">{meta.label}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{meta.helper}</div>
+              </button>
+            );
+          })}
         </div>
         <AssessmentProctoringConfig
           value={proctoringConfig}
