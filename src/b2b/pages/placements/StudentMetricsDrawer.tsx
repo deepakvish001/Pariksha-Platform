@@ -140,7 +140,7 @@ export function StudentMetricsDrawer({
               </SheetDescription>
             </SheetHeader>
 
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <Button asChild size="sm" variant="outline" className="h-8">
                 <Link to={`/b2b/placements/students/${r.student_id}`}>
                   <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Full profile
@@ -149,7 +149,23 @@ export function StudentMetricsDrawer({
               <Button size="sm" className="h-8" onClick={() => onShare(r)}>
                 <Share2 className="h-3.5 w-3.5 mr-1.5" /> Share with HR
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={async () => {
+                  try {
+                    await exportStudentHighlightsPdf({ ranking: r, offers: offers || [], applications: applications || [] });
+                    toast.success("PDF downloaded");
+                  } catch (e: any) {
+                    toast.error(e?.message || "Could not export PDF");
+                  }
+                }}
+              >
+                <FileDown className="h-3.5 w-3.5 mr-1.5" /> Export PDF
+              </Button>
             </div>
+
 
             {/* Headline metrics */}
             <div className="mt-4 grid grid-cols-3 gap-2">
