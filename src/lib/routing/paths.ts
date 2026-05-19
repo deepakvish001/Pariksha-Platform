@@ -81,6 +81,8 @@ export const paths = {
   /** Legacy /b2b/* fallback (organisation-less URLs) */
   legacy: {
     assessment: (a: Identifiable) => `/b2b/assessments/${preferSlug(a)}`,
+    assessmentEdit: (a: Identifiable) =>
+      `/b2b/assessments/${preferSlug(a)}/edit`,
     assessmentManage: (a: Identifiable) =>
       `/b2b/assessments/${preferSlug(a)}/manage`,
     attempt: (a: Identifiable, attempt: Identifiable, candidate?: CandidateLike) =>
