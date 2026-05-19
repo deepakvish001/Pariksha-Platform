@@ -1,5 +1,20 @@
-function Skeleton(_props: React.HTMLAttributes<HTMLDivElement>) {
-  return null;
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "relative overflow-hidden rounded-md bg-[hsl(var(--muted))]/40",
+        "bg-[linear-gradient(90deg,transparent_0%,hsl(var(--foreground)/0.08)_50%,transparent_100%)]",
+        "bg-[length:200%_100%] animate-shimmer",
+        "motion-reduce:animate-none motion-reduce:bg-none",
+        className
+      )}
+      {...props}
+    />
+  );
 }
 
 export { Skeleton };
