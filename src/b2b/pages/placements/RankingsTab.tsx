@@ -646,43 +646,92 @@ export function RankingsTab({ orgId }: { orgId: string }) {
             ))}
           </div>
         ) : (
-          <GlassCard className="p-0 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--muted))]/30 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  {["", "#", "Student", "Branch · Batch", "Score", "Assess", "Avg %", "Integrity", "Apps", "Offers", "Status", "Actions"].map((h, i) => (
-                    <th key={i} className={`px-3 py-2 font-medium ${i >= 4 && i <= 9 ? "text-right" : "text-left"}`}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i} className="border-t border-[hsl(var(--border))]/40">
-                    <td className="px-3 py-2"><Skeleton className="h-4 w-4 rounded" /></td>
-                    <td className="px-3 py-2"><Skeleton className="h-3 w-5" /></td>
-                    <td className="px-3 py-2">
-                      <Skeleton className="h-3.5 w-36 mb-1" />
-                      <Skeleton className="h-3 w-28" />
-                    </td>
-                    <td className="px-3 py-2"><Skeleton className="h-3 w-24" /></td>
-                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3.5 w-8" /></td>
-                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-6" /></td>
-                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-8" /></td>
-                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-8" /></td>
-                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-6" /></td>
-                    <td className="px-3 py-2"><Skeleton className="ml-auto h-3 w-6" /></td>
-                    <td className="px-3 py-2"><Skeleton className="h-4 w-16 rounded-full" /></td>
-                    <td className="px-3 py-2">
-                      <div className="flex justify-end gap-1">
-                        <Skeleton className="h-7 w-7 rounded-md" />
-                        <Skeleton className="h-7 w-7 rounded-md" />
-                        <Skeleton className="h-7 w-7 rounded-md" />
-                      </div>
-                    </td>
+          <GlassCard className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[hsl(var(--muted))]/30 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 w-8">
+                      <Skeleton className="h-4 w-4 rounded" />
+                    </th>
+                    <th className="text-left px-3 py-2 font-medium w-12">#</th>
+                    <th className="text-left px-3 py-2 font-medium">Student</th>
+                    <th className="text-left px-3 py-2 font-medium">Branch · Batch</th>
+                    <th className="text-right px-3 py-2 font-medium">Score</th>
+                    <th className="text-right px-3 py-2 font-medium">Assess</th>
+                    <th className="text-right px-3 py-2 font-medium">Avg %</th>
+                    <th className="text-right px-3 py-2 font-medium">Integrity</th>
+                    <th className="text-right px-3 py-2 font-medium">Apps</th>
+                    <th className="text-right px-3 py-2 font-medium">Offers</th>
+                    <th className="text-left px-3 py-2 font-medium">Status</th>
+                    <th className="text-right px-3 py-2 font-medium">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody aria-busy="true" aria-live="polite">
+                  {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                    <tr
+                      key={i}
+                      className="border-t border-[hsl(var(--border))]/40"
+                      style={{ height: 52 }}
+                    >
+                      {/* select */}
+                      <td className="px-3 py-2 w-8">
+                        <Skeleton className="h-4 w-4 rounded" />
+                      </td>
+                      {/* rank */}
+                      <td className="px-3 py-2 w-12">
+                        <Skeleton className="h-3 w-5" />
+                      </td>
+                      {/* student */}
+                      <td className="px-3 py-2">
+                        <Skeleton className="h-3.5 w-40 mb-1.5" />
+                        <Skeleton className="h-2.5 w-32" />
+                      </td>
+                      {/* branch · batch */}
+                      <td className="px-3 py-2">
+                        <Skeleton className="h-3 w-28" />
+                      </td>
+                      {/* score */}
+                      <td className="px-3 py-2 text-right">
+                        <Skeleton className="ml-auto h-3.5 w-8" />
+                      </td>
+                      {/* assess */}
+                      <td className="px-3 py-2 text-right">
+                        <Skeleton className="ml-auto h-3 w-6" />
+                      </td>
+                      {/* avg % */}
+                      <td className="px-3 py-2 text-right">
+                        <Skeleton className="ml-auto h-3 w-8" />
+                      </td>
+                      {/* integrity */}
+                      <td className="px-3 py-2 text-right">
+                        <Skeleton className="ml-auto h-3 w-8" />
+                      </td>
+                      {/* apps */}
+                      <td className="px-3 py-2 text-right">
+                        <Skeleton className="ml-auto h-3 w-6" />
+                      </td>
+                      {/* offers */}
+                      <td className="px-3 py-2 text-right">
+                        <Skeleton className="ml-auto h-3 w-6" />
+                      </td>
+                      {/* status */}
+                      <td className="px-3 py-2">
+                        <Skeleton className="h-4 w-16 rounded-full" />
+                      </td>
+                      {/* actions */}
+                      <td className="px-3 py-2">
+                        <div className="flex justify-end gap-1">
+                          <Skeleton className="h-7 w-7 rounded-md" />
+                          <Skeleton className="h-7 w-7 rounded-md" />
+                          <Skeleton className="h-7 w-7 rounded-md" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </GlassCard>
         )
       ) : !visible.length ? (
