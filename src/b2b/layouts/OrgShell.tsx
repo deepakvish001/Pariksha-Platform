@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useEntityLabel } from "@/lib/routing/useBreadcrumbLabel";
+import { DualRoleBanner } from "../components/DualRoleBanner";
 import "../theme.css";
 
 type NavItem = {
