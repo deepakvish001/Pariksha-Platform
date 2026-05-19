@@ -29,7 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play, Activity, Eye, Mail } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play, Activity, Eye, Mail, Sparkles } from "lucide-react";
+import { AiGenerateQuestionsDialog } from "../../components/assessment/AiGenerateQuestionsDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { AssessmentProctoringConfig } from "../../components/AssessmentProctoringConfig";
@@ -244,6 +245,7 @@ function SectionQuestions({ sectionId, orgId }: { sectionId: string; orgId: stri
   const add = useAddQuestionToSection();
   const remove = useRemoveQuestionFromSection();
   const [pick, setPick] = useState<string>("");
+  const [aiOpen, setAiOpen] = useState(false);
 
   const used = new Set((rows ?? []).map((r: any) => r.question?.id));
   const available = (bank ?? []).filter((q) => !used.has(q.id));
@@ -272,9 +274,9 @@ function SectionQuestions({ sectionId, orgId }: { sectionId: string; orgId: stri
           </div>
         );
       })}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Select value={pick} onValueChange={setPick}>
-          <SelectTrigger className="flex-1">
+          <SelectTrigger className="flex-1 min-w-[200px]">
             <SelectValue placeholder={available.length ? "Add question from bank…" : "Question bank empty"} />
           </SelectTrigger>
           <SelectContent>
@@ -299,7 +301,21 @@ function SectionQuestions({ sectionId, orgId }: { sectionId: string; orgId: stri
         >
           <Plus className="h-4 w-4 mr-1" /> Add
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => setAiOpen(true)}
+          className="border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10"
+        >
+          <Sparkles className="h-4 w-4 mr-1" /> Generate with AI
+        </Button>
       </div>
+      <AiGenerateQuestionsDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        orgId={orgId}
+        sectionId={sectionId}
+        existingCount={rows?.length ?? 0}
+      />
     </div>
   );
 }
