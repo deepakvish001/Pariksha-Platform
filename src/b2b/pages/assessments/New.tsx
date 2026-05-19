@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { OrgShell } from "../../layouts/OrgShell";
 import { useMyOrganizations } from "../../hooks/useOrg";
 import { useCreateAssessment } from "../../hooks/useAssessments";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AssessmentNew() {
@@ -19,17 +20,34 @@ export default function AssessmentNew() {
   const [proctoring, setProctoring] = useState(false);
   const [showResults, setShowResults] = useState(true);
   const create = useCreateAssessment();
+  const seededRef = useRef(false);
+
+  const org = orgs?.[0];
+
+  // Pre-fill from org defaults once, the first time the org loads.
+  useEffect(() => {
+    if (!org || seededRef.current) return;
+    seededRef.current = true;
+    if (typeof org.default_duration_min === "number" && org.default_duration_min > 0) {
+      setDuration(org.default_duration_min);
+    }
+    if (org.default_proctoring) {
+      setProctoring(org.default_proctoring !== "off");
+    }
+    if (typeof org.auto_release_results === "boolean") {
+      setShowResults(org.auto_release_results);
+    }
+  }, [org]);
 
   if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
-  const org = orgs[0];
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return toast.error("Title is required");
     try {
       const a = await create.mutateAsync({
-        org_id: org.id,
+        org_id: org!.id,
         title: title.trim(),
         description: description.trim() || undefined,
         duration_min: duration,
@@ -45,6 +63,18 @@ export default function AssessmentNew() {
 
   return (
     <OrgShell title="New assessment">
+      <div className="max-w-2xl mb-3 flex items-center justify-between gap-3 text-xs text-[hsl(var(--muted-foreground))]">
+        <span className="inline-flex items-center gap-1.5">
+          <Settings2 className="h-3.5 w-3.5" />
+          Pre-filled from your organization defaults.
+        </span>
+        <Link
+          to="/b2b/settings?section=defaults"
+          className="underline-offset-2 hover:underline hover:text-[hsl(var(--foreground))]"
+        >
+          Edit defaults
+        </Link>
+      </div>
       <form onSubmit={onSubmit} className="b2b-card p-6 max-w-2xl space-y-5">
         <div>
           <Label htmlFor="title">Title</Label>
