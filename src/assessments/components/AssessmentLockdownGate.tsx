@@ -182,11 +182,32 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Camera active
                 </span>
               </div>
+            ) : camError ? (
+              <CameraPermissionHelp
+                error={camError}
+                busy={busy}
+                onRetry={() => requestCamera(preferredDeviceId)}
+                onDeviceChange={(id) => {
+                  setPreferredDeviceId(id);
+                  return requestCamera(id);
+                }}
+              />
             ) : (
-              <Button size="sm" onClick={requestCamera} disabled={busy || !detailsDone}>
-                <Camera className="h-4 w-4 mr-2" />
-                Allow camera access
-              </Button>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  We'll briefly use your camera to verify you're the candidate, then keep it on
+                  for proctoring during the test. Your browser will pop up a permission prompt —
+                  please click <b>Allow</b>.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => void requestCamera()}
+                  disabled={busy || !detailsDone}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Allow camera access
+                </Button>
+              </div>
             )}
           </Step>
 
