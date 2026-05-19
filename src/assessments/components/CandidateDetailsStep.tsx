@@ -192,6 +192,7 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
   const [busy, setBusy] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [camError, setCamError] = useState<unknown | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
