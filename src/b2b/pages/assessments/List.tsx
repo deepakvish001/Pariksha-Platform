@@ -162,6 +162,7 @@ export default function B2BAssessmentsList() {
             const tpl = getTemplate(t);
             const TIcon = tpl.icon;
             const active = typeFilter === t;
+            const s = typeStats[t];
             return (
               <button
                 key={t}
@@ -178,8 +179,31 @@ export default function B2BAssessmentsList() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] text-muted-foreground truncate">{tpl.label}</div>
-                    <div className="text-base font-semibold tabular-nums leading-tight">{typeCounts[t] ?? 0}</div>
+                    <div className="text-base font-semibold tabular-nums leading-tight">{s.total}</div>
                   </div>
+                </div>
+                <div className="mt-1.5 flex items-center gap-1 flex-wrap text-[10px] tabular-nums">
+                  {s.live > 0 && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/5 text-emerald-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> {s.live} live
+                    </span>
+                  )}
+                  {s.upcoming > 0 && (
+                    <span className="px-1.5 py-0.5 rounded border border-sky-500/30 bg-sky-500/5 text-sky-300">
+                      {s.upcoming} upcoming
+                    </span>
+                  )}
+                  {s.drafts > 0 && (
+                    <span className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.03] text-muted-foreground">
+                      {s.drafts} draft{s.drafts === 1 ? "" : "s"}
+                    </span>
+                  )}
+                  {s.closed > 0 && (
+                    <span className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.03] text-muted-foreground">
+                      {s.closed} closed
+                    </span>
+                  )}
+                  {!s.total && <span className="text-muted-foreground/70">no assessments</span>}
                 </div>
               </button>
             );
