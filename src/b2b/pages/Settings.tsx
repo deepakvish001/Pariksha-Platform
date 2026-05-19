@@ -23,6 +23,7 @@ import { DangerSection } from "./settings/DangerSection";
 import { DefaultsSection, type DefaultsState } from "./settings/DefaultsSection";
 import { SecuritySection, type SecurityState } from "./settings/SecuritySection";
 import { NotificationsSection, type NotificationsState } from "./settings/NotificationsSection";
+import { AuditSection } from "./settings/AuditSection";
 import { validateHexColor } from "./settings/hexColor";
 
 const DEFAULT_DEFAULTS: DefaultsState = {
