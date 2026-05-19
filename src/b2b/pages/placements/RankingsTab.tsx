@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -157,6 +157,17 @@ export function RankingsTab({ orgId }: { orgId: string }) {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Scroll preservation: snapshot Y before filter/sort/view changes,
+  // restore after the resulting data/layout update so the viewport stays put.
+  const scrollRestoreRef = useRef<number | null>(null);
+  const preserveScroll = () => {
+    scrollRestoreRef.current = window.scrollY;
+  };
+  const withPreserve = <T,>(fn: (v: T) => void) => (v: T) => {
+    preserveScroll();
+    fn(v);
+  };
 
   useEffect(() => {
     localStorage.setItem("placements.rankings.view", view);
@@ -392,9 +403,25 @@ export function RankingsTab({ orgId }: { orgId: string }) {
   };
 
   const clearFilters = () => {
+    preserveScroll();
     setSearch(""); setBatch("all"); setBranch("all"); setSection("all");
     setDriveId("all"); setStatus("all"); setMinScore("0"); setSortKey("score");
   };
+
+  // Restore captured scroll position once the new layout has rendered.
+  useLayoutEffect(() => {
+    if (scrollRestoreRef.current == null) return;
+    const y = scrollRestoreRef.current;
+    scrollRestoreRef.current = null;
+    // Two rAFs: wait for paint after layout so taller/shorter lists settle first.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        window.scrollTo({ top: Math.min(y, maxY), behavior: "auto" });
+      });
+    });
+  }, [data, view]);
+
 
   return (
     <div className="space-y-4">
@@ -406,32 +433,32 @@ export function RankingsTab({ orgId }: { orgId: string }) {
             <Input
               placeholder="Search name, email, roll"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { preserveScroll(); setSearch(e.target.value); }}
               className="h-8 pl-8 w-[220px]"
             />
           </div>
-          <Select value={batch} onValueChange={setBatch}>
+          <Select value={batch} onValueChange={withPreserve(setBatch)}>
             <SelectTrigger className="h-8 w-[120px]"><SelectValue placeholder="Batch" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All batches</SelectItem>
               {batches.map((b) => <SelectItem key={b} value={String(b)}>{b}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={branch} onValueChange={setBranch}>
+          <Select value={branch} onValueChange={withPreserve(setBranch)}>
             <SelectTrigger className="h-8 w-[140px]"><SelectValue placeholder="Branch" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All branches</SelectItem>
               {branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={section} onValueChange={setSection}>
+          <Select value={section} onValueChange={withPreserve(setSection)}>
             <SelectTrigger className="h-8 w-[110px]"><SelectValue placeholder="Section" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sections</SelectItem>
               {sections.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={driveId} onValueChange={setDriveId}>
+          <Select value={driveId} onValueChange={withPreserve(setDriveId)}>
             <SelectTrigger className="h-8 w-[170px]">
               <Briefcase className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
               <SelectValue placeholder="Drive" />
@@ -443,7 +470,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               ))}
             </SelectContent>
           </Select>
-          <Select value={status} onValueChange={setStatus}>
+          <Select value={status} onValueChange={withPreserve(setStatus)}>
             <SelectTrigger className="h-8 w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All students</SelectItem>
@@ -452,7 +479,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               <SelectItem value="unplaced">Unplaced</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={minScore} onValueChange={setMinScore}>
+          <Select value={minScore} onValueChange={withPreserve(setMinScore)}>
             <SelectTrigger className="h-8 w-[120px]"><SelectValue placeholder="Min score" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="0">Any score</SelectItem>
@@ -461,7 +488,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               <SelectItem value="80">≥ 80 (top)</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+          <Select value={sortKey} onValueChange={(v) => { preserveScroll(); setSortKey(v as SortKey); }}>
             <SelectTrigger className="h-8 w-[140px]"><SelectValue placeholder="Sort" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="score">Sort: Score</SelectItem>
@@ -474,14 +501,14 @@ export function RankingsTab({ orgId }: { orgId: string }) {
           <div className="ml-auto flex items-center gap-2">
             <div className="inline-flex rounded-md border border-[hsl(var(--border))]/60 overflow-hidden">
               <button
-                onClick={() => setView("cards")}
+                onClick={() => { preserveScroll(); setView("cards"); }}
                 className={`h-8 px-2 ${view === "cards" ? "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]" : "text-muted-foreground"}`}
                 aria-label="Card view"
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setView("table")}
+                onClick={() => { preserveScroll(); setView("table"); }}
                 className={`h-8 px-2 ${view === "table" ? "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]" : "text-muted-foreground"}`}
                 aria-label="Table view"
               >
