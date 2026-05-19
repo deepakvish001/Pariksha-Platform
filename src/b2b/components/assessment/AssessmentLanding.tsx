@@ -35,6 +35,7 @@ import {
 } from "@/assessments/lib/proctoringConfig";
 import { StatusPill, type StatusTone } from "@/b2b/components/ui/StatusPill";
 import { cn } from "@/lib/utils";
+import { getTemplate } from "@/b2b/lib/assessmentTemplates";
 
 export interface LandingOrg {
   name: string;
