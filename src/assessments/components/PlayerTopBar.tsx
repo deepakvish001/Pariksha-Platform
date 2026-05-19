@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Clock, Maximize2, Send, ShieldCheck, Wand2, Loader2,
+  Clock, Maximize2, Send, Wand2, Loader2,
   Wifi, WifiOff, Info, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
