@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Camera, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CameraStatusIndicator } from "./CameraStatusIndicator";
 
 // ---- Image validation helpers ----
 interface CheckResult { ok: boolean; label: string; detail?: string }
@@ -479,8 +480,11 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         </div>
 
         <div className="rounded-md border border-border p-2.5 space-y-2">
-          <div className="text-xs font-semibold flex items-center gap-1.5">
-            <Camera className="h-3.5 w-3.5" /> Live selfie
+          <div className="text-xs font-semibold flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5">
+              <Camera className="h-3.5 w-3.5" /> Live selfie
+            </span>
+            <CameraStatusIndicator mode="selfie" active={cameraOn} compact />
           </div>
           {selfieDataUrl ? (
             <div className="space-y-2">

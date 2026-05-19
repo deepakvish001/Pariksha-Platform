@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Clock, Maximize2, Send, ShieldCheck, Wand2, Loader2,
+  Clock, Maximize2, Send, Wand2, Loader2,
   Wifi, WifiOff, Info, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PlayerSosButton } from "./PlayerSosButton";
 import { PlayerSosStatus } from "./PlayerSosStatus";
 import { PlayerSosTimeline } from "./PlayerSosTimeline";
+import { CameraStatusIndicator } from "./CameraStatusIndicator";
 
 interface Props {
   title: string;
@@ -19,6 +20,7 @@ interface Props {
   deadlineMs: number | null;
   totalDurationMs: number | null;
   proctoring: boolean;
+  cameraActive?: boolean;
   isPreview: boolean;
   submitting: boolean;
   online: boolean;
@@ -42,6 +44,7 @@ export function PlayerTopBar({
   deadlineMs,
   totalDurationMs,
   proctoring,
+  cameraActive = false,
   isPreview,
   submitting,
   online,
@@ -158,9 +161,19 @@ export function PlayerTopBar({
             <div className="hidden md:block h-5 w-px bg-border mx-0.5" />
 
             {proctoring && (
-              <div className="hidden lg:flex items-center gap-1.5 text-[11px] px-2 h-7 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium">
-                <ShieldCheck className="h-3.5 w-3.5" /> Proctored
-              </div>
+              <CameraStatusIndicator
+                mode="proctoring"
+                active={cameraActive}
+                className="hidden lg:inline-flex"
+              />
+            )}
+            {proctoring && (
+              <CameraStatusIndicator
+                mode="proctoring"
+                active={cameraActive}
+                compact
+                className="lg:hidden"
+              />
             )}
             {proctoring && (
               <Tooltip>
