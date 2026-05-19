@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { OrgShell } from "../../layouts/OrgShell";
@@ -6,6 +6,7 @@ import { useCurrentOrg } from "../../context/OrgContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -15,6 +16,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
+import { RankingsTab } from "./RankingsTab";
 
 type Filters = {
   batch_years?: number[];
@@ -180,6 +182,15 @@ export default function PlacementsDashboard() {
       }
     >
       <div className="px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+        <Tabs defaultValue="overview" className="space-y-5">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="rankings">
+              <Trophy className="h-3.5 w-3.5 mr-1.5" />Student Rankings
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-5">
         {/* Filter bar */}
         <GlassCard className="p-3 sm:p-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -419,6 +430,12 @@ export default function PlacementsDashboard() {
         {isLoading && (
           <div className="text-center text-xs text-muted-foreground py-4">Loading…</div>
         )}
+          </TabsContent>
+
+          <TabsContent value="rankings">
+            <RankingsTab orgId={org.id} />
+          </TabsContent>
+        </Tabs>
       </div>
     </OrgShell>
   );

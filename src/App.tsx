@@ -44,6 +44,8 @@ import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { RequireOrgCapability } from "@/b2b/components/RequireOrgCapability";
 import B2BStudents from "@/b2b/pages/Students";
 import B2BPlacements from "@/b2b/pages/placements/PlacementsDashboard";
+import B2BStudentPlacementProfile from "@/b2b/pages/placements/StudentPlacementProfile";
+import PublicStudentProfile from "@/pages/public/PublicStudentProfile";
 import B2BStudentDetail from "@/b2b/pages/StudentDetail";
 import MyCollege from "@/pages/MyCollege";
 import JoinStudent from "@/pages/JoinStudent";
@@ -295,6 +297,12 @@ const App = () => (
                 <Route path="/b2b/students" element={<ProtectedRoute><B2BStudents /></ProtectedRoute>} />
                 <Route path="/b2b/students/:studentId" element={<ProtectedRoute><B2BStudentDetail /></ProtectedRoute>} />
                 <Route path="/b2b/placements" element={<ProtectedRoute><B2BPlacements /></ProtectedRoute>} />
+                <Route path="/b2b/placements/students/:studentId" element={<ProtectedRoute><B2BStudentPlacementProfile /></ProtectedRoute>} />
+
+                {/* Public recruiter-facing share links (no auth) */}
+                <Route path="/p/student/:token" element={<PublicStudentProfile kind="profile" />} />
+                <Route path="/p/shortlist/:token" element={<PublicStudentProfile kind="shortlist" />} />
+
 
                 {/* Student-facing college home */}
                 <Route path="/my/college" element={<ProtectedRoute><MyCollege /></ProtectedRoute>} />
@@ -329,6 +337,8 @@ const App = () => (
                       <Route path="students" element={<RequireOrgCapability cap="members.invite"><B2BStudents /></RequireOrgCapability>} />
                       <Route path="students/:studentId" element={<RequireOrgCapability cap="members.invite"><B2BStudentDetail /></RequireOrgCapability>} />
                       <Route path="placements" element={<B2BPlacements />} />
+                      <Route path="placements/students/:studentId" element={<B2BStudentPlacementProfile />} />
+
                     </Route>
                   );
                 })}

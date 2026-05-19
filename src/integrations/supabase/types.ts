@@ -6456,6 +6456,78 @@ export type Database = {
           },
         ]
       }
+      placement_student_scores: {
+        Row: {
+          applications_count: number
+          assessments_taken: number
+          avg_assessment_score: number | null
+          avg_integrity: number | null
+          computed_at: string
+          id: string
+          is_multi_offer: boolean
+          is_placed: boolean
+          offers_count: number
+          org_id: string
+          rank_in_branch: number | null
+          rank_in_org: number | null
+          score: number
+          scores: Json
+          shortlisted_count: number
+          student_id: string
+        }
+        Insert: {
+          applications_count?: number
+          assessments_taken?: number
+          avg_assessment_score?: number | null
+          avg_integrity?: number | null
+          computed_at?: string
+          id?: string
+          is_multi_offer?: boolean
+          is_placed?: boolean
+          offers_count?: number
+          org_id: string
+          rank_in_branch?: number | null
+          rank_in_org?: number | null
+          score?: number
+          scores?: Json
+          shortlisted_count?: number
+          student_id: string
+        }
+        Update: {
+          applications_count?: number
+          assessments_taken?: number
+          avg_assessment_score?: number | null
+          avg_integrity?: number | null
+          computed_at?: string
+          id?: string
+          is_multi_offer?: boolean
+          is_placed?: boolean
+          offers_count?: number
+          org_id?: string
+          rank_in_branch?: number | null
+          rank_in_org?: number | null
+          score?: number
+          scores?: Json
+          shortlisted_count?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_student_scores_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placement_student_scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "org_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       placement_views: {
         Row: {
           created_at: string
@@ -7828,6 +7900,145 @@ export type Database = {
           xp_awarded?: number
         }
         Relationships: []
+      }
+      student_profile_preferences: {
+        Row: {
+          allow_public_share: boolean
+          headline: string | null
+          show_contact: boolean
+          show_resume: boolean
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          allow_public_share?: boolean
+          headline?: string | null
+          show_contact?: boolean
+          show_resume?: boolean
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          allow_public_share?: boolean
+          headline?: string | null
+          show_contact?: boolean
+          show_resume?: boolean
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_profile_preferences_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "org_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_share_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          kind: Database["public"]["Enums"]["student_share_kind"]
+          last_viewed_at: string | null
+          message: string | null
+          org_id: string
+          recruiter_email: string | null
+          recruiter_name: string | null
+          revoked_at: string | null
+          student_id: string | null
+          student_ids: string[]
+          token: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["student_share_kind"]
+          last_viewed_at?: string | null
+          message?: string | null
+          org_id: string
+          recruiter_email?: string | null
+          recruiter_name?: string | null
+          revoked_at?: string | null
+          student_id?: string | null
+          student_ids?: string[]
+          token: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["student_share_kind"]
+          last_viewed_at?: string | null
+          message?: string | null
+          org_id?: string
+          recruiter_email?: string | null
+          recruiter_name?: string | null
+          revoked_at?: string | null
+          student_id?: string | null
+          student_ids?: string[]
+          token?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_share_links_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_share_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "org_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_share_views: {
+        Row: {
+          id: string
+          ip_hash: string | null
+          referrer: string | null
+          share_id: string
+          user_agent: string | null
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          ip_hash?: string | null
+          referrer?: string | null
+          share_id: string
+          user_agent?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          ip_hash?: string | null
+          referrer?: string | null
+          share_id?: string
+          user_agent?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_share_views_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "student_share_links"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_plan_goals: {
         Row: {
@@ -10199,6 +10410,36 @@ export type Database = {
         Args: { _filters?: Json; _org: string }
         Returns: Json
       }
+      placement_rankings: {
+        Args: {
+          _filters?: Json
+          _limit?: number
+          _offset?: number
+          _org_id: string
+        }
+        Returns: {
+          applications_count: number
+          assessments_taken: number
+          avg_assessment_score: number
+          avg_integrity: number
+          batch_year: number
+          branch: string
+          email: string
+          full_name: string
+          is_multi_offer: boolean
+          is_placed: boolean
+          offers_count: number
+          rank_in_branch: number
+          rank_in_org: number
+          roll_number: string
+          score: number
+          scores: Json
+          section: string
+          shortlisted_count: number
+          student_id: string
+        }[]
+      }
+      placement_recompute_scores: { Args: { _org_id: string }; Returns: number }
       preview_assessment_invite: { Args: { _token: string }; Returns: Json }
       preview_invite_source_backfill: {
         Args: never
@@ -10400,6 +10641,7 @@ export type Database = {
         | "other"
       sos_delivery_status: "queued" | "sent" | "failed"
       sos_status: "open" | "acknowledged" | "resolved"
+      student_share_kind: "profile" | "shortlist"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -10612,6 +10854,7 @@ export const Constants = {
       ],
       sos_delivery_status: ["queued", "sent", "failed"],
       sos_status: ["open", "acknowledged", "resolved"],
+      student_share_kind: ["profile", "shortlist"],
       study_year: [
         "1st Year",
         "2nd Year",
