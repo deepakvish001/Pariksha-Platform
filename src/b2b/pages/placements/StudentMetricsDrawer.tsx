@@ -7,11 +7,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, CartesianGrid,
+  BarChart, Bar, Cell,
 } from "recharts";
 import {
   Trophy, ExternalLink, Share2, Briefcase, GraduationCap, Sparkles, Mail, FileDown,
+  LineChart as LineChartIcon, ShieldAlert,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
