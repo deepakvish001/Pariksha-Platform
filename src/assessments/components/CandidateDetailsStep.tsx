@@ -538,8 +538,14 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
                 </Button>
               </div>
             </div>
+          ) : camError ? (
+            <CameraPermissionHelp
+              error={camError}
+              onRetry={() => startCamera()}
+              onDeviceChange={(id) => startCamera(id)}
+            />
           ) : (
-            <Button size="sm" variant="outline" onClick={startCamera} disabled={busy}>
+            <Button size="sm" variant="outline" onClick={() => void startCamera()} disabled={busy}>
               <Camera className="h-3.5 w-3.5 mr-1" /> Start camera
             </Button>
           )}
