@@ -34,6 +34,8 @@ const ATTEMPT_TONE: Record<string, StatusTone> = {
 export default function MyAssessments() {
   const { data: invites } = useMyInvites();
   const { data: attempts } = useMyAttempts();
+  const { data: openAssessments } = useOpenOrgAssessments();
+  const enroll = useEnrollOpenOrg();
   const navigate = useNavigate();
 
   const pendingCount =
