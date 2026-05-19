@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { AssessmentProctoringConfig } from "../../components/AssessmentProctoringConfig";
 import ProctoringTriagePanel from "../../components/ProctoringTriagePanel";
 import type { ProctoringConfig } from "@/assessments/lib/proctoringConfig";
+import { PROCTORING_LABELS, type ProctoringLevel } from "../../lib/assessmentTemplates";
 import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
@@ -345,7 +346,11 @@ function SettingsPanel({
   const [title, setTitle] = useState(assessment.title);
   const [duration, setDuration] = useState(assessment.duration_min);
   const [maxAttempts, setMaxAttempts] = useState(assessment.max_attempts);
-  const [proctoring, setProctoring] = useState<boolean>(!!assessment.proctoring_enabled);
+  const initialLevel: ProctoringLevel =
+    (assessment.proctoring_level as ProctoringLevel | undefined) ??
+    (assessment.proctoring_enabled ? "standard" : "off");
+  const [proctoringLevel, setProctoringLevel] = useState<ProctoringLevel>(initialLevel);
+  const proctoring = proctoringLevel !== "off";
   const [proctoringConfig, setProctoringConfig] = useState<ProctoringConfig | null>(
     (assessment.proctoring_config as ProctoringConfig | null) ?? null
   );
@@ -444,10 +449,27 @@ function SettingsPanel({
         {windowError && <p className="mt-2 text-xs text-destructive">{windowError}</p>}
       </SectionCard>
 
-      <SectionCard icon={ShieldCheck} title="Proctoring" description="Tracks tab switches, copy/paste, and fullscreen exits. Penalties reduce integrity score.">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="text-sm font-medium">Enable proctoring</div>
-          <Switch checked={proctoring} onCheckedChange={setProctoring} />
+      <SectionCard icon={ShieldCheck} title="Proctoring" description="Pick a preset, then fine-tune signals below if needed.">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {(Object.keys(PROCTORING_LABELS) as ProctoringLevel[]).map((lvl) => {
+            const meta = PROCTORING_LABELS[lvl];
+            const active = proctoringLevel === lvl;
+            return (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => setProctoringLevel(lvl)}
+                className={`text-left rounded-lg border p-2.5 transition-colors ${
+                  active
+                    ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
+                    : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/40"
+                }`}
+              >
+                <div className="text-xs font-semibold capitalize">{meta.label}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{meta.helper}</div>
+              </button>
+            );
+          })}
         </div>
         <AssessmentProctoringConfig
           value={proctoringConfig}
@@ -514,6 +536,7 @@ function SettingsPanel({
                 duration_min: duration,
                 max_attempts: maxAttempts,
                 proctoring_enabled: proctoring,
+                proctoring_level: proctoringLevel,
                 proctoring_config: (proctoringConfig as unknown as Record<string, unknown>) ?? null,
                 show_results_to_candidate: showResults,
                 starts_at: fromLocalInput(startsAt),

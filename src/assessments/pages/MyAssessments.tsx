@@ -83,6 +83,8 @@ export default function MyAssessments() {
             <ul className="divide-y divide-[hsl(var(--border))]/40 -mx-5">
               {invites.map((i: any) => {
                 const canStart = i.status === "pending" || i.status === "claimed";
+                const tpl = getTemplate(i.assessment?.type);
+                const TIcon = tpl.icon;
                 return (
                   <li
                     key={i.id}
@@ -92,9 +94,14 @@ export default function MyAssessments() {
                       <div className="font-medium truncate text-sm">
                         {i.assessment?.title ?? "Assessment"}
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {i.assessment?.duration_min ?? "—"} min
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${tpl.badgeClass}`}>
+                          <TIcon className="h-3 w-3" /> {tpl.label}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {i.assessment?.duration_min ?? "—"} min
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">

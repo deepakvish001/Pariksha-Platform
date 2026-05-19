@@ -16,6 +16,7 @@ export type Assessment = {
   ends_at: string | null;
   max_attempts: number;
   proctoring_enabled: boolean;
+  proctoring_level?: Database["public"]["Enums"]["proctoring_level"];
   proctoring_config: Record<string, unknown> | null;
   show_results_to_candidate: boolean;
   status: AssessmentStatus;
