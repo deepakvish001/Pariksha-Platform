@@ -317,7 +317,9 @@ export function InvitesPanel({ assessmentId }: { assessmentId: string }) {
         existingEmails={existingEmails}
         busy={create.isPending || send.isPending}
         onSubmit={handleAddSubmit}
+        participationMode={(assessment as any)?.participation_mode ?? null}
       />
+
 
       <InvitesToolbar
         invites={invites}

@@ -121,7 +121,7 @@ export function useMyInvites() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assessment_invites")
-        .select("*, assessment:assessments(id,title,duration_min,status)")
+        .select("*, assessment:assessments(id,title,duration_min,status,type)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
