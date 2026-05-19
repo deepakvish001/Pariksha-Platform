@@ -69,6 +69,7 @@ export default function B2BSettings() {
   const [name, setName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [brandColor, setBrandColor] = useState("");
+  const [defaults, setDefaults] = useState<DefaultsState>(DEFAULT_DEFAULTS);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewSubject, setPreviewSubject] = useState<string>("");
@@ -81,6 +82,7 @@ export default function B2BSettings() {
       setName(org.name);
       setLogoUrl(org.logo_url ?? "");
       setBrandColor(org.brand_color ?? "");
+      setDefaults(orgToDefaults(org));
     }
   }, [org?.id]);
 
