@@ -230,8 +230,8 @@ export function SharesTab({ orgId }: { orgId: string }) {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search recipient or student…"
-              className="h-9 w-56"
+              placeholder="Search by recruiter, student name or email…"
+              className="h-9 w-72"
             />
             <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
               <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
