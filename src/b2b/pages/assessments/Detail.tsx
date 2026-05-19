@@ -529,6 +529,34 @@ function SettingsPanel({
 import { InvitesPanel } from "../../components/invites/InvitesPanel";
 export { InvitesPanel };
 
+import { PARTICIPATION_LABELS } from "../../lib/assessmentTemplates";
+import { Info } from "lucide-react";
+
+function ParticipationBanner({ assessment }: { assessment: { participation_mode?: string | null } }) {
+  const mode = (assessment.participation_mode ?? "invite") as keyof typeof PARTICIPATION_LABELS;
+  const meta = PARTICIPATION_LABELS[mode] ?? PARTICIPATION_LABELS.invite;
+  const tones: Record<string, string> = {
+    invite: "bg-sky-500/10 border-sky-500/30 text-sky-200",
+    roster: "bg-amber-500/10 border-amber-500/30 text-amber-200",
+    open_org: "bg-emerald-500/10 border-emerald-500/30 text-emerald-200",
+  };
+  const hints: Record<string, string> = {
+    invite: "Anyone with the invite link or 6-digit code can attempt.",
+    roster: "Upload your class roster below — only those emails can join.",
+    open_org:
+      "No invites needed. Verified members of this organization can self-enroll from their dashboard.",
+  };
+  return (
+    <div className={`mb-3 rounded-md border p-3 text-xs flex items-start gap-2 ${tones[mode] ?? tones.invite}`}>
+      <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+      <div>
+        <span className="font-medium">Participation: {meta.label}.</span>{" "}
+        <span className="opacity-80">{hints[mode] ?? meta.helper}</span>
+      </div>
+    </div>
+  );
+}
+
 
 
 
