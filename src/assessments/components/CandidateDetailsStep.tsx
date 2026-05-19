@@ -479,8 +479,11 @@ export function CandidateDetailsStep({ attemptId, userId, onComplete, done }: Pr
         </div>
 
         <div className="rounded-md border border-border p-2.5 space-y-2">
-          <div className="text-xs font-semibold flex items-center gap-1.5">
-            <Camera className="h-3.5 w-3.5" /> Live selfie
+          <div className="text-xs font-semibold flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5">
+              <Camera className="h-3.5 w-3.5" /> Live selfie
+            </span>
+            <CameraStatusIndicator mode="selfie" active={cameraOn} compact />
           </div>
           {selfieDataUrl ? (
             <div className="space-y-2">
