@@ -16,6 +16,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
 } from "recharts";
 import { ShareDialog } from "./ShareDialog";
+import { ResumePreviewDialog } from "./ResumePreviewDialog";
 import { toast } from "sonner";
 
 function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
