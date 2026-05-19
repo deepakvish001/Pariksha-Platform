@@ -141,7 +141,7 @@ export default function AssessmentDetail() {
           <SectionsPanel assessmentId={assessment.id} orgId={assessment.org_id} />
         </TabsContent>
         <TabsContent value="invites">
-          <ParticipationBanner assessment={assessment} />
+          <ParticipationBanner assessment={assessment as unknown as { participation_mode?: string | null }} />
           <InvitesPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="results">
