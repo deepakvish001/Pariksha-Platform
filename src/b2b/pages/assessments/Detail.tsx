@@ -346,7 +346,11 @@ function SettingsPanel({
   const [title, setTitle] = useState(assessment.title);
   const [duration, setDuration] = useState(assessment.duration_min);
   const [maxAttempts, setMaxAttempts] = useState(assessment.max_attempts);
-  const [proctoring, setProctoring] = useState<boolean>(!!assessment.proctoring_enabled);
+  const initialLevel: ProctoringLevel =
+    (assessment.proctoring_level as ProctoringLevel | undefined) ??
+    (assessment.proctoring_enabled ? "standard" : "off");
+  const [proctoringLevel, setProctoringLevel] = useState<ProctoringLevel>(initialLevel);
+  const proctoring = proctoringLevel !== "off";
   const [proctoringConfig, setProctoringConfig] = useState<ProctoringConfig | null>(
     (assessment.proctoring_config as ProctoringConfig | null) ?? null
   );
