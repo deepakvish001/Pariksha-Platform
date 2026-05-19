@@ -437,28 +437,28 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               className="h-8 pl-8 w-[220px]"
             />
           </div>
-          <Select value={batch} onValueChange={setBatch}>
+          <Select value={batch} onValueChange={withPreserve(setBatch)}>
             <SelectTrigger className="h-8 w-[120px]"><SelectValue placeholder="Batch" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All batches</SelectItem>
               {batches.map((b) => <SelectItem key={b} value={String(b)}>{b}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={branch} onValueChange={setBranch}>
+          <Select value={branch} onValueChange={withPreserve(setBranch)}>
             <SelectTrigger className="h-8 w-[140px]"><SelectValue placeholder="Branch" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All branches</SelectItem>
               {branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={section} onValueChange={setSection}>
+          <Select value={section} onValueChange={withPreserve(setSection)}>
             <SelectTrigger className="h-8 w-[110px]"><SelectValue placeholder="Section" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sections</SelectItem>
               {sections.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={driveId} onValueChange={setDriveId}>
+          <Select value={driveId} onValueChange={withPreserve(setDriveId)}>
             <SelectTrigger className="h-8 w-[170px]">
               <Briefcase className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
               <SelectValue placeholder="Drive" />
@@ -470,7 +470,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               ))}
             </SelectContent>
           </Select>
-          <Select value={status} onValueChange={setStatus}>
+          <Select value={status} onValueChange={withPreserve(setStatus)}>
             <SelectTrigger className="h-8 w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All students</SelectItem>
@@ -479,7 +479,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               <SelectItem value="unplaced">Unplaced</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={minScore} onValueChange={setMinScore}>
+          <Select value={minScore} onValueChange={withPreserve(setMinScore)}>
             <SelectTrigger className="h-8 w-[120px]"><SelectValue placeholder="Min score" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="0">Any score</SelectItem>
@@ -488,7 +488,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
               <SelectItem value="80">≥ 80 (top)</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+          <Select value={sortKey} onValueChange={(v) => { preserveScroll(); setSortKey(v as SortKey); }}>
             <SelectTrigger className="h-8 w-[140px]"><SelectValue placeholder="Sort" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="score">Sort: Score</SelectItem>
