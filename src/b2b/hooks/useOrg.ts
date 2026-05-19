@@ -21,6 +21,10 @@ export type Organization = {
   allowed_email_domains: string[] | null;
   require_mfa: boolean | null;
   team_session_minutes: number | null;
+  notify_emails: string[] | null;
+  slack_webhook_url: string | null;
+  daily_summary_enabled: boolean | null;
+  proctoring_alert_emails: string[] | null;
 };
 
 const ORG_QUERY_OPTS = {

@@ -39,7 +39,7 @@ export const SETTINGS_SECTIONS: Section[] = [
   { id: "branding", label: "Branding & Email", icon: Palette, description: "Logo, brand color and invitation email." },
   { id: "defaults", label: "Assessment defaults", icon: ClipboardList, description: "Defaults applied to every new assessment." },
   { id: "security", label: "Security & Access", icon: ShieldCheck, description: "Allowed domains, MFA and team sessions." },
-  { id: "notifications", label: "Notifications", icon: Bell, description: "Where result digests and alerts go.", comingSoon: true },
+  { id: "notifications", label: "Notifications", icon: Bell, description: "Where result digests and alerts go." },
   { id: "integrations", label: "Integrations", icon: Plug, description: "Webhooks, custom domains and SSO.", comingSoon: true },
   { id: "audit", label: "Audit log", icon: History, description: "Who changed what, and when.", comingSoon: true },
   { id: "danger", label: "Danger zone", icon: AlertTriangle, description: "Transfer or delete this organization.", ownerOnly: true },

@@ -5710,6 +5710,7 @@ export type Database = {
           auto_release_results: boolean | null
           brand_color: string | null
           created_at: string
+          daily_summary_enabled: boolean | null
           default_duration_min: number | null
           default_pass_mark: number | null
           default_proctoring: string | null
@@ -5717,8 +5718,11 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          notify_emails: string[] | null
           owner_id: string
+          proctoring_alert_emails: string[] | null
           require_mfa: boolean | null
+          slack_webhook_url: string | null
           slug: string
           status: string
           team_session_minutes: number | null
@@ -5733,6 +5737,7 @@ export type Database = {
           auto_release_results?: boolean | null
           brand_color?: string | null
           created_at?: string
+          daily_summary_enabled?: boolean | null
           default_duration_min?: number | null
           default_pass_mark?: number | null
           default_proctoring?: string | null
@@ -5740,8 +5745,11 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          notify_emails?: string[] | null
           owner_id: string
+          proctoring_alert_emails?: string[] | null
           require_mfa?: boolean | null
+          slack_webhook_url?: string | null
           slug: string
           status?: string
           team_session_minutes?: number | null
@@ -5756,6 +5764,7 @@ export type Database = {
           auto_release_results?: boolean | null
           brand_color?: string | null
           created_at?: string
+          daily_summary_enabled?: boolean | null
           default_duration_min?: number | null
           default_pass_mark?: number | null
           default_proctoring?: string | null
@@ -5763,8 +5772,11 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          notify_emails?: string[] | null
           owner_id?: string
+          proctoring_alert_emails?: string[] | null
           require_mfa?: boolean | null
+          slack_webhook_url?: string | null
           slug?: string
           status?: string
           team_session_minutes?: number | null

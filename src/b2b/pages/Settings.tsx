@@ -22,6 +22,7 @@ import { ComingSoonSection } from "./settings/ComingSoonSection";
 import { DangerSection } from "./settings/DangerSection";
 import { DefaultsSection, type DefaultsState } from "./settings/DefaultsSection";
 import { SecuritySection, type SecurityState } from "./settings/SecuritySection";
+import { NotificationsSection, type NotificationsState } from "./settings/NotificationsSection";
 import { validateHexColor } from "./settings/hexColor";
 
 const DEFAULT_DEFAULTS: DefaultsState = {
@@ -37,6 +38,27 @@ const DEFAULT_SECURITY: SecurityState = {
   requireMfa: false,
   sessionMinutes: 1440,
 };
+
+const DEFAULT_NOTIFICATIONS: NotificationsState = {
+  digestEmails: [],
+  proctoringEmails: [],
+  slackWebhook: "",
+  dailySummary: false,
+};
+
+function orgToNotifications(org: {
+  notify_emails: string[] | null;
+  proctoring_alert_emails: string[] | null;
+  slack_webhook_url: string | null;
+  daily_summary_enabled: boolean | null;
+}): NotificationsState {
+  return {
+    digestEmails: org.notify_emails ?? [],
+    proctoringEmails: org.proctoring_alert_emails ?? [],
+    slackWebhook: org.slack_webhook_url ?? "",
+    dailySummary: org.daily_summary_enabled ?? false,
+  };
+}
 
 function orgToDefaults(org: {
   default_duration_min: number | null;
@@ -101,6 +123,7 @@ export default function B2BSettings() {
   const [brandColor, setBrandColor] = useState("");
   const [defaults, setDefaults] = useState<DefaultsState>(DEFAULT_DEFAULTS);
   const [security, setSecurity] = useState<SecurityState>(DEFAULT_SECURITY);
+  const [notifications, setNotifications] = useState<NotificationsState>(DEFAULT_NOTIFICATIONS);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewSubject, setPreviewSubject] = useState<string>("");
@@ -115,6 +138,7 @@ export default function B2BSettings() {
       setBrandColor(org.brand_color ?? "");
       setDefaults(orgToDefaults(org));
       setSecurity(orgToSecurity(org));
+      setNotifications(orgToNotifications(org));
     }
   }, [org?.id]);
 
@@ -162,14 +186,33 @@ export default function B2BSettings() {
     security.requireMfa !== orgSecurity.requireMfa ||
     security.sessionMinutes !== orgSecurity.sessionMinutes;
 
+  // Notifications validation
+  const orgNotifications = orgToNotifications(org);
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const allNotifyEmails = [...notifications.digestEmails, ...notifications.proctoringEmails];
+  const emailError = allNotifyEmails.some((e) => !EMAIL_RE.test(e))
+    ? "One of the recipient emails is invalid. Remove it and re-add."
+    : null;
+  const slackTrimmed = notifications.slackWebhook.trim();
+  const slackError =
+    slackTrimmed && !/^https:\/\/[^\s]+$/i.test(slackTrimmed)
+      ? "Webhook must be a full https:// URL."
+      : null;
+  const notificationsDirty =
+    !sameStringArray(notifications.digestEmails, orgNotifications.digestEmails) ||
+    !sameStringArray(notifications.proctoringEmails, orgNotifications.proctoringEmails) ||
+    slackTrimmed !== (orgNotifications.slackWebhook || "") ||
+    notifications.dailySummary !== orgNotifications.dailySummary;
+
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
     (normalizedBrand || "") !== (org.brand_color ?? "") ||
     defaultsDirty ||
-    securityDirty;
+    securityDirty ||
+    notificationsDirty;
 
-  const hasErrors = !!durationError || !!passMarkError || !!domainError;
+  const hasErrors = !!durationError || !!passMarkError || !!domainError || !!emailError || !!slackError;
   const canSave = dirty && !hasErrors && brandValidation.ok === true;
 
   const onSave = async () => {
@@ -179,7 +222,9 @@ export default function B2BSettings() {
       return;
     }
     if (hasErrors) {
-      toast.error(durationError ?? passMarkError ?? domainError ?? "Please fix the highlighted fields.");
+      toast.error(
+        durationError ?? passMarkError ?? domainError ?? emailError ?? slackError ?? "Please fix the highlighted fields.",
+      );
       return;
     }
     setSaving(true);
@@ -199,6 +244,10 @@ export default function B2BSettings() {
         allowed_email_domains: security.domains,
         require_mfa: isOwner ? security.requireMfa : orgSecurity.requireMfa,
         team_session_minutes: security.sessionMinutes,
+        notify_emails: notifications.digestEmails,
+        proctoring_alert_emails: notifications.proctoringEmails,
+        slack_webhook_url: slackTrimmed || null,
+        daily_summary_enabled: notifications.dailySummary,
       })
       .eq("id", org.id);
     setSaving(false);
@@ -216,6 +265,7 @@ export default function B2BSettings() {
     setBrandColor(org.brand_color ?? "");
     setDefaults(orgToDefaults(org));
     setSecurity(orgToSecurity(org));
+    setNotifications(orgToNotifications(org));
   };
 
   const onDelete = async () => {
@@ -294,16 +344,12 @@ export default function B2BSettings() {
         );
       case "notifications":
         return (
-          <ComingSoonSection
-            icon={activeMeta.icon}
-            title="Notifications"
-            description="Pick where assessment results and proctoring alerts get delivered."
-            fields={[
-              "Email recipients for completion digests",
-              "Slack / webhook URL for instant alerts",
-              "Daily summary email toggle",
-              "Recipients for proctoring incidents",
-            ]}
+          <NotificationsSection
+            canEdit={canEdit}
+            state={notifications}
+            setState={setNotifications}
+            slackError={slackError}
+            emailError={emailError}
           />
         );
       case "integrations":
