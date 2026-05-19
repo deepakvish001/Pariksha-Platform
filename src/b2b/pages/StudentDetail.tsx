@@ -122,32 +122,63 @@ export default function B2BStudentDetail() {
         <div className="b2b-card p-3"><div className="text-xs text-[hsl(var(--muted-foreground))]">Avg Integrity</div><div className="text-2xl font-semibold">{avgIntegrity != null ? `${avgIntegrity}%` : "—"}</div></div>
       </div>
 
-      {attempts.length > 0 && (
-        <div className="b2b-card p-3 mb-4">
-          <div className="text-xs text-[hsl(var(--muted-foreground))] mb-2 flex items-center gap-1">
-            <ExternalLink className="h-3 w-3" /> Jump to an attempt
+      {attempts.length > 0 && (() => {
+        const q = jumpQuery.trim().toLowerCase();
+        const filtered = q
+          ? attempts.filter((a) => {
+              const title = (agg?.assessments.get(a.assessment_id)?.title ?? "Attempt").toLowerCase();
+              const status = String(a.status ?? "").toLowerCase();
+              return title.includes(q) || status.includes(q);
+            })
+          : attempts;
+        return (
+          <div className="b2b-card p-3 mb-4">
+            <div className="mb-2 flex items-center gap-2 flex-wrap">
+              <div className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1">
+                <ExternalLink className="h-3 w-3" /> Jump to an attempt
+              </div>
+              <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                {filtered.length} of {attempts.length}
+              </span>
+              <div className="ml-auto relative w-full sm:w-64">
+                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" aria-hidden="true" />
+                <Input
+                  value={jumpQuery}
+                  onChange={(e) => setJumpQuery(e.target.value)}
+                  placeholder="Filter by title or status…"
+                  aria-label="Filter attempts"
+                  className="h-8 pl-7 text-xs"
+                />
+              </div>
+            </div>
+            {filtered.length === 0 ? (
+              <div className="text-xs text-[hsl(var(--muted-foreground))] px-1 py-2">
+                No attempts match “{jumpQuery}”.
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {filtered.map((a) => {
+                  const title = agg?.assessments.get(a.assessment_id)?.title ?? "Attempt";
+                  const when = a.submitted_at ?? a.started_at;
+                  return (
+                    <Link
+                      key={a.id}
+                      to={`${basePath}/assessments/${a.assessment_id}/attempts/${a.id}`}
+                      className="text-xs px-2 py-1 rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))/0.4] flex items-center gap-1.5 max-w-[260px]"
+                      title={`${title} · ${a.status}`}
+                    >
+                      <span className="truncate">{title}</span>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{a.status}</Badge>
+                      {a.score_pct != null && <span className="text-[hsl(var(--muted-foreground))] shrink-0">{Math.round(a.score_pct)}%</span>}
+                      <span className="text-[hsl(var(--muted-foreground))] shrink-0">· {fmt(when)}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {attempts.map((a) => {
-              const title = agg?.assessments.get(a.assessment_id)?.title ?? "Attempt";
-              const when = a.submitted_at ?? a.started_at;
-              return (
-                <Link
-                  key={a.id}
-                  to={`${basePath}/assessments/${a.assessment_id}/attempts/${a.id}`}
-                  className="text-xs px-2 py-1 rounded border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))/0.4] flex items-center gap-1.5 max-w-[260px]"
-                  title={`${title} · ${a.status}`}
-                >
-                  <span className="truncate">{title}</span>
-                  <Badge variant="outline" className="text-[10px] shrink-0">{a.status}</Badge>
-                  {a.score_pct != null && <span className="text-[hsl(var(--muted-foreground))] shrink-0">{Math.round(a.score_pct)}%</span>}
-                  <span className="text-[hsl(var(--muted-foreground))] shrink-0">· {fmt(when)}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div id="activity" className="b2b-card overflow-hidden scroll-mt-20">
         <div className="px-4 py-3 border-b flex items-center gap-2">
