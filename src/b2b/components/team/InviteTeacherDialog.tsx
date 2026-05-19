@@ -156,7 +156,7 @@ export function InviteTeacherDialog({ open, onOpenChange, orgId }: Props) {
         <DialogFooter>
           {!createdLink ? (
             <>
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={tryCancel}>Cancel</Button>
               <Button onClick={submit} disabled={create.isPending}>
                 <Send className="h-4 w-4 mr-2" />
                 {create.isPending ? "Sending…" : "Send invite"}
