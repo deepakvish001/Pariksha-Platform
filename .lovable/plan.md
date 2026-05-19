@@ -1,120 +1,121 @@
+## Placement Report Dashboard — Plan
 
-# College Student Enrollment + Dashboards
+A new B2B surface at `/colleges/:slug/placements` (and `/companies/:slug/placements` for parity) that turns Parikshaa's existing assessment data into a full **placement intelligence** dashboard, similar in spirit to Superset/Looker but purpose-built for college TPOs and leadership.
 
-Today the B2B layer has `organizations`, `org_members` (owner/admin/proctor/recruiter/viewer roles for *staff*), and `b2b_org_invites` for inviting staff. Students only exist transiently via `assessment_invites` per assessment. This plan introduces **persistent student enrollment** at the college level, a **student-facing college home**, and a **detailed admin view** of each enrolled student.
+### 1. Audience & layout
 
-## 1. Data model (new)
+Role-based shell on a single route. The current user's `org_members.role` (already in the schema) decides the default view; a small toggle lets them switch.
 
-New tables in `public`:
+```text
+┌─ Placement Report ────────────── [TPO] [Leadership] [Public]
+├─ Global filter bar (sticky)
+│   Batch • Branch/Section • Date range • Drive status •
+│   CTC band • Sector • Student status   [Save view] [Reset]
+├─ KPI strip (changes per view)
+├─ Main grid
+│   TPO:        Operational tables + funnel + drill-downs
+│   Leadership: Trends + branch comparison + AI narrative
+│   Public:     Highlights + top recruiters + CTC distribution
+└─ AI dock (right rail)  — NL Q&A + saved insights
+```
 
-- **`org_students`** — one row per enrolled student in a college org.
-  - `org_id`, `email` (lowercased, unique with org_id), `user_id` (nullable until they sign up), `full_name`, `roll_number`, `branch`, `batch_year`, `section`, `status` (`invited` | `active` | `suspended` | `alumni`), `enrolled_by`, `enrolled_at`, `activated_at`, `metadata jsonb`.
-- **`org_student_invites`** — pending email invites with `token`, `expires_at`, `accepted_at`. Separate from staff `b2b_org_invites` so flows don't collide.
-- **`org_student_groups`** + **`org_student_group_members`** — optional cohorts (e.g., "CSE 2026", "Section B") so admins can target assessments to a group.
-- Extend `assessment_invites` linkage: add nullable `org_student_id` so attempts tie back to the enrollment record (no breaking change).
+### 2. Data model (new tables under `public.`)
 
-RLS:
-- College owners/admins/recruiters can CRUD `org_students` for their org.
-- The student themself can `SELECT` their own row (`auth.uid() = user_id`).
-- Use existing `is_org_member` + a new `is_org_student(org_id)` security-definer helper to avoid recursion.
+Existing reusable tables: `organizations`, `org_members`, `org_students`, `assessments`, `assessment_attempts`, `assessment_invites`.
 
-Triggers:
-- On new auth user, match `email` against `org_students` and backfill `user_id` + flip status to `active`.
-- On `assessment_invites` insert where email matches an `org_students` row, auto-set `org_student_id`.
+New tables to add (all org-scoped with strict RLS via `has_org_role`):
 
-## 2. Bulk enrollment UX (admin)
+- **recruiters** — `org_id`, `name`, `sector` (enum), `website`, `hq_city`, `notes`, `contacts jsonb[]`, `first_visit_year`, `last_visit_year`, `is_repeat bool`.
+- **placement_drives** — `org_id`, `recruiter_id`, `title`, `role_title`, `drive_type` (on_campus / pool / off_campus / virtual), `status` (upcoming / open / closed / cancelled), `opens_at`, `closes_at`, `eligibility jsonb` (min_cgpa, allowed_branches[], max_backlogs, batch_years[]), `ctc_min`, `ctc_max`, `currency`, `location`, `bond_months`.
+- **drive_eligibility** — view/materialised view that joins `org_students` × `placement_drives.eligibility` to compute the eligible pool per drive (used for funnel + shortlist screens).
+- **drive_applications** — `drive_id`, `student_id`, `applied_at`, `stage` (applied / shortlisted / round_n / offered / rejected / withdrew), `current_round`, `last_event_at`, `notes`.
+- **placement_offers** — `drive_id`, `student_id`, `recruiter_id`, `offered_at`, `accepted_at`, `declined_at`, `ctc`, `currency`, `role_title`, `location`, `offer_type` (intern / fte / ppo), `is_dream_offer bool`.
+- **placement_views** — saved filter sets per user (`org_id`, `user_id`, `name`, `filters jsonb`, `is_shared bool`).
+- **placement_ai_runs** — append-only log of AI Q&A and narrative generations (`org_id`, `user_id`, `kind`, `prompt`, `response`, `filters jsonb`, `tokens`, `cost_cents`).
+- **placement_snapshots** — nightly materialised aggregates per `(org_id, batch_year, branch)`: `placed_count`, `multi_offer_count`, `avg_ctc`, `median_ctc`, `top_ctc`, `dream_offers`, `total_eligible`. Powers fast leadership charts and the public report.
 
-New route: `/colleges/:slug/students` (and legacy `/b2b/students`).
+Indexes on `(org_id, batch_year, branch)`, `(drive_id, stage)`, `(student_id, accepted_at)`. Triggers to flip `is_repeat` on `recruiters` when a second drive lands.
 
-- **Students table**: search, filter by status/branch/batch/group, sort. Columns: name, email, roll, branch, batch, status, last active, # assessments taken, avg score, integrity flags.
-- **Add students**:
-  - Single add (form).
-  - **Bulk CSV upload** with column mapping (email required; name/roll/branch/batch/section/group optional). Preview + dedupe (case-insensitive email). Validation via zod on client *and* server (edge function).
-  - **Paste list** (newline/comma-separated emails).
-- On submit → edge function `enroll-students` inserts into `org_students` (status `invited`), creates `org_student_invites` tokens, enqueues branded emails through the existing Lovable transactional email system (subject: "You've been enrolled at <College>").
-- Row actions: resend invite, edit details, change group, suspend, remove, export CSV.
+### 3. Filter system (URL-persisted, shareable)
 
-## 3. Student onboarding & login
+A single `PlacementFilters` context that mirrors to `useSearchParams`. Every chart, KPI, table, and AI call reads from this single source:
 
-- Email contains a magic link `…/join/student?token=…` → page resolves token, ensures the user is signed in (login or signup with the invite email pre-filled), then calls RPC `accept_student_enrollment(token)` which links `user_id` and marks `active`.
-- If the student signs up via the normal flow with an email that already has an `org_students` row, the trigger auto-links — no token needed.
-- Post-login redirect (`getPostLoginPath`) gets a new branch: if the user has any `org_students` rows with status `active`, default to `/my/college` (their college home).
+- Multi-select: branch, section, batch year, drive status, sector, student status (placed / unplaced / multi_offer / accepted / declined).
+- Range: date range (drive close date or offer date — toggle), CTC band slider, CGPA band.
+- Free-text: recruiter name (with combobox autocomplete from `recruiters`).
+- Save current filter set → `placement_views` row → appears in a "Saved views" dropdown, shareable via URL `?view=<id>`.
 
-## 4. Student-facing pages (new)
+Server-side filtering done in a single `rpc('placement_overview', filters jsonb)` function that returns a typed payload of all KPI/series data the page needs in one round-trip — keeps the UI fast and the SQL central.
 
-Route group under `/my/college` (and `/my/college/:slug` if a student belongs to more than one):
+### 4. KPIs & visuals (Recharts; same theme tokens as existing b2b cards)
 
-- **College Home**: branded header (org logo + brand color), college name, their roll/branch/batch/section, contact info, announcements (optional later).
-- **My Dashboard** (`/my/college/dashboard`):
-  - KPI strip: assessments assigned, completed, upcoming, avg score, current rank in batch (opt-in), integrity score.
-  - **Upcoming assessments** list (from `assessment_invites` joined to assessments where window is open or future) with "Start" CTA → existing player.
-  - **Past attempts** table: assessment, date, score, integrity, link to result page.
-  - **Skill breakdown** chart (reuse existing analytics) — strengths/weaknesses across attempted assessments.
-  - **Activity timeline**: invites received, attempts started/submitted, results released.
-- **My Profile (college)**: editable subset (name, phone). Admin-managed fields (roll/branch/batch) read-only.
+TPO view:
+- KPIs: Eligible / Applied / Shortlisted / Offered / Accepted (5-stage funnel), Placement %, Multi-offer %, Avg & Median CTC, Highest CTC, Dream-offer count.
+- Tables: Live drives (with stage funnel mini-bars), Pending shortlists, Unplaced eligible students, Open offer decisions.
+- Drill-down: clicking a KPI or chart segment writes to filter context and reveals the underlying row list with bulk actions (email students, export CSV).
 
-Reuse existing assessment player & result pages — no changes there.
+Leadership view:
+- Year-over-year placement % line, branch comparison bar, CTC distribution histogram, sector mix donut, top-10 recruiters table, "Where we slipped" panel auto-filled by the AI narrative.
 
-## 5. College admin "Students" detail dashboard
+Public/shareable report at `/colleges/:slug/placements/public`:
+- Pre-rendered from `placement_snapshots`, no auth, JSON-LD `Dataset` schema for SEO. Org admin toggles which batches/sections are public from Settings.
 
-New route: `/colleges/:slug/students/:studentId`.
+### 5. AI layer (Lovable AI Gateway, server-side only)
 
-- **Header**: avatar, name, email, status pill, roll/branch/batch, groups, enrolled date, last login.
-- **KPI tiles**: assessments invited / attempted / completed, avg score, avg integrity, time spent total.
-- **Performance chart**: score over time (line) + per-skill radar.
-- **Assessments table**: every assignment with status (invited/in-progress/submitted/expired), score, integrity flags, proctoring summary, link to `AttemptDetail`.
-- **Integrity panel**: aggregated violation counts, links to flagged attempts (reuses `LiveProctorWall`/`ProctoringTriagePanel` styling).
-- **Admin actions**: assign to assessment, add to group, resend pending invites, suspend, remove, export PDF report.
+All AI calls live in **Supabase Edge Functions** with `LOVABLE_API_KEY`. Default model `google/gemini-3-flash-preview`; switch to `google/gemini-2.5-pro` for the weekly narrative.
 
-Also extend the existing **college dashboard** (`/b2b/dashboard` / `/colleges/:slug`) with:
-- "Enrolled students" KPI tile + "Active this week" sparkline.
-- "Students at risk" widget (low scores or integrity flags in last N days).
-- Quick action: "Enroll students".
+a. **NL Q&A** — `placement-ai-query` edge function. AI SDK `streamText` + tool calling:
+   - Tool `get_overview(filters)` → calls `rpc('placement_overview', …)`.
+   - Tool `list_students(filters, limit)` → returns minimal student rows (PII-safe).
+   - Tool `compare_branches(batch_year)`.
+   - Tool `recruiter_history(recruiter_id)`.
+   - The model translates "how did CSE 2025 do vs 2024" into the right tool calls, then formats a markdown answer. Renders in the AI dock with chart suggestions (model returns optional `{chart: 'bar', x:'branch', y:'placed_pct'}` JSON via `Output.object`).
 
-## 6. Sidebar / nav
+b. **Weekly narrative** — `placement-ai-digest` edge function, scheduled via `pg_cron` Mondays 06:00 IST. Pulls last 7 days of drives/offers, asks the model for a TPO-ready summary with sections: Wins / Risks / Branches falling behind / Recruiter follow-ups. Stored in `placement_ai_runs` and emailed via existing Resend setup; also pinned to the dashboard.
 
-Add to `DashboardSidebar` (college workspace):
-- **Students** → list page
-- **Groups** (under Students) → optional
-Student sidebar adds:
-- **My College** → college home
-- **My Dashboard** (already present logic, just routes here when they're a student)
+c. **At-risk unplaced** — `placement-ai-atrisk` edge function. Hybrid score:
+   - Deterministic: low assessment readiness (existing `assessment_attempts`), low applications-per-eligible, no shortlists in 30 days, CGPA vs. recruiter floor gap.
+   - AI re-ranks the top 200 and produces a 1-line "why" + a suggested intervention per student (mock interview, specific roadmap, recruiter to target). Output via `Output.object` with a strict schema, stored as a `at_risk_snapshot` row refreshed nightly.
 
-## 7. Permissions
+d. **Recruiter outreach drafts** — modal on any recruiter row. Edge function pulls recruiter history + current open roles, generates a personalised email (subject + body) using past hiring patterns. User edits → "Copy" or "Send via Resend".
 
-Extend `Capability` enum and `usePermissions` with:
-- `students.view`, `students.manage`, `students.invite`, `students.export`.
-Default to owner+admin; recruiter gets view+invite; viewer gets view only.
+All AI runs logged to `placement_ai_runs` for audit, cost, and rate-limit telemetry. 429 and 402 surfaced as toasts.
 
-## 8. Edge functions
+### 6. Routing, navigation, access
 
-- `enroll-students` — validates payload (zod), upserts rows, generates tokens, enqueues invite emails (uses existing transactional email infra; no new secrets).
-- `accept-student-enrollment` — validates token, links user, marks active, returns redirect target.
-- `student-dashboard-stats` — aggregated counts for a student (used both by student self-view and admin detail page; RLS via security-definer).
+- New route: `src/b2b/pages/placements/PlacementsDashboard.tsx`, nested under `OrgShell`.
+- Sub-routes: `/recruiters`, `/drives`, `/drives/:id`, `/offers`, `/reports/:viewId`, `/public` (no auth).
+- Sidebar: add a **Placements** group with icons (Briefcase, Building2, Trophy, Sparkles for AI dock).
+- RLS: every new table follows the existing `has_org_role(auth.uid(), org_id, role)` pattern. Public report uses an `is_public` flag on `placement_snapshots` and a SECURITY DEFINER view that strips PII.
 
-## 9. Tests
+### 7. Imports & data entry
 
-- DB: RLS tests for `org_students` (student sees only self; admin sees org's students; cross-org isolation).
-- Hooks: `useEnrollStudents`, `useStudentDashboard` (vitest + msw-like supabase mocks).
-- E2E (Playwright):
-  - Admin uploads CSV → invite email queued → student accepts → appears as `active`.
-  - Student logs in → lands on `/my/college/dashboard` → sees upcoming assessment.
-  - Admin opens student detail → KPIs reflect a completed attempt.
+- Drive / offer entry modal (Sheet + react-hook-form + zod).
+- CSV importer for legacy years: `placement-import` edge function parses CSV → maps to `org_students`, `placement_offers`, `recruiters` with a dry-run preview.
+- Webhook intake at `placement-webhook-in` so colleges can push from their ERP.
 
-## 10. Rollout
+### 8. Build order (incremental, each shippable)
 
-1. Migration + RLS + helper functions.
-2. `enroll-students` + `accept-student-enrollment` edge functions + email template.
-3. Admin Students list + bulk CSV.
-4. Student college home + dashboard + post-login routing.
-5. Admin student detail page + dashboard widgets.
-6. Tests + docs.
+1. **Schema + RLS** — new tables, `rpc placement_overview`, snapshot job.
+2. **Filter context + URL sync + saved views** — wired to a stub `placement_overview` that returns mock data.
+3. **TPO dashboard** — KPI strip, funnel, live drives table, drill-downs.
+4. **Recruiter directory + drive/offer CRUD + CSV import.**
+5. **Leadership view + public report + JSON-LD SEO.**
+6. **AI dock — NL Q&A** (tool-calling, streaming, chart hinting).
+7. **Weekly narrative** (cron + email + pinned card).
+8. **At-risk predictions** (deterministic score → AI re-rank → suggestions).
+9. **Recruiter outreach drafts.**
+10. **Analytics polish** — cost dashboards for AI usage in admin.
 
----
+### Technical notes (for engineers, skip if non-technical)
 
-### Open questions before I build
+- Charts: Recharts; theme tokens from `src/b2b/theme.css` so dark-mode is automatic.
+- Tables: TanStack Table; reuse `Responsive table` pattern from project memory (no horizontal scroll).
+- Forms: react-hook-form + zod; existing Sheet pattern.
+- AI SDK: `@ai-sdk/openai-compatible` + `ai`, gateway at `https://ai.gateway.lovable.dev/v1`, `Lovable-API-Key` header. `streamText` with `stopWhen: stepCountIs(50)`; structured outputs via `Output.object`.
+- Embeddings (optional, phase 2): index drive descriptions and recruiter notes with `google/gemini-embedding-001` + pgvector(3072) for semantic recruiter search ("companies that hire similar to Razorpay").
+- Realtime: subscribe drives/offers via `supabase_realtime` so the funnel updates live during drive day.
+- i18n: every label through `useTranslation()`, locale JSON under `src/i18n/locales`.
+- Memory: add a new project memory `features/placements/system` once shipped.
 
-1. **Scope of the student dashboard now**: just college-assigned assessments, or also surface their general learn/practice activity already in the app?
-2. **Email-domain restriction**: should enrollment auto-restrict the student's signup to the college's `allowed_email_domains`? (The org table already has that column.)
-3. **Groups/cohorts**: include now, or ship enrollment + dashboards first and add groups in v2?
-4. **Multiple colleges per student**: realistic, or should we hard-cap to one active enrollment?
+This plan keeps everything inside the existing org/auth model, reuses your assessment data for "readiness", and layers a focused AI surface on top instead of a generic chatbot.
