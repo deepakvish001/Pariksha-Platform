@@ -13,6 +13,8 @@ type StudentPayload = {
   headline: string | null;
   show_contact: boolean;
   email: string | null;
+  show_resume: boolean;
+  resume_url: string | null;
   score: number;
   rank_in_org: number | null;
   rank_in_branch: number | null;
