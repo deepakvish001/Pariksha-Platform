@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Trophy, Loader2, GraduationCap, Sparkles, Building2, Mail, Clock } from "lucide-react";
+import { Trophy, Loader2, GraduationCap, Sparkles, Building2, Mail, Clock, FileText, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +13,8 @@ type StudentPayload = {
   headline: string | null;
   show_contact: boolean;
   email: string | null;
+  show_resume: boolean;
+  resume_url: string | null;
   score: number;
   rank_in_org: number | null;
   rank_in_branch: number | null;
@@ -65,6 +67,29 @@ export default function PublicStudentProfile({ kind }: { kind: "profile" | "shor
     };
     fetchData();
   }, [token]);
+
+  // SEO: title, description, noindex (share links must never be indexed)
+  useEffect(() => {
+    const setMeta = (name: string, content: string) => {
+      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement("meta"); el.name = name; document.head.appendChild(el); }
+      el.content = content;
+    };
+    let title = "Placement Profile · Parikshaa";
+    let desc = "Shared placement profile.";
+    if (data) {
+      title = kind === "shortlist"
+        ? `Top ${data.students.length} candidates · ${data.org?.name || "Parikshaa"}`
+        : `${data.students[0]?.name || "Student"} · Placement Profile`;
+      desc = data.message?.trim()
+        || (kind === "shortlist"
+          ? `Shortlist of top candidates shared by ${data.org?.name || "the placement office"}.`
+          : `Placement readiness profile shared by ${data.org?.name || "the placement office"}.`);
+    }
+    document.title = title;
+    setMeta("description", desc.slice(0, 160));
+    setMeta("robots", "noindex,nofollow");
+  }, [data, kind]);
 
   if (loading) {
     return (
@@ -168,10 +193,23 @@ export default function PublicStudentProfile({ kind }: { kind: "profile" | "shor
                 ))}
               </div>
 
-              {s.show_contact && s.email && (
-                <Button asChild size="sm" variant="outline" className="w-full">
-                  <a href={`mailto:${s.email}`}><Mail className="h-3.5 w-3.5 mr-1.5" />{s.email}</a>
-                </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {s.show_contact && s.email && (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={`mailto:${s.email}`}><Mail className="h-3.5 w-3.5 mr-1.5" />{s.email}</a>
+                  </Button>
+                )}
+                {s.show_resume && s.resume_url && (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={s.resume_url} target="_blank" rel="noreferrer"><FileText className="h-3.5 w-3.5 mr-1.5" />View resume</a>
+                  </Button>
+                )}
+              </div>
+              {!s.show_contact && !s.show_resume && (
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground italic">
+                  <EyeOff className="h-3 w-3" />
+                  Contact and resume hidden by the sender — request access from the placement office.
+                </div>
               )}
             </div>
           ))}
