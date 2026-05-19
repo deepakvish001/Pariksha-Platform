@@ -63,6 +63,18 @@ export default function AssessmentNew() {
 
   return (
     <OrgShell title="New assessment">
+      <div className="max-w-2xl mb-3 flex items-center justify-between gap-3 text-xs text-[hsl(var(--muted-foreground))]">
+        <span className="inline-flex items-center gap-1.5">
+          <Settings2 className="h-3.5 w-3.5" />
+          Pre-filled from your organization defaults.
+        </span>
+        <Link
+          to="/b2b/settings?section=defaults"
+          className="underline-offset-2 hover:underline hover:text-[hsl(var(--foreground))]"
+        >
+          Edit defaults
+        </Link>
+      </div>
       <form onSubmit={onSubmit} className="b2b-card p-6 max-w-2xl space-y-5">
         <div>
           <Label htmlFor="title">Title</Label>
