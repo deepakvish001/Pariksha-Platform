@@ -650,7 +650,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((r, i) => (
+                {rendered.map((r, i) => (
                   <tr key={r.student_id} className="border-t border-[hsl(var(--border))]/40 hover:bg-[hsl(var(--muted))]/10">
                     <td className="px-3 py-2">
                       <Checkbox
