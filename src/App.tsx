@@ -337,6 +337,8 @@ const App = () => (
                       <Route path="students" element={<RequireOrgCapability cap="members.invite"><B2BStudents /></RequireOrgCapability>} />
                       <Route path="students/:studentId" element={<RequireOrgCapability cap="members.invite"><B2BStudentDetail /></RequireOrgCapability>} />
                       <Route path="placements" element={<B2BPlacements />} />
+                      <Route path="placements/students/:studentId" element={<B2BStudentPlacementProfile />} />
+
                     </Route>
                   );
                 })}
