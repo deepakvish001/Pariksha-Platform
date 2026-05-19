@@ -152,13 +152,24 @@ export default function B2BSettings() {
     defaults.allowRetake !== orgDefaults.allowRetake ||
     defaults.autoRelease !== orgDefaults.autoRelease;
 
+  // Security validation
+  const orgSecurity = orgToSecurity(org);
+  const domainError = security.domains.some((d) => !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d))
+    ? "One of the listed domains is invalid. Remove it and re-add."
+    : null;
+  const securityDirty =
+    !sameStringArray(security.domains, orgSecurity.domains) ||
+    security.requireMfa !== orgSecurity.requireMfa ||
+    security.sessionMinutes !== orgSecurity.sessionMinutes;
+
   const dirty =
     name.trim() !== org.name ||
     (logoUrl || "") !== (org.logo_url ?? "") ||
     (normalizedBrand || "") !== (org.brand_color ?? "") ||
-    defaultsDirty;
+    defaultsDirty ||
+    securityDirty;
 
-  const hasErrors = !!durationError || !!passMarkError;
+  const hasErrors = !!durationError || !!passMarkError || !!domainError;
   const canSave = dirty && !hasErrors && brandValidation.ok === true;
 
   const onSave = async () => {
@@ -168,7 +179,7 @@ export default function B2BSettings() {
       return;
     }
     if (hasErrors) {
-      toast.error(durationError ?? passMarkError ?? "Please fix the highlighted fields.");
+      toast.error(durationError ?? passMarkError ?? domainError ?? "Please fix the highlighted fields.");
       return;
     }
     setSaving(true);
@@ -185,6 +196,9 @@ export default function B2BSettings() {
         default_pass_mark: passMarkNum,
         allow_retake_default: defaults.allowRetake,
         auto_release_results: defaults.autoRelease,
+        allowed_email_domains: security.domains,
+        require_mfa: isOwner ? security.requireMfa : orgSecurity.requireMfa,
+        team_session_minutes: security.sessionMinutes,
       })
       .eq("id", org.id);
     setSaving(false);
