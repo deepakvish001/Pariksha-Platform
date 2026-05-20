@@ -81,6 +81,7 @@ const homeNavItems = [
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Contests", url: "/contests", icon: Trophy },
   { title: "Interview Experiences", url: "/experiences", icon: Briefcase },
+  { title: "Mock Interview", url: "/mock-interview", icon: Mic },
   { title: "Blog", url: "/blog", icon: BookOpen },
   { title: "Leaderboard", url: "/learn/leaderboard", icon: Trophy },
   { title: "Profile", url: PROFILE_SENTINEL, icon: User },
