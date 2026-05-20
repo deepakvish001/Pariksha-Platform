@@ -204,17 +204,6 @@ export function SideCameraPairing({ attemptId, onPaired, onUnpaired }: Props) {
       </div>
     );
   }
-                ? "We stopped receiving frames from your phone. Reopen the link or scan a new QR to reconnect."
-                : "The pairing on your phone was closed. Generate a new QR code to reconnect."}
-            </div>
-          </div>
-        </div>
-        <Button size="sm" variant="outline" onClick={createPairing}>
-          <RefreshCw className="h-4 w-4 mr-1.5" /> Generate new pairing
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-3">
