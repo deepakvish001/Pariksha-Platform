@@ -113,7 +113,7 @@ export function SideCameraPairing({ attemptId, onPaired, onUnpaired }: Props) {
   const isStale = meta?.status === "paired" && lastSeenMs > 0 && ageMs > STALE_MS;
   const effectivelyPaired = meta?.status === "paired" && !isStale;
   const effectivelyDown =
-    meta?.status === "disconnected" || meta?.status === "expired" || isStale;
+    meta?.status === "disconnected" || meta?.status === "expired" || meta?.status === "closed" || isStale;
 
   // Fire pair/unpair transitions exactly once per change.
   useEffect(() => {
