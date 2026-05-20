@@ -855,7 +855,7 @@ export default function Preflight() {
                       setTimeout(() => goNext(), 600);
                     }}
                     onUnpaired={() => {
-                      failCurrent();
+                      setStateById((prev) => ({ ...prev, thirdeye: "failed" }));
                       // If the user has moved past Third Eye, bounce them
                       // back so they're forced to re-pair before starting.
                       const teIndex = activeSteps.findIndex((s) => s.id === "thirdeye");
