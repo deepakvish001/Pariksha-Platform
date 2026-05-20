@@ -32,7 +32,7 @@ function useExperiencesByStatus(status: "pending" | "approved" | "rejected") {
 }
 
 export default function ParikshaaExperiences() {
-  const [topTab, setTopTab] = useState<"submissions" | "reports">("submissions");
+  const [topTab, setTopTab] = useState<"submissions" | "reports" | "audit">("submissions");
   const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
   const { data, isLoading } = useExperiencesByStatus(tab);
   const { user } = useAuth();
