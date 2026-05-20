@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Experience } from "@/hooks/useExperiences";
+import { ExperienceReportsQueue } from "./ExperienceReportsQueue";
 
 function useExperiencesByStatus(status: "pending" | "approved" | "rejected") {
   return useQuery({
