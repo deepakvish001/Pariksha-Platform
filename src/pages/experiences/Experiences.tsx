@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { useExperiences, type ExperienceFilters } from "@/hooks/useExperiences";
+import { useExperiences, useMyExperiences, type ExperienceFilters, type Experience } from "@/hooks/useExperiences";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Briefcase, ThumbsUp, Eye, Plus, Sparkles, Filter, FileClock, Search, X, Building2, UserSquare2, Calendar,
+  Clock, CheckCircle2, XCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+const ownerStatusMeta: Record<Experience["status"], { label: string; icon: any; cls: string }> = {
+  pending: { label: "Pending review", icon: Clock, cls: "bg-amber-500/15 text-amber-500 border-amber-500/30" },
+  approved: { label: "Approved", icon: CheckCircle2, cls: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" },
+  rejected: { label: "Not approved", icon: XCircle, cls: "bg-red-500/15 text-red-500 border-red-500/30" },
+};
 
 const offerColor: Record<string, string> = {
   selected: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
