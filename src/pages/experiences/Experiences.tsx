@@ -154,34 +154,104 @@ export default function Experiences() {
       </div>
 
       <Card className="p-4 space-y-3">
-        <div className="relative">
-          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search company, role, question, tip, location…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex gap-2 items-center">
+          <div className="relative flex-1">
+            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search company, role, question, tip, location…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Mobile-only Filters trigger */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden relative shrink-0" aria-label="Open filters">
+                <Filter className="size-4" />
+                {activeChips.length > 0 && (
+                  <span className="absolute -top-1 -right-1 size-4 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold flex items-center justify-center">
+                    {activeChips.length}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[85vh] flex flex-col">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2"><Filter className="size-4" /> Filters</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto space-y-4 py-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Company</label>
+                  <Input placeholder="Any company" value={filters.company ?? ""} onChange={(e) => set({ company: e.target.value || undefined })} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Role</label>
+                  <Input placeholder="Any role" value={filters.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Category</label>
+                  <Select value={filters.experience_type ?? "all"} onValueChange={(v) => set({ experience_type: v === "all" ? undefined : (v as any) })}>
+                    <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      <SelectItem value="on_campus">On-Campus</SelectItem>
+                      <SelectItem value="off_campus">Off-Campus</SelectItem>
+                      <SelectItem value="internship">Internship</SelectItem>
+                      <SelectItem value="referral">Referral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
+                  <Select value={filters.difficulty ?? "all"} onValueChange={(v) => set({ difficulty: v === "all" ? undefined : v })}>
+                    <SelectTrigger><SelectValue placeholder="Difficulty" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All difficulty</SelectItem>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Year</label>
+                  <Select value={filters.year ? String(filters.year) : "all"} onValueChange={(v) => set({ year: v === "all" ? undefined : Number(v) })}>
+                    <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any year</SelectItem>
+                      {years.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Sort by</label>
+                  <Select value={filters.sort ?? "recent"} onValueChange={(v) => set({ sort: v as any })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recent">Most recent</SelectItem>
+                      <SelectItem value="top">Most upvoted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <SheetFooter className="flex-row gap-2 sm:flex-row">
+                <Button variant="outline" className="flex-1" onClick={clearAll}>Clear all</Button>
+                <SheetClose asChild>
+                  <Button className="flex-1">Show {data?.length ?? 0} results</Button>
+                </SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-2 md:items-center">
+        {/* Desktop filter row */}
+        <div className="hidden md:flex gap-2 items-center">
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Filter className="size-4" /> Filter</div>
-          <Input
-            placeholder="Company"
-            value={filters.company ?? ""}
-            onChange={(e) => set({ company: e.target.value || undefined })}
-            className="md:max-w-[180px]"
-          />
-          <Input
-            placeholder="Role"
-            value={filters.role ?? ""}
-            onChange={(e) => set({ role: e.target.value || undefined })}
-            className="md:max-w-[180px]"
-          />
-          <Select
-            value={filters.experience_type ?? "all"}
-            onValueChange={(v) => set({ experience_type: v === "all" ? undefined : (v as any) })}
-          >
+          <Input placeholder="Company" value={filters.company ?? ""} onChange={(e) => set({ company: e.target.value || undefined })} className="md:max-w-[180px]" />
+          <Input placeholder="Role" value={filters.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} className="md:max-w-[180px]" />
+          <Select value={filters.experience_type ?? "all"} onValueChange={(v) => set({ experience_type: v === "all" ? undefined : (v as any) })}>
             <SelectTrigger className="md:w-40"><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
@@ -191,10 +261,7 @@ export default function Experiences() {
               <SelectItem value="referral">Referral</SelectItem>
             </SelectContent>
           </Select>
-          <Select
-            value={filters.difficulty ?? "all"}
-            onValueChange={(v) => set({ difficulty: v === "all" ? undefined : v })}
-          >
+          <Select value={filters.difficulty ?? "all"} onValueChange={(v) => set({ difficulty: v === "all" ? undefined : v })}>
             <SelectTrigger className="md:w-36"><SelectValue placeholder="Difficulty" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All difficulty</SelectItem>
@@ -203,16 +270,11 @@ export default function Experiences() {
               <SelectItem value="hard">Hard</SelectItem>
             </SelectContent>
           </Select>
-          <Select
-            value={filters.year ? String(filters.year) : "all"}
-            onValueChange={(v) => set({ year: v === "all" ? undefined : Number(v) })}
-          >
+          <Select value={filters.year ? String(filters.year) : "all"} onValueChange={(v) => set({ year: v === "all" ? undefined : Number(v) })}>
             <SelectTrigger className="md:w-28"><SelectValue placeholder="Year" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Any year</SelectItem>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              ))}
+              {years.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
             </SelectContent>
           </Select>
           <Select value={filters.sort ?? "recent"} onValueChange={(v) => set({ sort: v as any })}>
