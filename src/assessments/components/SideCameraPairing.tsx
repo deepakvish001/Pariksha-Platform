@@ -115,6 +115,17 @@ export function SideCameraPairing({ attemptId, onPaired, onUnpaired }: Props) {
   const effectivelyDown =
     meta?.status === "disconnected" || meta?.status === "expired" || meta?.status === "closed" || isStale;
 
+  // Auto-regenerate a fresh QR as soon as the previous pairing is terminal,
+  // so the candidate can rescan without refreshing the page.
+  useEffect(() => {
+    if (!effectivelyDown || loading) return;
+    const id = window.setTimeout(() => {
+      createPairing();
+    }, 1200);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectivelyDown]);
+
   // Fire pair/unpair transitions exactly once per change.
   useEffect(() => {
     if (effectivelyPaired && !wasPairedRef.current) {
@@ -181,15 +192,14 @@ export function SideCameraPairing({ attemptId, onPaired, onUnpaired }: Props) {
             <div className="text-sm font-semibold text-amber-700 dark:text-amber-300">
               Third Eye disconnected
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {isStale
-                ? "We stopped receiving frames from your phone. Reopen the link or scan a new QR to reconnect."
-                : "The pairing on your phone was closed. Generate a new QR code to reconnect."}
+            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Generating a fresh QR code so you can rescan…
             </div>
           </div>
         </div>
-        <Button size="sm" variant="outline" onClick={createPairing}>
-          <RefreshCw className="h-4 w-4 mr-1.5" /> Generate new pairing
+        <Button size="sm" variant="outline" onClick={createPairing} disabled={loading}>
+          <RefreshCw className="h-4 w-4 mr-1.5" /> Generate now
         </Button>
       </div>
     );
