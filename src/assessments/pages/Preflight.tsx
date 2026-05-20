@@ -854,6 +854,13 @@ export default function Preflight() {
                       // have to hunt for the Continue button below the fold.
                       setTimeout(() => goNext(), 600);
                     }}
+                    onUnpaired={() => {
+                      failCurrent();
+                      // If the user has moved past Third Eye, bounce them
+                      // back so they're forced to re-pair before starting.
+                      const teIndex = activeSteps.findIndex((s) => s.id === "thirdeye");
+                      if (teIndex >= 0 && current > teIndex) setCurrent(teIndex);
+                    }}
                   />
                 )}
                 {currentId === "ready" && (
