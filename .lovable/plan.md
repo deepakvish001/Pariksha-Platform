@@ -1,67 +1,51 @@
 ## Goal
 
-When a recruiter invites a student to an assessment:
-1. The test should be **visible on the student's dashboard** (not only on `/assessments`).
-2. If the invited person has **no account**, the invite link should let them sign up and land **directly on the test lobby** — no manual hunting.
+Give invited students a single, obvious place to find every test sent to them — pending invites and past attempts — and keep the dashboard banner visible until they actually start the test.
 
-Today neither works well:
-- Invites only appear under `/assessments` (MyAssessments). Nothing surfaces on `/learn`, `/my/college`, or `/b2b/dashboard`.
-- `InviteLanding` / `Join` store `sessionStorage.post_login_redirect`, but **`Login.tsx` and `AuthCallback.tsx` never read it** — so after sign-in users get dumped on their role-based default page instead of bouncing back to the invite.
-- Signup from the invite link doesn't exist (`InviteLanding` only offers "Sign in"). New invitees are pushed to `/login`, told to confirm email, and navigated to `/login` again — losing the invite token.
+## Why now
+
+- The dashboard banner sometimes disappears (likely because `useMyInvites` returns `[]` while the React Query cache is cold, or because the invite already moved to `claimed` and the user expected only `pending` to show).
+- Right now the only place to find invited tests is `/assessments` (MyAssessments), which mixes recruiter-facing concerns and isn't discoverable from the student sidebar.
 
 ## Changes
 
-### 1. Surface invited tests on the dashboard
+### 1. New page: `/my-tests`
 
-Create `src/components/InvitedAssessmentsBanner.tsx`:
-- Uses `useMyInvites()` (already filters via RLS to invites matching the user's email).
-- Shows a compact card listing every invite where `status` is `pending` or `claimed`, with a **Start / Resume** button that calls `claimInvite(token)` and navigates to `/assessments/{attempt.id}/lobby`.
-- Empty state: render nothing.
-- Mount it inside `src/components/DashboardLayout.tsx` (just above `{children}`) so it appears on every authenticated dashboard route (`/learn`, `/my/college`, etc.). For `/b2b/dashboard` (different layout) we'll skip — recruiters viewing their own admin tools is out of scope.
+New file: `src/pages/MyTests.tsx`, wrapped in `DashboardLayout`.
 
-### 2. Honor the invite redirect on sign in
+Sections:
+- **Pending invitations** — rows from `useMyInvites()` where `status` is `pending` or `claimed`. Each row shows title, duration, expiry, status badge, and a **Start / Resume** button that calls `claimInvite(token)` then navigates to `/assessments/{attempt.id}/lobby`.
+- **Past tests** — rows from `useMyAttempts()` where `status` is `submitted`, `expired`, or `abandoned`. Shows title, submitted_at, duration, score (if visible), and a **View result** button → `/assessments/{attempt.id}/submitted` (or detail if available).
+- **Empty state** — friendly card explaining "You have no test invitations yet. Recruiters will appear here when they invite you."
 
-In `src/pages/Login.tsx` (both the password and MFA success branches) and `src/pages/AuthCallback.tsx`, before falling back to `getPostLoginPath(user.id)`:
+Route registration: add `<Route path="/my-tests" element={<ProtectedRoute><MyTests /></ProtectedRoute>} />` in `src/App.tsx`. Lazy-import like the other student pages.
 
-```
-const stored = sessionStorage.getItem("post_login_redirect");
-if (stored) { sessionStorage.removeItem("post_login_redirect"); dest = stored; }
-```
+### 2. Sidebar entry
 
-Order: `from` (router state) → `pendingAuthAction.path` (AuthCallback only) → `post_login_redirect` → role-based default.
+Add a "My Tests" item to `DashboardSidebar.tsx` in the Home/active section, using the `ClipboardList` lucide icon, linking to `/my-tests`. Show an unread-count badge equal to pending-invite count (reuses `useMyInvites`).
 
-### 3. Signup-from-invite flow
+### 3. Banner visibility fix
 
-Update `src/assessments/pages/InviteLanding.tsx`:
-- When `!user`, show **two** buttons: "Sign in" (existing) and a new **"Create account & start"** that navigates to `/signup` (the `post_login_redirect` is already set in the existing `useEffect`).
-- Persist the invited email so signup pre-fills it: also write `sessionStorage.setItem("invite_prefill_email", data.invited_email)` and `sessionStorage.setItem("invite_token", token)`.
+Update `src/components/InvitedAssessmentsBanner.tsx`:
+- Keep the `pending` + `claimed` filter (claimed means accepted but not started/submitted — should still be surfaced).
+- Additionally exclude invites whose linked attempt is already `submitted` by cross-checking `useMyAttempts()`.
+- Remove any "dismiss once" behavior; banner stays as long as there is at least one not-yet-started invite. This matches the user's choice ("Show until test started").
+- Add `staleTime: 0` + `refetchOnMount: 'always'` for `useMyInvites` so navigating back to the dashboard always refetches (fixes "not showing" after first visit).
 
-Update `src/pages/Signup.tsx`:
-- On mount, read `invite_prefill_email` and prefill the `email` field (kept editable but with a small hint "Use this email — it matches your invite").
-- After successful `signUp`:
-  - If `sessionStorage.post_login_redirect` exists, navigate there immediately (works whether or not email confirmation is enabled; if a session is returned by Supabase, the invite flow proceeds; otherwise the user lands on `/login` with the redirect still queued and the existing Login change in step 2 handles it).
-  - Keep the current toast about email confirmation only when no session was returned.
+### 4. No backend / RLS changes
 
-### 4. Minor cleanup
-
-- `Join.tsx` and `InviteLanding.tsx` already set `post_login_redirect`; no change needed beyond step 3's email prefill writes.
-- No DB / RLS / edge-function changes. `useMyInvites` already returns the right rows because `assessment_invites` RLS allows the invited email to read their own row.
+`assessment_invites` and `assessment_attempts` RLS already allow the invited user to read their own rows. No migrations needed.
 
 ## Files touched
 
-- new: `src/components/InvitedAssessmentsBanner.tsx`
-- edit: `src/components/DashboardLayout.tsx` (mount the banner)
-- edit: `src/pages/Login.tsx` (consume `post_login_redirect` in 2 places)
-- edit: `src/pages/AuthCallback.tsx` (consume `post_login_redirect`)
-- edit: `src/assessments/pages/InviteLanding.tsx` (add "Create account & start", stash prefill)
-- edit: `src/pages/Signup.tsx` (prefill email, honor redirect after signup)
+- new: `src/pages/MyTests.tsx`
+- edit: `src/App.tsx` (route + lazy import)
+- edit: `src/components/DashboardSidebar.tsx` (nav item + badge)
+- edit: `src/components/InvitedAssessmentsBanner.tsx` (visibility logic + refetch)
+- edit: `src/b2b/hooks/useInvites.ts` (add `staleTime: 0, refetchOnMount: 'always'` to `useMyInvites`)
 
 ## Out of scope
 
-- Auto-confirming email signups (kept as-is; if your project requires confirm-on-email, the redirect still survives because it lives in `sessionStorage` and the Login change picks it up after the user clicks the confirmation link and signs in).
-- Changing how recruiters create invites or send emails.
-- Surfacing invites inside the B2B admin dashboard layout.
-
-## Open question
-
-Do you want me to also **auto-confirm email signups** so an invited student can go straight from "Create account" into the test without an email-verification round trip? It's a one-toggle change but lowers signup security project-wide — say the word and I'll include it.
+- Recruiter-side changes (`/assessments` MyAssessments remains untouched).
+- Email notifications / reminders for pending invites.
+- Result analytics page beyond linking to the existing submitted screen.
