@@ -147,6 +147,12 @@ export default function ParikshaaExperiences() {
               </Card>
             ))
           )}
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="reports" className="mt-6">
+          <ExperienceReportsQueue />
         </TabsContent>
       </Tabs>
     </div>
