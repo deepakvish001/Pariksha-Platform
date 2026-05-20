@@ -115,6 +115,17 @@ export function SideCameraPairing({ attemptId, onPaired, onUnpaired }: Props) {
   const effectivelyDown =
     meta?.status === "disconnected" || meta?.status === "expired" || meta?.status === "closed" || isStale;
 
+  // Auto-regenerate a fresh QR as soon as the previous pairing is terminal,
+  // so the candidate can rescan without refreshing the page.
+  useEffect(() => {
+    if (!effectivelyDown || loading) return;
+    const id = window.setTimeout(() => {
+      createPairing();
+    }, 1200);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectivelyDown]);
+
   // Fire pair/unpair transitions exactly once per change.
   useEffect(() => {
     if (effectivelyPaired && !wasPairedRef.current) {
