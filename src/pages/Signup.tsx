@@ -207,6 +207,9 @@ const Signup = () => {
                 required
               />
             </div>
+            {invitePrefill && email === invitePrefill && (
+              <p className="text-xs text-primary">Use this email — it matches your invite</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
