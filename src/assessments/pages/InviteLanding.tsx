@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, AlertTriangle, Loader2, LogIn, Mail } from "lucide-react";
+import { ArrowRight, AlertTriangle, Loader2, LogIn, Mail, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
