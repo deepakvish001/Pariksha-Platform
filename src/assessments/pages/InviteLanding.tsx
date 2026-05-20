@@ -151,15 +151,25 @@ export default function InviteLanding() {
             Cancel
           </Button>
           {!user ? (
-            <Button
-              size="sm"
-              className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-              onClick={() => navigate("/login")}
-            >
-              <LogIn className="h-4 w-4 mr-1" />
-              Sign in to start
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/login")}
+              >
+                <LogIn className="h-4 w-4 mr-1" />
+                Sign in
+              </Button>
+              <Button
+                size="sm"
+                className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                onClick={() => navigate("/signup")}
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                Create account & start
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </>
           ) : (
             <Button
               size="sm"
