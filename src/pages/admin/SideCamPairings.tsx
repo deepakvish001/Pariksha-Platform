@@ -14,7 +14,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Copy, Smartphone } from "lucide-react";
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import { RefreshCw, Copy, Smartphone, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 
 type Status = "all" | "pending" | "paired" | "disconnected" | "expired" | "closed";
