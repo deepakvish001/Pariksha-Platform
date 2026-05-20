@@ -1,58 +1,108 @@
-# Share Views — Capture & Display
+# Feature Roadmap: Making Parikshaa Stand Out
 
-## Already in place
+Parikshaa already has strong fundamentals (DSA sheets, contests, arena, proctoring, AI assistant, resume tools, roadmaps, college dashboards). Below is a curated set of features that competitors (LeetCode, GFG, InterviewBit, Unstop) lack or do poorly — grouped by impact and effort.
 
-The resolver (`placement-public-profile`) already records every open into `student_share_views` with `viewed_at`, sha256 `ip_hash`, `user_agent`, and `referrer`, and bumps `view_count` + `last_viewed_at` on `student_share_links`. The ShareDialog's "Recent shares" panel already shows `view_count`. So **capture is done** — this task is about making views visible to placement coordinators.
+---
 
-The existing resolver has one fixable issue: the view-log insert and the counter update use unawaited `.then(() => {})` chains. On Deno edge runtime, the request can return before the writes flush. Switch to `EdgeRuntime.waitUntil(...)` so the writes are guaranteed to complete.
+## Tier 1 — Signature Differentiators (high impact)
 
-## Changes
+### 1. AI Mock Interview Studio (voice + video)
+Live voice interview with an AI interviewer that asks DSA/system-design/HR questions, listens to the candidate's spoken answer, evaluates clarity + correctness, and produces a scorecard with timestamps.
+- Uses Lovable AI Gateway (Gemini 2.5 Pro for reasoning, audio in/out).
+- Replayable transcript, rubric scoring, "weak signal" highlights.
+- Optional peer-mode: pairs two students for human mock.
 
-### 1. Edge function fix — `placement-public-profile`
-- Wrap both background writes (`student_share_views` insert and `student_share_links` update) with `EdgeRuntime.waitUntil(...)` so views are reliably persisted.
-- Also bump `view_count` atomically via an `increment_share_view_count(share_id uuid)` SQL function (new migration). Right now only `last_viewed_at` is touched; `view_count` is never incremented, which is why counts stay at 0 in the dialog.
+### 2. Placement Readiness Score (PRS)
+A single 0–100 score per student computed from: DSA mastery, SRS retention, contest rating, resume score, mock-interview scores, soft-skill signals.
+- Visible to student and (with consent) to college TPO dashboard.
+- Drives Adaptive recommendations and unlocks "Ready to apply" badges.
 
-### 2. Migration
-- Create `public.increment_share_view_count(p_share_id uuid)` SECURITY DEFINER, search_path = public — runs `UPDATE student_share_links SET view_count = view_count + 1, last_viewed_at = now() WHERE id = p_share_id`.
-- Grant EXECUTE to `service_role` (used by the edge function). No client exposure.
+### 3. Company-Targeted Prep Paths
+Pick a target company + role → auto-generated 4/8/12-week plan combining DSA topics, company-tagged questions, OA patterns, behavioral prompts, recent interview experiences.
+- Plan adapts weekly to PRS deltas.
+- Shows "students who cracked X did Y" social proof.
 
-### 3. New page — Share Analytics
-A new third tab **"Shares"** on `PlacementsDashboard` (`src/b2b/pages/placements/PlacementsDashboard.tsx`) with a self-contained component `SharesTab.tsx` at `src/b2b/pages/placements/SharesTab.tsx`.
+### 4. Real Interview Experience Marketplace
+Verified students post recent interview rounds (questions, difficulty, rounds, verdict) → earn XP / cash credits. Others upvote/flag.
+- Moderation queue in admin.
+- Tie experiences directly to the question bank.
 
-**Table columns** (one row per `student_share_links`):
-- Recipient — recruiter name / email (or "Unnamed")
-- Type — Profile / Shortlist badge
-- Student(s) — student name(s) joined from `org_students` (truncated, hover tooltip for shortlists)
-- Created — relative time
-- Expires — date + Active / Expired / Revoked badge
-- Views — `view_count` with a small bar visualization
-- Last viewed — relative time
-- Actions — Copy link · View details · Revoke
+---
 
-**Filters**: search (recipient/student), type, status (Active/Expired/Revoked), date range (last 7/30/90 days).
+## Tier 2 — Engagement & Stickiness
 
-**Details drawer** (Sheet from right): opens on "View details" and shows:
-- Link metadata (token, recruiter, message, permission toggles)
-- A timeline of individual view events from `student_share_views` (timestamp formatted as `MMM d, HH:mm`, masked IP hash like `a1b2c3…`, user agent short label parsed via a tiny `parseUA` helper into "Chrome on macOS", "Safari on iPhone" etc., and referrer hostname).
-- Top metrics: total views, unique IP hashes, first viewed, last viewed.
+### 5. Daily Live Coding Rooms
+Twitch-style rooms where top students or mentors solve a problem live; viewers can fork the editor mid-stream. Recordings become content.
 
-### 4. Per-student rollup on `StudentPlacementProfile.tsx`
-Add a small **"Share activity"** card under HR-ready highlights:
-- Total shares created · total link opens · last opened (relative).
-- "View all shares" button that links to the Shares tab with that student pre-filtered (URL search param `?student=<id>`).
+### 6. Squad / Study Group Mode
+Private 3–6 person groups with shared streak, group leaderboard, weekly goals, group chat, accountability nudges.
 
-### 5. RLS
-`student_share_views` already has org-admin SELECT; verify the same `org_id` join through `student_share_links` works for both the table list (using nested select `student_share_views(count)` and an aggregated query) and the details drawer (filter by `share_id`).
+### 7. Career Timeline & Portfolio Page
+Auto-generated public page (`/u/handle`) showing verifiable achievements: solved problems, contest rating graph, badges, AI-mock scores, projects. Shareable on LinkedIn with an OG image.
 
-## Out of scope
-- Geolocation from IP (we only have hashes, by design).
-- CSV export of view events (can add later if requested).
-- Realtime push for new opens (poll on `useQuery` with `refetchInterval: 30s` is enough).
+### 8. Recruiter / TPO Discovery Search
+Recruiters filter the verified student pool by skill, PRS, college, branch, location → request intros. Monetization channel.
 
-## Files
+---
 
-- `supabase/functions/placement-public-profile/index.ts` — switch to `waitUntil` + call new RPC.
-- `supabase/migrations/<ts>_share_view_increment.sql` — new RPC.
-- `src/b2b/pages/placements/PlacementsDashboard.tsx` — add "Shares" tab trigger + content.
-- `src/b2b/pages/placements/SharesTab.tsx` — new, full list + details drawer.
-- `src/b2b/pages/placements/StudentPlacementProfile.tsx` — add "Share activity" card.
+## Tier 3 — Learning Depth
+
+### 9. Interactive Visualizers for DSA + System Design
+Drag-and-drop visualizers for graphs, trees, DP tables, LRU caches; system-design canvas with components (LB, cache, DB, queue) that auto-explains tradeoffs via AI.
+
+### 10. Code Review Bot on Submissions
+On every accepted submission, AI suggests cleaner idioms, time/space improvements, and a "senior-engineer rewrite" diff.
+
+### 11. Multi-language Skill Trees
+Beyond DSA: Python/Java/SQL/Git/Linux/DevOps mini trees with hands-on terminals (WebContainers) and certificate.
+
+### 12. Spaced-Repetition Flashcards from Mistakes
+Every wrong answer auto-becomes an SRS card; weekly "your weak spots" digest email.
+
+---
+
+## Tier 4 — College / B2B Moats
+
+### 13. College Analytics Pro
+Cohort drill-downs: at-risk students, topic heatmaps, predicted placement rate, weekly auto-report email to TPO.
+
+### 14. White-label Mock Drives
+TPOs schedule full mock placement drives (aptitude + coding + interview) with the existing proctoring stack; auto-shortlist by PRS.
+
+### 15. Alumni Network Layer
+Verified alumni connect to current students; mentorship slots bookable in-app.
+
+---
+
+## Tier 5 — Trust & Polish
+
+### 16. Verified Skill Badges (cryptographic)
+Signed credentials (Open Badges 3.0 / VC) students can attach to LinkedIn/resume — provably issued by Parikshaa.
+
+### 17. Offline-first PWA + Mobile App Wrapper
+Practice/SRS works offline; sync on reconnect. Bare-minimum mobile shell via Capacitor.
+
+### 18. Accessibility & Localization Pass
+i18n for Hindi/Tamil/Telugu/Bengali (i18n stack already wired), full keyboard nav, screen-reader audit, dyslexia-friendly font toggle.
+
+---
+
+## Suggested Build Order
+
+```text
+Phase 1 (4–6 wks): #2 PRS, #3 Company Paths, #7 Portfolio Page
+Phase 2 (4–6 wks): #1 AI Mock Studio, #10 Code Review Bot, #4 Experience Marketplace
+Phase 3 (4 wks):   #6 Squads, #13 College Analytics Pro, #16 Verified Badges
+Phase 4 (ongoing): #5 Live Rooms, #9 Visualizers, #14 White-label Drives, #17 PWA, #18 i18n
+```
+
+## Technical notes
+- All AI features route through existing Edge Functions + Lovable AI Gateway (Gemini 2.5 Pro / Flash, GPT-5 for code review).
+- PRS = nightly Edge Function aggregating tables already present (xp, srs, contest_results, resume_score, mock_scores [new]).
+- Mock Studio audio: Gemini live audio; store transcripts in `mock_sessions` table with RLS.
+- Marketplace + Badges need moderation hooks in existing Admin Control Center.
+- Portfolio page reuses existing PublicStudentProfile + JSON-LD SEO infra.
+
+---
+
+Tell me which tier or specific features to detail next, and I'll produce an implementation plan for that slice.
