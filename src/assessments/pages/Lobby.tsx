@@ -169,7 +169,7 @@ export default function Lobby() {
                 disabled={blocked}
                 size="lg"
                 className="flex-1 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 h-12"
-                onClick={() => navigate(`/assessments/${attemptId}/preflight`)}
+                onClick={() => navigate(`/assessments/${data.id}/preflight`)}
               >
                 Continue to system check
                 <ArrowRight className="h-4 w-4 ml-1.5" />
