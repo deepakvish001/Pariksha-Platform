@@ -36,6 +36,14 @@ export default function Experiences() {
   const { user } = useAuth();
   const [filters, setFilters] = useState<ExperienceFilters>({ sort: "recent" });
   const { data, isLoading } = useExperiences(filters);
+  const { data: mine } = useMyExperiences(user?.id);
+
+  // Owner-only: surface user's pending/rejected entries at the top of the marketplace.
+  const ownerPending = useMemo(() => {
+    if (!user || !mine) return [] as Experience[];
+    const approvedIds = new Set((data ?? []).map((e) => e.id));
+    return mine.filter((e) => e.status !== "approved" && !approvedIds.has(e.id));
+  }, [mine, data, user]);
 
   // Derive popular companies/roles/years from current dataset for one-tap chips
   const { topCompanies, topRoles, years } = useMemo(() => {
