@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { useExperiences, type ExperienceFilters } from "@/hooks/useExperiences";
+import { useExperiences, useMyExperiences, type ExperienceFilters, type Experience } from "@/hooks/useExperiences";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Briefcase, ThumbsUp, Eye, Plus, Sparkles, Filter, FileClock, Search, X, Building2, UserSquare2, Calendar,
+  Clock, CheckCircle2, XCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+const ownerStatusMeta: Record<Experience["status"], { label: string; icon: any; cls: string }> = {
+  pending: { label: "Pending review", icon: Clock, cls: "bg-amber-500/15 text-amber-500 border-amber-500/30" },
+  approved: { label: "Approved", icon: CheckCircle2, cls: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" },
+  rejected: { label: "Not approved", icon: XCircle, cls: "bg-red-500/15 text-red-500 border-red-500/30" },
+};
 
 const offerColor: Record<string, string> = {
   selected: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
@@ -29,6 +36,14 @@ export default function Experiences() {
   const { user } = useAuth();
   const [filters, setFilters] = useState<ExperienceFilters>({ sort: "recent" });
   const { data, isLoading } = useExperiences(filters);
+  const { data: mine } = useMyExperiences(user?.id);
+
+  // Owner-only: surface user's pending/rejected entries at the top of the marketplace.
+  const ownerPending = useMemo(() => {
+    if (!user || !mine) return [] as Experience[];
+    const approvedIds = new Set((data ?? []).map((e) => e.id));
+    return mine.filter((e) => e.status !== "approved" && !approvedIds.has(e.id));
+  }, [mine, data, user]);
 
   // Derive popular companies/roles/years from current dataset for one-tap chips
   const { topCompanies, topRoles, years } = useMemo(() => {
@@ -231,18 +246,32 @@ export default function Experiences() {
         </Card>
       ) : (
         <>
-          <div className="text-xs text-muted-foreground">{data.length} experience{data.length === 1 ? "" : "s"}</div>
+          <div className="text-xs text-muted-foreground">{data.length} experience{data.length === 1 ? "" : "s"}{ownerPending.length > 0 ? ` · ${ownerPending.length} of yours awaiting/needing review` : ""}</div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.map((e) => (
+            {[...ownerPending, ...data].map((e) => {
+              const isOwner = user?.id === e.user_id;
+              const showOwnerBadge = isOwner && e.status !== "approved";
+              const ownerMeta = showOwnerBadge ? ownerStatusMeta[e.status] : null;
+              const OwnerIcon = ownerMeta?.icon;
+              return (
               <Link key={e.id} to={`/experiences/${e.id}`}>
-                <Card className="p-5 h-full hover:border-primary/50 transition-colors group flex flex-col">
+                <Card className={`p-5 h-full hover:border-primary/50 transition-colors group flex flex-col ${showOwnerBadge ? "border-dashed" : ""}`}>
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div className="min-w-0">
                       <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate">{e.company_name}</h3>
                       <p className="text-sm text-muted-foreground truncate">{e.role} · {e.year}</p>
                     </div>
-                    <Badge variant="outline" className={`${offerColor[e.offer_status]} shrink-0`}>{e.offer_status.replace("_", " ")}</Badge>
+                    {showOwnerBadge && ownerMeta ? (
+                      <Badge variant="outline" className={`${ownerMeta.cls} shrink-0 gap-1`}>
+                        {OwnerIcon && <OwnerIcon className="size-3" />}{ownerMeta.label}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className={`${offerColor[e.offer_status]} shrink-0`}>{e.offer_status.replace("_", " ")}</Badge>
+                    )}
                   </div>
+                  {showOwnerBadge && (
+                    <p className="text-[11px] text-muted-foreground mb-2 italic">Only you can see this card — it isn't public yet.</p>
+                  )}
                   <p className="text-sm line-clamp-3 text-muted-foreground/90 mb-3">{e.overall_text}</p>
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     <Badge variant="secondary" className="capitalize gap-1 text-[10px]">
@@ -263,7 +292,8 @@ export default function Experiences() {
                   </div>
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
