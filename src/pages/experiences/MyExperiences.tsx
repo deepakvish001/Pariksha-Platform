@@ -122,7 +122,20 @@ export default function MyExperiences() {
                     <span className="flex items-center gap-1"><Eye className="size-3.5" />{e.views} views</span>
                   </div>
                 )}
+
+                {e.status === "rejected" && (
+                  <div className="flex justify-end mt-3">
+                    <Button asChild size="sm" className="gap-2">
+                      <Link to={`/experiences/${e.id}/edit`}><RefreshCw className="size-3.5" /> Edit & resubmit</Link>
+                    </Button>
+                  </div>
+                )}
               </Card>
+            );
+            return e.status === "approved" ? (
+              <Link key={e.id} to={`/experiences/${e.id}`}>{content}</Link>
+            ) : (
+              <div key={e.id}>{content}</div>
             );
             return e.status === "approved" ? (
               <Link key={e.id} to={`/experiences/${e.id}`}>{content}</Link>
