@@ -65,7 +65,7 @@ import StudentSideCamera from "@/assessments/pages/SideCamera";
 import StudentSideCameraUpload from "@/assessments/pages/SideCameraUpload";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import MyTests from "@/pages/MyTests";
-import StudentLobby from "@/assessments/pages/Lobby";
+
 import StudentPreflight from "@/assessments/pages/Preflight";
 import StudentPlayer from "@/assessments/pages/Player";
 import IntegrityPolicy from "@/assessments/pages/IntegrityPolicy";
