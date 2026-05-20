@@ -66,6 +66,15 @@ export default function InviteLanding() {
     }
   }, [loading, user, token]);
 
+  // Stash invited email so /signup can prefill it.
+  useEffect(() => {
+    if (data?.status === "ok" && data.invited_email) {
+      try {
+        sessionStorage.setItem("invite_prefill_email", data.invited_email);
+      } catch { /* ignore */ }
+    }
+  }, [data]);
+
   const sections: LandingSection[] = useMemo(
     () => (data?.status === "ok" ? data.sections : []),
     [data],
