@@ -844,7 +844,15 @@ export default function Preflight() {
                   <AvStep stream={stream} onPass={passCurrent} />
                 )}
                 {currentId === "thirdeye" && (
-                  <ThirdEyeStep attemptId={attemptId} onPass={passCurrent} />
+                  <ThirdEyeStep
+                    attemptId={attemptId}
+                    onPass={() => {
+                      passCurrent();
+                      // Auto-advance to the Ready step so users don't
+                      // have to hunt for the Continue button below the fold.
+                      setTimeout(() => goNext(), 600);
+                    }}
+                  />
                 )}
                 {currentId === "ready" && (
                   <ReadyStep
