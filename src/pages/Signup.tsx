@@ -67,11 +67,28 @@ const Signup = () => {
         description: error.message,
       });
     } else {
-      toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link to verify your account.",
-      });
-      navigate("/login");
+      let redirect: string | null = null;
+      try {
+        redirect = sessionStorage.getItem("post_login_redirect");
+        if (redirect) {
+          sessionStorage.removeItem("post_login_redirect");
+          sessionStorage.removeItem("invite_prefill_email");
+        }
+      } catch { /* ignore */ }
+
+      if (redirect) {
+        toast({
+          title: "Account created",
+          description: "Taking you to your assessment…",
+        });
+        navigate(redirect, { replace: true });
+      } else {
+        toast({
+          title: "Welcome!",
+          description: "Your account is ready.",
+        });
+        navigate("/login");
+      }
     }
 
     setIsLoading(false);
@@ -190,6 +207,9 @@ const Signup = () => {
                 required
               />
             </div>
+            {invitePrefill && email === invitePrefill && (
+              <p className="text-xs text-primary">Use this email — it matches your invite</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
