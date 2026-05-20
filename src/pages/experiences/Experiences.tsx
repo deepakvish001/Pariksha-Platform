@@ -246,18 +246,32 @@ export default function Experiences() {
         </Card>
       ) : (
         <>
-          <div className="text-xs text-muted-foreground">{data.length} experience{data.length === 1 ? "" : "s"}</div>
+          <div className="text-xs text-muted-foreground">{data.length} experience{data.length === 1 ? "" : "s"}{ownerPending.length > 0 ? ` · ${ownerPending.length} of yours awaiting/needing review` : ""}</div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.map((e) => (
+            {[...ownerPending, ...data].map((e) => {
+              const isOwner = user?.id === e.user_id;
+              const showOwnerBadge = isOwner && e.status !== "approved";
+              const ownerMeta = showOwnerBadge ? ownerStatusMeta[e.status] : null;
+              const OwnerIcon = ownerMeta?.icon;
+              return (
               <Link key={e.id} to={`/experiences/${e.id}`}>
-                <Card className="p-5 h-full hover:border-primary/50 transition-colors group flex flex-col">
+                <Card className={`p-5 h-full hover:border-primary/50 transition-colors group flex flex-col ${showOwnerBadge ? "border-dashed" : ""}`}>
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div className="min-w-0">
                       <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate">{e.company_name}</h3>
                       <p className="text-sm text-muted-foreground truncate">{e.role} · {e.year}</p>
                     </div>
-                    <Badge variant="outline" className={`${offerColor[e.offer_status]} shrink-0`}>{e.offer_status.replace("_", " ")}</Badge>
+                    {showOwnerBadge && ownerMeta ? (
+                      <Badge variant="outline" className={`${ownerMeta.cls} shrink-0 gap-1`}>
+                        {OwnerIcon && <OwnerIcon className="size-3" />}{ownerMeta.label}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className={`${offerColor[e.offer_status]} shrink-0`}>{e.offer_status.replace("_", " ")}</Badge>
+                    )}
                   </div>
+                  {showOwnerBadge && (
+                    <p className="text-[11px] text-muted-foreground mb-2 italic">Only you can see this card — it isn't public yet.</p>
+                  )}
                   <p className="text-sm line-clamp-3 text-muted-foreground/90 mb-3">{e.overall_text}</p>
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     <Badge variant="secondary" className="capitalize gap-1 text-[10px]">
@@ -278,6 +292,8 @@ export default function Experiences() {
                   </div>
                 </Card>
               </Link>
+              );
+            })}
             ))}
           </div>
         </>
