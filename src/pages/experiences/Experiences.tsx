@@ -35,6 +35,16 @@ const difficultyColor: Record<string, string> = {
 export default function Experiences() {
   const { user } = useAuth();
   const [filters, setFilters] = useState<ExperienceFilters>({ sort: "recent" });
+  const [searchInput, setSearchInput] = useState("");
+
+  // Debounce the search input to avoid querying on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setFilters((f) => ({ ...f, q: searchInput.trim() || undefined }));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   const { data, isLoading } = useExperiences(filters);
   const { data: mine } = useMyExperiences(user?.id);
 
