@@ -36,13 +36,13 @@ export default function Lobby() {
     queryKey: ["attempt", attemptId],
     enabled: !!attemptId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("assessment_attempts")
         .select(
           "*, assessment:assessments(id,title,description,duration_min,proctoring_enabled,starts_at,ends_at,status)",
-        )
-        .eq("id", attemptId!)
-        .maybeSingle();
+        );
+      q = isUuid(attemptId!) ? q.eq("id", attemptId!) : q.eq("slug", attemptId!);
+      const { data, error } = await q.maybeSingle();
       if (error) throw error;
       return data;
     },
