@@ -2,23 +2,33 @@ import { useNavigate } from "react-router-dom";
 import { Inbox, Clock, PlayCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMyInvites, claimInvite } from "@/b2b/hooks/useInvites";
+import { useMyInvites, useMyAttempts, claimInvite } from "@/b2b/hooks/useInvites";
 import { Button } from "@/components/ui/button";
 
 /**
  * Shown on every authenticated dashboard route (mounted in DashboardLayout).
  * Surfaces any assessment invite the signed-in user has so they don't have
  * to hunt under /assessments to start an invited test.
+ * Stays visible until the test is actually started/submitted.
  */
 export function InvitedAssessmentsBanner() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: invites } = useMyInvites();
+  const { data: attempts } = useMyAttempts();
 
   if (!user) return null;
 
+  const startedAssessmentIds = new Set(
+    (attempts ?? [])
+      .filter((a: any) => a.status === "in_progress" || a.status === "submitted")
+      .map((a: any) => a.assessment_id),
+  );
+
   const pending = (invites ?? []).filter(
-    (i: any) => i.status === "pending" || i.status === "claimed",
+    (i: any) =>
+      (i.status === "pending" || i.status === "claimed") &&
+      !startedAssessmentIds.has(i.assessment_id),
   );
   if (!pending.length) return null;
 

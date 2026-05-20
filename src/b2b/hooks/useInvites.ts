@@ -118,6 +118,8 @@ export async function claimInvite(token: string) {
 export function useMyInvites() {
   return useQuery({
     queryKey: ["student", "invites"],
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assessment_invites")

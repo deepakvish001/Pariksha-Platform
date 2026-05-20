@@ -64,6 +64,7 @@ import StudentJoin from "@/assessments/pages/Join";
 import StudentSideCamera from "@/assessments/pages/SideCamera";
 import StudentSideCameraUpload from "@/assessments/pages/SideCameraUpload";
 import MyAssessments from "@/assessments/pages/MyAssessments";
+import MyTests from "@/pages/MyTests";
 import StudentLobby from "@/assessments/pages/Lobby";
 import StudentPreflight from "@/assessments/pages/Preflight";
 import StudentPlayer from "@/assessments/pages/Player";
@@ -358,6 +359,7 @@ const App = () => (
                 <Route path="/assessments/sidecam/:token/upload/:questionId" element={<StudentSideCameraUpload />} />
                 <Route path="/assessments/integrity-policy" element={<IntegrityPolicy />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
+                <Route path="/my-tests" element={<ProtectedRoute><MyTests /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/preflight" element={<ProtectedRoute><StudentPreflight /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/play" element={<ProtectedRoute><StudentPlayer /></ProtectedRoute>} />
