@@ -9277,28 +9277,54 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          created_by: string | null
           description: string | null
           id: string
+          metadata: Json
+          reference_id: string | null
+          reversal_of: string | null
+          reversal_reason: string | null
           source: string
+          status: string
           user_id: string
         }
         Insert: {
           amount: number
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
+          reference_id?: string | null
+          reversal_of?: string | null
+          reversal_reason?: string | null
           source: string
+          status?: string
           user_id: string
         }
         Update: {
           amount?: number
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
+          reference_id?: string | null
+          reversal_of?: string | null
+          reversal_reason?: string | null
           source?: string
+          status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "xp_transactions_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "xp_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -10176,6 +10202,17 @@ export type Database = {
         }
         Returns: Json
       }
+      award_xp_idempotent: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_metadata?: Json
+          p_reference_id: string
+          p_source: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       b2b_my_role: { Args: { _org_id: string }; Returns: string }
       b2b_user_owns_org: { Args: { _org_id: string }; Returns: boolean }
       backfill_assessment_invite_sources: {
@@ -10820,6 +10857,10 @@ export type Database = {
       }
       register_for_contest: {
         Args: { _contest_id: string; _invite_code?: string }
+        Returns: string
+      }
+      reverse_xp_entry: {
+        Args: { p_reason: string; p_reference_id: string; p_source: string }
         Returns: string
       }
       section_org: { Args: { _section: string }; Returns: string }
