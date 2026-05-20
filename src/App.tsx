@@ -360,7 +360,7 @@ const App = () => (
                 <Route path="/assessments/integrity-policy" element={<IntegrityPolicy />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
                 <Route path="/my-tests" element={<ProtectedRoute><MyTests /></ProtectedRoute>} />
-                <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
+                <Route path="/assessments/:attemptId/lobby" element={<Navigate to="../preflight" replace />} />
                 <Route path="/assessments/:attemptId/preflight" element={<ProtectedRoute><StudentPreflight /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/play" element={<ProtectedRoute><StudentPlayer /></ProtectedRoute>} />
 

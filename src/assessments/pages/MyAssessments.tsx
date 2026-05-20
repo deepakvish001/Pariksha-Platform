@@ -148,7 +148,7 @@ export default function MyAssessments() {
                                   onClick={async () => {
                                     try {
                                       const a: any = await claimInvite(i.token);
-                                      navigate(`/assessments/${a.id}/lobby`);
+                                      navigate(`/assessments/${a.id}/preflight`);
                                     } catch (err: any) {
                                       toast.error(err?.message ?? "Could not join");
                                     }
@@ -222,7 +222,7 @@ export default function MyAssessments() {
                             toast.success("Enrolled");
                           }
                           const claimed: any = await claimInvite(token);
-                          navigate(`/assessments/${claimed.id}/lobby`);
+                          navigate(`/assessments/${claimed.id}/preflight`);
                         } catch (err: any) {
                           toast.error(err?.message ?? "Could not join");
                         }

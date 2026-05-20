@@ -116,7 +116,7 @@ export default function InviteLanding() {
     setStarting(true);
     try {
       const attempt = (await claimInvite(token!)) as { id: string };
-      navigate(`/assessments/${attempt.id}/lobby`, { replace: true });
+      navigate(`/assessments/${attempt.id}/preflight`, { replace: true });
     } catch (err) {
       const code = String((err as { message?: string })?.message ?? "");
       const map: Record<string, string> = {
