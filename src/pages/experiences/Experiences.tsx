@@ -294,7 +294,6 @@ export default function Experiences() {
               </Link>
               );
             })}
-            ))}
           </div>
         </>
       )}
