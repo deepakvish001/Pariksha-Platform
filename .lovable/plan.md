@@ -1,51 +1,54 @@
 ## Goal
 
-Give invited students a single, obvious place to find every test sent to them — pending invites and past attempts — and keep the dashboard banner visible until they actually start the test.
-
-## Why now
-
-- The dashboard banner sometimes disappears (likely because `useMyInvites` returns `[]` while the React Query cache is cold, or because the invite already moved to `claimed` and the user expected only `pending` to show).
-- Right now the only place to find invited tests is `/assessments` (MyAssessments), which mixes recruiter-facing concerns and isn't discoverable from the student sidebar.
+Eliminate the duplicate pre-test page. Today candidates go through **Lobby** (welcome/rules) → **Preflight** ("Secure Assessment Mode" system check + identity + consent) → **Play**. Merge them so there is exactly one screen before the test starts: **Preflight** absorbs the lobby content; Lobby is removed.
 
 ## Changes
 
-### 1. New page: `/my-tests`
+### 1. Preflight becomes the single pre-test screen
 
-New file: `src/pages/MyTests.tsx`, wrapped in `DashboardLayout`.
+Edit `src/assessments/pages/Preflight.tsx`:
+- Add a compact "Welcome" header block at the top of the existing layout containing the bits currently only on Lobby:
+  - Assessment title + short description
+  - Quick facts row (duration, proctored badge, opens/closes window)
+  - "Before you begin" rules list (timer can't pause, keep camera on, no tab switch, ID ready)
+  - Blocked-state warning (not yet open / closed / not published) with the same logic Lobby uses
+- Keep the existing stepper but start it at the first "real" step (system check). The welcome strip sits above the stepper so it reads as context, not a separate step.
+- Disable all "continue / start" CTAs when the assessment is blocked (notYetOpen / closed / notPublished).
+- No change to system check, identity, consent, or start-test logic — just prepend the missing info.
 
-Sections:
-- **Pending invitations** — rows from `useMyInvites()` where `status` is `pending` or `claimed`. Each row shows title, duration, expiry, status badge, and a **Start / Resume** button that calls `claimInvite(token)` then navigates to `/assessments/{attempt.id}/lobby`.
-- **Past tests** — rows from `useMyAttempts()` where `status` is `submitted`, `expired`, or `abandoned`. Shows title, submitted_at, duration, score (if visible), and a **View result** button → `/assessments/{attempt.id}/submitted` (or detail if available).
-- **Empty state** — friendly card explaining "You have no test invitations yet. Recruiters will appear here when they invite you."
+### 2. Remove the Lobby route and file
 
-Route registration: add `<Route path="/my-tests" element={<ProtectedRoute><MyTests /></ProtectedRoute>} />` in `src/App.tsx`. Lazy-import like the other student pages.
+- Delete `src/assessments/pages/Lobby.tsx`.
+- In `src/App.tsx`:
+  - Remove the `StudentLobby` import.
+  - Replace the `/assessments/:attemptId/lobby` route with a `<Navigate to="/assessments/:attemptId/preflight" replace />` (or drop it entirely — but a redirect protects any old email links / bookmarks).
 
-### 2. Sidebar entry
+### 3. Point every "start" navigation at preflight
 
-Add a "My Tests" item to `DashboardSidebar.tsx` in the Home/active section, using the `ClipboardList` lucide icon, linking to `/my-tests`. Show an unread-count badge equal to pending-invite count (reuses `useMyInvites`).
+Replace `${attemptId}/lobby` with `${attemptId}/preflight` in:
+- `src/lib/routing/paths.ts` — change `paths.student.lobby` to return `/preflight`, and rename to `paths.student.preflight` if it's not used elsewhere. (Simpler: keep the function name but change the path so we don't ripple a rename through callers — add a small `// kept as 'lobby' for backwards compatibility` comment.)
+- `src/assessments/pages/Join.tsx` (line 28)
+- `src/assessments/pages/InviteLanding.tsx` (line 119)
+- `src/assessments/pages/MyAssessments.tsx` (claim handler)
+- `src/components/InvitedAssessmentsBanner.tsx`
+- `src/pages/MyTests.tsx`
+- `src/b2b/pages/assessments/Landing.tsx` (admin preview button)
 
-### 3. Banner visibility fix
+### 4. Out of scope
 
-Update `src/components/InvitedAssessmentsBanner.tsx`:
-- Keep the `pending` + `claimed` filter (claimed means accepted but not started/submitted — should still be surfaced).
-- Additionally exclude invites whose linked attempt is already `submitted` by cross-checking `useMyAttempts()`.
-- Remove any "dismiss once" behavior; banner stays as long as there is at least one not-yet-started invite. This matches the user's choice ("Show until test started").
-- Add `staleTime: 0` + `refetchOnMount: 'always'` for `useMyInvites` so navigating back to the dashboard always refetches (fixes "not showing" after first visit).
-
-### 4. No backend / RLS changes
-
-`assessment_invites` and `assessment_attempts` RLS already allow the invited user to read their own rows. No migrations needed.
+- Contest lobby (`src/components/contests/ContestLobby.tsx`) — unrelated, leave alone.
+- Visual redesign of Preflight beyond inserting the welcome strip.
+- Any RLS / backend changes.
 
 ## Files touched
 
-- new: `src/pages/MyTests.tsx`
-- edit: `src/App.tsx` (route + lazy import)
-- edit: `src/components/DashboardSidebar.tsx` (nav item + badge)
-- edit: `src/components/InvitedAssessmentsBanner.tsx` (visibility logic + refetch)
-- edit: `src/b2b/hooks/useInvites.ts` (add `staleTime: 0, refetchOnMount: 'always'` to `useMyInvites`)
-
-## Out of scope
-
-- Recruiter-side changes (`/assessments` MyAssessments remains untouched).
-- Email notifications / reminders for pending invites.
-- Result analytics page beyond linking to the existing submitted screen.
+- edit: `src/assessments/pages/Preflight.tsx` (add welcome strip + blocked-state guard)
+- delete: `src/assessments/pages/Lobby.tsx`
+- edit: `src/App.tsx` (remove import, swap route for redirect)
+- edit: `src/lib/routing/paths.ts` (lobby helper → preflight path)
+- edit: `src/assessments/pages/Join.tsx`
+- edit: `src/assessments/pages/InviteLanding.tsx`
+- edit: `src/assessments/pages/MyAssessments.tsx`
+- edit: `src/components/InvitedAssessmentsBanner.tsx`
+- edit: `src/pages/MyTests.tsx`
+- edit: `src/b2b/pages/assessments/Landing.tsx`

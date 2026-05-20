@@ -72,7 +72,7 @@ export const paths = {
   },
   /** Student-facing assessment flow */
   student: {
-    lobby: (attempt: Identifiable) => `/assessments/${preferSlug(attempt)}/lobby`,
+    lobby: (attempt: Identifiable) => `/assessments/${preferSlug(attempt)}/preflight`,
     preflight: (attempt: Identifiable) =>
       `/assessments/${preferSlug(attempt)}/preflight`,
     play: (attempt: Identifiable, opts?: { preview?: boolean }) =>

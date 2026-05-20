@@ -35,7 +35,7 @@ export function InvitedAssessmentsBanner() {
   const handleStart = async (token: string) => {
     try {
       const a: any = await claimInvite(token);
-      navigate(`/assessments/${a.id}/lobby`);
+      navigate(`/assessments/${a.id}/preflight`);
     } catch (err: any) {
       toast.error(err?.message ?? "Could not join");
     }

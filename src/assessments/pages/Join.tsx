@@ -25,7 +25,7 @@ export default function StudentJoin() {
     claimInvite(token)
       .then((attempt: any) => {
         toast.success("Joined assessment");
-        navigate(`/assessments/${attempt.id}/lobby`, { replace: true });
+        navigate(`/assessments/${attempt.id}/preflight`, { replace: true });
       })
       .catch((err) => {
         const code = String(err?.message ?? "");

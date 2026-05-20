@@ -15,6 +15,9 @@ import {
   XCircle,
   ArrowLeft,
   ArrowRight,
+  Clock,
+  AlertTriangle,
+  CalendarClock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isUuid } from "@/lib/routing/slug";
@@ -582,9 +585,33 @@ export default function Preflight() {
   }, [stream]);
 
   const a = (data?.assessment ?? null) as
-    | { title?: string; duration_min?: number; proctoring_enabled?: boolean }
+    | {
+        title?: string;
+        description?: string | null;
+        duration_min?: number;
+        proctoring_enabled?: boolean;
+        starts_at?: string | null;
+        ends_at?: string | null;
+        status?: string | null;
+      }
     | null;
   const needsThirdEye = !!a?.proctoring_enabled;
+
+  // Schedule / publish gating (was previously on the Lobby page).
+  const now = Date.now();
+  const startMs = a?.starts_at ? new Date(a.starts_at).getTime() : null;
+  const endMs = a?.ends_at ? new Date(a.ends_at).getTime() : null;
+  const notYetOpen = !!startMs && now < startMs;
+  const closed = !!endMs && now > endMs;
+  const notPublished = !!a?.status && a.status !== "published";
+  const blocked = notYetOpen || closed || notPublished;
+  const blockReason = notPublished
+    ? "This assessment isn't open yet — the recruiter hasn't published it."
+    : notYetOpen
+    ? `This assessment opens on ${new Date(startMs!).toLocaleString()}.`
+    : closed
+    ? `This assessment closed on ${new Date(endMs!).toLocaleString()}.`
+    : null;
 
   // If proctoring is off, drop the Third Eye step from the rail entirely.
   const activeSteps = useMemo(
@@ -708,7 +735,81 @@ export default function Preflight() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 grid lg:grid-cols-[260px_1fr] gap-6 lg:gap-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 space-y-6">
+        {/* Welcome / context strip — merged from the old Lobby page */}
+        <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-[0.15em] text-[hsl(var(--primary))] font-semibold mb-1">
+                Test invitation
+              </div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+                {a?.title ?? "Assessment"}
+              </h1>
+              {a?.description && (
+                <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                  {a.description}
+                </p>
+              )}
+            </div>
+            {a?.proctoring_enabled && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200">
+                <ShieldCheck className="h-3 w-3" /> Proctored
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="rounded-lg border border-[hsl(var(--border))]/40 bg-white/[0.02] px-3 py-2">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <Clock className="h-3 w-3" /> Duration
+              </div>
+              <div className="mt-0.5 text-sm font-semibold tabular-nums">
+                {a?.duration_min ?? "—"} min
+              </div>
+            </div>
+            <div className="rounded-lg border border-[hsl(var(--border))]/40 bg-white/[0.02] px-3 py-2">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <ShieldCheck className="h-3 w-3" /> Proctoring
+              </div>
+              <div className="mt-0.5 text-sm font-semibold">
+                {a?.proctoring_enabled ? "Enabled" : "Off"}
+              </div>
+            </div>
+            {(startMs || endMs) && (
+              <div className="rounded-lg border border-[hsl(var(--border))]/40 bg-white/[0.02] px-3 py-2 col-span-2 sm:col-span-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <CalendarClock className="h-3 w-3" /> Window
+                </div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  {startMs ? new Date(startMs).toLocaleString() : "now"} →{" "}
+                  {endMs ? new Date(endMs).toLocaleString() : "open"}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {blocked && blockReason && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>{blockReason}</div>
+            </div>
+          )}
+
+          <div className="mt-4 rounded-xl border border-[hsl(var(--border))]/40 bg-white/[0.02] p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Before you begin
+            </div>
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-[hsl(var(--primary))] shrink-0" /> The timer cannot be paused once you start.</li>
+              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-[hsl(var(--primary))] shrink-0" /> Keep your camera and microphone on for the entire session.</li>
+              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-[hsl(var(--primary))] shrink-0" /> Do not switch tabs, open new windows, or use AI tools.</li>
+              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-[hsl(var(--primary))] shrink-0" /> Have your photo ID ready for verification.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-[260px_1fr] gap-6 lg:gap-10">
         {/* Step rail */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <StepRail
@@ -749,7 +850,7 @@ export default function Preflight() {
                   <ReadyStep
                     title={a.title ?? "Assessment"}
                     durationMin={a.duration_min}
-                    onStart={() => setSummaryOpen(true)}
+                    onStart={() => !blocked && setSummaryOpen(true)}
                   />
                 )}
               </div>
@@ -776,6 +877,7 @@ export default function Preflight() {
             )}
           </div>
         </section>
+        </div>
       </main>
 
       <PreflightSummaryDialog
