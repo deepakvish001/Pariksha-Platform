@@ -877,6 +877,7 @@ export default function Preflight() {
             )}
           </div>
         </section>
+        </div>
       </main>
 
       <PreflightSummaryDialog
