@@ -231,6 +231,17 @@ export default function SideCameraPage() {
     };
   }, [token]);
 
+  // Tick the auto-close countdown on the ended screen; close at zero.
+  useEffect(() => {
+    if (status !== "ended") return;
+    if (autoCloseIn <= 0) {
+      window.close();
+      return;
+    }
+    const id = window.setTimeout(() => setAutoCloseIn((n) => n - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [status, autoCloseIn]);
+
   if (status === "ended") {
     const meta = {
       submitted: {
