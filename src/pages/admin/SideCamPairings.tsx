@@ -227,6 +227,42 @@ export default function SideCamPairings() {
           Showing up to 500 most recent pairings. Refine with the status filter.
         </p>
       </div>
+
+      <Sheet open={!!openAttempt} onOpenChange={(v) => !v && setOpenAttempt(null)}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <ScrollText className="h-4 w-4" /> Third Eye events
+            </SheetTitle>
+            <SheetDescription className="font-mono text-[11px] break-all">
+              attempt_id: {openAttempt}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {events.isLoading ? (
+              <Skeleton className="h-32 w-full" />
+            ) : (events.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No side-eye events recorded yet.</p>
+            ) : (
+              (events.data ?? []).map((ev) => (
+                <div key={ev.id} className="rounded-md border bg-muted/30 px-3 py-2 text-xs space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {ev.kind.replace(/^side_eye_/, "")}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(ev.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <pre className="text-[10px] leading-relaxed font-mono whitespace-pre-wrap break-all text-muted-foreground">
+                    {JSON.stringify(ev.payload, null, 2)}
+                  </pre>
+                </div>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </AdminShell>
   );
 }
