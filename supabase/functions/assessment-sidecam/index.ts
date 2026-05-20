@@ -127,6 +127,9 @@ async function logEvent(attemptId: string, kind: string, payload: Record<string,
   } catch {
     /* never let auditing break the main flow */
   }
+}
+
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
