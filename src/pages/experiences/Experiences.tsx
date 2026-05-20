@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase, ThumbsUp, Eye, Plus, Sparkles, Filter } from "lucide-react";
+import { Briefcase, ThumbsUp, Eye, Plus, Sparkles, Filter, FileClock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const offerColor: Record<string, string> = {
