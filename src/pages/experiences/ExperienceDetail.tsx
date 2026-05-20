@@ -72,6 +72,9 @@ export default function ExperienceDetail() {
             <ThumbsUp className="size-4" /> {exp.upvotes} {voted ? "Upvoted" : "Upvote"}
           </Button>
           <span className="flex items-center gap-1 text-xs text-muted-foreground"><Eye className="size-3.5" />{exp.views} views</span>
+          <div className="ml-auto">
+            <ReportExperienceDialog experienceId={exp.id} />
+          </div>
         </div>
       </Card>
 
