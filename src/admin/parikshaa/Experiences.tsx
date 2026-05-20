@@ -103,6 +103,7 @@ export default function ParikshaaExperiences() {
         <TabsList>
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="audit">Audit log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="submissions" className="mt-6">
