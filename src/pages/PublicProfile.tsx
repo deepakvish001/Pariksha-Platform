@@ -40,6 +40,7 @@ import PublicProfileAchievements from "@/components/PublicProfileAchievements";
 import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
 import { useFollows } from "@/hooks/useFollows";
 import { useAuth } from "@/contexts/AuthContext";
+import { PortfolioPanel } from "@/components/placement/PortfolioPanel";
 
 // Read-only field tile that mirrors DashboardProfile's ProfileField
 const ReadOnlyField = ({
