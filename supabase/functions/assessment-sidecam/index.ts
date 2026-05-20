@@ -37,12 +37,16 @@ async function getUser(req: Request) {
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!token) return null;
   const userClient = createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data } = await userClient.auth.getUser();
-  return data.user;
+  // Validate JWT via claims — does NOT require an active server-side session,
+  // so it keeps working if the user's auth session row was revoked but the
+  // token is still within its exp window.
+  const { data, error } = await userClient.auth.getClaims(token);
+  if (error || !data?.claims?.sub) return null;
+  return { id: data.claims.sub as string, email: (data.claims.email as string) ?? null };
 }
+
 
 async function findPairing(token: string) {
   const { data } = await admin
