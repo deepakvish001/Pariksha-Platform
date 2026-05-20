@@ -232,22 +232,70 @@ export default function SideCameraPage() {
   }, [token]);
 
   if (status === "ended") {
+    const meta = {
+      submitted: {
+        title: "Test submitted",
+        desc: "Your candidate finished and submitted the assessment. The Third Eye session is closed.",
+        Icon: Send,
+        tone: "emerald",
+      },
+      timeout: {
+        title: "Time ran out",
+        desc: "The assessment timer ended and the attempt was auto-submitted. The Third Eye session is closed.",
+        Icon: Clock,
+        tone: "amber",
+      },
+      disconnected: {
+        title: "Phone disconnected",
+        desc: "We stopped receiving frames from this phone. If the test is still running, ask the candidate to generate a fresh QR on the desktop and rescan.",
+        Icon: WifiOffIcon,
+        tone: "amber",
+      },
+      ended: {
+        title: "Test ended",
+        desc: "The assessment is no longer in progress. The Third Eye session is closed.",
+        Icon: CheckCircle2,
+        tone: "emerald",
+      },
+    }[endReason];
+
+    const toneRing = meta.tone === "emerald" ? "border-emerald-500/30" : "border-amber-500/40";
+    const toneBg = meta.tone === "emerald" ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600";
+
     return (
       <div className="min-h-screen bg-background text-foreground p-4 flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md shadow-xl border-emerald-500/30">
-          <CardContent className="p-6 text-center space-y-3">
-            <div className="h-12 w-12 mx-auto rounded-full bg-emerald-500/15 grid place-items-center">
-              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+        <Card className={`w-full max-w-md shadow-xl ${toneRing}`}>
+          <CardContent className="p-6 text-center space-y-4">
+            <div className={`h-14 w-14 mx-auto rounded-full grid place-items-center ${toneBg}`}>
+              <meta.Icon className="h-7 w-7" />
             </div>
-            <h1 className="text-lg font-bold">Test ended</h1>
-            <p className="text-sm text-muted-foreground">
-              The desktop test has been submitted or closed. Your Third Eye session has ended —
-              you can safely close this tab.
+            <div className="space-y-1">
+              <h1 className="text-lg font-bold">{meta.title}</h1>
+              <p className="text-sm text-muted-foreground">{meta.desc}</p>
+            </div>
+            <div className="rounded-md bg-muted/40 border px-3 py-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              Auto-closing in <span className="font-mono font-semibold text-foreground">{autoCloseIn}s</span>
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                window.close();
+                // If the browser blocked window.close (tab wasn't script-opened),
+                // reload the token URL so a freshly-issued QR on desktop can take over.
+                setTimeout(() => window.location.reload(), 250);
+              }}
+            >
+              <X className="h-4 w-4 mr-2" /> Close & scan a new QR
+            </Button>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              The desktop preflight automatically generates a fresh QR — point this phone's camera at the new code to rejoin.
             </p>
           </CardContent>
         </Card>
       </div>
     );
+  }
   }
 
   return (
