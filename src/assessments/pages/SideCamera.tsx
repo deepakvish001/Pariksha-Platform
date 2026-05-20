@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, CheckCircle2, ShieldCheck, RotateCcw, WifiOff } from "lucide-react";
+import { Camera, CheckCircle2, ShieldCheck, RotateCcw, WifiOff, Clock, Send, WifiOff as WifiOffIcon, X } from "lucide-react";
 import { useWebrtcStream } from "@/hooks/useWebrtcStream";
 import { SideEyeReadyCheck } from "@/assessments/components/SideEyeReadyCheck";
 
