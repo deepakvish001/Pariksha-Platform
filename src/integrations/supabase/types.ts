@@ -2863,6 +2863,47 @@ export type Database = {
         }
         Relationships: []
       }
+      company_prep_plans: {
+        Row: {
+          generated_at: string
+          id: string
+          model: string | null
+          plan: Json
+          progress: Json
+          target_company_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          model?: string | null
+          plan?: Json
+          progress?: Json
+          target_company_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          model?: string | null
+          plan?: Json
+          progress?: Json
+          target_company_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_prep_plans_target_company_id_fkey"
+            columns: ["target_company_id"]
+            isOneToOne: false
+            referencedRelation: "target_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_reports: {
         Row: {
           created_at: string
@@ -6400,6 +6441,51 @@ export type Database = {
           },
         ]
       }
+      placement_readiness_scores: {
+        Row: {
+          breakdown: Json
+          computed_at: string
+          consistency_score: number
+          contest_score: number
+          created_at: string
+          dsa_score: number
+          id: string
+          level: string
+          resume_score: number
+          score: number
+          srs_score: number
+          user_id: string
+        }
+        Insert: {
+          breakdown?: Json
+          computed_at?: string
+          consistency_score?: number
+          contest_score?: number
+          created_at?: string
+          dsa_score?: number
+          id?: string
+          level?: string
+          resume_score?: number
+          score?: number
+          srs_score?: number
+          user_id: string
+        }
+        Update: {
+          breakdown?: Json
+          computed_at?: string
+          consistency_score?: number
+          contest_score?: number
+          created_at?: string
+          dsa_score?: number
+          id?: string
+          level?: string
+          resume_score?: number
+          score?: number
+          srs_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       placement_snapshots: {
         Row: {
           avg_ctc: number | null
@@ -6665,6 +6751,45 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      portfolio_settings: {
+        Row: {
+          custom_links: Json
+          is_public: boolean
+          show_badges: boolean
+          show_contests: boolean
+          show_prs: boolean
+          show_resume_score: boolean
+          show_target_company: boolean
+          tagline: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          custom_links?: Json
+          is_public?: boolean
+          show_badges?: boolean
+          show_contests?: boolean
+          show_prs?: boolean
+          show_resume_score?: boolean
+          show_target_company?: boolean
+          tagline?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          custom_links?: Json
+          is_public?: boolean
+          show_badges?: boolean
+          show_contests?: boolean
+          show_prs?: boolean
+          show_resume_score?: boolean
+          show_target_company?: boolean
+          tagline?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -8145,6 +8270,42 @@ export type Database = {
           status?: string
           subject?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      target_companies: {
+        Row: {
+          company_name: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          notes: string | null
+          role: string
+          timeline_weeks: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          notes?: string | null
+          role?: string
+          timeline_weeks?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          notes?: string | null
+          role?: string
+          timeline_weeks?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

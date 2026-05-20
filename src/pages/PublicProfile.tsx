@@ -40,6 +40,7 @@ import PublicProfileAchievements from "@/components/PublicProfileAchievements";
 import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
 import { useFollows } from "@/hooks/useFollows";
 import { useAuth } from "@/contexts/AuthContext";
+import { PortfolioPanel } from "@/components/placement/PortfolioPanel";
 
 // Read-only field tile that mirrors DashboardProfile's ProfileField
 const ReadOnlyField = ({
@@ -446,6 +447,8 @@ const PublicProfile = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        <PortfolioPanel userId={profile.user_id} />
 
         {/* Profile Header Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
