@@ -79,9 +79,15 @@ export default function SideCameraPage() {
         body: JSON.stringify({ dataUrl }),
       });
       if (r.ok) setFramesSent((n) => n + 1);
+      else if (r.status === 410) endSession();
     } catch {
       /* keep streaming */
     }
+  };
+
+  const endSession = () => {
+    stop();
+    setStatus("ended");
   };
 
   const start = async () => {
