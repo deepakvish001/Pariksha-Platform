@@ -262,10 +262,12 @@ Deno.serve(async (req) => {
           .from("assessment_side_camera_pairings")
           .update({ status: "disconnected" })
           .eq("id", p.id);
-        await admin.from("attempt_events").insert({
-          attempt_id: p.attempt_id,
-          kind: "side_eye_lost",
-          payload: { pairingId: p.id } as never,
+        const meta = clientMeta(req);
+        await logEvent(p.attempt_id, "side_eye_lost", {
+          pairingId: p.id,
+          previousStatus: p.status,
+          source: meta.isBeacon ? "beacon" : "explicit",
+          ...meta,
         });
       }
       return json({ ok: true });
