@@ -165,6 +165,7 @@ export default function SideCamPairings() {
                   <TableHead>Paired</TableHead>
                   <TableHead>Last seen</TableHead>
                   <TableHead>Closed</TableHead>
+                  <TableHead className="text-right">Audit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
