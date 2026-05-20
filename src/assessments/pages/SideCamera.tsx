@@ -23,7 +23,7 @@ export default function SideCameraPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [status, setStatus] = useState<"idle" | "connecting" | "streaming" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "connecting" | "streaming" | "error" | "ended">("idle");
   const [error, setError] = useState<string | null>(null);
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [framesSent, setFramesSent] = useState(0);
@@ -79,9 +79,15 @@ export default function SideCameraPage() {
         body: JSON.stringify({ dataUrl }),
       });
       if (r.ok) setFramesSent((n) => n + 1);
+      else if (r.status === 410) endSession();
     } catch {
       /* keep streaming */
     }
+  };
+
+  const endSession = () => {
+    stop();
+    setStatus("ended");
   };
 
   const start = async () => {
@@ -184,18 +190,61 @@ export default function SideCameraPage() {
     };
   }, [status, token]);
 
+  // Poll pairing + attempt status; if either ends, tear down.
+  useEffect(() => {
+    if (status !== "streaming") return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const meta = await call("status");
+        if (cancelled) return;
+        const ps = meta?.status;
+        const as = meta?.attemptStatus;
+        if (ps === "closed" || ps === "disconnected" || ps === "expired" ||
+            (as && as !== "in_progress")) {
+          endSession();
+        }
+      } catch { /* keep polling */ }
+    };
+    const id = window.setInterval(tick, 8000);
+    return () => { cancelled = true; window.clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, token]);
+
   useEffect(() => {
     const onUnload = () => {
       navigator.sendBeacon?.(
         `${FN_URL}?action=disconnect&token=${encodeURIComponent(token)}`
       );
     };
+    const onHide = () => { if (document.visibilityState === "hidden") onUnload(); };
     window.addEventListener("pagehide", onUnload);
+    document.addEventListener("visibilitychange", onHide);
     return () => {
       window.removeEventListener("pagehide", onUnload);
+      document.removeEventListener("visibilitychange", onHide);
       stop();
     };
   }, [token]);
+
+  if (status === "ended") {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-4 flex flex-col items-center justify-center">
+        <Card className="w-full max-w-md shadow-xl border-emerald-500/30">
+          <CardContent className="p-6 text-center space-y-3">
+            <div className="h-12 w-12 mx-auto rounded-full bg-emerald-500/15 grid place-items-center">
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+            </div>
+            <h1 className="text-lg font-bold">Test ended</h1>
+            <p className="text-sm text-muted-foreground">
+              The desktop test has been submitted or closed. Your Third Eye session has ended —
+              you can safely close this tab.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 flex flex-col items-center justify-center">

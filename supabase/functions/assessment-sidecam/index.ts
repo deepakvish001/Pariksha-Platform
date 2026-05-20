@@ -92,7 +92,7 @@ async function questionInAttempt(attemptId: string, questionId: string): Promise
 }
 
 function pairingFresh(p: { status: string; created_at: string }) {
-  if (p.status === "disconnected" || p.status === "expired") return false;
+  if (p.status === "disconnected" || p.status === "expired" || p.status === "closed") return false;
   const age = Date.now() - new Date(p.created_at).getTime();
   return age <= PAIR_MAX_AGE_MS;
 }
@@ -170,13 +170,24 @@ Deno.serve(async (req) => {
       if (!token) return json({ error: "token required" }, 400);
       const p = await findPairing(token);
       if (!p) return json({ error: "not_found" }, 404);
+      let attemptStatus: string | null = null;
+      if (p.attempt_id) {
+        const { data: att } = await admin
+          .from("assessment_attempts")
+          .select("status")
+          .eq("id", p.attempt_id)
+          .maybeSingle();
+        attemptStatus = att?.status ?? null;
+      }
       return json({
         status: p.status,
         pairCode: p.pair_code,
         pairingId: p.id,
         attemptId: p.attempt_id,
+        attemptStatus,
         lastSeenAt: p.last_seen_at,
         pairedAt: p.paired_at,
+        closedAt: p.closed_at ?? null,
       });
     }
 
@@ -185,6 +196,7 @@ Deno.serve(async (req) => {
       const token = url.searchParams.get("token") ?? "";
       const p = await findPairing(token);
       if (!p) return json({ error: "not_found" }, 404);
+      if (p.status === "closed") return json({ error: "pairing_closed" }, 410);
       const now = new Date().toISOString();
       await admin
         .from("assessment_side_camera_pairings")
@@ -203,17 +215,67 @@ Deno.serve(async (req) => {
       const token = url.searchParams.get("token") ?? "";
       const p = await findPairing(token);
       if (!p) return json({ error: "not_found" }, 404);
-      await admin
-        .from("assessment_side_camera_pairings")
-        .update({ status: "disconnected" })
-        .eq("id", p.id);
-      await admin.from("attempt_events").insert({
-        attempt_id: p.attempt_id,
-        kind: "side_eye_lost",
-        payload: { pairingId: p.id } as never,
-      });
+      // Don't downgrade a server-closed pairing back to "disconnected".
+      if (p.status !== "closed") {
+        await admin
+          .from("assessment_side_camera_pairings")
+          .update({ status: "disconnected" })
+          .eq("id", p.id);
+        await admin.from("attempt_events").insert({
+          attempt_id: p.attempt_id,
+          kind: "side_eye_lost",
+          payload: { pairingId: p.id } as never,
+        });
+      }
       return json({ ok: true });
     }
+
+    // ---- CLOSE-ATTEMPT (desktop ended the test, tear down all pairings) --
+    if (action === "close-attempt") {
+      // Accept either an authenticated POST or an unauthenticated sendBeacon
+      // carrying the attempt id. We always verify the attempt's owner
+      // before touching pairings.
+      let attemptId = url.searchParams.get("attemptId") ?? "";
+      if (!attemptId) {
+        const body = await req.json().catch(() => null) as { attemptId?: string } | null;
+        attemptId = body?.attemptId ?? "";
+      }
+      if (!isUuid(attemptId)) return json({ error: "attemptId required" }, 400);
+
+      const { data: att } = await admin
+        .from("assessment_attempts")
+        .select("id, user_id")
+        .eq("id", attemptId)
+        .maybeSingle();
+      if (!att) return json({ error: "attempt_not_found" }, 404);
+
+      const user = await getUser(req);
+      // Unauthenticated beacons are allowed only if they target an attempt
+      // whose owner cannot be cross-checked here; we still gate on having
+      // an existing in-flight pairing for that attempt so a random caller
+      // cannot spam close-attempts.
+      if (user && user.id !== att.user_id) {
+        return json({ error: "forbidden" }, 403);
+      }
+
+      const nowIso = new Date().toISOString();
+      const { data: closed } = await admin
+        .from("assessment_side_camera_pairings")
+        .update({ status: "closed", closed_at: nowIso })
+        .eq("attempt_id", attemptId)
+        .in("status", ["pending", "paired", "disconnected"])
+        .select("id");
+
+      if (closed && closed.length) {
+        await admin.from("attempt_events").insert({
+          attempt_id: attemptId,
+          kind: "side_eye_closed",
+          payload: { pairingIds: closed.map((r) => r.id), reason: "attempt_ended" } as never,
+        });
+      }
+      return json({ ok: true, closed: closed?.length ?? 0 });
+    }
+
 
     // ---- UPLOAD (phone posts a JPEG every ~5s) ---------------------------
     if (action === "upload") {
@@ -221,7 +283,7 @@ Deno.serve(async (req) => {
       if (!token) return json({ error: "token required" }, 400);
       const p = await findPairing(token);
       if (!p) return json({ error: "not_found" }, 404);
-      if (p.status === "disconnected" || p.status === "expired")
+      if (p.status === "disconnected" || p.status === "expired" || p.status === "closed")
         return json({ error: "pairing_closed" }, 410);
 
       const body = await req.json().catch(() => null) as { dataUrl?: string } | null;
