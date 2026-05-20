@@ -554,6 +554,7 @@ const App = () => (
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
                   <Route path="sideeye" element={<AdminSideEyeConsole />} />
+                  <Route path="pairings" element={<SideCamPairings />} />
                   <Route path="contests/integrity" element={<AdminIntegrityQueue />} />
                   <Route path="contests/sessions/:sessionId/forensics" element={<AdminSessionForensics />} />
                   <Route path="blog" element={<AdminBlogList />} />
