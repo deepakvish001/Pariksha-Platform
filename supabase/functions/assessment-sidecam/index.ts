@@ -329,8 +329,16 @@ Deno.serve(async (req) => {
       if (!token) return json({ error: "token required" }, 400);
       const p = await findPairing(token);
       if (!p) return json({ error: "not_found" }, 404);
-      if (p.status === "disconnected" || p.status === "expired" || p.status === "closed")
+      if (p.status === "disconnected" || p.status === "expired" || p.status === "closed") {
+        await logEvent(p.attempt_id, "side_eye_upload_rejected", {
+          pairingId: p.id,
+          pairingStatus: p.status,
+          action: "upload",
+          httpStatus: 410,
+          ...clientMeta(req),
+        });
         return json({ error: "pairing_closed" }, 410);
+      }
 
       const body = await req.json().catch(() => null) as { dataUrl?: string } | null;
       const dataUrl = body?.dataUrl;
