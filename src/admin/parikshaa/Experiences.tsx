@@ -40,31 +40,50 @@ export default function ParikshaaExperiences() {
 
   const moderate = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
+      const exp = data?.find((e) => e.id === id);
+      const note = notesById[id] || null;
+
       const { error } = await supabase
         .from("interview_experiences")
         .update({
           status,
-          moderation_notes: notesById[id] || null,
+          moderation_notes: note,
           moderated_by: user?.id ?? null,
           moderated_at: new Date().toISOString(),
         })
         .eq("id", id);
       if (error) throw error;
-      // Award XP on approval (best-effort)
+
+      if (!exp) return;
+
       if (status === "approved") {
-        const exp = data?.find((e) => e.id === id);
-        if (exp) {
-          await supabase.from("xp_transactions" as any).insert({
-            user_id: exp.user_id,
-            amount: 100,
-            source: "experience_approved",
-            description: `Interview experience approved: ${exp.company_name}`,
-          }).then(() => {}, () => {});
-        }
+        // Idempotent: re-approving never double-awards
+        const { error: rpcErr } = await supabase.rpc("award_xp_idempotent" as any, {
+          p_user_id: exp.user_id,
+          p_amount: 100,
+          p_source: "experience_approved",
+          p_reference_id: exp.id,
+          p_description: `Interview experience approved: ${exp.company_name}`,
+          p_metadata: { company: exp.company_name, role: exp.role },
+        });
+        if (rpcErr) throw rpcErr;
+      } else if (status === "rejected" && exp.status === "approved") {
+        // Roll back previously-awarded XP if an approved entry is later rejected
+        const { error: rpcErr } = await supabase.rpc("reverse_xp_entry" as any, {
+          p_source: "experience_approved",
+          p_reference_id: exp.id,
+          p_reason: note || "Experience rejected after approval",
+        });
+        if (rpcErr) throw rpcErr;
       }
     },
     onSuccess: (_d, vars) => {
-      toast({ title: vars.status === "approved" ? "Approved & XP awarded" : "Rejected" });
+      toast({
+        title:
+          vars.status === "approved"
+            ? "Approved — XP awarded (once)"
+            : "Rejected — XP reversed if previously awarded",
+      });
       qc.invalidateQueries({ queryKey: ["admin-experiences"] });
       qc.invalidateQueries({ queryKey: ["experiences"] });
     },
