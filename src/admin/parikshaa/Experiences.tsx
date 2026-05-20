@@ -175,6 +175,10 @@ export default function ParikshaaExperiences() {
         <TabsContent value="reports" className="mt-6">
           <ExperienceReportsQueue />
         </TabsContent>
+
+        <TabsContent value="audit" className="mt-6">
+          <ExperienceAuditLog />
+        </TabsContent>
       </Tabs>
     </div>
   );
