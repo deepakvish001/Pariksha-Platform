@@ -310,10 +310,13 @@ Deno.serve(async (req) => {
         .select("id");
 
       if (closed && closed.length) {
-        await admin.from("attempt_events").insert({
-          attempt_id: attemptId,
-          kind: "side_eye_closed",
-          payload: { pairingIds: closed.map((r) => r.id), reason: "attempt_ended" } as never,
+        const meta = clientMeta(req);
+        await logEvent(attemptId, "side_eye_closed", {
+          pairingIds: closed.map((r) => r.id),
+          reason: "attempt_ended",
+          source: user ? "authenticated" : meta.isBeacon ? "beacon" : "anonymous",
+          authedUserId: user?.id ?? null,
+          ...meta,
         });
       }
       return json({ ok: true, closed: closed?.length ?? 0 });
