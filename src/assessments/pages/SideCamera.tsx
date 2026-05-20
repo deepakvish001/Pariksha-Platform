@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, CheckCircle2, ShieldCheck, RotateCcw, WifiOff } from "lucide-react";
+import { Camera, CheckCircle2, ShieldCheck, RotateCcw, WifiOff, Clock, Send, WifiOff as WifiOffIcon, X } from "lucide-react";
 import { useWebrtcStream } from "@/hooks/useWebrtcStream";
 import { SideEyeReadyCheck } from "@/assessments/components/SideEyeReadyCheck";
 
@@ -24,12 +24,14 @@ export default function SideCameraPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<"idle" | "connecting" | "streaming" | "error" | "ended">("idle");
+  const [endReason, setEndReason] = useState<"submitted" | "timeout" | "disconnected" | "ended">("ended");
   const [error, setError] = useState<string | null>(null);
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [framesSent, setFramesSent] = useState(0);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
   const [ready, setReady] = useState(false);
+  const [autoCloseIn, setAutoCloseIn] = useState(30);
 
   // Publish the rear-camera feed live to proctors via WebRTC, keyed by the
   // pairing token (same token already authenticates snapshot uploads).
@@ -79,14 +81,16 @@ export default function SideCameraPage() {
         body: JSON.stringify({ dataUrl }),
       });
       if (r.ok) setFramesSent((n) => n + 1);
-      else if (r.status === 410) endSession();
+      else if (r.status === 410) endSession("disconnected");
     } catch {
       /* keep streaming */
     }
   };
 
-  const endSession = () => {
+  const endSession = (reason: "submitted" | "timeout" | "disconnected" | "ended" = "ended") => {
     stop();
+    setEndReason(reason);
+    setAutoCloseIn(30);
     setStatus("ended");
   };
 
@@ -200,10 +204,10 @@ export default function SideCameraPage() {
         if (cancelled) return;
         const ps = meta?.status;
         const as = meta?.attemptStatus;
-        if (ps === "closed" || ps === "disconnected" || ps === "expired" ||
-            (as && as !== "in_progress")) {
-          endSession();
-        }
+        if (as === "submitted") endSession("submitted");
+        else if (as === "timed_out" || as === "timeout" || as === "expired") endSession("timeout");
+        else if (ps === "closed" || ps === "disconnected" || ps === "expired") endSession("disconnected");
+        else if (as && as !== "in_progress") endSession("ended");
       } catch { /* keep polling */ }
     };
     const id = window.setInterval(tick, 8000);
@@ -227,18 +231,76 @@ export default function SideCameraPage() {
     };
   }, [token]);
 
+  // Tick the auto-close countdown on the ended screen; close at zero.
+  useEffect(() => {
+    if (status !== "ended") return;
+    if (autoCloseIn <= 0) {
+      window.close();
+      return;
+    }
+    const id = window.setTimeout(() => setAutoCloseIn((n) => n - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [status, autoCloseIn]);
+
   if (status === "ended") {
+    const meta = {
+      submitted: {
+        title: "Test submitted",
+        desc: "Your candidate finished and submitted the assessment. The Third Eye session is closed.",
+        Icon: Send,
+        tone: "emerald",
+      },
+      timeout: {
+        title: "Time ran out",
+        desc: "The assessment timer ended and the attempt was auto-submitted. The Third Eye session is closed.",
+        Icon: Clock,
+        tone: "amber",
+      },
+      disconnected: {
+        title: "Phone disconnected",
+        desc: "We stopped receiving frames from this phone. If the test is still running, ask the candidate to generate a fresh QR on the desktop and rescan.",
+        Icon: WifiOffIcon,
+        tone: "amber",
+      },
+      ended: {
+        title: "Test ended",
+        desc: "The assessment is no longer in progress. The Third Eye session is closed.",
+        Icon: CheckCircle2,
+        tone: "emerald",
+      },
+    }[endReason];
+
+    const toneRing = meta.tone === "emerald" ? "border-emerald-500/30" : "border-amber-500/40";
+    const toneBg = meta.tone === "emerald" ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600";
+
     return (
       <div className="min-h-screen bg-background text-foreground p-4 flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md shadow-xl border-emerald-500/30">
-          <CardContent className="p-6 text-center space-y-3">
-            <div className="h-12 w-12 mx-auto rounded-full bg-emerald-500/15 grid place-items-center">
-              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+        <Card className={`w-full max-w-md shadow-xl ${toneRing}`}>
+          <CardContent className="p-6 text-center space-y-4">
+            <div className={`h-14 w-14 mx-auto rounded-full grid place-items-center ${toneBg}`}>
+              <meta.Icon className="h-7 w-7" />
             </div>
-            <h1 className="text-lg font-bold">Test ended</h1>
-            <p className="text-sm text-muted-foreground">
-              The desktop test has been submitted or closed. Your Third Eye session has ended —
-              you can safely close this tab.
+            <div className="space-y-1">
+              <h1 className="text-lg font-bold">{meta.title}</h1>
+              <p className="text-sm text-muted-foreground">{meta.desc}</p>
+            </div>
+            <div className="rounded-md bg-muted/40 border px-3 py-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              Auto-closing in <span className="font-mono font-semibold text-foreground">{autoCloseIn}s</span>
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                window.close();
+                // If the browser blocked window.close (tab wasn't script-opened),
+                // reload the token URL so a freshly-issued QR on desktop can take over.
+                setTimeout(() => window.location.reload(), 250);
+              }}
+            >
+              <X className="h-4 w-4 mr-2" /> Close & scan a new QR
+            </Button>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              The desktop preflight automatically generates a fresh QR — point this phone's camera at the new code to rejoin.
             </p>
           </CardContent>
         </Card>
