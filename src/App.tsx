@@ -610,6 +610,7 @@ const App = () => (
                 <Route path="/experiences" element={<Experiences />} />
                 <Route path="/experiences/submit" element={<ExperienceSubmit />} />
                 <Route path="/experiences/mine" element={<MyExperiences />} />
+                <Route path="/mock-interview" element={<MockInterview />} />
                 <Route path="/experiences/:id" element={<ExperienceDetail />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
