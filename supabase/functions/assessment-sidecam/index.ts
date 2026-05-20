@@ -97,6 +97,37 @@ function pairingFresh(p: { status: string; created_at: string }) {
   return age <= PAIR_MAX_AGE_MS;
 }
 
+/**
+ * Extract diagnostic metadata about the caller so each teardown event
+ * carries enough context to audit who/where it came from later.
+ */
+function clientMeta(req: Request) {
+  const h = req.headers;
+  return {
+    ip:
+      h.get("x-forwarded-for")?.split(",")[0].trim() ??
+      h.get("cf-connecting-ip") ??
+      h.get("x-real-ip") ??
+      null,
+    ua: h.get("user-agent") ?? null,
+    referer: h.get("referer") ?? null,
+    isBeacon:
+      (h.get("content-type") ?? "").includes("text/ping") ||
+      h.get("ping-to") !== null,
+  };
+}
+
+async function logEvent(attemptId: string, kind: string, payload: Record<string, unknown>) {
+  try {
+    await admin.from("attempt_events").insert({
+      attempt_id: attemptId,
+      kind,
+      payload: payload as never,
+    });
+  } catch {
+    /* never let auditing break the main flow */
+  }
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
