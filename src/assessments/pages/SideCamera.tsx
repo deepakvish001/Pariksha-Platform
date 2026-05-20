@@ -204,10 +204,10 @@ export default function SideCameraPage() {
         if (cancelled) return;
         const ps = meta?.status;
         const as = meta?.attemptStatus;
-        if (ps === "closed" || ps === "disconnected" || ps === "expired" ||
-            (as && as !== "in_progress")) {
-          endSession();
-        }
+        if (as === "submitted") endSession("submitted");
+        else if (as === "timed_out" || as === "timeout" || as === "expired") endSession("timeout");
+        else if (ps === "closed" || ps === "disconnected" || ps === "expired") endSession("disconnected");
+        else if (as && as !== "in_progress") endSession("ended");
       } catch { /* keep polling */ }
     };
     const id = window.setInterval(tick, 8000);
