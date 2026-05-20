@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShieldCheck, Camera, Maximize2, AlertTriangle, CheckCircle2, MonitorUp, Smartphone, UserCircle } from "lucide-react";
+import { ShieldCheck, Maximize2, MonitorUp, Loader2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { describeRulesForCandidate, type ProctoringConfig } from "../lib/proctoringConfig";
-import { SideCameraPairing } from "./SideCameraPairing";
-import { CandidateDetailsStep } from "./CandidateDetailsStep";
+import type { ProctoringConfig } from "../lib/proctoringConfig";
 import { CameraPermissionHelp } from "./CameraPermissionHelp";
 
 interface Props {
@@ -16,41 +14,26 @@ interface Props {
 }
 
 /**
- * Blocks the assessment until the candidate grants webcam (and optionally
- * full-screen sharing) + enters fullscreen and acknowledges the rules.
- * Same UX in preview to mirror candidate reality.
+ * Final hand-off into the proctored player. By the time we get here the
+ * candidate has already cleared the full Preflight flow (identity, camera
+ * permission, mic test, Third Eye pairing, rules acknowledgment), so this
+ * gate's only job is to:
+ *   1. Re-acquire a fresh camera stream for the player
+ *   2. Acquire screen-share if required (must be triggered by a user gesture)
+ *   3. Enter fullscreen and hand off
+ *
+ * No duplicate identity/rules/Third Eye steps here — those belong to Preflight.
  */
 export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   const requireScreen = !!config?.require_screen_share;
-  const requireSideEye = !!config?.require_side_eye;
-  const rules = config ? describeRulesForCandidate(config) : [
-    "Stay in fullscreen for the entire attempt.",
-    "Do not switch tabs, windows, or apps.",
-    "Copy, paste, right-click, printing and developer tools are blocked.",
-    "Your webcam will be sampled periodically for review.",
-  ];
+
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [screen, setScreen] = useState<MediaStream | null>(null);
-  const [sideEyePaired, setSideEyePaired] = useState(false);
-  const [detailsDone, setDetailsDone] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [acknowledged, setAcknowledged] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [camError, setCamError] = useState<unknown | null>(null);
   const [preferredDeviceId, setPreferredDeviceId] = useState<string>("");
-  const [busy, setBusy] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
-
-  useEffect(() => {
-    if (stream && videoRef.current) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
-    }
-  }, [stream]);
+  const handedOffRef = useRef(false);
 
   const log = (kind: string, payload: Record<string, unknown> = {}) => {
     supabase
@@ -61,7 +44,6 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
 
   const requestCamera = async (deviceId?: string) => {
     setBusy(true);
-    setError(null);
     setCamError(null);
     try {
       const id = deviceId ?? preferredDeviceId;
@@ -80,6 +62,12 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
       setBusy(false);
     }
   };
+
+  // Auto-acquire camera on mount — permission was already granted in Preflight.
+  useEffect(() => {
+    void requestCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const requestScreen = async () => {
     setBusy(true);
@@ -100,31 +88,30 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
       }
       setScreen(s);
     } catch (e) {
-      setError(e instanceof Error ? `Screen share blocked: ${e.message}` : "Screen share required.");
+      setError(
+        e instanceof Error ? `Screen share blocked: ${e.message}` : "Screen share required.",
+      );
     } finally {
       setBusy(false);
     }
   };
 
-  const canStart =
-    detailsDone &&
-    !!stream &&
-    acknowledged &&
-    (!requireScreen || !!screen) &&
-    (!requireSideEye || sideEyePaired);
+  const canStart = !!stream && (!requireScreen || !!screen);
 
   const enterSecure = async () => {
-    if (!canStart || !stream) return;
+    if (!canStart || !stream || handedOffRef.current) return;
+    handedOffRef.current = true;
     setBusy(true);
     try {
       try {
         await document.documentElement.requestFullscreen();
       } catch {
-        // some browsers (Safari iOS) reject — we proceed anyway
+        // some browsers (Safari iOS) reject — proceed anyway
       }
       log("lockdown_enter");
       onReady(stream, screen);
     } catch (e) {
+      handedOffRef.current = false;
       setError(e instanceof Error ? e.message : "Failed to enter secure mode.");
       log("lockdown_fail", { error: String(e) });
     } finally {
@@ -132,161 +119,86 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
     }
   };
 
+  // Auto-hand-off as soon as we're ready AND no screen-share gesture is needed.
+  // If screen-share IS required, the user must click the button (browsers
+  // require a user gesture for getDisplayMedia + fullscreen).
+  useEffect(() => {
+    if (canStart && !requireScreen && !handedOffRef.current) {
+      void enterSecure();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canStart, requireScreen]);
+
   return (
     <div className="theme-b2b min-h-screen grid place-items-center bg-gradient-to-b from-background via-background to-muted/30 p-4">
-      <Card className="max-w-2xl w-full overflow-hidden shadow-xl border-primary/20">
+      <Card className="max-w-md w-full overflow-hidden shadow-xl border-primary/20">
         <div className="bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-b border-border px-6 py-5 flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-primary/15 grid place-items-center">
             <ShieldCheck className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold leading-tight">Secure Assessment Mode</h1>
+            <h1 className="text-lg font-bold leading-tight">Entering secure mode…</h1>
             <p className="text-xs text-muted-foreground">
-              This assessment is proctored. Follow the steps below to begin.
+              Final hand-off before your test begins.
             </p>
           </div>
         </div>
 
-        <CardContent className="p-6 space-y-5">
-          <Step
-            n={1}
-            title="Verify your details"
-            done={detailsDone}
-            icon={<UserCircle className="h-4 w-4" />}
-          >
-            {userId ? (
-              <CandidateDetailsStep
-                attemptId={attemptId}
-                userId={userId}
-                done={detailsDone}
-                onComplete={() => {
-                  setDetailsDone(true);
-                  log("candidate_details_saved");
-                }}
-              />
-            ) : (
-              <div className="text-xs text-muted-foreground">Loading your session…</div>
-            )}
-          </Step>
-
-          <Step n={2} title="Enable your camera" done={!!stream} icon={<Camera className="h-4 w-4" />}>
-            {stream ? (
-              <div className="flex items-center gap-3">
-                <video
-                  ref={videoRef}
-                  muted
-                  playsInline
-                  className="w-32 h-24 rounded-md border border-emerald-500/40 object-cover bg-black"
-                />
-                <span className="text-xs text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Camera active
-                </span>
-              </div>
-            ) : camError ? (
-              <CameraPermissionHelp
-                error={camError}
-                busy={busy}
-                onRetry={() => requestCamera(preferredDeviceId)}
-                onDeviceChange={(id) => {
-                  setPreferredDeviceId(id);
-                  return requestCamera(id);
-                }}
-              />
-            ) : (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  We'll briefly use your camera to verify you're the candidate, then keep it on
-                  for proctoring during the test. Your browser will pop up a permission prompt —
-                  please click <b>Allow</b>.
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => void requestCamera()}
-                  disabled={busy || !detailsDone}
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Allow camera access
-                </Button>
-              </div>
-            )}
-          </Step>
+        <CardContent className="p-6 space-y-4">
+          {camError ? (
+            <CameraPermissionHelp
+              error={camError}
+              busy={busy}
+              onRetry={() => requestCamera(preferredDeviceId)}
+              onDeviceChange={(id) => {
+                setPreferredDeviceId(id);
+                return requestCamera(id);
+              }}
+            />
+          ) : !stream ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Re-connecting your camera…
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" /> Camera ready
+            </div>
+          )}
 
           {requireScreen && (
-            <Step n={3} title="Share your entire screen" done={!!screen} icon={<MonitorUp className="h-4 w-4" />}>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Share your <b>entire screen</b> so the proctor can monitor for unauthorized
+                tools. Your browser will pop up a picker — choose your monitor and click Share.
+              </p>
               {screen ? (
-                <span className="text-xs text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Screen sharing active
-                </span>
+                <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle2 className="h-4 w-4" /> Screen sharing active
+                </div>
               ) : (
-                <Button size="sm" variant="outline" onClick={requestScreen} disabled={busy || !stream}>
+                <Button
+                  onClick={requestScreen}
+                  disabled={busy || !stream}
+                  className="w-full"
+                >
                   <MonitorUp className="h-4 w-4 mr-2" />
-                  Share entire screen
+                  Share entire screen & start
                 </Button>
               )}
-            </Step>
+            </div>
           )}
 
-          {requireSideEye && (
-            <Step
-              n={requireScreen ? 4 : 3}
-              title="Pair your phone as side camera (Third Eye)"
-              done={sideEyePaired}
-              icon={<Smartphone className="h-4 w-4" />}
+          {canStart && requireScreen && (
+            <Button
+              onClick={enterSecure}
+              disabled={busy}
+              className="w-full bg-gradient-to-r from-primary to-primary/80"
             >
-              <SideCameraPairing
-                attemptId={attemptId}
-                onPaired={() => {
-                  setSideEyePaired(true);
-                  log("side_eye_paired");
-                }}
-              />
-            </Step>
+              <Maximize2 className="h-4 w-4 mr-2" />
+              Enter secure mode & start
+            </Button>
           )}
-
-          {(() => {
-            const baseN = 3 + (requireScreen ? 1 : 0) + (requireSideEye ? 1 : 0);
-            return (
-              <>
-                <Step
-                  n={baseN}
-                  title="Acknowledge the rules"
-                  done={acknowledged}
-                  icon={<AlertTriangle className="h-4 w-4" />}
-                >
-                  <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-                    {rules.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
-                  <label className="flex items-start gap-2 mt-3 cursor-pointer text-xs">
-                    <input
-                      type="checkbox"
-                      checked={acknowledged}
-                      onChange={(e) => setAcknowledged(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
-                    />
-                    <span>I understand and agree to the rules above.</span>
-                  </label>
-                </Step>
-
-                <Step
-                  n={baseN + 1}
-                  title="Enter secure fullscreen"
-                  done={false}
-                  icon={<Maximize2 className="h-4 w-4" />}
-                >
-                  <Button
-                    onClick={enterSecure}
-                    disabled={!canStart || busy}
-                    className="bg-gradient-to-r from-primary to-primary/80"
-                  >
-                    <Maximize2 className="h-4 w-4 mr-2" />
-                    Enter secure mode & start
-                  </Button>
-                </Step>
-              </>
-            );
-          })()}
 
           {error && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -295,42 +207,6 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function Step({
-  n,
-  title,
-  done,
-  icon,
-  children,
-}: {
-  n: number;
-  title: string;
-  done: boolean;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-3">
-      <div
-        className={
-          "h-7 w-7 shrink-0 rounded-full grid place-items-center text-xs font-bold border " +
-          (done
-            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-            : "border-border bg-muted text-muted-foreground")
-        }
-      >
-        {done ? <CheckCircle2 className="h-4 w-4" /> : n}
-      </div>
-      <div className="flex-1 min-w-0 space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          {icon}
-          <span>{title}</span>
-        </div>
-        {children}
-      </div>
     </div>
   );
 }
