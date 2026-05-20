@@ -296,7 +296,6 @@ export default function SideCameraPage() {
       </div>
     );
   }
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 flex flex-col items-center justify-center">
