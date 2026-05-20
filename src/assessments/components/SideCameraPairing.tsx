@@ -15,7 +15,7 @@ interface PairingMeta {
   pairingId: string;
   pairCode: string;
   pairToken: string;
-  status: "pending" | "paired" | "disconnected" | "expired";
+  status: "pending" | "paired" | "disconnected" | "expired" | "closed";
   lastSeenAt?: string | null;
 }
 
