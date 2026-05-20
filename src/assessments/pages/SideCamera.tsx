@@ -81,14 +81,16 @@ export default function SideCameraPage() {
         body: JSON.stringify({ dataUrl }),
       });
       if (r.ok) setFramesSent((n) => n + 1);
-      else if (r.status === 410) endSession();
+      else if (r.status === 410) endSession("disconnected");
     } catch {
       /* keep streaming */
     }
   };
 
-  const endSession = () => {
+  const endSession = (reason: "submitted" | "timeout" | "disconnected" | "ended" = "ended") => {
     stop();
+    setEndReason(reason);
+    setAutoCloseIn(30);
     setStatus("ended");
   };
 
