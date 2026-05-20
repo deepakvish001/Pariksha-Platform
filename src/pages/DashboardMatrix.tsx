@@ -28,6 +28,7 @@ import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
 import confetti from "canvas-confetti";
 import XPGoalsCard from "@/components/XPGoalsCard";
 import { cn } from "@/lib/utils";
+import { PlacementReadinessCard } from "@/components/placement/PlacementReadinessCard";
 
 // Accurate sheet definitions matching DashboardSheets
 const sheetDefinitions = [
