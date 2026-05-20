@@ -97,44 +97,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Track the user id we've already loaded profile data for, so token
+    // refresh events (which fire frequently) don't re-trigger profile fetches
+    // and re-render the entire app. Only an actual sign-in / sign-out / user
+    // switch should refetch.
+    let loadedUserId: string | null = null;
+    let cancelled = false;
 
-        if (session?.user) {
-          // Use setTimeout to avoid potential race conditions with database triggers
+    // onAuthStateChange fires INITIAL_SESSION on subscribe with the restored
+    // session from storage, so we don't need a separate getSession() call —
+    // doing both caused duplicate state updates and double profile fetches
+    // on every page load (the "checking multiple times" flicker).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, nextSession) => {
+        if (cancelled) return;
+
+        const nextUser = nextSession?.user ?? null;
+        setSession(nextSession);
+        setUser(nextUser);
+
+        // Ignore pure token refreshes — user identity hasn't changed, no need
+        // to refetch profile or flip loading. Same for USER_UPDATED metadata
+        // pings that don't change the user id.
+        const sameUser = nextUser?.id && nextUser.id === loadedUserId;
+
+        if (nextUser && !sameUser) {
+          loadedUserId = nextUser.id;
+          // Defer to next tick so we don't block the auth callback (avoids
+          // Supabase deadlocks) and don't run inside React's render phase.
           setTimeout(async () => {
-            const profileData = await fetchProfile(session.user.id);
+            const [profileData, extendedData] = await Promise.all([
+              fetchProfile(nextUser.id),
+              fetchExtendedProfile(nextUser.id),
+            ]);
+            if (cancelled) return;
             setProfile(profileData);
-            const extendedData = await fetchExtendedProfile(session.user.id);
             setExtendedProfile(extendedData);
+            setLoading(false);
           }, 0);
-        } else {
+        } else if (!nextUser) {
+          loadedUserId = null;
           setProfile(null);
           setExtendedProfile(null);
+          setLoading(false);
+        } else {
+          // Same user, token refresh — auth is already ready.
+          setLoading(false);
         }
-
-        setLoading(false);
       }
     );
 
-    // THEN get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
-        const extendedData = await fetchExtendedProfile(session.user.id);
-        setExtendedProfile(extendedData);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
