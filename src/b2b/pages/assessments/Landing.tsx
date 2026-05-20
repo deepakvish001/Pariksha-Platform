@@ -176,7 +176,7 @@ export default function AssessmentLandingPage() {
                   return;
                 }
                 const attempt = data as { id: string; slug?: string | null };
-                navigate(paths.student.play(attempt, { preview: true }));
+                navigate(paths.student.lobby(attempt));
               }}
             >
               <Play className="h-4 w-4 mr-1" /> Take preview
