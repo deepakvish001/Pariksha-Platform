@@ -103,6 +103,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // switch should refetch.
     let loadedUserId: string | null = null;
     let cancelled = false;
+    let pendingFetchUserId: string | null = null;
+    let fetchTimer: ReturnType<typeof setTimeout> | null = null;
+    let inflightUserId: string | null = null;
+
+    // Debounce window for coalescing bursts of auth events (INITIAL_SESSION
+    // followed quickly by SIGNED_IN, multiple tab focus events, etc.) that
+    // would otherwise each fire a profile fetch.
+    const FETCH_DEBOUNCE_MS = 120;
+
+    const scheduleProfileFetch = (userId: string) => {
+      pendingFetchUserId = userId;
+      if (fetchTimer) clearTimeout(fetchTimer);
+      fetchTimer = setTimeout(async () => {
+        fetchTimer = null;
+        const targetId = pendingFetchUserId;
+        pendingFetchUserId = null;
+        if (cancelled || !targetId) return;
+        // Guard against overlapping in-flight fetches for the same user.
+        if (inflightUserId === targetId) return;
+        inflightUserId = targetId;
+        try {
+          const [profileData, extendedData] = await Promise.all([
+            fetchProfile(targetId),
+            fetchExtendedProfile(targetId),
+          ]);
+          if (cancelled) return;
+          // If the user switched again mid-flight, drop these results.
+          if (loadedUserId !== targetId) return;
+          setProfile(profileData);
+          setExtendedProfile(extendedData);
+          setLoading(false);
+        } finally {
+          if (inflightUserId === targetId) inflightUserId = null;
+        }
+      }, FETCH_DEBOUNCE_MS);
+    };
 
     // onAuthStateChange fires INITIAL_SESSION on subscribe with the restored
     // session from storage, so we don't need a separate getSession() call —
@@ -123,25 +159,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (nextUser && !sameUser) {
           loadedUserId = nextUser.id;
-          // Defer to next tick so we don't block the auth callback (avoids
-          // Supabase deadlocks) and don't run inside React's render phase.
-          setTimeout(async () => {
-            const [profileData, extendedData] = await Promise.all([
-              fetchProfile(nextUser.id),
-              fetchExtendedProfile(nextUser.id),
-            ]);
-            if (cancelled) return;
-            setProfile(profileData);
-            setExtendedProfile(extendedData);
-            setLoading(false);
-          }, 0);
+          scheduleProfileFetch(nextUser.id);
         } else if (!nextUser) {
           loadedUserId = null;
+          pendingFetchUserId = null;
+          if (fetchTimer) {
+            clearTimeout(fetchTimer);
+            fetchTimer = null;
+          }
           setProfile(null);
           setExtendedProfile(null);
           setLoading(false);
         } else {
-          // Same user, token refresh — auth is already ready.
+          // Same user, token refresh — auth is already ready, no refetch.
           setLoading(false);
         }
       }
@@ -149,6 +179,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       cancelled = true;
+      if (fetchTimer) clearTimeout(fetchTimer);
       subscription.unsubscribe();
     };
   }, []);
