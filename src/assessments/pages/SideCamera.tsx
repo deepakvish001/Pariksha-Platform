@@ -24,12 +24,14 @@ export default function SideCameraPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<"idle" | "connecting" | "streaming" | "error" | "ended">("idle");
+  const [endReason, setEndReason] = useState<"submitted" | "timeout" | "disconnected" | "ended">("ended");
   const [error, setError] = useState<string | null>(null);
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [framesSent, setFramesSent] = useState(0);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
   const [ready, setReady] = useState(false);
+  const [autoCloseIn, setAutoCloseIn] = useState(30);
 
   // Publish the rear-camera feed live to proctors via WebRTC, keyed by the
   // pairing token (same token already authenticates snapshot uploads).
