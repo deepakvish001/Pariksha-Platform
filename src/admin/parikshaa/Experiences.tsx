@@ -55,8 +55,8 @@ export default function ParikshaaExperiences() {
           await supabase.from("xp_transactions" as any).insert({
             user_id: exp.user_id,
             amount: 100,
-            reason: "experience_approved",
-            metadata: { experience_id: id, company: exp.company_name },
+            source: "experience_approved",
+            description: `Interview experience approved: ${exp.company_name}`,
           }).then(() => {}, () => {});
         }
       }
