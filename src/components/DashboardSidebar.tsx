@@ -26,7 +26,9 @@ import {
   Target,
   Briefcase,
   Mic,
+  ClipboardList,
 } from "lucide-react";
+import { useMyInvites } from "@/b2b/hooks/useInvites";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -81,6 +83,7 @@ const homeNavItems = [
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Contests", url: "/contests", icon: Trophy },
   { title: "Interview Experiences", url: "/experiences", icon: Briefcase },
+  { title: "My Tests", url: "/my-tests", icon: ClipboardList },
   { title: "Mock Interview", url: "/mock-interview", icon: Mic },
   { title: "Blog", url: "/blog", icon: BookOpen },
   { title: "Leaderboard", url: "/learn/leaderboard", icon: Trophy },
