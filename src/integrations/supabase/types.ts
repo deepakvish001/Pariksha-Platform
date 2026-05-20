@@ -5894,6 +5894,51 @@ export type Database = {
           },
         ]
       }
+      mock_interview_sessions: {
+        Row: {
+          company: string | null
+          created_at: string
+          difficulty: string
+          ended_at: string | null
+          id: string
+          role: string
+          scorecard: Json | null
+          started_at: string
+          status: string
+          transcript: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          difficulty?: string
+          ended_at?: string | null
+          id?: string
+          role: string
+          scorecard?: Json | null
+          started_at?: string
+          status?: string
+          transcript?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          difficulty?: string
+          ended_at?: string | null
+          id?: string
+          role?: string
+          scorecard?: Json | null
+          started_at?: string
+          status?: string
+          transcript?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
