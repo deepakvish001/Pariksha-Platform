@@ -333,6 +333,10 @@ const DashboardMatrix = () => {
           ))}
         </motion.div>
 
+        <PlacementReadinessCard />
+
+
+
         {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
