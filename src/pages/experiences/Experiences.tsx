@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { useExperiences, useMyExperiences, type ExperienceFilters, type Experience } from "@/hooks/useExperiences";
