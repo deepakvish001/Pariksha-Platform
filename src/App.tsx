@@ -372,6 +372,8 @@ const App = () => (
                   <Route path="notifications" element={<NotificationCenter />} />
                   <Route path="notifications/preferences" element={<NotificationPreferences />} />
                   <Route path="my-plan" element={<MyPlan />} />
+                  <Route path="placement-readiness" element={<PlacementReadiness />} />
+                  <Route path="target-company" element={<TargetCompany />} />
                 </Route>
 
                 {/* Public dashboard routes (viewable without login) */}
