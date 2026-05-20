@@ -92,7 +92,7 @@ async function questionInAttempt(attemptId: string, questionId: string): Promise
 }
 
 function pairingFresh(p: { status: string; created_at: string }) {
-  if (p.status === "disconnected" || p.status === "expired") return false;
+  if (p.status === "disconnected" || p.status === "expired" || p.status === "closed") return false;
   const age = Date.now() - new Date(p.created_at).getTime();
   return age <= PAIR_MAX_AGE_MS;
 }
