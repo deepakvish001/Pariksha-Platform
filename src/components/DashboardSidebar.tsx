@@ -71,6 +71,8 @@ const PROFILE_SENTINEL = "__profile__";
 const homeNavItems = [
   { title: "Dashboard", url: "/learn", icon: LayoutGrid },
   { title: "My Plan", url: "/learn/my-plan", icon: Sparkles },
+  { title: "Placement Readiness", url: "/learn/placement-readiness", icon: Gauge },
+  { title: "Target Company", url: "/learn/target-company", icon: Target },
   { title: "Sheets", url: "/learn/sheets", icon: FileSpreadsheet },
   { title: "DSA Studio", url: "/learn/dsa-studio", icon: Brain },
   
