@@ -447,6 +447,8 @@ const PublicProfile = () => {
           </Card>
         </motion.div>
 
+        <PortfolioPanel userId={profile.user_id} />
+
         {/* Profile Header Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="overflow-hidden">
