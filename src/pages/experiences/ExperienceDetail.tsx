@@ -48,6 +48,19 @@ export default function ExperienceDetail() {
         <Link to="/experiences"><ArrowLeft className="size-4" /> All experiences</Link>
       </Button>
 
+      {user?.id === exp.user_id && exp.status !== "approved" && (
+        <Card className={`p-4 border ${exp.status === "pending" ? "border-amber-500/40 bg-amber-500/5" : "border-red-500/40 bg-red-500/5"}`}>
+          <p className="text-sm font-medium">
+            {exp.status === "pending"
+              ? "This experience is pending moderator review and isn't public yet."
+              : "This experience was not approved and isn't visible to other users."}
+          </p>
+          {exp.status === "rejected" && exp.moderation_notes && (
+            <p className="text-xs text-muted-foreground mt-1"><span className="font-medium">Note:</span> {exp.moderation_notes}</p>
+          )}
+        </Card>
+      )}
+
       <Card className="p-6 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
