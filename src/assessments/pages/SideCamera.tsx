@@ -190,15 +190,39 @@ export default function SideCameraPage() {
     };
   }, [status, token]);
 
+  // Poll pairing + attempt status; if either ends, tear down.
+  useEffect(() => {
+    if (status !== "streaming") return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const meta = await call("status");
+        if (cancelled) return;
+        const ps = meta?.status;
+        const as = meta?.attemptStatus;
+        if (ps === "closed" || ps === "disconnected" || ps === "expired" ||
+            (as && as !== "in_progress")) {
+          endSession();
+        }
+      } catch { /* keep polling */ }
+    };
+    const id = window.setInterval(tick, 8000);
+    return () => { cancelled = true; window.clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, token]);
+
   useEffect(() => {
     const onUnload = () => {
       navigator.sendBeacon?.(
         `${FN_URL}?action=disconnect&token=${encodeURIComponent(token)}`
       );
     };
+    const onHide = () => { if (document.visibilityState === "hidden") onUnload(); };
     window.addEventListener("pagehide", onUnload);
+    document.addEventListener("visibilitychange", onHide);
     return () => {
       window.removeEventListener("pagehide", onUnload);
+      document.removeEventListener("visibilitychange", onHide);
       stop();
     };
   }, [token]);
