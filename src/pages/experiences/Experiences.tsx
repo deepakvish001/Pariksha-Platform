@@ -115,7 +115,10 @@ export default function Experiences() {
   }, [data]);
 
   const set = (patch: Partial<ExperienceFilters>) => setFilters((f) => ({ ...f, ...patch }));
-  const clearAll = () => setFilters({ sort: filters.sort ?? "recent" });
+  const clearAll = () => {
+    setSearchInput("");
+    setFilters({ sort: "recent" });
+  };
 
   const activeChips: { key: string; label: string; onRemove: () => void }[] = [];
   if (filters.q) activeChips.push({ key: "q", label: `“${filters.q}”`, onRemove: () => { setSearchInput(""); set({ q: undefined }); } });
