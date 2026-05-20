@@ -14,7 +14,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Copy, Smartphone } from "lucide-react";
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import { RefreshCw, Copy, Smartphone, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 
 type Status = "all" | "pending" | "paired" | "disconnected" | "expired" | "closed";
@@ -42,6 +45,23 @@ const fmt = (v: string | null | undefined) =>
 export default function SideCamPairings() {
   const [status, setStatus] = useState<Status>("all");
   const [search, setSearch] = useState("");
+  const [openAttempt, setOpenAttempt] = useState<string | null>(null);
+
+  const events = useQuery({
+    queryKey: ["admin-sidecam-events", openAttempt],
+    enabled: !!openAttempt,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("attempt_events")
+        .select("id, kind, payload, created_at")
+        .eq("attempt_id", openAttempt!)
+        .like("kind", "side_eye_%")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-sidecam-pairings", status],
@@ -145,20 +165,21 @@ export default function SideCamPairings() {
                   <TableHead>Paired</TableHead>
                   <TableHead>Last seen</TableHead>
                   <TableHead>Closed</TableHead>
+                  <TableHead className="text-right">Audit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-10">
+                    <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">
                       No pairings match this filter.
                     </TableCell>
                   </TableRow>
@@ -185,6 +206,16 @@ export default function SideCamPairings() {
                       <TableCell className="text-xs">{fmt(r.paired_at)}</TableCell>
                       <TableCell className="text-xs">{fmt(r.last_seen_at)}</TableCell>
                       <TableCell className="text-xs">{fmt(r.closed_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setOpenAttempt(r.attempt_id)}
+                          title="View attempt events"
+                        >
+                          <ScrollText className="h-3.5 w-3.5 mr-1" /> Events
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -196,6 +227,42 @@ export default function SideCamPairings() {
           Showing up to 500 most recent pairings. Refine with the status filter.
         </p>
       </div>
+
+      <Sheet open={!!openAttempt} onOpenChange={(v) => !v && setOpenAttempt(null)}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <ScrollText className="h-4 w-4" /> Third Eye events
+            </SheetTitle>
+            <SheetDescription className="font-mono text-[11px] break-all">
+              attempt_id: {openAttempt}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {events.isLoading ? (
+              <Skeleton className="h-32 w-full" />
+            ) : (events.data ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No side-eye events recorded yet.</p>
+            ) : (
+              (events.data ?? []).map((ev) => (
+                <div key={ev.id} className="rounded-md border bg-muted/30 px-3 py-2 text-xs space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {ev.kind.replace(/^side_eye_/, "")}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(ev.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <pre className="text-[10px] leading-relaxed font-mono whitespace-pre-wrap break-all text-muted-foreground">
+                    {JSON.stringify(ev.payload, null, 2)}
+                  </pre>
+                </div>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </AdminShell>
   );
 }

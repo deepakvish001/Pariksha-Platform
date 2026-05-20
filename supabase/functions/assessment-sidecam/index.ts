@@ -97,6 +97,40 @@ function pairingFresh(p: { status: string; created_at: string }) {
   return age <= PAIR_MAX_AGE_MS;
 }
 
+/**
+ * Extract diagnostic metadata about the caller so each teardown event
+ * carries enough context to audit who/where it came from later.
+ */
+function clientMeta(req: Request) {
+  const h = req.headers;
+  return {
+    ip:
+      h.get("x-forwarded-for")?.split(",")[0].trim() ??
+      h.get("cf-connecting-ip") ??
+      h.get("x-real-ip") ??
+      null,
+    ua: h.get("user-agent") ?? null,
+    referer: h.get("referer") ?? null,
+    isBeacon:
+      (h.get("content-type") ?? "").includes("text/ping") ||
+      h.get("ping-to") !== null,
+  };
+}
+
+async function logEvent(attemptId: string, kind: string, payload: Record<string, unknown>) {
+  try {
+    await admin.from("attempt_events").insert({
+      attempt_id: attemptId,
+      kind,
+      payload: payload as never,
+    });
+  } catch {
+    /* never let auditing break the main flow */
+  }
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -134,6 +168,11 @@ Deno.serve(async (req) => {
         Date.now() - new Date(existing.updated_at).getTime() < 10 * 60_000;
 
       if (fresh) {
+        await logEvent(attemptId, "side_eye_pair_reused", {
+          pairingId: existing.id,
+          status: existing.status,
+          ...clientMeta(req),
+        });
         return json({
           pairingId: existing.id,
           pairCode: existing.pair_code,
@@ -152,6 +191,11 @@ Deno.serve(async (req) => {
           .select("*")
           .single();
         if (!error && row) {
+          await logEvent(attemptId, "side_eye_pair_created", {
+            pairingId: row.id,
+            pairCode: row.pair_code,
+            ...clientMeta(req),
+          });
           return json({
             pairingId: row.id,
             pairCode: row.pair_code,
@@ -202,10 +246,10 @@ Deno.serve(async (req) => {
         .from("assessment_side_camera_pairings")
         .update({ status: "paired", paired_at: p.paired_at ?? now, last_seen_at: now })
         .eq("id", p.id);
-      await admin.from("attempt_events").insert({
-        attempt_id: p.attempt_id,
-        kind: "side_eye_connected",
-        payload: { pairingId: p.id } as never,
+      await logEvent(p.attempt_id, "side_eye_connected", {
+        pairingId: p.id,
+        previousStatus: p.status,
+        ...clientMeta(req),
       });
       return json({ ok: true });
     }
@@ -221,10 +265,12 @@ Deno.serve(async (req) => {
           .from("assessment_side_camera_pairings")
           .update({ status: "disconnected" })
           .eq("id", p.id);
-        await admin.from("attempt_events").insert({
-          attempt_id: p.attempt_id,
-          kind: "side_eye_lost",
-          payload: { pairingId: p.id } as never,
+        const meta = clientMeta(req);
+        await logEvent(p.attempt_id, "side_eye_lost", {
+          pairingId: p.id,
+          previousStatus: p.status,
+          source: meta.isBeacon ? "beacon" : "explicit",
+          ...meta,
         });
       }
       return json({ ok: true });
@@ -267,10 +313,13 @@ Deno.serve(async (req) => {
         .select("id");
 
       if (closed && closed.length) {
-        await admin.from("attempt_events").insert({
-          attempt_id: attemptId,
-          kind: "side_eye_closed",
-          payload: { pairingIds: closed.map((r) => r.id), reason: "attempt_ended" } as never,
+        const meta = clientMeta(req);
+        await logEvent(attemptId, "side_eye_closed", {
+          pairingIds: closed.map((r) => r.id),
+          reason: "attempt_ended",
+          source: user ? "authenticated" : meta.isBeacon ? "beacon" : "anonymous",
+          authedUserId: user?.id ?? null,
+          ...meta,
         });
       }
       return json({ ok: true, closed: closed?.length ?? 0 });
@@ -283,8 +332,16 @@ Deno.serve(async (req) => {
       if (!token) return json({ error: "token required" }, 400);
       const p = await findPairing(token);
       if (!p) return json({ error: "not_found" }, 404);
-      if (p.status === "disconnected" || p.status === "expired" || p.status === "closed")
+      if (p.status === "disconnected" || p.status === "expired" || p.status === "closed") {
+        await logEvent(p.attempt_id, "side_eye_upload_rejected", {
+          pairingId: p.id,
+          pairingStatus: p.status,
+          action: "upload",
+          httpStatus: 410,
+          ...clientMeta(req),
+        });
         return json({ error: "pairing_closed" }, 410);
+      }
 
       const body = await req.json().catch(() => null) as { dataUrl?: string } | null;
       const dataUrl = body?.dataUrl;
@@ -628,7 +685,16 @@ Deno.serve(async (req) => {
       if (!isToken(token)) return json({ error: "invalid_token" }, 400);
       const p = await findPairing(token);
       if (!p) return json({ error: "pairing_not_found" }, 404);
-      if (!pairingFresh(p)) return json({ error: "pairing_closed_or_expired" }, 410);
+      if (!pairingFresh(p)) {
+        await logEvent(p.attempt_id, "side_eye_upload_rejected", {
+          pairingId: p.id,
+          pairingStatus: p.status,
+          action: "chunk-upload",
+          httpStatus: 410,
+          ...clientMeta(req),
+        });
+        return json({ error: "pairing_closed_or_expired" }, 410);
+      }
 
       const sessionId = url.searchParams.get("sessionId") ?? "";
       const seqStr = url.searchParams.get("seq") ?? "";
