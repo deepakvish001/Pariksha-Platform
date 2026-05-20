@@ -55,7 +55,7 @@ export function useCreateTargetCompany() {
         .insert({ ...input, user_id: user!.id })
         .select().maybeSingle();
       if (error) throw error;
-      return data as TargetCompany;
+      return data as unknown as TargetCompany;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["target-companies", user?.id] });
