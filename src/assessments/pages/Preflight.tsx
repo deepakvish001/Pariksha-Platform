@@ -669,7 +669,7 @@ export default function Preflight() {
       </div>
     );
   }
-  if (!data || !a) {
+  if (!data) {
     return (
       <div className="min-h-screen grid place-items-center p-6 text-sm text-muted-foreground">
         Attempt not found.
