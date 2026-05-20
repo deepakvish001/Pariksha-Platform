@@ -145,6 +145,10 @@ import Collections from "./pages/platform/Collections";
 import PublicProfile from "./pages/PublicProfile";
 import PlacementReadiness from "./pages/dashboard/PlacementReadiness";
 import TargetCompany from "./pages/dashboard/TargetCompany";
+import Experiences from "./pages/experiences/Experiences";
+import ExperienceDetail from "./pages/experiences/ExperienceDetail";
+import ExperienceSubmit from "./pages/experiences/ExperienceSubmit";
+import ParikshaaExperiences from "@/admin/parikshaa/Experiences";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ArenaLayout } from "@/arena/ArenaLayout";
 import ArenaHome from "@/arena/pages/ArenaHome";
@@ -597,7 +601,13 @@ const App = () => (
                   <Route path="email-preview" element={<ParikshaaEmailPreview />} />
                   <Route path="invite-source-backfill" element={<ParikshaaInviteSourceBackfill />} />
                   <Route path="proctoring" element={<ParikshaaProctoring />} />
+                  <Route path="experiences" element={<ParikshaaExperiences />} />
                 </Route>
+
+                {/* Public Interview Experience Marketplace */}
+                <Route path="/experiences" element={<Experiences />} />
+                <Route path="/experiences/submit" element={<ExperienceSubmit />} />
+                <Route path="/experiences/:id" element={<ExperienceDetail />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
