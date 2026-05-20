@@ -45,6 +45,23 @@ const fmt = (v: string | null | undefined) =>
 export default function SideCamPairings() {
   const [status, setStatus] = useState<Status>("all");
   const [search, setSearch] = useState("");
+  const [openAttempt, setOpenAttempt] = useState<string | null>(null);
+
+  const events = useQuery({
+    queryKey: ["admin-sidecam-events", openAttempt],
+    enabled: !!openAttempt,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("attempt_events")
+        .select("id, kind, payload, created_at")
+        .eq("attempt_id", openAttempt!)
+        .like("kind", "side_eye_%")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-sidecam-pairings", status],
