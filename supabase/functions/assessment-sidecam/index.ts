@@ -165,6 +165,11 @@ Deno.serve(async (req) => {
         Date.now() - new Date(existing.updated_at).getTime() < 10 * 60_000;
 
       if (fresh) {
+        await logEvent(attemptId, "side_eye_pair_reused", {
+          pairingId: existing.id,
+          status: existing.status,
+          ...clientMeta(req),
+        });
         return json({
           pairingId: existing.id,
           pairCode: existing.pair_code,
@@ -183,6 +188,11 @@ Deno.serve(async (req) => {
           .select("*")
           .single();
         if (!error && row) {
+          await logEvent(attemptId, "side_eye_pair_created", {
+            pairingId: row.id,
+            pairCode: row.pair_code,
+            ...clientMeta(req),
+          });
           return json({
             pairingId: row.id,
             pairCode: row.pair_code,
