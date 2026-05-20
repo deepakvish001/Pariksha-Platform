@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ThumbsUp, Eye, MapPin, IndianRupee, Calendar, Building2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ReportExperienceDialog } from "@/components/experiences/ReportExperienceDialog";
+import { ExperienceReportHistory } from "@/components/experiences/ExperienceReportHistory";
 
 const offerColor: Record<string, string> = {
   selected: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
@@ -59,6 +60,10 @@ export default function ExperienceDetail() {
             <p className="text-xs text-muted-foreground mt-1"><span className="font-medium">Note:</span> {exp.moderation_notes}</p>
           )}
         </Card>
+      )}
+
+      {user?.id === exp.user_id && (
+        <ExperienceReportHistory experienceId={exp.id} isAuthor />
       )}
 
       <Card className="p-6 space-y-4">
