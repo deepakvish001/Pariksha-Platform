@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetClose } from "@/components/ui/sheet";
 import {
   Briefcase, ThumbsUp, Eye, Plus, Sparkles, Filter, FileClock, Search, X, Building2, UserSquare2, Calendar,
   Clock, CheckCircle2, XCircle,
