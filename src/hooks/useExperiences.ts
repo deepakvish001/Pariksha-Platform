@@ -135,6 +135,29 @@ export function useSubmitExperience() {
   });
 }
 
+export function useUpdateExperience() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Experience> }) => {
+      // Reset to pending so it re-enters the moderation queue
+      const { data, error } = await supabase
+        .from("interview_experiences")
+        .update({ ...patch, status: "pending", moderation_notes: null } as any)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Resubmitted for review", description: "Moderators will take another look shortly." });
+      qc.invalidateQueries({ queryKey: ["my-experiences"] });
+      qc.invalidateQueries({ queryKey: ["experience"] });
+    },
+    onError: (e: any) => toast({ title: "Update failed", description: e.message, variant: "destructive" }),
+  });
+}
+
 export function useToggleVote() {
   const qc = useQueryClient();
   return useMutation({
