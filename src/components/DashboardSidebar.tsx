@@ -25,6 +25,7 @@ import {
   Gauge,
   Target,
   Briefcase,
+  Mic,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
