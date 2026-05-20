@@ -79,14 +79,21 @@ export default function ParikshaaExperiences() {
         <p className="text-muted-foreground text-sm">Review and approve community-submitted experiences. Approval awards 100 XP.</p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as any)}>
         <TabsList>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="submissions">Submissions</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={tab} className="space-y-4 mt-6">
+        <TabsContent value="submissions" className="mt-6">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+            <TabsList>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={tab} className="space-y-4 mt-6">
           {isLoading ? (
             <Card className="h-40 animate-pulse bg-muted/30" />
           ) : !data?.length ? (
