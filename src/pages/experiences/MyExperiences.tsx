@@ -5,7 +5,7 @@ import { useMyExperiences, type Experience } from "@/hooks/useExperiences";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Plus, ThumbsUp, Eye, Clock, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
+import { Briefcase, Plus, ThumbsUp, Eye, Clock, CheckCircle2, XCircle, ArrowLeft, RefreshCw } from "lucide-react";
 
 const statusMeta: Record<Experience["status"], { label: string; icon: any; cls: string; description: string }> = {
   pending: {
@@ -120,6 +120,14 @@ export default function MyExperiences() {
                   <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1"><ThumbsUp className="size-3.5" />{e.upvotes} upvotes</span>
                     <span className="flex items-center gap-1"><Eye className="size-3.5" />{e.views} views</span>
+                  </div>
+                )}
+
+                {e.status === "rejected" && (
+                  <div className="flex justify-end mt-3">
+                    <Button asChild size="sm" className="gap-2">
+                      <Link to={`/experiences/${e.id}/edit`}><RefreshCw className="size-3.5" /> Edit & resubmit</Link>
+                    </Button>
                   </div>
                 )}
               </Card>
