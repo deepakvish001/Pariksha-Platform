@@ -1194,6 +1194,7 @@ export type Database = {
       assessment_side_camera_pairings: {
         Row: {
           attempt_id: string
+          closed_at: string | null
           created_at: string
           id: string
           last_seen_at: string | null
@@ -1205,6 +1206,7 @@ export type Database = {
         }
         Insert: {
           attempt_id: string
+          closed_at?: string | null
           created_at?: string
           id?: string
           last_seen_at?: string | null
@@ -1216,6 +1218,7 @@ export type Database = {
         }
         Update: {
           attempt_id?: string
+          closed_at?: string | null
           created_at?: string
           id?: string
           last_seen_at?: string | null
