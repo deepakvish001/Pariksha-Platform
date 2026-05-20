@@ -187,6 +187,7 @@ import SystemHealth from "./pages/admin/SystemHealth";
 import CronJobs from "./pages/admin/CronJobs";
 
 import SupportInbox from "./pages/admin/SupportInbox";
+import SideCamPairings from "./pages/admin/SideCamPairings";
 import SecurityCenter from "./pages/admin/SecurityCenter";
 import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
 import LeaderboardsAdmin from "./pages/admin/LeaderboardsAdmin";
