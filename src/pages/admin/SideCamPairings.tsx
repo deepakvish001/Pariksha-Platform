@@ -206,6 +206,16 @@ export default function SideCamPairings() {
                       <TableCell className="text-xs">{fmt(r.paired_at)}</TableCell>
                       <TableCell className="text-xs">{fmt(r.last_seen_at)}</TableCell>
                       <TableCell className="text-xs">{fmt(r.closed_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setOpenAttempt(r.attempt_id)}
+                          title="View attempt events"
+                        >
+                          <ScrollText className="h-3.5 w-3.5 mr-1" /> Events
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
