@@ -137,11 +137,6 @@ export default function MyExperiences() {
             ) : (
               <div key={e.id}>{content}</div>
             );
-            return e.status === "approved" ? (
-              <Link key={e.id} to={`/experiences/${e.id}`}>{content}</Link>
-            ) : (
-              <div key={e.id}>{content}</div>
-            );
           })}
         </div>
       )}
