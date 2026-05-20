@@ -28,6 +28,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <GuestSignupBanner />
           <DelayedLoginPrompt />
           <GuestWelcomeTour />
+          <InvitedAssessmentsBanner />
           {children}
         </SidebarInset>
       </StreakReminderProvider>
