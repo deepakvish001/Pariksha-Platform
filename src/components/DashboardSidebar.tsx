@@ -124,6 +124,10 @@ export function DashboardSidebar() {
   const isCollapsed = state === "collapsed";
   const isGuest = !user;
   const { isAdmin } = useUserRole();
+  const { data: myInvites } = useMyInvites();
+  const pendingTestsCount = (myInvites ?? []).filter(
+    (i: any) => i.status === "pending" || i.status === "claimed",
+  ).length;
   const visibleHomeNavItems = isAdmin
     ? [...homeNavItems, { title: "Admin Panel", url: "/admin", icon: Shield }]
     : homeNavItems;
@@ -333,6 +337,11 @@ export function DashboardSidebar() {
                         <Link to={resolvedUrl} onClick={handleClick} className="group-data-[collapsible=icon]:justify-center">
                           <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
                           <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
+                          {item.url === "/my-tests" && pendingTestsCount > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-[10px] font-semibold min-w-[18px] h-[18px] px-1 group-data-[collapsible=icon]:hidden">
+                              {pendingTestsCount}
+                            </span>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
