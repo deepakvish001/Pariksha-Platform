@@ -32,10 +32,12 @@ export type Experience = {
 };
 
 export type ExperienceFilters = {
+  q?: string;
   company?: string;
   year?: number;
   role?: string;
   experience_type?: Experience["experience_type"];
+  difficulty?: string;
   sort?: "recent" | "top";
 };
 
@@ -52,6 +54,15 @@ export function useExperiences(filters: ExperienceFilters = {}) {
       if (filters.year) q = q.eq("year", filters.year);
       if (filters.role) q = q.ilike("role", `%${filters.role}%`);
       if (filters.experience_type) q = q.eq("experience_type", filters.experience_type);
+      if (filters.difficulty) q = q.ilike("difficulty", filters.difficulty);
+      if (filters.q) {
+        const term = filters.q.replace(/[%,()]/g, "").trim();
+        if (term) {
+          q = q.or(
+            `company_name.ilike.%${term}%,role.ilike.%${term}%,overall_text.ilike.%${term}%,tips.ilike.%${term}%,location.ilike.%${term}%`
+          );
+        }
+      }
 
       q = filters.sort === "top"
         ? q.order("upvotes", { ascending: false }).order("created_at", { ascending: false })
