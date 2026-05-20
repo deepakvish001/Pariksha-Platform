@@ -5,7 +5,7 @@ import { useMyExperiences, type Experience } from "@/hooks/useExperiences";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Plus, ThumbsUp, Eye, Clock, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
+import { Briefcase, Plus, ThumbsUp, Eye, Clock, CheckCircle2, XCircle, ArrowLeft, RefreshCw } from "lucide-react";
 
 const statusMeta: Record<Experience["status"], { label: string; icon: any; cls: string; description: string }> = {
   pending: {
