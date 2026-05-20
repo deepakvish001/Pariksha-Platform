@@ -88,6 +88,7 @@ const Login = () => {
     // Resolve role-based redirect
     const { data: { user } } = await supabase.auth.getUser();
     const dest = from ?? (user ? await getPostLoginPath(user.id) : "/learn");
+    consumeStoredRedirect();
     try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
     navigate(dest, { replace: true });
 
