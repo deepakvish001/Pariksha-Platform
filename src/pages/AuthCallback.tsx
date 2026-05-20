@@ -25,6 +25,15 @@ const AuthCallback = () => {
         }
       } catch { /* ignore */ }
       try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
+      if (!dest) {
+        try {
+          const stored = sessionStorage.getItem("post_login_redirect");
+          if (stored) {
+            dest = stored;
+            sessionStorage.removeItem("post_login_redirect");
+          }
+        } catch { /* ignore */ }
+      }
       if (!dest) dest = await getPostLoginPath(session.user.id);
       navigate(dest, { replace: true });
     };
