@@ -227,6 +227,25 @@ export default function SideCameraPage() {
     };
   }, [token]);
 
+  if (status === "ended") {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-4 flex flex-col items-center justify-center">
+        <Card className="w-full max-w-md shadow-xl border-emerald-500/30">
+          <CardContent className="p-6 text-center space-y-3">
+            <div className="h-12 w-12 mx-auto rounded-full bg-emerald-500/15 grid place-items-center">
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+            </div>
+            <h1 className="text-lg font-bold">Test ended</h1>
+            <p className="text-sm text-muted-foreground">
+              The desktop test has been submitted or closed. Your Third Eye session has ended —
+              you can safely close this tab.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 flex flex-col items-center justify-center">
       <Card className="w-full max-w-md shadow-xl border-primary/30">
