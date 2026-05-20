@@ -682,7 +682,16 @@ Deno.serve(async (req) => {
       if (!isToken(token)) return json({ error: "invalid_token" }, 400);
       const p = await findPairing(token);
       if (!p) return json({ error: "pairing_not_found" }, 404);
-      if (!pairingFresh(p)) return json({ error: "pairing_closed_or_expired" }, 410);
+      if (!pairingFresh(p)) {
+        await logEvent(p.attempt_id, "side_eye_upload_rejected", {
+          pairingId: p.id,
+          pairingStatus: p.status,
+          action: "chunk-upload",
+          httpStatus: 410,
+          ...clientMeta(req),
+        });
+        return json({ error: "pairing_closed_or_expired" }, 410);
+      }
 
       const sessionId = url.searchParams.get("sessionId") ?? "";
       const seqStr = url.searchParams.get("seq") ?? "";
