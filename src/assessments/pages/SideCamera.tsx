@@ -23,7 +23,7 @@ export default function SideCameraPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [status, setStatus] = useState<"idle" | "connecting" | "streaming" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "connecting" | "streaming" | "error" | "ended">("idle");
   const [error, setError] = useState<string | null>(null);
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [framesSent, setFramesSent] = useState(0);
