@@ -64,7 +64,7 @@ export default function ExperienceSubmit() {
       tips: form.tips.trim() || null,
       overall_text: form.overall_text.trim(),
     });
-    navigate("/experiences");
+    navigate("/experiences/mine");
   };
 
   return (

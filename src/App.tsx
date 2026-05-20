@@ -148,6 +148,7 @@ import TargetCompany from "./pages/dashboard/TargetCompany";
 import Experiences from "./pages/experiences/Experiences";
 import ExperienceDetail from "./pages/experiences/ExperienceDetail";
 import ExperienceSubmit from "./pages/experiences/ExperienceSubmit";
+import MyExperiences from "./pages/experiences/MyExperiences";
 import ParikshaaExperiences from "@/admin/parikshaa/Experiences";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ArenaLayout } from "@/arena/ArenaLayout";
@@ -607,6 +608,7 @@ const App = () => (
                 {/* Public Interview Experience Marketplace */}
                 <Route path="/experiences" element={<Experiences />} />
                 <Route path="/experiences/submit" element={<ExperienceSubmit />} />
+                <Route path="/experiences/mine" element={<MyExperiences />} />
                 <Route path="/experiences/:id" element={<ExperienceDetail />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

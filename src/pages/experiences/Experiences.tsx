@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Briefcase, ThumbsUp, Eye, Plus, Sparkles, Filter } from "lucide-react";
+import { Briefcase, ThumbsUp, Eye, Plus, Sparkles, Filter, FileClock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const offerColor: Record<string, string> = {
@@ -36,11 +36,18 @@ export default function Experiences() {
           </h1>
           <p className="text-muted-foreground mt-1">Real stories from real placements. Verified and curated.</p>
         </div>
-        <Button asChild size="lg" className="gap-2">
-          <Link to={user ? "/experiences/submit" : "/auth?redirect=/experiences/submit"}>
-            <Plus className="size-4" /> Share your experience
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {user && (
+            <Button asChild size="lg" variant="outline" className="gap-2">
+              <Link to="/experiences/mine"><FileClock className="size-4" /> My submissions</Link>
+            </Button>
+          )}
+          <Button asChild size="lg" className="gap-2">
+            <Link to={user ? "/experiences/submit" : "/auth?redirect=/experiences/submit"}>
+              <Plus className="size-4" /> Share your experience
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card className="p-4 flex flex-col md:flex-row gap-3 md:items-center">
