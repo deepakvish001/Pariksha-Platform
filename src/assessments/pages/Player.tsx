@@ -196,6 +196,17 @@ export default function Player() {
 
   const submittedRef = useRef(false);
   const debounceRef = useRef<Record<string, number>>({});
+  const closeThirdEye = useCallback(
+    (id: string) => {
+      try {
+        supabase.functions
+          .invoke("assessment-sidecam?action=close-attempt", { body: { attemptId: id } })
+          .catch(() => {});
+      } catch { /* noop */ }
+    },
+    []
+  );
+
   const doSubmit = useCallback(
     async (auto = false) => {
       if (!attemptId) return;
@@ -209,13 +220,14 @@ export default function Player() {
         await submitAttempt.mutateAsync(attemptId);
         setSubmitted(true);
         stopCamStream(auto ? "auto_submit" : "submit");
+        closeThirdEye(attemptId);
         toast.success(auto ? "Time's up — auto-submitted" : "Submitted successfully");
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : "Failed to submit");
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [attemptId, answers, saveAnswer, submitAttempt, stopCamStream]
+    [attemptId, answers, saveAnswer, submitAttempt, stopCamStream, closeThirdEye]
   );
 
   // Release the proctoring webcam as soon as the attempt is no longer active
@@ -224,13 +236,38 @@ export default function Player() {
   useEffect(() => {
     if (submitted) {
       stopCamStream("local_submitted");
+      if (attemptId) closeThirdEye(attemptId);
       return;
     }
     const status = paper?.attempt.status;
     if (status && status !== "in_progress") {
       stopCamStream(`server_status:${status}`);
+      if (attemptId) closeThirdEye(attemptId);
     }
-  }, [submitted, paper, stopCamStream]);
+  }, [submitted, paper, stopCamStream, attemptId, closeThirdEye]);
+
+  // On abnormal exit (tab close, navigation), beacon the server to tear down
+  // the Third Eye phone session so it cannot keep recording.
+  useEffect(() => {
+    if (!attemptId) return;
+    const beaconClose = () => {
+      try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assessment-sidecam?action=close-attempt&attemptId=${encodeURIComponent(attemptId)}`;
+        const blob = new Blob(
+          [JSON.stringify({ attemptId })],
+          { type: "application/json" },
+        );
+        navigator.sendBeacon?.(url, blob);
+      } catch { /* noop */ }
+    };
+    window.addEventListener("pagehide", beaconClose);
+    window.addEventListener("beforeunload", beaconClose);
+    return () => {
+      window.removeEventListener("pagehide", beaconClose);
+      window.removeEventListener("beforeunload", beaconClose);
+    };
+  }, [attemptId]);
+
 
   // Auto-submit hooks (proctoring + timer share the same doSubmit)
   const doSubmitRef = useRef(doSubmit);
