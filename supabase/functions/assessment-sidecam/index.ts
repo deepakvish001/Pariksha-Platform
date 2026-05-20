@@ -243,10 +243,10 @@ Deno.serve(async (req) => {
         .from("assessment_side_camera_pairings")
         .update({ status: "paired", paired_at: p.paired_at ?? now, last_seen_at: now })
         .eq("id", p.id);
-      await admin.from("attempt_events").insert({
-        attempt_id: p.attempt_id,
-        kind: "side_eye_connected",
-        payload: { pairingId: p.id } as never,
+      await logEvent(p.attempt_id, "side_eye_connected", {
+        pairingId: p.id,
+        previousStatus: p.status,
+        ...clientMeta(req),
       });
       return json({ ok: true });
     }
