@@ -610,6 +610,7 @@ const App = () => (
                 <Route path="/experiences" element={<Experiences />} />
                 <Route path="/experiences/submit" element={<ExperienceSubmit />} />
                 <Route path="/experiences/mine" element={<MyExperiences />} />
+                <Route path="/experiences/:id/edit" element={<ExperienceSubmit />} />
                 <Route path="/mock-interview" element={<MockInterview />} />
                 <Route path="/experiences/:id" element={<ExperienceDetail />} />
 
