@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { useExperiences, useMyExperiences, type ExperienceFilters, type Experience } from "@/hooks/useExperiences";
@@ -35,6 +35,16 @@ const difficultyColor: Record<string, string> = {
 export default function Experiences() {
   const { user } = useAuth();
   const [filters, setFilters] = useState<ExperienceFilters>({ sort: "recent" });
+  const [searchInput, setSearchInput] = useState("");
+
+  // Debounce the search input to avoid querying on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setFilters((f) => ({ ...f, q: searchInput.trim() || undefined }));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   const { data, isLoading } = useExperiences(filters);
   const { data: mine } = useMyExperiences(user?.id);
 
@@ -67,7 +77,7 @@ export default function Experiences() {
   const clearAll = () => setFilters({ sort: filters.sort ?? "recent" });
 
   const activeChips: { key: string; label: string; onRemove: () => void }[] = [];
-  if (filters.q) activeChips.push({ key: "q", label: `“${filters.q}”`, onRemove: () => set({ q: undefined }) });
+  if (filters.q) activeChips.push({ key: "q", label: `“${filters.q}”`, onRemove: () => { setSearchInput(""); set({ q: undefined }); } });
   if (filters.company) activeChips.push({ key: "company", label: `Company: ${filters.company}`, onRemove: () => set({ company: undefined }) });
   if (filters.role) activeChips.push({ key: "role", label: `Role: ${filters.role}`, onRemove: () => set({ role: undefined }) });
   if (filters.experience_type) activeChips.push({ key: "type", label: `Type: ${filters.experience_type.replace("_", "-")}`, onRemove: () => set({ experience_type: undefined }) });
@@ -107,8 +117,8 @@ export default function Experiences() {
           <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search company, role, question, tip, location…"
-            value={filters.q ?? ""}
-            onChange={(e) => set({ q: e.target.value || undefined })}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-9"
           />
         </div>
