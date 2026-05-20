@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useExperiences, useMyExperiences, type ExperienceFilters, type Experience } from "@/hooks/useExperiences";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,10 +32,38 @@ const difficultyColor: Record<string, string> = {
   hard: "bg-red-500/15 text-red-500 border-red-500/30",
 };
 
+const VALID_TYPES = ["on_campus", "off_campus", "internship", "referral"] as const;
+const VALID_SORTS = ["recent", "top"] as const;
+
+function filtersFromParams(sp: URLSearchParams): ExperienceFilters {
+  const f: ExperienceFilters = {};
+  const q = sp.get("q"); if (q) f.q = q;
+  const company = sp.get("company"); if (company) f.company = company;
+  const role = sp.get("role"); if (role) f.role = role;
+  const type = sp.get("type"); if (type && (VALID_TYPES as readonly string[]).includes(type)) f.experience_type = type as ExperienceFilters["experience_type"];
+  const difficulty = sp.get("difficulty"); if (difficulty) f.difficulty = difficulty;
+  const year = sp.get("year"); const yn = year ? Number(year) : NaN; if (!Number.isNaN(yn) && yn > 0) f.year = yn;
+  const sort = sp.get("sort"); f.sort = (sort && (VALID_SORTS as readonly string[]).includes(sort) ? sort : "recent") as ExperienceFilters["sort"];
+  return f;
+}
+
+function paramsFromFilters(f: ExperienceFilters): Record<string, string> {
+  const o: Record<string, string> = {};
+  if (f.q) o.q = f.q;
+  if (f.company) o.company = f.company;
+  if (f.role) o.role = f.role;
+  if (f.experience_type) o.type = f.experience_type;
+  if (f.difficulty) o.difficulty = f.difficulty;
+  if (f.year) o.year = String(f.year);
+  if (f.sort && f.sort !== "recent") o.sort = f.sort;
+  return o;
+}
+
 export default function Experiences() {
   const { user } = useAuth();
-  const [filters, setFilters] = useState<ExperienceFilters>({ sort: "recent" });
-  const [searchInput, setSearchInput] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filters, setFilters] = useState<ExperienceFilters>(() => filtersFromParams(searchParams));
+  const [searchInput, setSearchInput] = useState(() => searchParams.get("q") ?? "");
 
   // Debounce the search input to avoid querying on every keystroke.
   useEffect(() => {
@@ -44,6 +72,18 @@ export default function Experiences() {
     }, 250);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  // Reflect current filter state into the URL so the view is shareable/refreshable.
+  useEffect(() => {
+    const next = paramsFromFilters(filters);
+    const current: Record<string, string> = {};
+    searchParams.forEach((v, k) => { current[k] = v; });
+    const same =
+      Object.keys(next).length === Object.keys(current).length &&
+      Object.entries(next).every(([k, v]) => current[k] === v);
+    if (!same) setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   const { data, isLoading } = useExperiences(filters);
   const { data: mine } = useMyExperiences(user?.id);
