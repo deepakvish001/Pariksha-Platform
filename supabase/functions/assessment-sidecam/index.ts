@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
       if (!token) return json({ error: "token required" }, 400);
       const p = await findPairing(token);
       if (!p) return json({ error: "not_found" }, 404);
-      if (p.status === "disconnected" || p.status === "expired")
+      if (p.status === "disconnected" || p.status === "expired" || p.status === "closed")
         return json({ error: "pairing_closed" }, 410);
 
       const body = await req.json().catch(() => null) as { dataUrl?: string } | null;
