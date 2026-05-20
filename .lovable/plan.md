@@ -1,108 +1,67 @@
-# Feature Roadmap: Making Parikshaa Stand Out
+## Goal
 
-Parikshaa already has strong fundamentals (DSA sheets, contests, arena, proctoring, AI assistant, resume tools, roadmaps, college dashboards). Below is a curated set of features that competitors (LeetCode, GFG, InterviewBit, Unstop) lack or do poorly — grouped by impact and effort.
+When a recruiter invites a student to an assessment:
+1. The test should be **visible on the student's dashboard** (not only on `/assessments`).
+2. If the invited person has **no account**, the invite link should let them sign up and land **directly on the test lobby** — no manual hunting.
 
----
+Today neither works well:
+- Invites only appear under `/assessments` (MyAssessments). Nothing surfaces on `/learn`, `/my/college`, or `/b2b/dashboard`.
+- `InviteLanding` / `Join` store `sessionStorage.post_login_redirect`, but **`Login.tsx` and `AuthCallback.tsx` never read it** — so after sign-in users get dumped on their role-based default page instead of bouncing back to the invite.
+- Signup from the invite link doesn't exist (`InviteLanding` only offers "Sign in"). New invitees are pushed to `/login`, told to confirm email, and navigated to `/login` again — losing the invite token.
 
-## Tier 1 — Signature Differentiators (high impact)
+## Changes
 
-### 1. AI Mock Interview Studio (voice + video)
-Live voice interview with an AI interviewer that asks DSA/system-design/HR questions, listens to the candidate's spoken answer, evaluates clarity + correctness, and produces a scorecard with timestamps.
-- Uses Lovable AI Gateway (Gemini 2.5 Pro for reasoning, audio in/out).
-- Replayable transcript, rubric scoring, "weak signal" highlights.
-- Optional peer-mode: pairs two students for human mock.
+### 1. Surface invited tests on the dashboard
 
-### 2. Placement Readiness Score (PRS)
-A single 0–100 score per student computed from: DSA mastery, SRS retention, contest rating, resume score, mock-interview scores, soft-skill signals.
-- Visible to student and (with consent) to college TPO dashboard.
-- Drives Adaptive recommendations and unlocks "Ready to apply" badges.
+Create `src/components/InvitedAssessmentsBanner.tsx`:
+- Uses `useMyInvites()` (already filters via RLS to invites matching the user's email).
+- Shows a compact card listing every invite where `status` is `pending` or `claimed`, with a **Start / Resume** button that calls `claimInvite(token)` and navigates to `/assessments/{attempt.id}/lobby`.
+- Empty state: render nothing.
+- Mount it inside `src/components/DashboardLayout.tsx` (just above `{children}`) so it appears on every authenticated dashboard route (`/learn`, `/my/college`, etc.). For `/b2b/dashboard` (different layout) we'll skip — recruiters viewing their own admin tools is out of scope.
 
-### 3. Company-Targeted Prep Paths
-Pick a target company + role → auto-generated 4/8/12-week plan combining DSA topics, company-tagged questions, OA patterns, behavioral prompts, recent interview experiences.
-- Plan adapts weekly to PRS deltas.
-- Shows "students who cracked X did Y" social proof.
+### 2. Honor the invite redirect on sign in
 
-### 4. Real Interview Experience Marketplace
-Verified students post recent interview rounds (questions, difficulty, rounds, verdict) → earn XP / cash credits. Others upvote/flag.
-- Moderation queue in admin.
-- Tie experiences directly to the question bank.
+In `src/pages/Login.tsx` (both the password and MFA success branches) and `src/pages/AuthCallback.tsx`, before falling back to `getPostLoginPath(user.id)`:
 
----
-
-## Tier 2 — Engagement & Stickiness
-
-### 5. Daily Live Coding Rooms
-Twitch-style rooms where top students or mentors solve a problem live; viewers can fork the editor mid-stream. Recordings become content.
-
-### 6. Squad / Study Group Mode
-Private 3–6 person groups with shared streak, group leaderboard, weekly goals, group chat, accountability nudges.
-
-### 7. Career Timeline & Portfolio Page
-Auto-generated public page (`/u/handle`) showing verifiable achievements: solved problems, contest rating graph, badges, AI-mock scores, projects. Shareable on LinkedIn with an OG image.
-
-### 8. Recruiter / TPO Discovery Search
-Recruiters filter the verified student pool by skill, PRS, college, branch, location → request intros. Monetization channel.
-
----
-
-## Tier 3 — Learning Depth
-
-### 9. Interactive Visualizers for DSA + System Design
-Drag-and-drop visualizers for graphs, trees, DP tables, LRU caches; system-design canvas with components (LB, cache, DB, queue) that auto-explains tradeoffs via AI.
-
-### 10. Code Review Bot on Submissions
-On every accepted submission, AI suggests cleaner idioms, time/space improvements, and a "senior-engineer rewrite" diff.
-
-### 11. Multi-language Skill Trees
-Beyond DSA: Python/Java/SQL/Git/Linux/DevOps mini trees with hands-on terminals (WebContainers) and certificate.
-
-### 12. Spaced-Repetition Flashcards from Mistakes
-Every wrong answer auto-becomes an SRS card; weekly "your weak spots" digest email.
-
----
-
-## Tier 4 — College / B2B Moats
-
-### 13. College Analytics Pro
-Cohort drill-downs: at-risk students, topic heatmaps, predicted placement rate, weekly auto-report email to TPO.
-
-### 14. White-label Mock Drives
-TPOs schedule full mock placement drives (aptitude + coding + interview) with the existing proctoring stack; auto-shortlist by PRS.
-
-### 15. Alumni Network Layer
-Verified alumni connect to current students; mentorship slots bookable in-app.
-
----
-
-## Tier 5 — Trust & Polish
-
-### 16. Verified Skill Badges (cryptographic)
-Signed credentials (Open Badges 3.0 / VC) students can attach to LinkedIn/resume — provably issued by Parikshaa.
-
-### 17. Offline-first PWA + Mobile App Wrapper
-Practice/SRS works offline; sync on reconnect. Bare-minimum mobile shell via Capacitor.
-
-### 18. Accessibility & Localization Pass
-i18n for Hindi/Tamil/Telugu/Bengali (i18n stack already wired), full keyboard nav, screen-reader audit, dyslexia-friendly font toggle.
-
----
-
-## Suggested Build Order
-
-```text
-Phase 1 (4–6 wks): #2 PRS, #3 Company Paths, #7 Portfolio Page
-Phase 2 (4–6 wks): #1 AI Mock Studio, #10 Code Review Bot, #4 Experience Marketplace
-Phase 3 (4 wks):   #6 Squads, #13 College Analytics Pro, #16 Verified Badges
-Phase 4 (ongoing): #5 Live Rooms, #9 Visualizers, #14 White-label Drives, #17 PWA, #18 i18n
+```
+const stored = sessionStorage.getItem("post_login_redirect");
+if (stored) { sessionStorage.removeItem("post_login_redirect"); dest = stored; }
 ```
 
-## Technical notes
-- All AI features route through existing Edge Functions + Lovable AI Gateway (Gemini 2.5 Pro / Flash, GPT-5 for code review).
-- PRS = nightly Edge Function aggregating tables already present (xp, srs, contest_results, resume_score, mock_scores [new]).
-- Mock Studio audio: Gemini live audio; store transcripts in `mock_sessions` table with RLS.
-- Marketplace + Badges need moderation hooks in existing Admin Control Center.
-- Portfolio page reuses existing PublicStudentProfile + JSON-LD SEO infra.
+Order: `from` (router state) → `pendingAuthAction.path` (AuthCallback only) → `post_login_redirect` → role-based default.
 
----
+### 3. Signup-from-invite flow
 
-Tell me which tier or specific features to detail next, and I'll produce an implementation plan for that slice.
+Update `src/assessments/pages/InviteLanding.tsx`:
+- When `!user`, show **two** buttons: "Sign in" (existing) and a new **"Create account & start"** that navigates to `/signup` (the `post_login_redirect` is already set in the existing `useEffect`).
+- Persist the invited email so signup pre-fills it: also write `sessionStorage.setItem("invite_prefill_email", data.invited_email)` and `sessionStorage.setItem("invite_token", token)`.
+
+Update `src/pages/Signup.tsx`:
+- On mount, read `invite_prefill_email` and prefill the `email` field (kept editable but with a small hint "Use this email — it matches your invite").
+- After successful `signUp`:
+  - If `sessionStorage.post_login_redirect` exists, navigate there immediately (works whether or not email confirmation is enabled; if a session is returned by Supabase, the invite flow proceeds; otherwise the user lands on `/login` with the redirect still queued and the existing Login change in step 2 handles it).
+  - Keep the current toast about email confirmation only when no session was returned.
+
+### 4. Minor cleanup
+
+- `Join.tsx` and `InviteLanding.tsx` already set `post_login_redirect`; no change needed beyond step 3's email prefill writes.
+- No DB / RLS / edge-function changes. `useMyInvites` already returns the right rows because `assessment_invites` RLS allows the invited email to read their own row.
+
+## Files touched
+
+- new: `src/components/InvitedAssessmentsBanner.tsx`
+- edit: `src/components/DashboardLayout.tsx` (mount the banner)
+- edit: `src/pages/Login.tsx` (consume `post_login_redirect` in 2 places)
+- edit: `src/pages/AuthCallback.tsx` (consume `post_login_redirect`)
+- edit: `src/assessments/pages/InviteLanding.tsx` (add "Create account & start", stash prefill)
+- edit: `src/pages/Signup.tsx` (prefill email, honor redirect after signup)
+
+## Out of scope
+
+- Auto-confirming email signups (kept as-is; if your project requires confirm-on-email, the redirect still survives because it lives in `sessionStorage` and the Login change picks it up after the user clicks the confirmation link and signs in).
+- Changing how recruiters create invites or send emails.
+- Surfacing invites inside the B2B admin dashboard layout.
+
+## Open question
+
+Do you want me to also **auto-confirm email signups** so an invited student can go straight from "Create account" into the test without an email-verification round trip? It's a one-toggle change but lowers signup security project-wide — say the word and I'll include it.
