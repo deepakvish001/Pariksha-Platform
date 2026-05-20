@@ -17,6 +17,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid } from "@/lib/routing/slug";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
