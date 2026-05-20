@@ -39,7 +39,18 @@ const Login = () => {
       return undefined;
     }
   };
-  const from: string | undefined = stateFrom ?? readPendingPath();
+  const readStoredRedirect = (): string | undefined => {
+    try {
+      const v = sessionStorage.getItem("post_login_redirect");
+      return v ?? undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  const consumeStoredRedirect = () => {
+    try { sessionStorage.removeItem("post_login_redirect"); } catch { /* ignore */ }
+  };
+  const from: string | undefined = stateFrom ?? readPendingPath() ?? readStoredRedirect();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +88,7 @@ const Login = () => {
     // Resolve role-based redirect
     const { data: { user } } = await supabase.auth.getUser();
     const dest = from ?? (user ? await getPostLoginPath(user.id) : "/learn");
+    consumeStoredRedirect();
     try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
     navigate(dest, { replace: true });
 
@@ -106,6 +118,7 @@ const Login = () => {
     toast({ title: "Welcome back!" });
     const { data: { user } } = await supabase.auth.getUser();
     const dest = from ?? (user ? await getPostLoginPath(user.id) : "/learn");
+    consumeStoredRedirect();
     try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
     navigate(dest, { replace: true });
     setMfaVerifying(false);

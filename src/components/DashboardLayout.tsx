@@ -6,6 +6,7 @@ import { useRoutePersistence } from "@/hooks/useRoutePeristence";
 import { GuestSignupBanner } from "@/components/GuestSignupBanner";
 import { DelayedLoginPrompt } from "@/components/DelayedLoginPrompt";
 import { GuestWelcomeTour } from "@/components/GuestWelcomeTour";
+import { InvitedAssessmentsBanner } from "@/components/InvitedAssessmentsBanner";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <GuestSignupBanner />
           <DelayedLoginPrompt />
           <GuestWelcomeTour />
+          <InvitedAssessmentsBanner />
           {children}
         </SidebarInset>
       </StreakReminderProvider>

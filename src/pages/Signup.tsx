@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,10 +19,21 @@ const Signup = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [invitePrefill, setInvitePrefill] = useState<string | null>(null);
 
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const e = sessionStorage.getItem("invite_prefill_email");
+      if (e) {
+        setEmail(e);
+        setInvitePrefill(e);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

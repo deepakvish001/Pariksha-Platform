@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, AlertTriangle, Loader2, LogIn, Mail } from "lucide-react";
+import { ArrowRight, AlertTriangle, Loader2, LogIn, Mail, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +65,15 @@ export default function InviteLanding() {
       sessionStorage.setItem("post_login_redirect", `/assessments/join/${token}`);
     }
   }, [loading, user, token]);
+
+  // Stash invited email so /signup can prefill it.
+  useEffect(() => {
+    if (data?.status === "ok" && data.invited_email) {
+      try {
+        sessionStorage.setItem("invite_prefill_email", data.invited_email);
+      } catch { /* ignore */ }
+    }
+  }, [data]);
 
   const sections: LandingSection[] = useMemo(
     () => (data?.status === "ok" ? data.sections : []),
@@ -142,15 +151,25 @@ export default function InviteLanding() {
             Cancel
           </Button>
           {!user ? (
-            <Button
-              size="sm"
-              className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-              onClick={() => navigate("/login")}
-            >
-              <LogIn className="h-4 w-4 mr-1" />
-              Sign in to start
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/login")}
+              >
+                <LogIn className="h-4 w-4 mr-1" />
+                Sign in
+              </Button>
+              <Button
+                size="sm"
+                className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                onClick={() => navigate("/signup")}
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                Create account & start
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </>
           ) : (
             <Button
               size="sm"
