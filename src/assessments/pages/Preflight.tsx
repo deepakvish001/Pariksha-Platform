@@ -582,9 +582,33 @@ export default function Preflight() {
   }, [stream]);
 
   const a = (data?.assessment ?? null) as
-    | { title?: string; duration_min?: number; proctoring_enabled?: boolean }
+    | {
+        title?: string;
+        description?: string | null;
+        duration_min?: number;
+        proctoring_enabled?: boolean;
+        starts_at?: string | null;
+        ends_at?: string | null;
+        status?: string | null;
+      }
     | null;
   const needsThirdEye = !!a?.proctoring_enabled;
+
+  // Schedule / publish gating (was previously on the Lobby page).
+  const now = Date.now();
+  const startMs = a?.starts_at ? new Date(a.starts_at).getTime() : null;
+  const endMs = a?.ends_at ? new Date(a.ends_at).getTime() : null;
+  const notYetOpen = !!startMs && now < startMs;
+  const closed = !!endMs && now > endMs;
+  const notPublished = !!a?.status && a.status !== "published";
+  const blocked = notYetOpen || closed || notPublished;
+  const blockReason = notPublished
+    ? "This assessment isn't open yet — the recruiter hasn't published it."
+    : notYetOpen
+    ? `This assessment opens on ${new Date(startMs!).toLocaleString()}.`
+    : closed
+    ? `This assessment closed on ${new Date(endMs!).toLocaleString()}.`
+    : null;
 
   // If proctoring is off, drop the Third Eye step from the rail entirely.
   const activeSteps = useMemo(
