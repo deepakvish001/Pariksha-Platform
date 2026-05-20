@@ -474,9 +474,11 @@ function AvStep({
 function ThirdEyeStep({
   attemptId,
   onPass,
+  onUnpaired,
 }: {
   attemptId: string;
   onPass: () => void;
+  onUnpaired?: () => void;
 }) {
   return (
     <StepShell
@@ -485,7 +487,7 @@ function ThirdEyeStep({
     >
       <div className="grid lg:grid-cols-[1fr_1.1fr] gap-4">
         <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-4">
-          <SideCameraPairing attemptId={attemptId} onPaired={onPass} />
+          <SideCameraPairing attemptId={attemptId} onPaired={onPass} onUnpaired={onUnpaired} />
         </div>
         <ol className="space-y-2 text-sm">
           {[
@@ -852,13 +854,20 @@ export default function Preflight() {
                       // have to hunt for the Continue button below the fold.
                       setTimeout(() => goNext(), 600);
                     }}
+                    onUnpaired={() => {
+                      setStateById((prev) => ({ ...prev, thirdeye: "failed" }));
+                      // If the user has moved past Third Eye, bounce them
+                      // back so they're forced to re-pair before starting.
+                      const teIndex = activeSteps.findIndex((s) => s.id === "thirdeye");
+                      if (teIndex >= 0 && current > teIndex) setCurrent(teIndex);
+                    }}
                   />
                 )}
                 {currentId === "ready" && (
                   <ReadyStep
                     title={a.title ?? "Assessment"}
                     durationMin={a.duration_min}
-                    onStart={() => !blocked && setSummaryOpen(true)}
+                    onStart={() => !blocked && stateById["thirdeye"] !== "failed" && setSummaryOpen(true)}
                   />
                 )}
               </div>

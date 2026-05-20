@@ -1,54 +1,34 @@
-## Goal
+# Fix Third Eye disconnect detection
 
-Eliminate the duplicate pre-test page. Today candidates go through **Lobby** (welcome/rules) → **Preflight** ("Secure Assessment Mode" system check + identity + consent) → **Play**. Merge them so there is exactly one screen before the test starts: **Preflight** absorbs the lobby content; Lobby is removed.
+Right now the desktop shows "Third Eye connected" forever after the phone pairs — even if the phone is closed — because:
+
+1. `SideCameraPairing` stops polling as soon as `status === "paired"` (early `return` in the status `useEffect`), so it never sees the DB flip back to `disconnected`.
+2. Preflight auto-advances to the Ready step 600 ms after pair, where the line "Third Eye paired" is hardcoded and never re-checked.
+3. A backend disconnect only happens if the phone fires `pagehide`/`sendBeacon`. If the OS kills the tab silently, there's no signal — we need a `last_seen_at` freshness check too.
 
 ## Changes
 
-### 1. Preflight becomes the single pre-test screen
+### 1. `src/assessments/components/SideCameraPairing.tsx` — keep polling, surface disconnect
+- Remove the early `return` so polling continues after `paired`.
+- On every poll, also compute `isStale = now - last_seen_at > 15s` (server already returns `lastSeenAt`). If stale or `status === "disconnected" | "expired"`, treat as **disconnected**.
+- Add `onUnpaired?: () => void` prop. Fire it whenever we transition out of `paired`.
+- New "disconnected" UI: amber/destructive card — "Third Eye disconnected — reopen the link on your phone" + a **Reconnect** button that calls `createPairing()` again (fresh QR/code).
+- While `paired`, keep current green card but add a tiny "Last seen Xs ago" subtext driven by `last_seen_at`.
 
-Edit `src/assessments/pages/Preflight.tsx`:
-- Add a compact "Welcome" header block at the top of the existing layout containing the bits currently only on Lobby:
-  - Assessment title + short description
-  - Quick facts row (duration, proctored badge, opens/closes window)
-  - "Before you begin" rules list (timer can't pause, keep camera on, no tab switch, ID ready)
-  - Blocked-state warning (not yet open / closed / not published) with the same logic Lobby uses
-- Keep the existing stepper but start it at the first "real" step (system check). The welcome strip sits above the stepper so it reads as context, not a separate step.
-- Disable all "continue / start" CTAs when the assessment is blocked (notYetOpen / closed / notPublished).
-- No change to system check, identity, consent, or start-test logic — just prepend the missing info.
+### 2. `src/assessments/pages/Preflight.tsx` — react to unpair
+- Replace the local `passCurrent`/auto-advance closure for `ThirdEyeStep` with `onPass={...}` and a new `onUnpaired={...}`:
+  - `onPass`: `passCurrent()` + auto-advance after 600 ms (unchanged).
+  - `onUnpaired`: `failCurrent()` (mark thirdeye failed), and if user is past it (`current > thirdeyeIndex`), `setCurrent(thirdeyeIndex)` so they're forced back to re-pair. Also block `Start test` (`canAdvance` already requires `passed`, but extend the `onStart` guard with `!blocked && stateById["thirdeye"] !== "failed"`).
+- In `ReadyStep`'s "Third Eye paired · Camera & mic ready" line, drive the text from `stateById["thirdeye"]` instead of hardcoding — if it ever flips to failed while on Ready, the user gets bounced back by the effect above before reading it anyway, but this avoids a stale flash.
 
-### 2. Remove the Lobby route and file
+### 3. (Optional, server) `supabase/functions/assessment-sidecam/index.ts`
+No edge-function change needed: the `status` action already returns `last_seen_at`, and the upload handler refreshes it on every frame (~5 s cadence). The client-side freshness check (>15 s) is enough to catch silent kills without a backend cron.
 
-- Delete `src/assessments/pages/Lobby.tsx`.
-- In `src/App.tsx`:
-  - Remove the `StudentLobby` import.
-  - Replace the `/assessments/:attemptId/lobby` route with a `<Navigate to="/assessments/:attemptId/preflight" replace />` (or drop it entirely — but a redirect protects any old email links / bookmarks).
+## Out of scope
+- Contest `SideEyeMobile` flow (separate proctor path).
+- Player-side re-pair UI inside `AssessmentLockdownGate` (already has its own logic; not what the user reported).
+- Backend stale-pairing sweeper.
 
-### 3. Point every "start" navigation at preflight
-
-Replace `${attemptId}/lobby` with `${attemptId}/preflight` in:
-- `src/lib/routing/paths.ts` — change `paths.student.lobby` to return `/preflight`, and rename to `paths.student.preflight` if it's not used elsewhere. (Simpler: keep the function name but change the path so we don't ripple a rename through callers — add a small `// kept as 'lobby' for backwards compatibility` comment.)
-- `src/assessments/pages/Join.tsx` (line 28)
-- `src/assessments/pages/InviteLanding.tsx` (line 119)
-- `src/assessments/pages/MyAssessments.tsx` (claim handler)
-- `src/components/InvitedAssessmentsBanner.tsx`
-- `src/pages/MyTests.tsx`
-- `src/b2b/pages/assessments/Landing.tsx` (admin preview button)
-
-### 4. Out of scope
-
-- Contest lobby (`src/components/contests/ContestLobby.tsx`) — unrelated, leave alone.
-- Visual redesign of Preflight beyond inserting the welcome strip.
-- Any RLS / backend changes.
-
-## Files touched
-
-- edit: `src/assessments/pages/Preflight.tsx` (add welcome strip + blocked-state guard)
-- delete: `src/assessments/pages/Lobby.tsx`
-- edit: `src/App.tsx` (remove import, swap route for redirect)
-- edit: `src/lib/routing/paths.ts` (lobby helper → preflight path)
-- edit: `src/assessments/pages/Join.tsx`
-- edit: `src/assessments/pages/InviteLanding.tsx`
-- edit: `src/assessments/pages/MyAssessments.tsx`
-- edit: `src/components/InvitedAssessmentsBanner.tsx`
-- edit: `src/pages/MyTests.tsx`
-- edit: `src/b2b/pages/assessments/Landing.tsx`
+## Files
+- edit `src/assessments/components/SideCameraPairing.tsx`
+- edit `src/assessments/pages/Preflight.tsx`

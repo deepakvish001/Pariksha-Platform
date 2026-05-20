@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
-import { Smartphone, RefreshCw, CheckCircle2, Loader2, Copy } from "lucide-react";
+import { Smartphone, RefreshCw, CheckCircle2, Loader2, Copy, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Props {
   attemptId: string;
   onPaired: () => void;
+  onUnpaired?: () => void;
 }
 
 interface PairingMeta {
@@ -15,17 +16,24 @@ interface PairingMeta {
   pairCode: string;
   pairToken: string;
   status: "pending" | "paired" | "disconnected" | "expired";
+  lastSeenAt?: string | null;
 }
 
+// If we haven't heard from the phone for this long, treat as disconnected.
+const STALE_MS = 15_000;
+
 /**
- * "Third Eye" pairing widget. Shown during lockdown when the assessment
+ * "Third Eye" pairing widget. Shown during preflight when the assessment
  * requires a side-camera. Generates a one-time URL + QR for the candidate's
- * phone to scan; polls for the phone to come online.
+ * phone to scan; polls for the phone status continuously so disconnects
+ * surface immediately.
  */
-export function SideCameraPairing({ attemptId, onPaired }: Props) {
+export function SideCameraPairing({ attemptId, onPaired, onUnpaired }: Props) {
   const [meta, setMeta] = useState<PairingMeta | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const wasPairedRef = useRef(false);
 
   const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assessment-sidecam`;
 
@@ -40,6 +48,7 @@ export function SideCameraPairing({ attemptId, onPaired }: Props) {
   const createPairing = async () => {
     setLoading(true);
     setError(null);
+    wasPairedRef.current = false;
     try {
       const { data, error } = await supabase.functions.invoke("assessment-sidecam?action=pair", {
         body: { attemptId },
@@ -59,10 +68,11 @@ export function SideCameraPairing({ attemptId, onPaired }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptId]);
 
-  // Poll for status until paired
+  // Keep polling status forever (even after paired) so disconnects show live.
   useEffect(() => {
-    if (!meta || meta.status === "paired") return;
-    const id = window.setInterval(async () => {
+    if (!meta) return;
+    let cancelled = false;
+    const poll = async () => {
       try {
         const r = await fetch(
           `${fnUrl}?action=status&token=${encodeURIComponent(meta.pairToken)}`,
@@ -73,16 +83,48 @@ export function SideCameraPairing({ attemptId, onPaired }: Props) {
           },
         );
         const j = await r.json();
-        if (j?.status && j.status !== meta.status) {
-          setMeta({ ...meta, status: j.status });
-          if (j.status === "paired") onPaired();
+        if (cancelled) return;
+        const nextStatus = (j?.status ?? meta.status) as PairingMeta["status"];
+        const nextLastSeen = (j?.lastSeenAt ?? null) as string | null;
+        if (nextStatus !== meta.status || nextLastSeen !== meta.lastSeenAt) {
+          setMeta({ ...meta, status: nextStatus, lastSeenAt: nextLastSeen });
         }
       } catch {
         /* keep polling */
       }
-    }, 2500);
+    };
+    poll();
+    const id = window.setInterval(poll, 2500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [meta, fnUrl]);
+
+  // Tick clock so "Last seen Xs ago" + freshness check stay live.
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [meta, fnUrl, onPaired]);
+  }, []);
+
+  // Derive effective connection state from server status + freshness.
+  const lastSeenMs = meta?.lastSeenAt ? new Date(meta.lastSeenAt).getTime() : 0;
+  const ageMs = lastSeenMs ? nowTick - lastSeenMs : Infinity;
+  const isStale = meta?.status === "paired" && lastSeenMs > 0 && ageMs > STALE_MS;
+  const effectivelyPaired = meta?.status === "paired" && !isStale;
+  const effectivelyDown =
+    meta?.status === "disconnected" || meta?.status === "expired" || isStale;
+
+  // Fire pair/unpair transitions exactly once per change.
+  useEffect(() => {
+    if (effectivelyPaired && !wasPairedRef.current) {
+      wasPairedRef.current = true;
+      onPaired();
+    } else if (!effectivelyPaired && wasPairedRef.current) {
+      wasPairedRef.current = false;
+      onUnpaired?.();
+    }
+  }, [effectivelyPaired, onPaired, onUnpaired]);
 
   if (loading && !meta) {
     return (
@@ -105,7 +147,8 @@ export function SideCameraPairing({ attemptId, onPaired }: Props) {
 
   if (!meta) return null;
 
-  if (meta.status === "paired") {
+  if (effectivelyPaired) {
+    const secs = lastSeenMs ? Math.max(0, Math.round(ageMs / 1000)) : null;
     return (
       <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-4 py-5 flex items-center gap-3">
         <div className="relative h-10 w-10 rounded-full bg-emerald-500/20 grid place-items-center shrink-0">
@@ -118,8 +161,36 @@ export function SideCameraPairing({ attemptId, onPaired }: Props) {
           </div>
           <div className="text-xs text-muted-foreground mt-0.5">
             Keep your phone propped beside you for the entire test.
+            {secs !== null && (
+              <span className="ml-1 opacity-70">· Last frame {secs}s ago</span>
+            )}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (effectivelyDown) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-full bg-amber-500/20 grid place-items-center shrink-0">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+              Third Eye disconnected
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {isStale
+                ? "We stopped receiving frames from your phone. Reopen the link or scan a new QR to reconnect."
+                : "The pairing on your phone was closed. Generate a new QR code to reconnect."}
+            </div>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" onClick={createPairing}>
+          <RefreshCw className="h-4 w-4 mr-1.5" /> Generate new pairing
+        </Button>
       </div>
     );
   }
