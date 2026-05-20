@@ -607,7 +607,7 @@ export default function Preflight() {
   const goBack = () => setCurrent((c) => Math.max(0, c - 1));
 
   const onStart = () => {
-    navigate(`/assessments/${attemptId}/play`);
+    navigate(`/assessments/${data?.id ?? attemptId}/play`);
   };
 
   // Build the summary rows shown in the confirmation modal.
