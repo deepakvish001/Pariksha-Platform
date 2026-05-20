@@ -143,6 +143,8 @@ import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 
 import PublicProfile from "./pages/PublicProfile";
+import PlacementReadiness from "./pages/dashboard/PlacementReadiness";
+import TargetCompany from "./pages/dashboard/TargetCompany";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ArenaLayout } from "@/arena/ArenaLayout";
 import ArenaHome from "@/arena/pages/ArenaHome";
