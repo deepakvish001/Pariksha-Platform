@@ -5436,6 +5436,35 @@ export type Database = {
           },
         ]
       }
+      experience_votes: {
+        Row: {
+          created_at: string
+          experience_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          experience_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          experience_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_votes_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "interview_experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       featured_content: {
         Row: {
           ends_at: string | null
@@ -5594,6 +5623,78 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      interview_experiences: {
+        Row: {
+          company_name: string
+          created_at: string
+          ctc_lpa: number | null
+          difficulty: string
+          experience_type: Database["public"]["Enums"]["experience_type"]
+          id: string
+          location: string | null
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_notes: string | null
+          offer_status: Database["public"]["Enums"]["offer_status"]
+          overall_text: string
+          role: string
+          rounds: Json
+          status: Database["public"]["Enums"]["experience_status"]
+          tips: string | null
+          updated_at: string
+          upvotes: number
+          user_id: string
+          views: number
+          year: number
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          ctc_lpa?: number | null
+          difficulty?: string
+          experience_type?: Database["public"]["Enums"]["experience_type"]
+          id?: string
+          location?: string | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_notes?: string | null
+          offer_status?: Database["public"]["Enums"]["offer_status"]
+          overall_text: string
+          role: string
+          rounds?: Json
+          status?: Database["public"]["Enums"]["experience_status"]
+          tips?: string | null
+          updated_at?: string
+          upvotes?: number
+          user_id: string
+          views?: number
+          year: number
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          ctc_lpa?: number | null
+          difficulty?: string
+          experience_type?: Database["public"]["Enums"]["experience_type"]
+          id?: string
+          location?: string | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_notes?: string | null
+          offer_status?: Database["public"]["Enums"]["offer_status"]
+          overall_text?: string
+          role?: string
+          rounds?: Json
+          status?: Database["public"]["Enums"]["experience_status"]
+          tips?: string | null
+          updated_at?: string
+          upvotes?: number
+          user_id?: string
+          views?: number
+          year?: number
         }
         Relationships: []
       }
@@ -10817,10 +10918,13 @@ export type Database = {
       contest_enforcement_mode: "open" | "standard" | "hard" | "custom"
       drive_status: "upcoming" | "open" | "closed" | "cancelled"
       drive_type: "on_campus" | "pool" | "off_campus" | "virtual"
+      experience_status: "pending" | "approved" | "rejected"
+      experience_type: "on_campus" | "off_campus" | "internship" | "referral"
       friendship_status: "pending" | "accepted" | "blocked"
       integrity_verdict: "pending" | "confirmed" | "disputed" | "inconclusive"
       invite_source: "email" | "link" | "bulk_upload" | "manual" | "api"
       invite_status: "pending" | "claimed" | "submitted" | "expired"
+      offer_status: "selected" | "rejected" | "waitlisted" | "in_progress"
       offer_type: "intern" | "fte" | "ppo"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer" | "proctor"
       org_student_status: "invited" | "active" | "suspended" | "alumni"
@@ -11027,10 +11131,13 @@ export const Constants = {
       contest_enforcement_mode: ["open", "standard", "hard", "custom"],
       drive_status: ["upcoming", "open", "closed", "cancelled"],
       drive_type: ["on_campus", "pool", "off_campus", "virtual"],
+      experience_status: ["pending", "approved", "rejected"],
+      experience_type: ["on_campus", "off_campus", "internship", "referral"],
       friendship_status: ["pending", "accepted", "blocked"],
       integrity_verdict: ["pending", "confirmed", "disputed", "inconclusive"],
       invite_source: ["email", "link", "bulk_upload", "manual", "api"],
       invite_status: ["pending", "claimed", "submitted", "expired"],
+      offer_status: ["selected", "rejected", "waitlisted", "in_progress"],
       offer_type: ["intern", "fte", "ppo"],
       org_member_role: ["owner", "admin", "recruiter", "viewer", "proctor"],
       org_student_status: ["invited", "active", "suspended", "alumni"],
