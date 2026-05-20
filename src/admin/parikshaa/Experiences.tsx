@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Experience } from "@/hooks/useExperiences";
+import { ExperienceReportsQueue } from "./ExperienceReportsQueue";
 
 function useExperiencesByStatus(status: "pending" | "approved" | "rejected") {
   return useQuery({
@@ -30,6 +31,7 @@ function useExperiencesByStatus(status: "pending" | "approved" | "rejected") {
 }
 
 export default function ParikshaaExperiences() {
+  const [topTab, setTopTab] = useState<"submissions" | "reports">("submissions");
   const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
   const { data, isLoading } = useExperiencesByStatus(tab);
   const { user } = useAuth();
@@ -77,14 +79,21 @@ export default function ParikshaaExperiences() {
         <p className="text-muted-foreground text-sm">Review and approve community-submitted experiences. Approval awards 100 XP.</p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as any)}>
         <TabsList>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="submissions">Submissions</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={tab} className="space-y-4 mt-6">
+        <TabsContent value="submissions" className="mt-6">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+            <TabsList>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={tab} className="space-y-4 mt-6">
           {isLoading ? (
             <Card className="h-40 animate-pulse bg-muted/30" />
           ) : !data?.length ? (
@@ -138,6 +147,12 @@ export default function ParikshaaExperiences() {
               </Card>
             ))
           )}
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="reports" className="mt-6">
+          <ExperienceReportsQueue />
         </TabsContent>
       </Tabs>
     </div>

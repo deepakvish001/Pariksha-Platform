@@ -5436,6 +5436,53 @@ export type Database = {
           },
         ]
       }
+      experience_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          experience_id: string
+          id: string
+          reason: Database["public"]["Enums"]["experience_report_reason"]
+          reporter_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["experience_report_status"]
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          experience_id: string
+          id?: string
+          reason: Database["public"]["Enums"]["experience_report_reason"]
+          reporter_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["experience_report_status"]
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          experience_id?: string
+          id?: string
+          reason?: Database["public"]["Enums"]["experience_report_reason"]
+          reporter_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["experience_report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_reports_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "interview_experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experience_votes: {
         Row: {
           created_at: string
@@ -10918,6 +10965,14 @@ export type Database = {
       contest_enforcement_mode: "open" | "standard" | "hard" | "custom"
       drive_status: "upcoming" | "open" | "closed" | "cancelled"
       drive_type: "on_campus" | "pool" | "off_campus" | "virtual"
+      experience_report_reason:
+        | "spam"
+        | "misinformation"
+        | "plagiarism"
+        | "offensive"
+        | "personal_info"
+        | "other"
+      experience_report_status: "open" | "resolved" | "dismissed"
       experience_status: "pending" | "approved" | "rejected"
       experience_type: "on_campus" | "off_campus" | "internship" | "referral"
       friendship_status: "pending" | "accepted" | "blocked"
@@ -11131,6 +11186,15 @@ export const Constants = {
       contest_enforcement_mode: ["open", "standard", "hard", "custom"],
       drive_status: ["upcoming", "open", "closed", "cancelled"],
       drive_type: ["on_campus", "pool", "off_campus", "virtual"],
+      experience_report_reason: [
+        "spam",
+        "misinformation",
+        "plagiarism",
+        "offensive",
+        "personal_info",
+        "other",
+      ],
+      experience_report_status: ["open", "resolved", "dismissed"],
       experience_status: ["pending", "approved", "rejected"],
       experience_type: ["on_campus", "off_campus", "internship", "referral"],
       friendship_status: ["pending", "accepted", "blocked"],

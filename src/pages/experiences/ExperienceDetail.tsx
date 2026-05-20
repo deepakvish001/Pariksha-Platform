@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ThumbsUp, Eye, MapPin, IndianRupee, Calendar, Building2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { ReportExperienceDialog } from "@/components/experiences/ReportExperienceDialog";
 
 const offerColor: Record<string, string> = {
   selected: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
@@ -71,6 +72,9 @@ export default function ExperienceDetail() {
             <ThumbsUp className="size-4" /> {exp.upvotes} {voted ? "Upvoted" : "Upvote"}
           </Button>
           <span className="flex items-center gap-1 text-xs text-muted-foreground"><Eye className="size-3.5" />{exp.views} views</span>
+          <div className="ml-auto">
+            <ReportExperienceDialog experienceId={exp.id} />
+          </div>
         </div>
       </Card>
 
