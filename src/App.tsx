@@ -187,6 +187,7 @@ import SystemHealth from "./pages/admin/SystemHealth";
 import CronJobs from "./pages/admin/CronJobs";
 
 import SupportInbox from "./pages/admin/SupportInbox";
+import SideCamPairings from "./pages/admin/SideCamPairings";
 import SecurityCenter from "./pages/admin/SecurityCenter";
 import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
 import LeaderboardsAdmin from "./pages/admin/LeaderboardsAdmin";
@@ -553,6 +554,7 @@ const App = () => (
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
                   <Route path="sideeye" element={<AdminSideEyeConsole />} />
+                  <Route path="pairings" element={<SideCamPairings />} />
                   <Route path="contests/integrity" element={<AdminIntegrityQueue />} />
                   <Route path="contests/sessions/:sessionId/forensics" element={<AdminSessionForensics />} />
                   <Route path="blog" element={<AdminBlogList />} />
