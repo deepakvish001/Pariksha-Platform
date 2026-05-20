@@ -77,7 +77,7 @@ export default function Experiences() {
   const clearAll = () => setFilters({ sort: filters.sort ?? "recent" });
 
   const activeChips: { key: string; label: string; onRemove: () => void }[] = [];
-  if (filters.q) activeChips.push({ key: "q", label: `“${filters.q}”`, onRemove: () => set({ q: undefined }) });
+  if (filters.q) activeChips.push({ key: "q", label: `“${filters.q}”`, onRemove: () => { setSearchInput(""); set({ q: undefined }); } });
   if (filters.company) activeChips.push({ key: "company", label: `Company: ${filters.company}`, onRemove: () => set({ company: undefined }) });
   if (filters.role) activeChips.push({ key: "role", label: `Role: ${filters.role}`, onRemove: () => set({ role: undefined }) });
   if (filters.experience_type) activeChips.push({ key: "type", label: `Type: ${filters.experience_type.replace("_", "-")}`, onRemove: () => set({ experience_type: undefined }) });
