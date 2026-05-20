@@ -1,6 +1,8 @@
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isUuid } from "@/lib/routing/slug";
+
 import { Button } from "@/components/ui/button";
 import {
   Clock,
@@ -34,13 +36,13 @@ export default function Lobby() {
     queryKey: ["attempt", attemptId],
     enabled: !!attemptId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("assessment_attempts")
         .select(
           "*, assessment:assessments(id,title,description,duration_min,proctoring_enabled,starts_at,ends_at,status)",
-        )
-        .eq("id", attemptId!)
-        .maybeSingle();
+        );
+      q = isUuid(attemptId!) ? q.eq("id", attemptId!) : q.eq("slug", attemptId!);
+      const { data, error } = await q.maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -167,7 +169,7 @@ export default function Lobby() {
                 disabled={blocked}
                 size="lg"
                 className="flex-1 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 h-12"
-                onClick={() => navigate(`/assessments/${attemptId}/preflight`)}
+                onClick={() => navigate(`/assessments/${data.id}/preflight`)}
               >
                 Continue to system check
                 <ArrowRight className="h-4 w-4 ml-1.5" />
