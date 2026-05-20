@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Experience } from "@/hooks/useExperiences";
 import { ExperienceReportsQueue } from "./ExperienceReportsQueue";
+import { ExperienceAuditLog } from "./ExperienceAuditLog";
 
 function useExperiencesByStatus(status: "pending" | "approved" | "rejected") {
   return useQuery({
@@ -31,7 +32,7 @@ function useExperiencesByStatus(status: "pending" | "approved" | "rejected") {
 }
 
 export default function ParikshaaExperiences() {
-  const [topTab, setTopTab] = useState<"submissions" | "reports">("submissions");
+  const [topTab, setTopTab] = useState<"submissions" | "reports" | "audit">("submissions");
   const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
   const { data, isLoading } = useExperiencesByStatus(tab);
   const { user } = useAuth();
@@ -102,6 +103,7 @@ export default function ParikshaaExperiences() {
         <TabsList>
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="audit">Audit log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="submissions" className="mt-6">
@@ -172,6 +174,10 @@ export default function ParikshaaExperiences() {
 
         <TabsContent value="reports" className="mt-6">
           <ExperienceReportsQueue />
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-6">
+          <ExperienceAuditLog />
         </TabsContent>
       </Tabs>
     </div>
