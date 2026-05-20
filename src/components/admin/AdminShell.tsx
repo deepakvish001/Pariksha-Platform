@@ -163,6 +163,7 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/reports", label: "Reports", icon: Flag },
     { to: "/admin/arena-moderation", label: "Arena Moderation", icon: ShieldAlert },
     { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
+    { to: "/admin/pairings", label: "Third Eye Pairings", icon: Smartphone },
   ]},
   { label: "Engagement", items: [
     {
