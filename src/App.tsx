@@ -149,6 +149,7 @@ import Experiences from "./pages/experiences/Experiences";
 import ExperienceDetail from "./pages/experiences/ExperienceDetail";
 import ExperienceSubmit from "./pages/experiences/ExperienceSubmit";
 import MyExperiences from "./pages/experiences/MyExperiences";
+import MockInterview from "./pages/MockInterview";
 import ParikshaaExperiences from "@/admin/parikshaa/Experiences";
 import { AdminRoute } from "@/components/AdminRoute";
 import { ArenaLayout } from "@/arena/ArenaLayout";
