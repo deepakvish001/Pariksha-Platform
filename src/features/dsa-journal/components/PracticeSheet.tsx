@@ -22,6 +22,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import {
   Star,
   Trash2,
   MoreVertical,
@@ -32,6 +39,10 @@ import {
   CheckCircle2,
   RotateCw,
   Save,
+  Info,
+  Tag as TagIcon,
+  Building2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChevronScroller } from "@/components/library/coding/ChevronScroller";
