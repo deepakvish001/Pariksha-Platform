@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -12,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   ExternalLink,
@@ -23,12 +23,22 @@ import {
   Clock,
   Repeat,
   CheckCircle2,
+  Heart,
+  Building2,
+  Code2,
+  CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { JournalEntry } from "../types";
-import { useDeleteEntry } from "../api";
+import {
+  useDeleteEntry,
+  useToggleFavorite,
+  useSnoozeEntry,
+  useMarkMastered,
+} from "../api";
 import EntryForm from "./EntryForm";
 import ReviseDialog from "./ReviseDialog";
+
 
 const diffStyle: Record<string, string> = {
   Easy: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
