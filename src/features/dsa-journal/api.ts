@@ -126,10 +126,12 @@ export const useDueRevisions = () => {
         .select("*")
         .eq("user_id", user!.id)
         .is("mastered_at", null)
+        .is("archived_at", null)
         .not("next_revision_at", "is", null)
         .lte("next_revision_at", today)
+        .or(`snoozed_until.is.null,snoozed_until.lte.${today}`)
         .order("next_revision_at", { ascending: true })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return (data ?? []) as JournalEntry[];
     },
@@ -153,7 +155,16 @@ export interface EntryInput {
   notes_md?: string | null;
   status?: "solved" | "partial" | "stuck";
   tags?: string[];
+  code_snippet?: string | null;
+  language?: string | null;
+  time_complexity?: string | null;
+  space_complexity?: string | null;
+  companies?: string[];
+  confidence?: number | null;
+  is_favorite?: boolean;
+  source?: string | null;
 }
+
 
 export const useCreateEntry = () => {
   const { user } = useAuth();
