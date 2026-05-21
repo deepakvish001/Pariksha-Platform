@@ -1,80 +1,124 @@
-# Rename to DSA Tracker + Upgraded Tracking
+# DSA Tracker — date control, multi-session logging, deeper tracking
 
-## 1. Route + naming
+## 1. Schema additions (one migration)
 
-- Add new route `/learn/dsa-tracker` in `src/App.tsx`, pointing at the existing `JournalPage`.
-- Keep `/learn/dsa-studio/journal` as a permanent redirect (`<Navigate replace to="/learn/dsa-tracker" />`) so existing bookmarks / sidebar history don't break.
-- Update sidebar entry in `src/components/DashboardSidebar.tsx`: title → "DSA Tracker", url → `/learn/dsa-tracker`, keep `NotebookPen` icon.
-- Update DSA Studio shared nav (`_shared.tsx`) "Practice Hub" tab → "DSA Tracker", `to: /learn/dsa-tracker`.
-- Rename in-page text + SEO in `JournalPage.tsx`:
-  - Page `<StudioPageShell title>` → "DSA Tracker"
-  - Section header title/subtitle → "DSA Tracker" / "Track every problem you solve — clean, fast, spreadsheet-style."
-  - `canonicalPath` → `/learn/dsa-tracker`
-- Update guest CTA copy, "Free for students" badge stays.
-- No file renames in `src/features/dsa-journal/*` (folder name kept internal — purely cosmetic rename).
+Add to `practice_journal_entries`:
+- `started_at timestamptz` — when this attempt began
+- `ended_at timestamptz` — when it ended
+- `session_label text` — e.g. `Morning`, `Afternoon`, `Evening`, `Night`, or a custom label
 
-## 2. New tracking features (added inside the same page)
+All nullable, no backfill. Indexed: `idx_pje_user_started (user_id, started_at)`.
 
-All additions live in `JournalPage.tsx` + small new components under `src/features/dsa-journal/components/`. No DB schema changes — we use existing columns (`status`, `solved_clean`, `attempts`, `time_taken_min`, `confidence`, `next_revision_at`, `mastered_at`, `is_favorite`, `tags`, `topic`, `pattern`, `difficulty`).
+Why: schema already supports many entries per day (each row has its own `created_at`), but it can't represent "I solved these between 9–11am" vs "these between 3–5pm". `started_at`/`ended_at` + `session_label` make that explicit, drive grouping, and let `time_taken_min` auto-fill.
 
-### a. Smarter stat strip (replaces current 4 tiles)
-Adds 4 more tiles in a responsive 2 × 4 grid:
-- **Clean-solve rate** — `% of entries with solved_clean = true` (last 30d)
-- **Avg time / problem** — mean of `time_taken_min` (last 30d)
-- **Mastered** — count where `mastered_at not null`
-- **Confidence avg** — mean `confidence` (1–5) with colored bar
+RLS: unchanged — existing user-scoped policies cover the new columns.
 
-### b. Goals & pace ring
-New `GoalsRing.tsx` component:
-- Daily goal (default 3, editable, persisted in `localStorage`)
-- Weekly goal (default 15)
-- Two SVG progress rings showing today vs goal and this-week vs goal
-- "On pace / Behind / Done" pill
+## 2. Date control on the Today tab → renamed "Log" tab
 
-### c. Topic mastery board
-New `TopicMastery.tsx` shown in History tab above the heatmap:
-- Per-topic row: total solved · clean % · mastered count · weakness score
-- Sorted by weakness; click a row to apply that topic as a filter
+Replace the fixed "Today" header with a **Date Navigator**:
 
-### d. Difficulty mix bar
-Thin stacked bar (Easy/Med/Hard) under stat strip with counts + percentages, color-coded.
+```text
+[◀]  Thu, May 21 2026  [📅 pick]  [▶]   [Today]
+```
 
-### e. Revisions tab upgrades
-In `RevisionsBoard.tsx`:
-- Summary header: `X overdue · Y due today · Z this week`
-- "Revise next" button — opens the top overdue entry directly in `ReviseInline`
-- Bulk "Snooze all overdue by 1 day" action
-- Sort toggle: by due date / by difficulty / by confidence
+- Prev/next day buttons.
+- Shadcn `Calendar` popover for arbitrary date (disabled if > today).
+- "Today" jump button.
+- Selected date is held in component state; we call `ensureDay(date)` lazily — only when the user actually adds an entry for that date.
+- Switching date refetches that day's entries via existing `useDayEntries(dayId)`.
 
-### f. Quick-add improvements (Today tab)
-- Paste a LeetCode/Codeforces/GFG URL → auto-detect title + source + difficulty hint (uses existing `source.ts`, extended)
-- Inline keyboard hints row: `Enter` save · `Tab` next field · `⌘K` focus add row
-- Show today's mini-summary chip: "3 solved · 1 partial · 0 stuck · 42 min"
+New hook in `src/features/dsa-journal/api.ts`:
+- `useDayByDate(date)` — fetch the day row for any ISO date (read-only; no auto-insert).
+- `useEnsureDay` stays mutation-only and is called from the add-row.
 
-### g. Activity insights card (Analytics tab)
-New panel:
-- Best day of week (highest avg problems)
-- Best time window (morning/afternoon/evening from `created_at`)
-- Current vs longest streak
-- Hardest topic (lowest clean-rate with ≥ 3 reps)
+## 3. Multi-session logging
 
-### h. Saved filter views (History tab)
-- "Favorites", "Stuck only", "Due this week", "Mastered" preset chips above `FiltersBar` that apply to existing filter state.
+### Session bar (above the sheet on the Log tab)
 
-## 3. Tests / sanity
+```text
+Sessions today:  [🌅 Morning 9–11]  [☀️ Afternoon 2–4]  [🌙 Night 10–11]  [+ New session]
+                  3 solved · 1 partial · 95m            …                  …
+```
 
-- Update `DsaStudio.coverage.test.tsx` only if it asserts on the journal link (it doesn't currently, but verify).
-- Manual smoke: visit `/learn/dsa-studio/journal` → redirects; visit `/learn/dsa-tracker` → loads; sidebar link works; stats compute without errors on empty data.
+- Each chip shows `label`, `start–end` (HH:mm), and a mini summary.
+- Click a chip → filters the sheet to that session and pre-fills `session_label`, `started_at` on new rows.
+- "+ New session" opens a small inline form: label (preset chips Morning/Afternoon/Evening/Night + custom text), start time, optional end time. Saves to a tiny `localStorage` index `dsa-tracker:sessions:<userId>:<date>` so blank sessions persist before any entry is added; once an entry is saved with that session_label/started_at, the row drives the chip.
+- Sessions are **derived from entries** for the chosen date: distinct `session_label` (or auto-bucketed by `started_at` hour) → grouped, ordered by `min(started_at)`.
 
-## Technical notes
+### Sheet grouping on Log tab
 
-- All new metrics are pure `useMemo` reductions over the same `useAllEntries()` data already loaded — no new queries.
-- Goals stored under `localStorage` key `dsa-tracker:goals:v1` (`{daily, weekly}`).
-- New components are presentation-only; no business logic outside derived stats.
-- Keep folder path `src/features/dsa-journal/` to avoid a noisy rename diff; only user-facing strings + route change.
+Render entries grouped by session with collapsible headers. Within each group: existing `PracticeSheet` table. Empty groups show "Add the first problem to this session".
 
-## Out of scope
+### Add-row enhancements
 
-- No DB migrations.
-- No changes to SRS algorithm.
-- No backend logic edits.
+The bottom add-row already exists. Extend it so when a session is active, `session_label` and `started_at` are injected into the insert payload. Also add a small **▶ Start / ■ Stop session timer** button next to the add-row that:
+1. On Start, stamps `started_at = now()` for the next entry.
+2. On Stop, stamps `ended_at = now()`, computes `time_taken_min = round((ended_at - started_at)/60)` and auto-fills it.
+
+No popups — all inline.
+
+## 4. Other "more better" tracking features
+
+### a. Calendar heatmap → click to open that date
+On the History tab, clicking a Heatmap cell sets the Log tab's date to that day and switches tabs.
+
+### b. Time-of-day distribution chart (Analytics)
+Stacked bar 0–23h showing problems solved per hour, grouped by session label. Reuses Recharts already in the project.
+
+### c. Session insights card (Analytics)
+- Avg session length (mins)
+- Avg problems per session
+- Most productive session label (e.g. "Evening — 42% of solves")
+- Longest focus session
+
+### d. Per-day summary strip (Log tab)
+Inline strip showing for the selected date:
+`5 solved · 1 partial · 0 stuck · 145m total focus · 3 sessions`.
+
+### e. Quick-add improvements (carry-over)
+- "+ 3 quick rows" button — adds 3 blank rows pre-filled with the active session.
+- Keyboard shortcut `n` focuses the add-row title input when sheet is focused.
+
+### f. Streak unaffected
+Streak still counts distinct days with ≥1 entry — already correct; backfilling old days now properly increments it.
+
+### g. Past-date entry pill
+When the selected date ≠ today, show an amber pill "Logging for <date>" so the user can't forget they're back-dating. Entries created have `created_at = now()` (audit), but they belong to that date's `day_id`.
+
+## 5. UI surface
+
+| File | Change |
+|---|---|
+| `supabase/migrations/...` | Add `started_at`, `ended_at`, `session_label` + index |
+| `src/features/dsa-journal/types.ts` | Add the 3 fields to `JournalEntry` |
+| `src/features/dsa-journal/api.ts` | `useDayByDate`, accept session fields in `EntryInput`, new `useDateEntries` helper |
+| `src/features/dsa-journal/components/DateNavigator.tsx` | New: prev/next/today + shadcn date picker |
+| `src/features/dsa-journal/components/SessionBar.tsx` | New: chips + "New session" form + active session state |
+| `src/features/dsa-journal/components/SessionTimer.tsx` | New: tiny start/stop timer beside add-row |
+| `src/features/dsa-journal/components/DaySummaryStrip.tsx` | New: inline counts for selected date |
+| `src/features/dsa-journal/components/TimeOfDayChart.tsx` | New: Analytics chart |
+| `src/features/dsa-journal/components/SessionInsights.tsx` | New: Analytics card |
+| `src/features/dsa-journal/components/PracticeSheet.tsx` | Accept `sessionLabel`/`startedAt` props that the add-row uses on insert; support grouping mode (optional `groupBy="session"`) |
+| `src/features/dsa-journal/components/Heatmap.tsx` | Add `onCellClick(date)` callback |
+| `src/pages/learn/dsa-studio/JournalPage.tsx` | Rename Today tab → **Log**; mount DateNavigator + SessionBar + grouped PracticeSheet + DaySummaryStrip; wire Heatmap click → switch to Log tab on that date; add new Analytics cards |
+
+## 6. Out of scope
+
+- No changes to SRS scheduling.
+- No changes to export formats (CSV still exports the new columns automatically since it reads from entry rows).
+- No real-time presence for sessions.
+- No changes to the existing "DSA Tracker" rename / route.
+
+## 7. Notes for the migration step
+
+```sql
+ALTER TABLE public.practice_journal_entries
+  ADD COLUMN IF NOT EXISTS started_at  timestamptz,
+  ADD COLUMN IF NOT EXISTS ended_at    timestamptz,
+  ADD COLUMN IF NOT EXISTS session_label text;
+
+CREATE INDEX IF NOT EXISTS idx_pje_user_started
+  ON public.practice_journal_entries (user_id, started_at);
+```
+
+Migration is approved + run *before* code edits so the types regenerate.

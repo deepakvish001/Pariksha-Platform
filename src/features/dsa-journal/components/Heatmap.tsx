@@ -7,6 +7,7 @@ interface Props {
   /** map of date → number of problems on that date */
   countsByDate: Map<string, number>;
   weeks?: number;
+  onCellClick?: (date: string) => void;
 }
 
 const fmt = (d: Date) => {
@@ -20,7 +21,7 @@ const fmt = (d: Date) => {
  * Simple GitHub-style heatmap for the last N weeks.
  * Intensity binned by problem count: 0 / 1 / 2-3 / 4-6 / 7+.
  */
-export default function Heatmap({ days, countsByDate, weeks = 18 }: Props) {
+export default function Heatmap({ days, countsByDate, weeks = 18, onCellClick }: Props) {
   const grid = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -58,11 +59,14 @@ export default function Heatmap({ days, countsByDate, weeks = 18 }: Props) {
         {grid.map((col, i) => (
           <div key={i} className="flex flex-col gap-[3px]">
             {col.map((cell) => (
-              <div
+              <button
+                type="button"
                 key={cell.date}
+                onClick={() => onCellClick?.(cell.date)}
                 title={`${cell.date} — ${cell.count} problem${cell.count === 1 ? "" : "s"}`}
                 className={cn(
-                  "h-3 w-3 rounded-[2px] border border-border/30",
+                  "h-3 w-3 rounded-[2px] border border-border/30 transition-transform",
+                  onCellClick && "hover:scale-125 hover:border-primary cursor-pointer",
                   cls[bin(cell.count)],
                 )}
               />

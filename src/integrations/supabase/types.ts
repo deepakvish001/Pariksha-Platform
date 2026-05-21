@@ -7034,6 +7034,7 @@ export type Database = {
           day_id: string
           difficulty: string | null
           ease_factor: number
+          ended_at: string | null
           id: string
           interval_days: number
           is_favorite: boolean
@@ -7046,10 +7047,12 @@ export type Database = {
           notes_md: string | null
           pattern: string | null
           personal_difficulty: number | null
+          session_label: string | null
           snoozed_until: string | null
           solved_clean: boolean
           source: string | null
           space_complexity: string | null
+          started_at: string | null
           status: string
           tags: string[]
           time_complexity: string | null
@@ -7070,6 +7073,7 @@ export type Database = {
           day_id: string
           difficulty?: string | null
           ease_factor?: number
+          ended_at?: string | null
           id?: string
           interval_days?: number
           is_favorite?: boolean
@@ -7082,10 +7086,12 @@ export type Database = {
           notes_md?: string | null
           pattern?: string | null
           personal_difficulty?: number | null
+          session_label?: string | null
           snoozed_until?: string | null
           solved_clean?: boolean
           source?: string | null
           space_complexity?: string | null
+          started_at?: string | null
           status?: string
           tags?: string[]
           time_complexity?: string | null
@@ -7106,6 +7112,7 @@ export type Database = {
           day_id?: string
           difficulty?: string | null
           ease_factor?: number
+          ended_at?: string | null
           id?: string
           interval_days?: number
           is_favorite?: boolean
@@ -7118,10 +7125,12 @@ export type Database = {
           notes_md?: string | null
           pattern?: string | null
           personal_difficulty?: number | null
+          session_label?: string | null
           snoozed_until?: string | null
           solved_clean?: boolean
           source?: string | null
           space_complexity?: string | null
+          started_at?: string | null
           status?: string
           tags?: string[]
           time_complexity?: string | null
