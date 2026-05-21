@@ -1,51 +1,164 @@
-## Goal
+## Feature: DSA Practice Journal (working name)
 
-Make the Third Eye phone session terminate cleanly in every end-of-test path, and make re-pairing from a fresh QR rock-solid. Three things must always be true:
+A free, login-gated tracker where students log every problem they solve each day, schedule revisions, and watch their consistency + mastery improve over time.
 
-1. When the candidate submits (manual, auto-submit, or timer expiry) → phone screen flips to "Test ended", camera + recorder stop, no more uploads.
-2. When the test tab closes/crashes/navigates away → same thing happens within ~15 s.
-3. From the desktop preflight, the candidate can always generate a brand-new QR if their phone got disconnected, expired, or the previous attempt ended.
+Naming options (pick one in chat):
+- **DSA Practice Journal** (recommended — calm, study-diary vibe)
+- **Grind Log**
+- **Solve Diary**
+- **DSA Daybook**
 
-Today, only #3 partially works (Generate new pairing button exists), and the phone happily keeps recording 165 s chunks even after the desktop has submitted.
+I'll use *Practice Journal* below.
 
-## Files to change
+---
+
+### 1. Core concept
+
+Two linked entities:
+
+1. **Day Log** — one row per calendar date the student studied.
+2. **Problem Entry** — many problems attached to a Day Log. Each problem carries its own attempts history and revision schedule.
 
 ```text
-supabase/functions/assessment-sidecam/index.ts   (edit – new action + richer status)
-src/assessments/pages/SideCamera.tsx              (edit – react to "closed" + poll attempt)
-src/assessments/pages/Player.tsx                  (edit – close pairing on submit + unload)
-src/assessments/components/SideCameraPairing.tsx  (edit – treat "closed" as terminal)
-supabase/migrations/<new>.sql                     (add 'closed' to pairing status check)
+DayLog (2026-05-21)
+ ├─ ProblemEntry: "Two Sum"   → attempts[…], revisions[…], notes, tags
+ ├─ ProblemEntry: "3Sum"      → …
+ └─ ProblemEntry: "Trapping Rain Water" → …
 ```
 
-## Behaviour
+---
 
-### Phone (`/assessments/sidecam/:token`)
-- After `start()`, every 8 s call `action=status`. Server now also returns `attemptStatus` (from `assessment_attempts.status`) and pairing `status`.
-- If pairing status is `closed`/`disconnected`/`expired` OR attempt status is anything other than `in_progress` → stop video tracks, stop MediaRecorder, clear upload interval, show a green "Test ended — you can close this tab" screen.
-- The `upload` and `chunk-upload` 410 responses already exist; phone treats them the same way (defensive — covers the case where the poll hasn't fired yet).
-- Replace `pagehide` `sendBeacon` with a `pagehide` **and** `visibilitychange→hidden` beacon, so backgrounded tabs also disconnect.
+### 2. Fields captured per Problem Entry
 
-### Edge function
-- New action `close-attempt` (POST, requires bearer JWT). Validates `auth.uid()` owns the attempt (or is org staff), then:
-  - `update assessment_side_camera_pairings set status='closed', closed_at=now() where attempt_id=$1 and status in ('pending','paired')`
-  - inserts an `attempt_events` row `kind='side_eye_closed'`.
-- `status` action: also return `attemptStatus` (look up the attempt). No token-owner check needed beyond the pairing match we already do.
-- `upload`/`chunk-upload`: keep current 410 behaviour but extend `pairingFresh` to reject `'closed'` too.
+Required:
+- Title, link(s) (supports multiple — LeetCode + GFG + YouTube)
+- Topic (Array, Graph, DP…) and Pattern (Sliding Window, Two Pointers…)
+- Algorithm/approach used (free text + optional tags)
+- Difficulty (Easy / Medium / Hard) + personal difficulty (1–5 stars)
+- Time taken to solve correctly (minutes)
+- Number of attempts before clean solve
+- Solved cleanly in one attempt? (boolean — feeds mastery score)
+- Mistakes made (free text)
+- Key learning / takeaway (free text)
+- Notes (markdown, reuses existing `NotesPanel` component)
+- Status: Solved / Partial / Stuck-needs-revisit
+- Next revision date (auto-suggested via SM-2 spaced repetition; editable)
 
-### Desktop player
-- `doSubmit()` success path → `supabase.functions.invoke('assessment-sidecam?action=close-attempt', { body: { attemptId } })` (fire-and-forget, no await blocking the UI).
-- Add a window `pagehide` / `beforeunload` listener that fires `navigator.sendBeacon` to the same close-attempt URL with the attempt id, so abnormal exits also tear down the phone.
-- Also call it once when the existing "attempt status moved out of in_progress" effect fires (covers admin-cancel, timeout-on-server, etc.).
+Each **Revision** appended later stores: date, attempts, time taken, solved-cleanly flag, short note. The entry is considered "mastered" once it's solved cleanly in one attempt on a revision.
 
-### Preflight pairing widget
-- `SideCameraPairing` already shows "Generate new pairing" when `disconnected`/`expired`/stale. Add `'closed'` to the same bucket so a freshly-arrived candidate whose previous attempt was submitted from another tab can immediately scan a new QR.
+---
 
-### Migration
-- `alter table public.assessment_side_camera_pairings drop constraint … add constraint check (status in ('pending','paired','disconnected','expired','closed'))`.
-- Add `closed_at timestamptz` column.
+### 3. Pages & routes
 
-## Out of scope
-- Contest `SideEye*` flow (separate code path, separate plan).
-- Replaying side-cam chunks; we only stop new ones.
-- Background cron sweep of stale pairings — phone-side poll + `pagehide` beacon are enough for the end-of-test guarantee.
+| Route | Purpose |
+|---|---|
+| `/learn/dsa-studio/journal` | Dashboard: streak, today's log, due revisions, weekly heatmap |
+| `/learn/dsa-studio/journal/day/:date` | Single day detail — add/edit problem entries |
+| `/learn/dsa-studio/journal/problem/:id` | Problem detail — full attempts + revisions timeline |
+| `/learn/dsa-studio/journal/revisions` | All upcoming + overdue revisions |
+| `/learn/dsa-studio/journal/analytics` | Charts: topics distribution, weak patterns, mastery curve |
+
+Added under existing DSA Studio shell, alongside Patterns / Tricks / Edge.
+
+---
+
+### 4. Dashboard layout
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  Streak: 12d 🔥   This week: 18 problems   Due today: 4 │
+├──────────────────────────┬──────────────────────────────┤
+│  Today (2026-05-21)      │  Due Revisions               │
+│  [+ Add problem]         │  • Two Sum   (overdue 1d)    │
+│  • 3Sum         ⭐⭐⭐   │  • LRU Cache (today)         │
+│  • Word Ladder  ⭐⭐⭐⭐ │  • …                         │
+├──────────────────────────┴──────────────────────────────┤
+│  Heatmap (last 90 days, GitHub-style)                   │
+├─────────────────────────────────────────────────────────┤
+│  Quick stats: Topic mix · Pattern mix · Avg attempts    │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5. Spaced revision
+
+Reuse the existing SM-2 logic (see `mem://features/quizzes/unified-system`). Cadence based on the *clean-solve* flag of the most recent attempt:
+- Solved cleanly → push next revision further (1d → 3d → 7d → 16d → 35d…)
+- Not clean → reset interval to 1d
+- "Mastered" when 3 consecutive clean solves at increasing intervals.
+
+---
+
+### 6. Analytics view
+
+- Problems solved per day (bar)
+- Topic & pattern distribution (donut)
+- Difficulty mix per week (stacked bar)
+- Weakest patterns (lowest clean-solve %) — actionable
+- Average attempts trend (line — should drop over time)
+
+---
+
+### 7. Free access
+
+No paywall. Available to any signed-in student. Guests see a teaser + login prompt (reuse existing `mem://auth/delayed-login-prompt` patterns).
+
+---
+
+### Technical section
+
+**Database (new migration):**
+
+```sql
+-- One row per (user, date)
+practice_journal_days(
+  id uuid pk, user_id uuid, log_date date,
+  mood smallint null, focus_minutes int null, summary text null,
+  unique(user_id, log_date)
+)
+
+-- Problems logged on a given day
+practice_journal_entries(
+  id uuid pk, user_id uuid, day_id uuid fk → days,
+  title text, links jsonb default '[]',  -- [{label, url}]
+  topic text, pattern text, algorithm text,
+  difficulty text check (...), personal_difficulty smallint,
+  time_taken_min int, attempts int default 1,
+  solved_clean boolean default false,
+  mistakes text, learnings text, notes_md text,
+  status text check (...) default 'solved',
+  tags text[] default '{}',
+  next_revision_at date,
+  ease_factor real default 2.5, interval_days int default 1,
+  mastered_at timestamptz
+)
+
+-- Each repeat practice of an entry
+practice_journal_revisions(
+  id uuid pk, user_id uuid, entry_id uuid fk → entries,
+  revised_on date, attempts int, time_taken_min int,
+  solved_clean boolean, note text
+)
+```
+
+RLS: `user_id = auth.uid()` for select/insert/update/delete on all three tables. Indexes on `(user_id, log_date)`, `(user_id, next_revision_at)`, `(entry_id)`.
+
+**Frontend:**
+- New folder `src/features/dsa-journal/` with hooks (`useDayLog`, `useEntries`, `useDueRevisions`), components (`EntryForm`, `EntryCard`, `RevisionDialog`, `Heatmap`, `AnalyticsCharts` using Recharts already in project), and page files under `src/pages/learn/dsa-studio/journal/`.
+- Reuse: `NotesPanel` (markdown editor), existing heatmap from `mem://features/progress/tracking`, SM-2 helpers from quizzes, `shadcn` Form + zod validation, `shadcn` DatePicker.
+- Add nav entry in DSA Studio shell + sidebar (under Home group, matching existing access rules).
+
+**Out of scope (v1):** team/cohort sharing, public profile cards, AI auto-tagging of topic/pattern (can add v2 using Gemini via existing edge function), CSV import.
+
+---
+
+### Build phases
+
+1. Migration + RLS + types regen.
+2. Day dashboard + entry CRUD form (the meat).
+3. Revision engine + due-list page.
+4. Analytics charts.
+5. Sidebar/nav integration + empty states + guest teaser.
+
+Confirm the name and I'll start with phase 1.

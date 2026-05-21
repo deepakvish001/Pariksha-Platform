@@ -6989,6 +6989,172 @@ export type Database = {
         }
         Relationships: []
       }
+      practice_journal_days: {
+        Row: {
+          created_at: string
+          focus_minutes: number | null
+          id: string
+          log_date: string
+          mood: number | null
+          summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          focus_minutes?: number | null
+          id?: string
+          log_date: string
+          mood?: number | null
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          focus_minutes?: number | null
+          id?: string
+          log_date?: string
+          mood?: number | null
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      practice_journal_entries: {
+        Row: {
+          algorithm: string | null
+          attempts: number
+          created_at: string
+          day_id: string
+          difficulty: string | null
+          ease_factor: number
+          id: string
+          interval_days: number
+          learnings: string | null
+          links: Json
+          mastered_at: string | null
+          mistakes: string | null
+          next_revision_at: string | null
+          notes_md: string | null
+          pattern: string | null
+          personal_difficulty: number | null
+          solved_clean: boolean
+          status: string
+          tags: string[]
+          time_taken_min: number | null
+          title: string
+          topic: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          algorithm?: string | null
+          attempts?: number
+          created_at?: string
+          day_id: string
+          difficulty?: string | null
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          learnings?: string | null
+          links?: Json
+          mastered_at?: string | null
+          mistakes?: string | null
+          next_revision_at?: string | null
+          notes_md?: string | null
+          pattern?: string | null
+          personal_difficulty?: number | null
+          solved_clean?: boolean
+          status?: string
+          tags?: string[]
+          time_taken_min?: number | null
+          title: string
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          algorithm?: string | null
+          attempts?: number
+          created_at?: string
+          day_id?: string
+          difficulty?: string | null
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          learnings?: string | null
+          links?: Json
+          mastered_at?: string | null
+          mistakes?: string | null
+          next_revision_at?: string | null
+          notes_md?: string | null
+          pattern?: string | null
+          personal_difficulty?: number | null
+          solved_clean?: boolean
+          status?: string
+          tags?: string[]
+          time_taken_min?: number | null
+          title?: string
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_journal_entries_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "practice_journal_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_journal_revisions: {
+        Row: {
+          attempts: number
+          created_at: string
+          entry_id: string
+          id: string
+          note: string | null
+          revised_on: string
+          solved_clean: boolean
+          time_taken_min: number | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          entry_id: string
+          id?: string
+          note?: string | null
+          revised_on?: string
+          solved_clean?: boolean
+          time_taken_min?: number | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          entry_id?: string
+          id?: string
+          note?: string | null
+          revised_on?: string
+          solved_clean?: boolean
+          time_taken_min?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_journal_revisions_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "practice_journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proctoring_purge_runs: {
         Row: {
           error: string | null

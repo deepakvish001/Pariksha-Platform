@@ -83,6 +83,7 @@ import DsaStudioPattern from "./pages/learn/DsaStudioPattern";
 import DsaStudioPatternsPage from "./pages/learn/dsa-studio/PatternsPage";
 import DsaStudioTricksPage from "./pages/learn/dsa-studio/TricksPage";
 import DsaStudioEdgePage from "./pages/learn/dsa-studio/EdgePage";
+import DsaStudioJournalPage from "./pages/learn/dsa-studio/JournalPage";
 
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
@@ -394,6 +395,7 @@ const App = () => (
                   <Route path="dsa-studio/patterns" element={<DsaStudioPatternsPage />} />
                   <Route path="dsa-studio/tricks" element={<DsaStudioTricksPage />} />
                   <Route path="dsa-studio/edge" element={<DsaStudioEdgePage />} />
+                  <Route path="dsa-studio/journal" element={<DsaStudioJournalPage />} />
                   <Route path="dsa-studio/pattern/:patternId" element={<DsaStudioPattern />} />
                   <Route path="dsa-studio/:slug" element={<DsaStudioProblem />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
