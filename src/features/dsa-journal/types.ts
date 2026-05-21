@@ -1,5 +1,15 @@
 export type Difficulty = "Easy" | "Medium" | "Hard";
 export type EntryStatus = "solved" | "partial" | "stuck";
+export type Language =
+  | "Python"
+  | "C++"
+  | "Java"
+  | "JavaScript"
+  | "TypeScript"
+  | "Go"
+  | "Rust"
+  | "C#"
+  | "Other";
 
 export interface JournalLink {
   label: string;
@@ -9,7 +19,7 @@ export interface JournalLink {
 export interface JournalDay {
   id: string;
   user_id: string;
-  log_date: string; // YYYY-MM-DD
+  log_date: string;
   mood: number | null;
   focus_minutes: number | null;
   summary: string | null;
@@ -42,6 +52,17 @@ export interface JournalEntry {
   mastered_at: string | null;
   created_at: string;
   updated_at: string;
+  // Practice Hub additions
+  code_snippet: string | null;
+  language: Language | null;
+  time_complexity: string | null;
+  space_complexity: string | null;
+  companies: string[];
+  confidence: number | null;
+  is_favorite: boolean;
+  snoozed_until: string | null;
+  source: string | null;
+  archived_at: string | null;
 }
 
 export interface JournalRevision {
