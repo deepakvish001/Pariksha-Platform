@@ -78,6 +78,25 @@ export const useDays = (limit = 90) => {
   });
 };
 
+/** Read-only lookup of a day row by ISO date (yyyy-mm-dd). Returns null if no row yet. */
+export const useDayByDate = (date: string | null) => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["dsa-journal", "day-by-date", date],
+    enabled: !!user && !!date,
+    queryFn: async (): Promise<JournalDay | null> => {
+      const { data, error } = await supabase
+        .from(TABLES.days as any)
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("log_date", date!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as JournalDay | null;
+    },
+  });
+};
+
 export const useDayEntries = (dayId: string | null) => {
   const { user } = useAuth();
   return useQuery({
