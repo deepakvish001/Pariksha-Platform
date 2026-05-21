@@ -71,6 +71,10 @@ interface Props {
   showDateCol?: boolean;
   loading?: boolean;
   emptyHint?: string;
+  /** When set, new rows are stamped with this session label. */
+  sessionLabel?: string | null;
+  /** When set, new rows use this ISO timestamp as started_at. */
+  sessionStartedAt?: string | null;
 }
 
 // ----- Column help copy (shown in header tooltips) -----
@@ -163,6 +167,8 @@ export default function PracticeSheet({
   showDateCol = true,
   loading,
   emptyHint = "No entries yet — add your first solve in the row below.",
+  sessionLabel = null,
+  sessionStartedAt = null,
 }: Props) {
   const update = useUpdateEntry();
   const remove = useDeleteEntry();
@@ -243,7 +249,12 @@ export default function PracticeSheet({
                 ))
               )}
               {showAddRow && dayId && (
-                <DraftRow dayId={dayId} showDateCol={showDateCol} />
+                <DraftRow
+                  dayId={dayId}
+                  showDateCol={showDateCol}
+                  sessionLabel={sessionLabel}
+                  sessionStartedAt={sessionStartedAt}
+                />
               )}
             </tbody>
           </table>
@@ -965,9 +976,13 @@ function TitleCell({
 function DraftRow({
   dayId,
   showDateCol,
+  sessionLabel,
+  sessionStartedAt,
 }: {
   dayId: string;
   showDateCol: boolean;
+  sessionLabel?: string | null;
+  sessionStartedAt?: string | null;
 }) {
   const create = useCreateEntry();
   const [title, setTitle] = useState("");
@@ -1007,6 +1022,8 @@ function DraftRow({
       attempts: Math.max(1, Number(attempts) || 1),
       time_taken_min: time === "" ? null : Math.max(0, Number(time)),
       source: detectSource(url) ?? null,
+      session_label: sessionLabel || null,
+      started_at: sessionStartedAt || null,
     });
     reset();
   };
