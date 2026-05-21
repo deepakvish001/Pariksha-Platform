@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { format, parseISO, differenceInCalendarDays } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import { format, parseISO, differenceInCalendarDays, isToday } from "date-fns";
 import {
   BookMarked,
   Flame,
@@ -23,7 +23,9 @@ import {
   useDayEntries,
   useAllEntries,
   useDueRevisions,
-  useTodayDay,
+  useDayByDate,
+  useEnsureDay,
+  useUpdateEntry,
 } from "@/features/dsa-journal/api";
 import Heatmap from "@/features/dsa-journal/components/Heatmap";
 import Analytics from "@/features/dsa-journal/components/Analytics";
@@ -33,6 +35,11 @@ import GoalsRing from "@/features/dsa-journal/components/GoalsRing";
 import TopicMastery from "@/features/dsa-journal/components/TopicMastery";
 import DifficultyMix from "@/features/dsa-journal/components/DifficultyMix";
 import ActivityInsights from "@/features/dsa-journal/components/ActivityInsights";
+import DateNavigator from "@/features/dsa-journal/components/DateNavigator";
+import SessionBar, { groupBySession } from "@/features/dsa-journal/components/SessionBar";
+import DaySummaryStrip from "@/features/dsa-journal/components/DaySummaryStrip";
+import TimeOfDayChart from "@/features/dsa-journal/components/TimeOfDayChart";
+import SessionInsights from "@/features/dsa-journal/components/SessionInsights";
 import {
   FiltersBar,
   applyFilters,
@@ -60,8 +67,8 @@ export default function JournalPage() {
           <div className="text-center py-10 space-y-3">
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Sign in to start tracking every problem you solve in a clean
-              spreadsheet view. Capture mistakes, learnings, code — and let
-              spaced revisions bring weak topics back at the right time.
+              spreadsheet view. Log multiple study sessions across the day,
+              back-date entries, and let spaced revisions resurface weak topics.
             </p>
             <Button asChild>
               <Link to="/login">Sign in to start tracking</Link>
@@ -72,21 +79,64 @@ export default function JournalPage() {
     );
   }
 
-  return <PracticeHubSignedIn />;
+  return <DsaTrackerSignedIn />;
 }
 
-function PracticeHubSignedIn() {
+function DsaTrackerSignedIn() {
   const days = useDays();
   const allEntries = useAllEntries();
   const due = useDueRevisions();
-  const { todayRow, today, ensureToday, ensuring } = useTodayDay();
-  const todayEntries = useDayEntries(todayRow?.id ?? null);
+  const ensureDay = useEnsureDay();
+  const updateEntry = useUpdateEntry();
+
+  // Active date for the Log tab.
+  const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [activeTab, setActiveTab] = useState("log");
+
+  const dayQuery = useDayByDate(selectedDate);
+  const selectedDayId = dayQuery.data?.id ?? null;
+  const dayEntries = useDayEntries(selectedDayId);
+
+  // Active session + timer (per-day, kept in localStorage so refresh survives)
+  const [activeSession, setActiveSession] = useState<string | null>(null);
+  const [timerStartedAt, setTimerStartedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`dsa-tracker:session:${selectedDate}`);
+      if (raw) {
+        const v = JSON.parse(raw);
+        setActiveSession(v.label ?? null);
+        setTimerStartedAt(v.timerStartedAt ?? null);
+      } else {
+        setActiveSession(null);
+        setTimerStartedAt(null);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        `dsa-tracker:session:${selectedDate}`,
+        JSON.stringify({ label: activeSession, timerStartedAt }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [selectedDate, activeSession, timerStartedAt]);
+
+  // Re-render every minute so the timer label updates.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!timerStartedAt) return;
+    const id = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, [timerStartedAt]);
 
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
-
-  const onEnsureToday = async () => {
-    if (!todayRow) await ensureToday();
-  };
 
   const streak = useMemo(() => {
     if (!days.data) return 0;
@@ -127,7 +177,6 @@ function PracticeHubSignedIn() {
     return countsByDate.get(t) ?? 0;
   }, [countsByDate]);
 
-  // Advanced stats (last 30d)
   const advanced = useMemo(() => {
     const all = allEntries.data ?? [];
     const cutoff = new Date();
@@ -153,34 +202,74 @@ function PracticeHubSignedIn() {
     [allEntries.data, filters],
   );
 
-  // Preset filter chips
   const presets: { label: string; active: boolean; apply: () => void }[] = [
-    {
-      label: "★ Favorites",
-      active: filters.favoritesOnly,
-      apply: () => setFilters({ ...defaultFilters, favoritesOnly: true }),
-    },
-    {
-      label: "Stuck only",
-      active: filters.status === "stuck",
-      apply: () => setFilters({ ...defaultFilters, status: "stuck" }),
-    },
-    {
-      label: "Due soon",
-      active: filters.sort === "due-soon",
-      apply: () => setFilters({ ...defaultFilters, sort: "due-soon" }),
-    },
-    {
-      label: "✓ Mastered",
-      active: filters.masteredOnly,
-      apply: () => setFilters({ ...defaultFilters, masteredOnly: true }),
-    },
-    {
-      label: "Hardest first",
-      active: filters.sort === "hardest",
-      apply: () => setFilters({ ...defaultFilters, sort: "hardest" }),
-    },
+    { label: "★ Favorites", active: filters.favoritesOnly, apply: () => setFilters({ ...defaultFilters, favoritesOnly: true }) },
+    { label: "Stuck only", active: filters.status === "stuck", apply: () => setFilters({ ...defaultFilters, status: "stuck" }) },
+    { label: "Due soon", active: filters.sort === "due-soon", apply: () => setFilters({ ...defaultFilters, sort: "due-soon" }) },
+    { label: "✓ Mastered", active: filters.masteredOnly, apply: () => setFilters({ ...defaultFilters, masteredOnly: true }) },
+    { label: "Hardest first", active: filters.sort === "hardest", apply: () => setFilters({ ...defaultFilters, sort: "hardest" }) },
   ];
+
+  // ---------- Log tab handlers ----------
+
+  const ensureSelectedDay = async () => {
+    if (selectedDayId) return selectedDayId;
+    const row = await ensureDay.mutateAsync(selectedDate);
+    return row.id;
+  };
+
+  const handleStartTimer = async () => {
+    if (!activeSession) return;
+    await ensureSelectedDay();
+    setTimerStartedAt(new Date().toISOString());
+  };
+
+  const handleStopTimer = async () => {
+    if (!timerStartedAt) return;
+    const endIso = new Date().toISOString();
+    const startMs = new Date(timerStartedAt).getTime();
+    const endMs = Date.parse(endIso);
+    const elapsedMin = Math.max(1, Math.round((endMs - startMs) / 60000));
+
+    // Auto-stamp ended_at + time_taken_min on entries from this timer window.
+    const active = (dayEntries.data ?? []).filter(
+      (e) =>
+        e.session_label === activeSession &&
+        e.started_at &&
+        e.started_at >= timerStartedAt &&
+        !e.ended_at,
+    );
+    await Promise.all(
+      active.map((e) =>
+        updateEntry.mutateAsync({
+          id: e.id,
+          patch: {
+            ended_at: endIso,
+            time_taken_min:
+              e.time_taken_min ??
+              Math.max(1, Math.round(elapsedMin / Math.max(1, active.length))),
+          },
+        }),
+      ),
+    );
+    setTimerStartedAt(null);
+  };
+
+  const groups = useMemo(
+    () => groupBySession((dayEntries.data ?? []) as any),
+    [dayEntries.data],
+  );
+  const visibleGroups = activeSession
+    ? groups.filter((g) => g.label === activeSession)
+    : groups;
+  // If active session has no group yet, render an empty section for it.
+  const showEmptyActive =
+    activeSession && !groups.some((g) => g.label === activeSession);
+
+  const openDate = (iso: string) => {
+    setSelectedDate(iso);
+    setActiveTab("log");
+  };
 
   return (
     <StudioPageShell
@@ -191,49 +280,19 @@ function PracticeHubSignedIn() {
       <SectionCard
         icon={BookMarked}
         title="DSA Tracker"
-        subtitle="Spreadsheet-style solve tracker — type, tab, save. No popups."
+        subtitle="Spreadsheet-style solve tracker — multi-session, back-datable, spaced-revision ready."
         accent="text-violet-400"
         badge="Free"
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatTile icon={Flame} label="Streak" value={`${streak}d`} accent="text-orange-400" />
           <StatTile icon={Calendar} label="This week" value={weekCount} accent="text-sky-400" />
-          <StatTile
-            icon={RotateCw}
-            label="Due revisions"
-            value={due.data?.length ?? 0}
-            accent="text-amber-400"
-          />
-          <StatTile
-            icon={TrendingUp}
-            label="Total logged"
-            value={allEntries.data?.length ?? 0}
-            accent="text-emerald-400"
-          />
-          <StatTile
-            icon={CheckCircle2}
-            label="Clean rate (30d)"
-            value={`${advanced.cleanRate}%`}
-            accent="text-emerald-400"
-          />
-          <StatTile
-            icon={Timer}
-            label="Avg time (30d)"
-            value={advanced.avgTime ? `${advanced.avgTime}m` : "—"}
-            accent="text-sky-400"
-          />
-          <StatTile
-            icon={Trophy}
-            label="Mastered"
-            value={advanced.mastered}
-            accent="text-violet-400"
-          />
-          <StatTile
-            icon={Gauge}
-            label="Confidence"
-            value={advanced.avgConf ? `${advanced.avgConf}/5` : "—"}
-            accent="text-rose-400"
-          />
+          <StatTile icon={RotateCw} label="Due revisions" value={due.data?.length ?? 0} accent="text-amber-400" />
+          <StatTile icon={TrendingUp} label="Total logged" value={allEntries.data?.length ?? 0} accent="text-emerald-400" />
+          <StatTile icon={CheckCircle2} label="Clean rate (30d)" value={`${advanced.cleanRate}%`} accent="text-emerald-400" />
+          <StatTile icon={Timer} label="Avg time (30d)" value={advanced.avgTime ? `${advanced.avgTime}m` : "—"} accent="text-sky-400" />
+          <StatTile icon={Trophy} label="Mastered" value={advanced.mastered} accent="text-violet-400" />
+          <StatTile icon={Gauge} label="Confidence" value={advanced.avgConf ? `${advanced.avgConf}/5` : "—"} accent="text-rose-400" />
         </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -244,8 +303,8 @@ function PracticeHubSignedIn() {
         <div className="mt-4 flex items-center gap-2 flex-wrap">
           <ExportMenu
             entries={filtered.length ? filtered : allEntries.data ?? []}
-            todayEntries={todayEntries.data ?? []}
-            todayDate={today}
+            todayEntries={(dayEntries.data ?? []) as any}
+            todayDate={selectedDate}
           />
           <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1 ml-auto">
             <Sparkles className="h-3 w-3" /> Tip: paste a LeetCode link — title auto-fills.
@@ -253,32 +312,100 @@ function PracticeHubSignedIn() {
         </div>
       </SectionCard>
 
-      <Tabs defaultValue="today" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid grid-cols-4 w-full md:w-fit">
-          <TabsTrigger value="today" onClick={onEnsureToday}>Today</TabsTrigger>
-          <TabsTrigger value="revisions">
-            Revisions ({due.data?.length ?? 0})
-          </TabsTrigger>
+          <TabsTrigger value="log">Log</TabsTrigger>
+          <TabsTrigger value="revisions">Revisions ({due.data?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="today" className="space-y-3">
-          {todayEntries.isLoading || ensuring ? (
+        <TabsContent value="log" className="space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <DateNavigator value={selectedDate} onChange={setSelectedDate} />
+            <DaySummaryStrip entries={(dayEntries.data ?? []) as any} />
+          </div>
+
+          <SessionBar
+            entries={(dayEntries.data ?? []) as any}
+            activeLabel={activeSession}
+            onChangeActive={setActiveSession}
+            timerStartedAt={timerStartedAt}
+            onStartTimer={handleStartTimer}
+            onStopTimer={handleStopTimer}
+          />
+
+          {dayEntries.isLoading || ensureDay.isPending ? (
             <Skeleton className="h-24" />
           ) : (
-            <PracticeSheet
-              entries={(todayEntries.data ?? []) as any}
-              dayId={todayRow?.id ?? null}
-              showAddRow={true}
-              showDateCol={false}
-              emptyHint="Add your first solve below — Title + Enter is all you need."
-            />
+            <div className="space-y-4">
+              {visibleGroups.length === 0 && !showEmptyActive && (
+                <PracticeSheet
+                  entries={[]}
+                  dayId={selectedDayId ?? undefined}
+                  showAddRow={!!selectedDayId || isToday(parseISO(selectedDate))}
+                  showDateCol={false}
+                  sessionLabel={activeSession}
+                  sessionStartedAt={timerStartedAt}
+                  emptyHint={
+                    selectedDayId
+                      ? "No entries for this date yet — pick a session and add your first solve."
+                      : "Add your first solve to start logging this date."
+                  }
+                />
+              )}
+
+              {visibleGroups.map((g) => (
+                <div key={g.label} className="space-y-1">
+                  <SessionHeader group={g} />
+                  <PracticeSheet
+                    entries={g.entries as any}
+                    dayId={selectedDayId ?? undefined}
+                    showAddRow={activeSession === g.label}
+                    showDateCol={false}
+                    sessionLabel={g.label}
+                    sessionStartedAt={
+                      activeSession === g.label ? timerStartedAt : null
+                    }
+                  />
+                </div>
+              ))}
+
+              {showEmptyActive && (
+                <div className="space-y-1">
+                  <SessionHeader
+                    group={{
+                      label: activeSession!,
+                      entries: [],
+                      startISO: timerStartedAt,
+                      endISO: null,
+                      totalMin: 0,
+                      solved: 0,
+                    }}
+                  />
+                  <PracticeSheet
+                    entries={[]}
+                    dayId={selectedDayId ?? undefined}
+                    showAddRow={true}
+                    showDateCol={false}
+                    sessionLabel={activeSession}
+                    sessionStartedAt={timerStartedAt}
+                    emptyHint={`First problem of the ${activeSession} session — add it below.`}
+                  />
+                </div>
+              )}
+            </div>
           )}
-          {!todayRow && (
+
+          {!selectedDayId && !dayEntries.isLoading && (
             <div className="text-xs text-muted-foreground">
-              <Button size="sm" variant="outline" onClick={onEnsureToday}>
-                Start logging today
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => ensureSelectedDay()}
+                disabled={ensureDay.isPending}
+              >
+                Start logging {isToday(parseISO(selectedDate)) ? "today" : format(parseISO(selectedDate), "MMM d")}
               </Button>
             </div>
           )}
@@ -289,7 +416,7 @@ function PracticeHubSignedIn() {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
-          <Heatmap days={days.data ?? []} countsByDate={countsByDate} />
+          <Heatmap days={days.data ?? []} countsByDate={countsByDate} onCellClick={openDate} />
           <TopicMastery
             entries={allEntries.data ?? []}
             onPick={(topic) => setFilters({ ...defaultFilters, topic })}
@@ -310,11 +437,7 @@ function PracticeHubSignedIn() {
               </button>
             ))}
           </div>
-          <FiltersBar
-            value={filters}
-            onChange={setFilters}
-            entries={allEntries.data ?? []}
-          />
+          <FiltersBar value={filters} onChange={setFilters} entries={allEntries.data ?? []} />
           <div className="text-xs text-muted-foreground">
             Showing {filtered.length} of {allEntries.data?.length ?? 0} entries
           </div>
@@ -330,11 +453,32 @@ function PracticeHubSignedIn() {
         <TabsContent value="analytics" className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <ActivityInsights entries={allEntries.data ?? []} />
+            <SessionInsights entries={allEntries.data ?? []} />
+            <TimeOfDayChart entries={allEntries.data ?? []} />
           </div>
           <Analytics entries={allEntries.data ?? []} />
         </TabsContent>
       </Tabs>
     </StudioPageShell>
+  );
+}
+
+function SessionHeader({ group }: { group: ReturnType<typeof groupBySession>[number] }) {
+  const fmtTime = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—";
+  return (
+    <div className="flex items-center gap-2 text-xs px-1">
+      <span className="font-semibold text-foreground">{group.label}</span>
+      <span className="text-muted-foreground">
+        {fmtTime(group.startISO)}
+        {group.endISO ? ` – ${fmtTime(group.endISO)}` : group.startISO ? " – ongoing" : ""}
+      </span>
+      <span className="text-border">·</span>
+      <span className="text-muted-foreground">
+        {group.entries.length} problem{group.entries.length === 1 ? "" : "s"} ·{" "}
+        {group.totalMin}m
+      </span>
+    </div>
   );
 }
 
