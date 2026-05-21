@@ -1,164 +1,148 @@
-## Feature: DSA Practice Journal (working name)
+## Practice Hub — End-to-End Revamp
 
-A free, login-gated tracker where students log every problem they solve each day, schedule revisions, and watch their consistency + mastery improve over time.
+Rename **DSA Practice Journal → Practice Hub** and rebuild it as a complete daily-solve workspace with quick capture, powerful history, a real revision workflow, and gamification that ties into the existing XP system.
 
-Naming options (pick one in chat):
-- **DSA Practice Journal** (recommended — calm, study-diary vibe)
-- **Grind Log**
-- **Solve Diary**
-- **DSA Daybook**
+### 1. Rename everywhere
 
-I'll use *Practice Journal* below.
+- New name: **Practice Hub** (subtitle: "Your daily DSA solve log").
+- Route stays `/learn/dsa-studio/journal` (keeps existing bookmarks/links working) but page title, sidebar entry, studio tab, SEO meta, breadcrumbs, and toasts all become "Practice Hub".
+- Update memory index entry from "DSA Practice Journal" to "Practice Hub".
 
----
+### 2. Database additions (single migration)
 
-### 1. Core concept
+Extend `practice_journal_entries` only — no breaking changes to existing rows:
 
-Two linked entities:
+- `code_snippet text`, `language text` (Python, C++, Java, JS, Go, Rust, Other)
+- `time_complexity text`, `space_complexity text` (e.g. "O(n log n)")
+- `companies text[]` default `'{}'`
+- `confidence int` (1–5, self-rated after solve)
+- `is_favorite boolean` default false
+- `snoozed_until date` (null = active; set when user snoozes a due revision)
+- `source text` (LeetCode / GFG / Codeforces / AtCoder / HackerRank / Custom — derived from first link)
+- `archived_at timestamptz`
 
-1. **Day Log** — one row per calendar date the student studied.
-2. **Problem Entry** — many problems attached to a Day Log. Each problem carries its own attempts history and revision schedule.
+Index: `(user_id, next_revision_at) where mastered_at is null and archived_at is null`, plus GIN on `tags` and `companies` for filters.
+
+RLS already restricts by `user_id`; new columns inherit the existing policies.
+
+### 3. Richer entry + quick capture
+
+Upgraded `EntryForm`:
+
+- **Source auto-detect**: when the user pastes a link, derive `source` from hostname and (if the URL matches `leetcode.com/problems/<slug>/`) prefill the title from the slug (`two-sum` → "Two Sum"). No external fetch — pure client parse.
+- **Code snippet** field with language selector (renders monospace, ~10 lines).
+- **Complexity** row: two compact inputs for time / space with suggested chips (O(1), O(n), O(n log n), O(n²)).
+- **Companies** chip input (free-text, comma/enter to add).
+- **Confidence** 1–5 stars after solve (separate from "how hard did it feel").
+- **Favorite** toggle (⭐).
+- Mood + focus-minutes captured on the **day row** via a small "Today's vibe" strip at the top of the Today tab.
+
+Quick capture:
+
+- Global floating **Quick Add** FAB on every Practice Hub tab.
+- Keyboard shortcuts inside the page: `N` = new entry, `R` = revise next due, `/` = focus search, `G` then `H/D/U/A` = jump to History/Due/Analytics.
+- A "smart" mini-form mode: paste a link → title prefilled → press Enter to save with sensible defaults; expand to full form only if needed.
+
+### 4. Filters, search, import/export
+
+New **History** tab redesign (replaces the current day-collapsible list as default view; day grouping stays as a toggle):
+
+- Sticky filter bar: full-text search (title + tags + notes), multi-select Topic, Pattern, Difficulty, Status, Source, Companies; date-range picker; "Favorites only", "Mastered only", "Has revisions" toggles.
+- Sort: newest, oldest, hardest, most attempts, next-due soonest.
+- View toggle: **Table** (compact rows with inline edit) vs **Cards** vs **By Day**.
+- URL-synced filters so views are shareable/bookmarkable.
+
+Import / Export:
+
+- **Export CSV** of currently filtered entries (columns: date, title, links, topic, pattern, difficulty, attempts, clean, time, status, tags, companies, next_revision_at, mastered).
+- **Export JSON** of entries + revisions (full backup).
+- **Import CSV** with header mapping UI; upserts by `(user_id, title, log_date)`. Validates and shows a preview before commit. Runs in batches of 50.
+- **Copy daily summary** button → clipboard-ready markdown block of today's solves (useful for LinkedIn/Twitter "Day N of 100" posts).
+
+### 5. Revision workflow upgrade
+
+New dedicated **Revisions** tab (alongside Today/History/Analytics):
+
+- Three groups: **Overdue** (red), **Due today** (amber), **Upcoming 7 days** (muted).
+- Each card shows title, days overdue, last attempt result, ease, and quick-action buttons: **Revise**, **Snooze 1d / 3d / 1w**, **Mark mastered**, **Skip this cycle** (re-rolls next date without changing ease).
+- **Bulk revise** dialog: select multiple → log them with the same outcome (e.g. "Solved clean, 5 min each").
+- **Upcoming calendar** view: month grid with dots indicating how many revisions land on each future day, so students can plan ahead.
+- Add a small "Due soon" widget on the Today tab.
+
+Backend support: snooze writes `snoozed_until`; `useDueRevisions` filters out entries where `snoozed_until > today`.
+
+### 6. Analytics + gamification
+
+Analytics tab additions:
+
+- **Streak calendar** (large monthly view with current streak, longest streak).
+- **Time-to-solve trend** line chart (median minutes per week).
+- **Accuracy trend** (% clean solves per week).
+- **Difficulty mix** stacked bar (Easy/Medium/Hard per week).
+- **Topic mastery grid**: each topic colored by mastered/total ratio (red → green).
+- **Weakness heatmap** by pattern × difficulty.
+- KPI strip: total solved, mastered, current streak, longest streak, this-week minutes, avg attempts.
+
+Gamification (uses existing `award_xp_idempotent` RPC + achievements system):
+
+- **+5 XP** per new entry, **+10 XP** per clean revision, **+50 XP** when an entry becomes mastered. All idempotent via `reference_id = 'practice-hub:<entry_id>:<event>'`.
+- New achievements: **First Solve**, **7-Day Streak**, **30-Day Streak**, **100 Problems**, **First Mastered**, **10 Mastered**, **Pattern Slayer** (50 solves in one pattern).
+- Show earned XP toast on save; surface achievement unlock modal via the existing achievements provider.
+
+### 7. UI / nav polish
+
+- Sidebar entry renamed to **Practice Hub** with the `NotebookPen` icon (already in place — just relabel).
+- Studio tab in `_shared.tsx` renamed to **Practice Hub**.
+- New header on the page with the four stat tiles + Quick Add + a small "Today's vibe" inline editor.
+- Empty states refreshed with helpful CTAs ("Paste a LeetCode link to log your first solve").
+
+### Out of scope (kept for later)
+
+- AI auto-tagging / similar-problem suggestions
+- Public sharing of a solve log
+- Mobile-only swipe gestures
+
+### Technical layout
 
 ```text
-DayLog (2026-05-21)
- ├─ ProblemEntry: "Two Sum"   → attempts[…], revisions[…], notes, tags
- ├─ ProblemEntry: "3Sum"      → …
- └─ ProblemEntry: "Trapping Rain Water" → …
+src/features/practice-hub/         (rename of dsa-journal)
+  api.ts                           +useSnooze, +useMarkMastered, +useArchive, +useImportCSV, +useExport
+  srs.ts                           unchanged
+  types.ts                         +new columns
+  filters.ts                       URL <-> filter state helpers
+  csv.ts                           parse / serialize
+  components/
+    EntryForm.tsx                  + code, complexity, companies, confidence, favorite, source auto-detect
+    EntryQuickAdd.tsx              new (smart paste-and-save)
+    EntryCard.tsx                  + favorite star, confidence, companies, source badge
+    EntryTableRow.tsx              new (table view row)
+    FiltersBar.tsx                 new (URL-synced)
+    Heatmap.tsx                    unchanged
+    StreakCalendar.tsx             new
+    RevisionsBoard.tsx             new (Overdue / Today / Upcoming + bulk)
+    UpcomingCalendar.tsx           new (month grid of upcoming revisions)
+    Analytics.tsx                  + trend charts, mastery grid, KPI strip
+    ImportDialog.tsx               new
+    ExportMenu.tsx                 new
+    QuickAddFab.tsx                new
+    KeyboardShortcuts.tsx          new (registers hotkeys for the page)
+
+src/pages/learn/dsa-studio/
+  PracticeHubPage.tsx              renamed JournalPage; tabs: Today / Revisions / History / Analytics
+  _shared.tsx                      tab label "Practice Hub"
+
+src/components/DashboardSidebar.tsx  label "Practice Hub"
+mem://features/learn/dsa-practice-journal → renamed mem://features/learn/practice-hub
 ```
 
----
+### Build order
 
-### 2. Fields captured per Problem Entry
-
-Required:
-- Title, link(s) (supports multiple — LeetCode + GFG + YouTube)
-- Topic (Array, Graph, DP…) and Pattern (Sliding Window, Two Pointers…)
-- Algorithm/approach used (free text + optional tags)
-- Difficulty (Easy / Medium / Hard) + personal difficulty (1–5 stars)
-- Time taken to solve correctly (minutes)
-- Number of attempts before clean solve
-- Solved cleanly in one attempt? (boolean — feeds mastery score)
-- Mistakes made (free text)
-- Key learning / takeaway (free text)
-- Notes (markdown, reuses existing `NotesPanel` component)
-- Status: Solved / Partial / Stuck-needs-revisit
-- Next revision date (auto-suggested via SM-2 spaced repetition; editable)
-
-Each **Revision** appended later stores: date, attempts, time taken, solved-cleanly flag, short note. The entry is considered "mastered" once it's solved cleanly in one attempt on a revision.
-
----
-
-### 3. Pages & routes
-
-| Route | Purpose |
-|---|---|
-| `/learn/dsa-studio/journal` | Dashboard: streak, today's log, due revisions, weekly heatmap |
-| `/learn/dsa-studio/journal/day/:date` | Single day detail — add/edit problem entries |
-| `/learn/dsa-studio/journal/problem/:id` | Problem detail — full attempts + revisions timeline |
-| `/learn/dsa-studio/journal/revisions` | All upcoming + overdue revisions |
-| `/learn/dsa-studio/journal/analytics` | Charts: topics distribution, weak patterns, mastery curve |
-
-Added under existing DSA Studio shell, alongside Patterns / Tricks / Edge.
-
----
-
-### 4. Dashboard layout
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│  Streak: 12d 🔥   This week: 18 problems   Due today: 4 │
-├──────────────────────────┬──────────────────────────────┤
-│  Today (2026-05-21)      │  Due Revisions               │
-│  [+ Add problem]         │  • Two Sum   (overdue 1d)    │
-│  • 3Sum         ⭐⭐⭐   │  • LRU Cache (today)         │
-│  • Word Ladder  ⭐⭐⭐⭐ │  • …                         │
-├──────────────────────────┴──────────────────────────────┤
-│  Heatmap (last 90 days, GitHub-style)                   │
-├─────────────────────────────────────────────────────────┤
-│  Quick stats: Topic mix · Pattern mix · Avg attempts    │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-### 5. Spaced revision
-
-Reuse the existing SM-2 logic (see `mem://features/quizzes/unified-system`). Cadence based on the *clean-solve* flag of the most recent attempt:
-- Solved cleanly → push next revision further (1d → 3d → 7d → 16d → 35d…)
-- Not clean → reset interval to 1d
-- "Mastered" when 3 consecutive clean solves at increasing intervals.
-
----
-
-### 6. Analytics view
-
-- Problems solved per day (bar)
-- Topic & pattern distribution (donut)
-- Difficulty mix per week (stacked bar)
-- Weakest patterns (lowest clean-solve %) — actionable
-- Average attempts trend (line — should drop over time)
-
----
-
-### 7. Free access
-
-No paywall. Available to any signed-in student. Guests see a teaser + login prompt (reuse existing `mem://auth/delayed-login-prompt` patterns).
-
----
-
-### Technical section
-
-**Database (new migration):**
-
-```sql
--- One row per (user, date)
-practice_journal_days(
-  id uuid pk, user_id uuid, log_date date,
-  mood smallint null, focus_minutes int null, summary text null,
-  unique(user_id, log_date)
-)
-
--- Problems logged on a given day
-practice_journal_entries(
-  id uuid pk, user_id uuid, day_id uuid fk → days,
-  title text, links jsonb default '[]',  -- [{label, url}]
-  topic text, pattern text, algorithm text,
-  difficulty text check (...), personal_difficulty smallint,
-  time_taken_min int, attempts int default 1,
-  solved_clean boolean default false,
-  mistakes text, learnings text, notes_md text,
-  status text check (...) default 'solved',
-  tags text[] default '{}',
-  next_revision_at date,
-  ease_factor real default 2.5, interval_days int default 1,
-  mastered_at timestamptz
-)
-
--- Each repeat practice of an entry
-practice_journal_revisions(
-  id uuid pk, user_id uuid, entry_id uuid fk → entries,
-  revised_on date, attempts int, time_taken_min int,
-  solved_clean boolean, note text
-)
-```
-
-RLS: `user_id = auth.uid()` for select/insert/update/delete on all three tables. Indexes on `(user_id, log_date)`, `(user_id, next_revision_at)`, `(entry_id)`.
-
-**Frontend:**
-- New folder `src/features/dsa-journal/` with hooks (`useDayLog`, `useEntries`, `useDueRevisions`), components (`EntryForm`, `EntryCard`, `RevisionDialog`, `Heatmap`, `AnalyticsCharts` using Recharts already in project), and page files under `src/pages/learn/dsa-studio/journal/`.
-- Reuse: `NotesPanel` (markdown editor), existing heatmap from `mem://features/progress/tracking`, SM-2 helpers from quizzes, `shadcn` Form + zod validation, `shadcn` DatePicker.
-- Add nav entry in DSA Studio shell + sidebar (under Home group, matching existing access rules).
-
-**Out of scope (v1):** team/cohort sharing, public profile cards, AI auto-tagging of topic/pattern (can add v2 using Gemini via existing edge function), CSV import.
-
----
-
-### Build phases
-
-1. Migration + RLS + types regen.
-2. Day dashboard + entry CRUD form (the meat).
-3. Revision engine + due-list page.
-4. Analytics charts.
-5. Sidebar/nav integration + empty states + guest teaser.
-
-Confirm the name and I'll start with phase 1.
+1. Migration (new columns + indexes).
+2. Rename folder/files/route labels; update sidebar + studio tab + memory.
+3. Filters bar + table view + URL sync + search.
+4. Richer EntryForm + QuickAdd FAB + keyboard shortcuts + source auto-detect.
+5. Revisions tab (snooze / bulk / upcoming calendar) and snooze backend.
+6. Import/Export (CSV/JSON + copy summary).
+7. Analytics upgrades + streak calendar.
+8. XP hooks + new achievements registration.
+9. Smoke-test full flow signed-in, fix any TS issues, verify build.

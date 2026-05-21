@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -12,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   ExternalLink,
@@ -23,12 +23,22 @@ import {
   Clock,
   Repeat,
   CheckCircle2,
+  Heart,
+  Building2,
+  Code2,
+  CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { JournalEntry } from "../types";
-import { useDeleteEntry } from "../api";
+import {
+  useDeleteEntry,
+  useToggleFavorite,
+  useSnoozeEntry,
+  useMarkMastered,
+} from "../api";
 import EntryForm from "./EntryForm";
 import ReviseDialog from "./ReviseDialog";
+
 
 const diffStyle: Record<string, string> = {
   Easy: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
@@ -48,6 +58,9 @@ interface Props {
 
 export default function EntryCard({ entry }: Props) {
   const del = useDeleteEntry();
+  const fav = useToggleFavorite();
+  const snooze = useSnoozeEntry();
+  const master = useMarkMastered();
   const [editOpen, setEditOpen] = useState(false);
   const [reviseOpen, setReviseOpen] = useState(false);
 
@@ -56,6 +69,19 @@ export default function EntryCard({ entry }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => fav.mutate({ id: entry.id, value: !entry.is_favorite })}
+              aria-label="Toggle favorite"
+              className="p-0.5"
+            >
+              <Heart
+                className={cn(
+                  "h-3.5 w-3.5",
+                  entry.is_favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground/60",
+                )}
+              />
+            </button>
             <h3 className="font-medium text-sm truncate">{entry.title}</h3>
             {entry.difficulty && (
               <Badge
@@ -63,6 +89,11 @@ export default function EntryCard({ entry }: Props) {
                 className={cn("h-5 text-[10px]", diffStyle[entry.difficulty])}
               >
                 {entry.difficulty}
+              </Badge>
+            )}
+            {entry.source && (
+              <Badge variant="outline" className="h-5 text-[10px]">
+                {entry.source}
               </Badge>
             )}
             {entry.mastered_at && (
@@ -87,6 +118,18 @@ export default function EntryCard({ entry }: Props) {
             {entry.solved_clean && (
               <span className="text-emerald-400">✓ clean</span>
             )}
+            {(entry.time_complexity || entry.space_complexity) && (
+              <span className="inline-flex items-center gap-1">
+                <Code2 className="h-3 w-3" />
+                {entry.time_complexity ?? "—"}
+                {entry.space_complexity ? ` / ${entry.space_complexity}` : ""}
+              </span>
+            )}
+            {entry.companies?.length > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <Building2 className="h-3 w-3" /> {entry.companies.join(", ")}
+              </span>
+            )}
           </div>
         </div>
 
@@ -103,6 +146,22 @@ export default function EntryCard({ entry }: Props) {
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>
               <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => snooze.mutate({ id: entry.id, days: 1 })}>
+              <CalendarClock className="h-3.5 w-3.5 mr-2" /> Snooze 1 day
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => snooze.mutate({ id: entry.id, days: 3 })}>
+              <CalendarClock className="h-3.5 w-3.5 mr-2" /> Snooze 3 days
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => snooze.mutate({ id: entry.id, days: 7 })}>
+              <CalendarClock className="h-3.5 w-3.5 mr-2" /> Snooze 1 week
+            </DropdownMenuItem>
+            {!entry.mastered_at && (
+              <DropdownMenuItem onSelect={() => master.mutate(entry.id)}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Mark mastered
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive"
               onSelect={() => {
@@ -114,6 +173,7 @@ export default function EntryCard({ entry }: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
 
       {entry.links?.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">

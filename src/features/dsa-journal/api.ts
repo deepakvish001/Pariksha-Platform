@@ -126,10 +126,12 @@ export const useDueRevisions = () => {
         .select("*")
         .eq("user_id", user!.id)
         .is("mastered_at", null)
+        .is("archived_at", null)
         .not("next_revision_at", "is", null)
         .lte("next_revision_at", today)
+        .or(`snoozed_until.is.null,snoozed_until.lte.${today}`)
         .order("next_revision_at", { ascending: true })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return (data ?? []) as JournalEntry[];
     },
@@ -153,7 +155,16 @@ export interface EntryInput {
   notes_md?: string | null;
   status?: "solved" | "partial" | "stuck";
   tags?: string[];
+  code_snippet?: string | null;
+  language?: string | null;
+  time_complexity?: string | null;
+  space_complexity?: string | null;
+  companies?: string[];
+  confidence?: number | null;
+  is_favorite?: boolean;
+  source?: string | null;
 }
+
 
 export const useCreateEntry = () => {
   const { user } = useAuth();
@@ -165,13 +176,15 @@ export const useCreateEntry = () => {
         { ease_factor: 2.5, interval_days: 1 },
         { solved_clean: !!input.solved_clean },
       );
-      const payload = {
+      const payload: any = {
         user_id: user.id,
         attempts: 1,
         solved_clean: false,
         status: "solved",
         tags: [],
         links: [],
+        companies: [],
+        is_favorite: false,
         ...input,
         ease_factor: sched.ease_factor,
         interval_days: sched.interval_days,
@@ -192,6 +205,59 @@ export const useCreateEntry = () => {
     onError: (e: any) => toast.error(e?.message ?? "Could not save entry"),
   });
 };
+
+export const useSnoozeEntry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, days }: { id: string; days: number }) => {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      const iso = d.toISOString().slice(0, 10);
+      const { error } = await supabase
+        .from(TABLES.entries as any)
+        .update({ snoozed_until: iso, next_revision_at: iso })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Snoozed");
+      qc.invalidateQueries({ queryKey: QK.all });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not snooze"),
+  });
+};
+
+export const useToggleFavorite = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from(TABLES.entries as any)
+        .update({ is_favorite: value })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.all }),
+  });
+};
+
+export const useMarkMastered = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from(TABLES.entries as any)
+        .update({ mastered_at: new Date().toISOString(), next_revision_at: null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Marked as mastered");
+      qc.invalidateQueries({ queryKey: QK.all });
+    },
+  });
+};
+
 
 export const useUpdateEntry = () => {
   const qc = useQueryClient();

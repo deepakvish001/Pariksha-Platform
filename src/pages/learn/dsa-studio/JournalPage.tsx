@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
-import { BookMarked, Plus, Flame, Calendar, TrendingUp, RotateCw } from "lucide-react";
+import {
+  BookMarked,
+  Plus,
+  Flame,
+  Calendar,
+  TrendingUp,
+  RotateCw,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -8,7 +16,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
@@ -25,8 +32,14 @@ import EntryForm from "@/features/dsa-journal/components/EntryForm";
 import EntryCard from "@/features/dsa-journal/components/EntryCard";
 import Heatmap from "@/features/dsa-journal/components/Heatmap";
 import Analytics from "@/features/dsa-journal/components/Analytics";
-import ReviseDialog from "@/features/dsa-journal/components/ReviseDialog";
-import type { JournalEntry } from "@/features/dsa-journal/types";
+import RevisionsBoard from "@/features/dsa-journal/components/RevisionsBoard";
+import {
+  FiltersBar,
+  applyFilters,
+  defaultFilters,
+  type FilterState,
+} from "@/features/dsa-journal/components/FiltersBar";
+import ExportMenu from "@/features/dsa-journal/components/ExportMenu";
 
 export default function JournalPage() {
   const { user } = useAuth();
@@ -34,21 +47,21 @@ export default function JournalPage() {
   if (!user) {
     return (
       <StudioPageShell
-        title="DSA Practice Journal"
-        description="Log every DSA problem you solve, schedule revisions, and watch your mastery grow."
+        title="Practice Hub"
+        description="Log every DSA problem, schedule revisions, and watch your mastery grow."
         canonicalPath="/learn/dsa-studio/journal"
       >
         <SectionCard
           icon={BookMarked}
-          title="DSA Practice Journal"
-          subtitle="Track every problem, every attempt, every revision — free for students."
+          title="Practice Hub"
+          subtitle="Your daily DSA solve log — free for students."
           accent="text-violet-400"
         >
           <div className="text-center py-10 space-y-3">
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Sign in to start your daily DSA log. Capture problems, mistakes,
-              learnings, and let spaced revisions bring weak topics back at the
-              right time.
+              Sign in to start tracking every problem you solve. Capture
+              mistakes, learnings, code snippets — and let spaced revisions
+              bring weak topics back at the right time.
             </p>
             <Button asChild>
               <Link to="/login">Sign in to start logging</Link>
@@ -59,10 +72,10 @@ export default function JournalPage() {
     );
   }
 
-  return <JournalSignedIn />;
+  return <PracticeHubSignedIn />;
 }
 
-function JournalSignedIn() {
+function PracticeHubSignedIn() {
   const days = useDays();
   const allEntries = useAllEntries();
   const due = useDueRevisions();
@@ -70,15 +83,13 @@ function JournalSignedIn() {
   const todayEntries = useDayEntries(todayRow?.id ?? null);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
-  const [reviseEntry, setReviseEntry] = useState<JournalEntry | null>(null);
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
   const onAdd = async () => {
     const row = todayRow ?? (await ensureToday());
     if (row) setAddOpen(true);
   };
 
-  // Streak: walk back from today over `days` while consecutive.
   const streak = useMemo(() => {
     if (!days.data) return 0;
     const set = new Set(days.data.map((d) => d.log_date));
@@ -113,16 +124,21 @@ function JournalSignedIn() {
     return n;
   }, [countsByDate]);
 
+  const filtered = useMemo(
+    () => applyFilters(allEntries.data ?? [], filters),
+    [allEntries.data, filters],
+  );
+
   return (
     <StudioPageShell
-      title="DSA Practice Journal"
-      description="Log every DSA problem you solve, schedule revisions, and watch your mastery grow."
+      title="Practice Hub"
+      description="Log every DSA problem, schedule revisions, and watch your mastery grow."
       canonicalPath="/learn/dsa-studio/journal"
     >
       <SectionCard
         icon={BookMarked}
-        title="DSA Practice Journal"
-        subtitle="Log every problem you solve, then let spaced revisions bring them back at the right time."
+        title="Practice Hub"
+        subtitle="Your daily DSA solve log — capture every problem and let spaced revision do the heavy lifting."
         accent="text-violet-400"
         badge="Free"
       >
@@ -143,7 +159,7 @@ function JournalSignedIn() {
           />
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-2 flex-wrap">
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <Button onClick={onAdd} disabled={ensuring} className="gap-2">
               <Plus className="h-4 w-4" /> Log a problem
@@ -160,14 +176,22 @@ function JournalSignedIn() {
               )}
             </DialogContent>
           </Dialog>
+          <ExportMenu
+            entries={filtered.length ? filtered : allEntries.data ?? []}
+            todayEntries={todayEntries.data ?? []}
+            todayDate={today}
+          />
+          <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1 ml-auto">
+            <Sparkles className="h-3 w-3" /> Tip: paste a LeetCode link — title auto-fills.
+          </div>
         </div>
       </SectionCard>
 
       <Tabs defaultValue="today" className="space-y-4">
         <TabsList className="grid grid-cols-4 w-full md:w-fit">
           <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="due">
-            Due ({due.data?.length ?? 0})
+          <TabsTrigger value="revisions">
+            Revisions ({due.data?.length ?? 0})
           </TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -186,58 +210,28 @@ function JournalSignedIn() {
           )}
         </TabsContent>
 
-        <TabsContent value="due" className="space-y-3">
-          {due.isLoading ? (
-            <Skeleton className="h-24" />
-          ) : !due.data || due.data.length === 0 ? (
-            <EmptyState
-              title="No revisions due"
-              hint="When entries become due, they'll show up here."
-            />
-          ) : (
-            due.data.map((e) => (
-              <div
-                key={e.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{e.title}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    Due {e.next_revision_at} · {e.topic ?? "—"} ·{" "}
-                    {e.pattern ?? "—"}
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setReviseEntry(e)}
-                >
-                  <RotateCw className="h-3 w-3 mr-1" /> Revise
-                </Button>
-              </div>
-            ))
-          )}
+        <TabsContent value="revisions">
+          <RevisionsBoard />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
           <Heatmap days={days.data ?? []} countsByDate={countsByDate} />
+          <FiltersBar
+            value={filters}
+            onChange={setFilters}
+            entries={allEntries.data ?? []}
+          />
+          <div className="text-xs text-muted-foreground">
+            Showing {filtered.length} of {allEntries.data?.length ?? 0} entries
+          </div>
           <div className="space-y-2">
-            {(days.data ?? []).map((d) => (
-              <DayBlock
-                key={d.id}
-                date={d.log_date}
-                expanded={selectedDayId === d.id}
-                onToggle={() =>
-                  setSelectedDayId(selectedDayId === d.id ? null : d.id)
-                }
-                dayId={d.id}
-              />
-            ))}
-            {days.data && days.data.length === 0 && (
+            {filtered.length === 0 ? (
               <EmptyState
-                title="No days logged yet"
-                hint="Your daily entries will appear here as you log problems."
+                title="No entries match your filters"
+                hint="Try clearing filters or logging more problems."
               />
+            ) : (
+              filtered.map((e) => <EntryCard key={e.id} entry={e} />)
             )}
           </div>
         </TabsContent>
@@ -246,14 +240,6 @@ function JournalSignedIn() {
           <Analytics entries={allEntries.data ?? []} />
         </TabsContent>
       </Tabs>
-
-      {reviseEntry && (
-        <ReviseDialog
-          open={!!reviseEntry}
-          onOpenChange={(o) => !o && setReviseEntry(null)}
-          entry={reviseEntry}
-        />
-      )}
     </StudioPageShell>
   );
 }
@@ -287,47 +273,6 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
     <div className="rounded-xl border border-dashed border-border/50 p-8 text-center">
       <div className="text-sm font-medium">{title}</div>
       <div className="text-xs text-muted-foreground mt-1">{hint}</div>
-    </div>
-  );
-}
-
-function DayBlock({
-  date,
-  dayId,
-  expanded,
-  onToggle,
-}: {
-  date: string;
-  dayId: string;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const entries = useDayEntries(expanded ? dayId : null);
-  return (
-    <div className="rounded-xl border border-border/40 bg-card/30">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
-      >
-        <div className="text-sm font-medium">{date}</div>
-        <div className="text-xs text-muted-foreground">
-          {expanded ? "Hide" : "Show"} entries
-        </div>
-      </button>
-      {expanded && (
-        <div className="px-3 pb-3 space-y-2">
-          {entries.isLoading ? (
-            <Skeleton className="h-16" />
-          ) : entries.data && entries.data.length > 0 ? (
-            entries.data.map((e) => <EntryCard key={e.id} entry={e} />)
-          ) : (
-            <div className="text-xs text-muted-foreground px-2 py-3">
-              Nothing logged on this day.
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

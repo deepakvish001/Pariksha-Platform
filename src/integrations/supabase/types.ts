@@ -7025,13 +7025,19 @@ export type Database = {
       practice_journal_entries: {
         Row: {
           algorithm: string | null
+          archived_at: string | null
           attempts: number
+          code_snippet: string | null
+          companies: string[]
+          confidence: number | null
           created_at: string
           day_id: string
           difficulty: string | null
           ease_factor: number
           id: string
           interval_days: number
+          is_favorite: boolean
+          language: string | null
           learnings: string | null
           links: Json
           mastered_at: string | null
@@ -7040,9 +7046,13 @@ export type Database = {
           notes_md: string | null
           pattern: string | null
           personal_difficulty: number | null
+          snoozed_until: string | null
           solved_clean: boolean
+          source: string | null
+          space_complexity: string | null
           status: string
           tags: string[]
+          time_complexity: string | null
           time_taken_min: number | null
           title: string
           topic: string | null
@@ -7051,13 +7061,19 @@ export type Database = {
         }
         Insert: {
           algorithm?: string | null
+          archived_at?: string | null
           attempts?: number
+          code_snippet?: string | null
+          companies?: string[]
+          confidence?: number | null
           created_at?: string
           day_id: string
           difficulty?: string | null
           ease_factor?: number
           id?: string
           interval_days?: number
+          is_favorite?: boolean
+          language?: string | null
           learnings?: string | null
           links?: Json
           mastered_at?: string | null
@@ -7066,9 +7082,13 @@ export type Database = {
           notes_md?: string | null
           pattern?: string | null
           personal_difficulty?: number | null
+          snoozed_until?: string | null
           solved_clean?: boolean
+          source?: string | null
+          space_complexity?: string | null
           status?: string
           tags?: string[]
+          time_complexity?: string | null
           time_taken_min?: number | null
           title: string
           topic?: string | null
@@ -7077,13 +7097,19 @@ export type Database = {
         }
         Update: {
           algorithm?: string | null
+          archived_at?: string | null
           attempts?: number
+          code_snippet?: string | null
+          companies?: string[]
+          confidence?: number | null
           created_at?: string
           day_id?: string
           difficulty?: string | null
           ease_factor?: number
           id?: string
           interval_days?: number
+          is_favorite?: boolean
+          language?: string | null
           learnings?: string | null
           links?: Json
           mastered_at?: string | null
@@ -7092,9 +7118,13 @@ export type Database = {
           notes_md?: string | null
           pattern?: string | null
           personal_difficulty?: number | null
+          snoozed_until?: string | null
           solved_clean?: boolean
+          source?: string | null
+          space_complexity?: string | null
           status?: string
           tags?: string[]
+          time_complexity?: string | null
           time_taken_min?: number | null
           title?: string
           topic?: string | null
