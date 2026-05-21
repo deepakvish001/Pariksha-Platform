@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import {
   BookMarked,
-  Plus,
   Flame,
   Calendar,
   TrendingUp,
@@ -11,12 +10,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,11 +21,10 @@ import {
   useDueRevisions,
   useTodayDay,
 } from "@/features/dsa-journal/api";
-import EntryForm from "@/features/dsa-journal/components/EntryForm";
-import EntryCard from "@/features/dsa-journal/components/EntryCard";
 import Heatmap from "@/features/dsa-journal/components/Heatmap";
 import Analytics from "@/features/dsa-journal/components/Analytics";
 import RevisionsBoard from "@/features/dsa-journal/components/RevisionsBoard";
+import PracticeSheet from "@/features/dsa-journal/components/PracticeSheet";
 import {
   FiltersBar,
   applyFilters,
@@ -59,9 +51,9 @@ export default function JournalPage() {
         >
           <div className="text-center py-10 space-y-3">
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Sign in to start tracking every problem you solve. Capture
-              mistakes, learnings, code snippets — and let spaced revisions
-              bring weak topics back at the right time.
+              Sign in to start tracking every problem you solve in a clean
+              spreadsheet view. Capture mistakes, learnings, code — and let
+              spaced revisions bring weak topics back at the right time.
             </p>
             <Button asChild>
               <Link to="/login">Sign in to start logging</Link>
@@ -82,12 +74,10 @@ function PracticeHubSignedIn() {
   const { todayRow, today, ensureToday, ensuring } = useTodayDay();
   const todayEntries = useDayEntries(todayRow?.id ?? null);
 
-  const [addOpen, setAddOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
 
-  const onAdd = async () => {
-    const row = todayRow ?? (await ensureToday());
-    if (row) setAddOpen(true);
+  const onEnsureToday = async () => {
+    if (!todayRow) await ensureToday();
   };
 
   const streak = useMemo(() => {
@@ -138,7 +128,7 @@ function PracticeHubSignedIn() {
       <SectionCard
         icon={BookMarked}
         title="Practice Hub"
-        subtitle="Your daily DSA solve log — capture every problem and let spaced revision do the heavy lifting."
+        subtitle="Spreadsheet-style solve tracker — type, tab, save. No popups."
         accent="text-violet-400"
         badge="Free"
       >
@@ -160,22 +150,6 @@ function PracticeHubSignedIn() {
         </div>
 
         <div className="mt-4 flex items-center gap-2 flex-wrap">
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <Button onClick={onAdd} disabled={ensuring} className="gap-2">
-              <Plus className="h-4 w-4" /> Log a problem
-            </Button>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Log a problem — {today}</DialogTitle>
-              </DialogHeader>
-              {todayRow && (
-                <EntryForm
-                  dayId={todayRow.id}
-                  onDone={() => setAddOpen(false)}
-                />
-              )}
-            </DialogContent>
-          </Dialog>
           <ExportMenu
             entries={filtered.length ? filtered : allEntries.data ?? []}
             todayEntries={todayEntries.data ?? []}
@@ -189,7 +163,7 @@ function PracticeHubSignedIn() {
 
       <Tabs defaultValue="today" className="space-y-4">
         <TabsList className="grid grid-cols-4 w-full md:w-fit">
-          <TabsTrigger value="today">Today</TabsTrigger>
+          <TabsTrigger value="today" onClick={onEnsureToday}>Today</TabsTrigger>
           <TabsTrigger value="revisions">
             Revisions ({due.data?.length ?? 0})
           </TabsTrigger>
@@ -198,15 +172,23 @@ function PracticeHubSignedIn() {
         </TabsList>
 
         <TabsContent value="today" className="space-y-3">
-          {todayEntries.isLoading ? (
+          {todayEntries.isLoading || ensuring ? (
             <Skeleton className="h-24" />
-          ) : !todayEntries.data || todayEntries.data.length === 0 ? (
-            <EmptyState
-              title="No problems logged today yet"
-              hint="Hit Log a problem to capture your first solve."
-            />
           ) : (
-            todayEntries.data.map((e) => <EntryCard key={e.id} entry={e} />)
+            <PracticeSheet
+              entries={(todayEntries.data ?? []) as any}
+              dayId={todayRow?.id ?? null}
+              showAddRow={true}
+              showDateCol={false}
+              emptyHint="Add your first solve below — Title + Enter is all you need."
+            />
+          )}
+          {!todayRow && (
+            <div className="text-xs text-muted-foreground">
+              <Button size="sm" variant="outline" onClick={onEnsureToday}>
+                Start logging today
+              </Button>
+            </div>
           )}
         </TabsContent>
 
@@ -224,16 +206,13 @@ function PracticeHubSignedIn() {
           <div className="text-xs text-muted-foreground">
             Showing {filtered.length} of {allEntries.data?.length ?? 0} entries
           </div>
-          <div className="space-y-2">
-            {filtered.length === 0 ? (
-              <EmptyState
-                title="No entries match your filters"
-                hint="Try clearing filters or logging more problems."
-              />
-            ) : (
-              filtered.map((e) => <EntryCard key={e.id} entry={e} />)
-            )}
-          </div>
+          <PracticeSheet
+            entries={filtered}
+            showAddRow={false}
+            showDateCol={true}
+            loading={allEntries.isLoading}
+            emptyHint="No entries match your filters — try clearing them."
+          />
         </TabsContent>
 
         <TabsContent value="analytics">
@@ -264,15 +243,6 @@ function StatTile({
         <div className="text-lg font-semibold leading-none">{value}</div>
         <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({ title, hint }: { title: string; hint: string }) {
-  return (
-    <div className="rounded-xl border border-dashed border-border/50 p-8 text-center">
-      <div className="text-sm font-medium">{title}</div>
-      <div className="text-xs text-muted-foreground mt-1">{hint}</div>
     </div>
   );
 }
