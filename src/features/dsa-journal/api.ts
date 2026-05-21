@@ -165,13 +165,15 @@ export const useCreateEntry = () => {
         { ease_factor: 2.5, interval_days: 1 },
         { solved_clean: !!input.solved_clean },
       );
-      const payload = {
+      const payload: any = {
         user_id: user.id,
         attempts: 1,
         solved_clean: false,
         status: "solved",
         tags: [],
         links: [],
+        companies: [],
+        is_favorite: false,
         ...input,
         ease_factor: sched.ease_factor,
         interval_days: sched.interval_days,
@@ -192,6 +194,59 @@ export const useCreateEntry = () => {
     onError: (e: any) => toast.error(e?.message ?? "Could not save entry"),
   });
 };
+
+export const useSnoozeEntry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, days }: { id: string; days: number }) => {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      const iso = d.toISOString().slice(0, 10);
+      const { error } = await supabase
+        .from(TABLES.entries as any)
+        .update({ snoozed_until: iso, next_revision_at: iso })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Snoozed");
+      qc.invalidateQueries({ queryKey: QK.all });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not snooze"),
+  });
+};
+
+export const useToggleFavorite = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from(TABLES.entries as any)
+        .update({ is_favorite: value })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.all }),
+  });
+};
+
+export const useMarkMastered = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from(TABLES.entries as any)
+        .update({ mastered_at: new Date().toISOString(), next_revision_at: null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Marked as mastered");
+      qc.invalidateQueries({ queryKey: QK.all });
+    },
+  });
+};
+
 
 export const useUpdateEntry = () => {
   const qc = useQueryClient();
