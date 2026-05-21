@@ -801,7 +801,7 @@ function DraftRow({
       <td colSpan={8} className="text-[10px] text-muted-foreground">
         Press Enter to save · expand row after to add notes, code & companies
       </td>
-      <td colSpan={2} className="text-right">
+      <td className="text-right">
         <Button
           size="sm"
           onClick={save}
