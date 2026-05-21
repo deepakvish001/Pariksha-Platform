@@ -34,6 +34,7 @@ import {
   Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChevronScroller } from "@/components/library/coding/ChevronScroller";
 import { toast } from "sonner";
 import type { JournalEntry, EntryWithDay, Difficulty, EntryStatus } from "../types";
 import {
@@ -88,10 +89,11 @@ export default function PracticeSheet({
 
   return (
     <div className="rounded-xl border border-border/40 bg-card/30 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-card/60 border-b border-border/40 text-muted-foreground">
-            <tr className="[&>th]:px-2 [&>th]:py-2 [&>th]:font-medium [&>th]:text-left whitespace-nowrap">
+      <ChevronScroller>
+        <table className="w-full text-xs min-w-[1400px] border-separate border-spacing-0">
+          <thead className="bg-card/60 text-muted-foreground sticky top-0 z-10">
+            <tr className="[&>th]:px-2 [&>th]:py-2 [&>th]:font-medium [&>th]:text-left [&>th]:border-b [&>th]:border-border/40 whitespace-nowrap">
+
               <th className="w-8"></th>
               <th className="w-8">#</th>
               {showDateCol && <th className="w-20">Date</th>}
@@ -151,7 +153,7 @@ export default function PracticeSheet({
             )}
           </tbody>
         </table>
-      </div>
+      </ChevronScroller>
     </div>
   );
 }
