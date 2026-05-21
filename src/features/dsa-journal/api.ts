@@ -1,6 +1,10 @@
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as supabaseTyped } from "@/integrations/supabase/client";
+// Journal tables are not yet in the generated Database types — cast so the
+// PostgREST builder doesn't fall through to SelectQueryError. Types are still
+// enforced at the boundary via the explicit return-type casts below.
+const supabase = supabaseTyped as any;
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type {
