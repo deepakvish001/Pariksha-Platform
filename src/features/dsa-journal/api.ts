@@ -163,6 +163,9 @@ export interface EntryInput {
   confidence?: number | null;
   is_favorite?: boolean;
   source?: string | null;
+  started_at?: string | null;
+  ended_at?: string | null;
+  session_label?: string | null;
 }
 
 

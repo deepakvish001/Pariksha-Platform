@@ -63,6 +63,10 @@ export interface JournalEntry {
   snoozed_until: string | null;
   source: string | null;
   archived_at: string | null;
+  // Session tracking
+  started_at: string | null;
+  ended_at: string | null;
+  session_label: string | null;
 }
 
 export interface JournalRevision {
