@@ -309,25 +309,26 @@ function SheetRow({
           <TitleCell entry={entry} onSave={onSave} />
         </td>
         <td>
-          <CellInput
+          <ChipCell
             value={entry.topic ?? ""}
             onSave={(v) => onSave({ topic: v || null })}
             placeholder="Arrays"
           />
         </td>
         <td>
-          <CellInput
+          <ChipCell
             value={entry.pattern ?? ""}
             onSave={(v) => onSave({ pattern: v || null })}
             placeholder="Two ptr"
           />
         </td>
         <td>
-          <CellSelect
+          <BadgeSelect
             value={entry.difficulty ?? ""}
             options={["", ...DIFFICULTIES]}
-            labels={{ "": "—" }}
+            styleMap={DIFF_STYLE}
             onSave={(v) => onSave({ difficulty: (v || null) as any })}
+            emptyLabel="—"
           />
         </td>
         <td>
@@ -346,9 +347,10 @@ function SheetRow({
           />
         </td>
         <td>
-          <CellSelect
+          <BadgeSelect
             value={entry.status}
             options={[...STATUSES]}
+            styleMap={STATUS_STYLE}
             onSave={(v) => onSave({ status: v as any })}
           />
         </td>
@@ -376,31 +378,19 @@ function SheetRow({
           />
         </td>
         <td>
-          <CellInput
-            value={(entry.companies ?? []).join(", ")}
-            onSave={(v) =>
-              onSave({
-                companies: v
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-              })
-            }
-            placeholder="Google, Meta"
+          <ChipListCell
+            values={entry.companies ?? []}
+            onSave={(arr) => onSave({ companies: arr })}
+            placeholder="Add company"
+            icon={<Building2 className="h-3 w-3" />}
           />
         </td>
         <td>
-          <CellInput
-            value={(entry.tags ?? []).join(", ")}
-            onSave={(v) =>
-              onSave({
-                tags: v
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-              })
-            }
-            placeholder="dp, hard"
+          <ChipListCell
+            values={entry.tags ?? []}
+            onSave={(arr) => onSave({ tags: arr })}
+            placeholder="Add tag"
+            icon={<TagIcon className="h-3 w-3" />}
           />
         </td>
         <td className="text-muted-foreground whitespace-nowrap">
