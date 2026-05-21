@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,10 +14,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Link as LinkIcon, Star } from "lucide-react";
+import { Plus, Trash2, Link as LinkIcon, Star, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { JournalEntry } from "../types";
 import { useCreateEntry, useUpdateEntry, type EntryInput } from "../api";
+import { detectSource, inferTitleFromUrl } from "../source";
 
 const schema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
@@ -34,9 +35,21 @@ const schema = z.object({
   learnings: z.string().max(2000).optional().or(z.literal("")),
   notes_md: z.string().max(8000).optional().or(z.literal("")),
   tags: z.string().max(200).optional().or(z.literal("")),
+  companies: z.string().max(200).optional().or(z.literal("")),
+  language: z.string().optional().or(z.literal("")),
+  code_snippet: z.string().max(8000).optional().or(z.literal("")),
+  time_complexity: z.string().max(40).optional().or(z.literal("")),
+  space_complexity: z.string().max(40).optional().or(z.literal("")),
+  confidence: z.number().min(1).max(5).optional(),
+  is_favorite: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const LANGUAGES = [
+  "Python", "C++", "Java", "JavaScript", "TypeScript", "Go", "Rust", "C#", "Other",
+];
+const COMPLEXITY_CHIPS = ["O(1)", "O(log n)", "O(n)", "O(n log n)", "O(n²)", "O(2ⁿ)"];
 
 interface Props {
   dayId: string;
@@ -70,17 +83,36 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
       learnings: entry?.learnings ?? "",
       notes_md: entry?.notes_md ?? "",
       tags: (entry?.tags ?? []).join(", "),
+      companies: (entry?.companies ?? []).join(", "),
+      language: entry?.language ?? "",
+      code_snippet: entry?.code_snippet ?? "",
+      time_complexity: entry?.time_complexity ?? "",
+      space_complexity: entry?.space_complexity ?? "",
+      confidence: entry?.confidence ?? 3,
+      is_favorite: entry?.is_favorite ?? false,
     },
   });
+
+  // Auto-fill title from first link if user hasn't typed one
+  useEffect(() => {
+    const url = links[0]?.url?.trim();
+    if (!url) return;
+    const currentTitle = form.getValues("title").trim();
+    if (currentTitle) return;
+    const inferred = inferTitleFromUrl(url);
+    if (inferred) form.setValue("title", inferred);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [links[0]?.url]);
 
   const onSubmit = async (v: FormValues) => {
     const cleanedLinks = links
       .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
       .filter((l) => l.url.length > 0);
-    const tags = (v.tags ?? "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+    const splitList = (s?: string) =>
+      (s ?? "").split(",").map((t) => t.trim()).filter(Boolean);
+    const tags = splitList(v.tags);
+    const companies = splitList(v.companies);
+    const source = cleanedLinks[0] ? detectSource(cleanedLinks[0].url) : null;
 
     const payload: EntryInput = {
       day_id: dayId,
@@ -99,6 +131,14 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
       learnings: v.learnings?.trim() || null,
       notes_md: v.notes_md?.trim() || null,
       tags,
+      companies,
+      language: v.language?.trim() || null,
+      code_snippet: v.code_snippet?.trim() || null,
+      time_complexity: v.time_complexity?.trim() || null,
+      space_complexity: v.space_complexity?.trim() || null,
+      confidence: v.confidence ?? null,
+      is_favorite: v.is_favorite,
+      source,
     };
 
     if (editing && entry) {
@@ -110,30 +150,47 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
   };
 
   const pd = form.watch("personal_difficulty") ?? 3;
+  const conf = form.watch("confidence") ?? 3;
+  const isFav = form.watch("is_favorite");
 
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
       className="space-y-4 max-h-[70vh] overflow-y-auto pr-1"
     >
-      <div>
-        <Label>Problem title *</Label>
-        <Input {...form.register("title")} placeholder="e.g. Two Sum" />
-        {form.formState.errors.title && (
-          <p className="text-xs text-destructive mt-1">
-            {form.formState.errors.title.message}
-          </p>
-        )}
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
+          <Label>Problem title *</Label>
+          <Input {...form.register("title")} placeholder="e.g. Two Sum" />
+          {form.formState.errors.title && (
+            <p className="text-xs text-destructive mt-1">
+              {form.formState.errors.title.message}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          aria-label="Favorite"
+          onClick={() => form.setValue("is_favorite", !isFav)}
+          className="mt-6 p-2 rounded-md hover:bg-muted/40"
+        >
+          <Heart
+            className={cn(
+              "h-5 w-5 transition",
+              isFav ? "fill-rose-500 text-rose-500" : "text-muted-foreground",
+            )}
+          />
+        </button>
       </div>
 
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
-          <LinkIcon className="h-3.5 w-3.5" /> Links
+          <LinkIcon className="h-3.5 w-3.5" /> Links (auto-detects LeetCode / GFG / Codeforces)
         </Label>
         {links.map((l, i) => (
           <div key={i} className="flex gap-2">
             <Input
-              placeholder="Label (LeetCode)"
+              placeholder="Label"
               value={l.label}
               className="w-1/3"
               onChange={(e) =>
@@ -262,11 +319,78 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
             ))}
           </div>
         </div>
+        <div className="col-span-2 md:col-span-1">
+          <Label>Confidence after solve</Label>
+          <div className="flex items-center gap-1 h-10">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => form.setValue("confidence", n)}
+                className="p-0.5"
+                aria-label={`Confidence ${n}`}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-3 w-6 rounded transition",
+                    n <= (conf as number)
+                      ? "bg-emerald-500"
+                      : "bg-muted",
+                  )}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div>
-        <Label>Tags (comma separated)</Label>
-        <Input {...form.register("tags")} placeholder="hashmap, prefix-sum" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <Label>Language</Label>
+          <Select
+            value={form.watch("language") ?? ""}
+            onValueChange={(v) => form.setValue("language", v)}
+          >
+            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l} value={l}>{l}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Time complexity</Label>
+          <Input {...form.register("time_complexity")} placeholder="O(n log n)" />
+        </div>
+        <div>
+          <Label>Space complexity</Label>
+          <Input {...form.register("space_complexity")} placeholder="O(n)" />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {COMPLEXITY_CHIPS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => form.setValue("time_complexity", c)}
+            className="text-[11px] px-2 py-0.5 rounded-md border border-border/60 bg-card/40 hover:border-primary/50 hover:text-primary"
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <Label>Tags (comma separated)</Label>
+          <Input {...form.register("tags")} placeholder="hashmap, prefix-sum" />
+        </div>
+        <div>
+          <Label>Companies (comma separated)</Label>
+          <Input {...form.register("companies")} placeholder="Google, Amazon" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -289,12 +413,22 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
       </div>
 
       <div>
+        <Label>Code snippet</Label>
+        <Textarea
+          rows={6}
+          className="font-mono text-xs"
+          {...form.register("code_snippet")}
+          placeholder={"# paste your solution here"}
+        />
+      </div>
+
+      <div>
         <Label>Notes (markdown)</Label>
         <Textarea
-          rows={5}
+          rows={4}
           className="font-mono text-xs"
           {...form.register("notes_md")}
-          placeholder={"# Approach\n- ...\n\n```py\n# code\n```"}
+          placeholder={"# Approach\n- ..."}
         />
       </div>
 
