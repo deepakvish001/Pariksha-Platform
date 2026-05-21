@@ -34,6 +34,7 @@ import {
   Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChevronScroller } from "@/components/library/coding/ChevronScroller";
 import { toast } from "sonner";
 import type { JournalEntry, EntryWithDay, Difficulty, EntryStatus } from "../types";
 import {
