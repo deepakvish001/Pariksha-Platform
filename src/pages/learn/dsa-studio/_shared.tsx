@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { ListChecks, Puzzle, Wrench, AlertTriangle, ArrowLeft } from "lucide-react";
+import { ListChecks, Puzzle, Wrench, AlertTriangle, ArrowLeft, BookMarked } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ export const STUDIO_TABS = [
   { id: "patterns", label: "Common Patterns", icon: Puzzle, accent: "text-emerald-400", to: "/learn/dsa-studio/patterns" },
   { id: "tricks", label: "Code Tricks", icon: Wrench, accent: "text-amber-400", to: "/learn/dsa-studio/tricks" },
   { id: "edge", label: "Edge Cases", icon: AlertTriangle, accent: "text-orange-400", to: "/learn/dsa-studio/edge" },
+  { id: "journal", label: "Practice Journal", icon: BookMarked, accent: "text-violet-400", to: "/learn/dsa-studio/journal" },
 ];
 
 export function StudioTabs() {
