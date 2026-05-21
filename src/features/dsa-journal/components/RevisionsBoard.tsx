@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, CheckCircle2, RotateCw, ChevronRight } from "lucide-react";
+import { CalendarClock, CheckCircle2, ChevronRight } from "lucide-react";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { useDueRevisions, useSnoozeEntry, useMarkMastered, useAllEntries } from "../api";
 import type { JournalEntry } from "../types";
-import ReviseDialog from "./ReviseDialog";
+import ReviseInline from "./ReviseInline";
 import { todayISO } from "../srs";
 
 export default function RevisionsBoard() {
