@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CalendarClock, CheckCircle2, ChevronRight } from "lucide-react";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { useDueRevisions, useSnoozeEntry, useMarkMastered, useAllEntries } from "../api";
@@ -13,7 +13,6 @@ export default function RevisionsBoard() {
   const all = useAllEntries();
   const snooze = useSnoozeEntry();
   const master = useMarkMastered();
-  
 
   const upcoming = useMemo(() => {
     const today = todayISO();
@@ -39,6 +38,39 @@ export default function RevisionsBoard() {
     };
   }, [due.data]);
 
+  const actions = (e: JournalEntry) => (
+    <div className="flex items-center gap-1">
+      <ReviseInline entry={e} />
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 px-2 text-xs"
+        onClick={() => snooze.mutate({ id: e.id, days: 1 })}
+        title="Snooze 1 day"
+      >
+        +1d
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 px-2 text-xs"
+        onClick={() => snooze.mutate({ id: e.id, days: 3 })}
+        title="Snooze 3 days"
+      >
+        +3d
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 w-7 p-0"
+        onClick={() => master.mutate(e.id)}
+        title="Mark mastered"
+      >
+        <CheckCircle2 className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-5">
       <Group
@@ -46,28 +78,14 @@ export default function RevisionsBoard() {
         accent="text-rose-400 border-rose-500/30 bg-rose-500/5"
         items={overdue}
         empty="Nothing overdue — nice work."
-        renderActions={(e) => (
-          <Actions
-            entry={e}
-            onRevise={() => setRevise(e)}
-            onSnooze={(d) => snooze.mutate({ id: e.id, days: d })}
-            onMaster={() => master.mutate(e.id)}
-          />
-        )}
+        renderActions={actions}
       />
       <Group
         title="Due today"
         accent="text-amber-400 border-amber-500/30 bg-amber-500/5"
         items={today}
         empty="Caught up for today!"
-        renderActions={(e) => (
-          <Actions
-            entry={e}
-            onRevise={() => setRevise(e)}
-            onSnooze={(d) => snooze.mutate({ id: e.id, days: d })}
-            onMaster={() => master.mutate(e.id)}
-          />
-        )}
+        renderActions={actions}
       />
       <Group
         title="Upcoming"
@@ -81,14 +99,6 @@ export default function RevisionsBoard() {
           </div>
         )}
       />
-
-      {revise && (
-        <ReviseDialog
-          open={!!revise}
-          onOpenChange={(o) => !o && setRevise(null)}
-          entry={revise}
-        />
-      )}
     </div>
   );
 }
@@ -122,52 +132,30 @@ function Group({
           {empty}
         </div>
       ) : (
-        <ul className="space-y-2">
-          {items.map((e) => (
-            <li
-              key={e.id}
-              className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${accent}`}
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{e.title}</div>
-                <div className="text-[11px] text-muted-foreground">
-                  Due {e.next_revision_at} · {e.topic ?? "—"} · {e.pattern ?? "—"}
-                </div>
-              </div>
-              {renderActions(e)}
-            </li>
-          ))}
-        </ul>
+        <div className={`rounded-xl border overflow-hidden ${accent}`}>
+          <table className="w-full text-xs">
+            <tbody>
+              {items.map((e) => (
+                <tr
+                  key={e.id}
+                  className="border-b border-border/20 last:border-b-0 [&>td]:px-3 [&>td]:py-2"
+                >
+                  <td className="min-w-0">
+                    <div className="text-sm font-medium truncate">{e.title}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Due {e.next_revision_at} · {e.topic ?? "—"} ·{" "}
+                      {e.pattern ?? "—"} · {e.difficulty ?? "—"}
+                    </div>
+                  </td>
+                  <td className="text-right whitespace-nowrap">
+                    {renderActions(e)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </div>
-  );
-}
-
-function Actions({
-  entry,
-  onRevise,
-  onSnooze,
-  onMaster,
-}: {
-  entry: JournalEntry;
-  onRevise: () => void;
-  onSnooze: (days: number) => void;
-  onMaster: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <Button size="sm" variant="outline" onClick={onRevise}>
-        <RotateCw className="h-3 w-3 mr-1" /> Revise
-      </Button>
-      <Button size="sm" variant="ghost" onClick={() => onSnooze(1)} title="Snooze 1 day">
-        +1d
-      </Button>
-      <Button size="sm" variant="ghost" onClick={() => onSnooze(3)} title="Snooze 3 days">
-        +3d
-      </Button>
-      <Button size="sm" variant="ghost" onClick={onMaster} title="Mark mastered">
-        <CheckCircle2 className="h-3 w-3" />
-      </Button>
     </div>
   );
 }
