@@ -7,6 +7,10 @@ import {
   TrendingUp,
   RotateCw,
   Sparkles,
+  CheckCircle2,
+  Timer,
+  Trophy,
+  Gauge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +29,10 @@ import Heatmap from "@/features/dsa-journal/components/Heatmap";
 import Analytics from "@/features/dsa-journal/components/Analytics";
 import RevisionsBoard from "@/features/dsa-journal/components/RevisionsBoard";
 import PracticeSheet from "@/features/dsa-journal/components/PracticeSheet";
+import GoalsRing from "@/features/dsa-journal/components/GoalsRing";
+import TopicMastery from "@/features/dsa-journal/components/TopicMastery";
+import DifficultyMix from "@/features/dsa-journal/components/DifficultyMix";
+import ActivityInsights from "@/features/dsa-journal/components/ActivityInsights";
 import {
   FiltersBar,
   applyFilters,
@@ -39,13 +47,13 @@ export default function JournalPage() {
   if (!user) {
     return (
       <StudioPageShell
-        title="Practice Hub"
-        description="Log every DSA problem, schedule revisions, and watch your mastery grow."
-        canonicalPath="/learn/dsa-studio/journal"
+        title="DSA Tracker"
+        description="Track every DSA problem you solve, schedule revisions, and watch your mastery grow."
+        canonicalPath="/learn/dsa-tracker"
       >
         <SectionCard
           icon={BookMarked}
-          title="Practice Hub"
+          title="DSA Tracker"
           subtitle="Your daily DSA solve log — free for students."
           accent="text-violet-400"
         >
@@ -56,7 +64,7 @@ export default function JournalPage() {
               spaced revisions bring weak topics back at the right time.
             </p>
             <Button asChild>
-              <Link to="/login">Sign in to start logging</Link>
+              <Link to="/login">Sign in to start tracking</Link>
             </Button>
           </div>
         </SectionCard>
@@ -114,20 +122,75 @@ function PracticeHubSignedIn() {
     return n;
   }, [countsByDate]);
 
+  const todayCount = useMemo(() => {
+    const t = format(new Date(), "yyyy-MM-dd");
+    return countsByDate.get(t) ?? 0;
+  }, [countsByDate]);
+
+  // Advanced stats (last 30d)
+  const advanced = useMemo(() => {
+    const all = allEntries.data ?? [];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const recent = all.filter((e) => new Date(e.created_at) >= cutoff);
+    const cleanRate = recent.length
+      ? Math.round((recent.filter((e) => e.solved_clean).length / recent.length) * 100)
+      : 0;
+    const timed = recent.filter((e) => e.time_taken_min != null);
+    const avgTime = timed.length
+      ? Math.round(timed.reduce((s, e) => s + (e.time_taken_min ?? 0), 0) / timed.length)
+      : 0;
+    const mastered = all.filter((e) => e.mastered_at).length;
+    const confEntries = all.filter((e) => e.confidence != null);
+    const avgConf = confEntries.length
+      ? +(confEntries.reduce((s, e) => s + (e.confidence ?? 0), 0) / confEntries.length).toFixed(1)
+      : 0;
+    return { cleanRate, avgTime, mastered, avgConf };
+  }, [allEntries.data]);
+
   const filtered = useMemo(
     () => applyFilters(allEntries.data ?? [], filters),
     [allEntries.data, filters],
   );
 
+  // Preset filter chips
+  const presets: { label: string; active: boolean; apply: () => void }[] = [
+    {
+      label: "★ Favorites",
+      active: filters.favoritesOnly,
+      apply: () => setFilters({ ...defaultFilters, favoritesOnly: true }),
+    },
+    {
+      label: "Stuck only",
+      active: filters.status === "stuck",
+      apply: () => setFilters({ ...defaultFilters, status: "stuck" }),
+    },
+    {
+      label: "Due soon",
+      active: filters.sort === "due-soon",
+      apply: () => setFilters({ ...defaultFilters, sort: "due-soon" }),
+    },
+    {
+      label: "✓ Mastered",
+      active: filters.masteredOnly,
+      apply: () => setFilters({ ...defaultFilters, masteredOnly: true }),
+    },
+    {
+      label: "Hardest first",
+      active: filters.sort === "hardest",
+      apply: () => setFilters({ ...defaultFilters, sort: "hardest" }),
+    },
+  ];
+
   return (
     <StudioPageShell
-      title="Practice Hub"
-      description="Log every DSA problem, schedule revisions, and watch your mastery grow."
-      canonicalPath="/learn/dsa-studio/journal"
+      title="DSA Tracker"
+      description="Track every DSA problem you solve, schedule revisions, and watch your mastery grow."
+      canonicalPath="/learn/dsa-tracker"
     >
       <SectionCard
         icon={BookMarked}
-        title="Practice Hub"
+        title="DSA Tracker"
         subtitle="Spreadsheet-style solve tracker — type, tab, save. No popups."
         accent="text-violet-400"
         badge="Free"
@@ -147,6 +210,35 @@ function PracticeHubSignedIn() {
             value={allEntries.data?.length ?? 0}
             accent="text-emerald-400"
           />
+          <StatTile
+            icon={CheckCircle2}
+            label="Clean rate (30d)"
+            value={`${advanced.cleanRate}%`}
+            accent="text-emerald-400"
+          />
+          <StatTile
+            icon={Timer}
+            label="Avg time (30d)"
+            value={advanced.avgTime ? `${advanced.avgTime}m` : "—"}
+            accent="text-sky-400"
+          />
+          <StatTile
+            icon={Trophy}
+            label="Mastered"
+            value={advanced.mastered}
+            accent="text-violet-400"
+          />
+          <StatTile
+            icon={Gauge}
+            label="Confidence"
+            value={advanced.avgConf ? `${advanced.avgConf}/5` : "—"}
+            accent="text-rose-400"
+          />
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <GoalsRing todayCount={todayCount} weekCount={weekCount} />
+          <DifficultyMix entries={allEntries.data ?? []} />
         </div>
 
         <div className="mt-4 flex items-center gap-2 flex-wrap">
@@ -198,6 +290,26 @@ function PracticeHubSignedIn() {
 
         <TabsContent value="history" className="space-y-4">
           <Heatmap days={days.data ?? []} countsByDate={countsByDate} />
+          <TopicMastery
+            entries={allEntries.data ?? []}
+            onPick={(topic) => setFilters({ ...defaultFilters, topic })}
+          />
+          <div className="flex flex-wrap gap-2">
+            {presets.map((p) => (
+              <button
+                key={p.label}
+                onClick={p.apply}
+                className={
+                  "h-7 px-2.5 rounded-md text-xs border transition " +
+                  (p.active
+                    ? "bg-primary/15 border-primary/40 text-primary"
+                    : "bg-card/40 border-border/40 text-muted-foreground hover:text-foreground")
+                }
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <FiltersBar
             value={filters}
             onChange={setFilters}
@@ -215,7 +327,10 @@ function PracticeHubSignedIn() {
           />
         </TabsContent>
 
-        <TabsContent value="analytics">
+        <TabsContent value="analytics" className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <ActivityInsights entries={allEntries.data ?? []} />
+          </div>
           <Analytics entries={allEntries.data ?? []} />
         </TabsContent>
       </Tabs>
@@ -239,9 +354,9 @@ function StatTile({
       <div className={`h-9 w-9 rounded-lg bg-card/60 border border-border/40 flex items-center justify-center ${accent}`}>
         <Icon className="h-4 w-4" />
       </div>
-      <div>
-        <div className="text-lg font-semibold leading-none">{value}</div>
-        <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
+      <div className="min-w-0">
+        <div className="text-lg font-semibold leading-none truncate">{value}</div>
+        <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{label}</div>
       </div>
     </div>
   );
