@@ -80,7 +80,7 @@ const homeNavItems = [
   { title: "Target Company", url: "/learn/target-company", icon: Target },
   { title: "Sheets", url: "/learn/sheets", icon: FileSpreadsheet },
   { title: "DSA Studio", url: "/learn/dsa-studio", icon: Brain },
-  { title: "DSA Practice Journal", url: "/learn/dsa-studio/journal", icon: NotebookPen },
+  { title: "Practice Hub", url: "/learn/dsa-studio/journal", icon: NotebookPen },
   
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Contests", url: "/contests", icon: Trophy },

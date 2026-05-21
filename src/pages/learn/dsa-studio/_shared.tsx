@@ -11,7 +11,7 @@ export const STUDIO_TABS = [
   { id: "patterns", label: "Common Patterns", icon: Puzzle, accent: "text-emerald-400", to: "/learn/dsa-studio/patterns" },
   { id: "tricks", label: "Code Tricks", icon: Wrench, accent: "text-amber-400", to: "/learn/dsa-studio/tricks" },
   { id: "edge", label: "Edge Cases", icon: AlertTriangle, accent: "text-orange-400", to: "/learn/dsa-studio/edge" },
-  { id: "journal", label: "Practice Journal", icon: BookMarked, accent: "text-violet-400", to: "/learn/dsa-studio/journal" },
+  { id: "journal", label: "Practice Hub", icon: BookMarked, accent: "text-violet-400", to: "/learn/dsa-studio/journal" },
 ];
 
 export function StudioTabs() {
