@@ -182,73 +182,74 @@ export default function PracticeSheet({
     update.mutate({ id, patch });
 
   return (
-    <div className="rounded-xl border border-border/40 bg-card/30 overflow-hidden">
-      <ChevronScroller>
-        <table className="w-full text-xs min-w-[1400px] border-separate border-spacing-0">
-          <thead className="bg-card/60 text-muted-foreground sticky top-0 z-10">
-            <tr className="[&>th]:px-2 [&>th]:py-2 [&>th]:font-medium [&>th]:text-left [&>th]:border-b [&>th]:border-border/40 whitespace-nowrap">
-
-              <th className="w-8"></th>
-              <th className="w-8">#</th>
-              {showDateCol && <th className="w-20">Date</th>}
-              <th className="min-w-[220px]">Title</th>
-              <th className="w-24">Topic</th>
-              <th className="w-24">Pattern</th>
-              <th className="w-24">Difficulty</th>
-              <th className="w-16">Attempts</th>
-              <th className="w-16">Time</th>
-              <th className="w-24">Status</th>
-              <th className="w-16">Conf.</th>
-              <th className="w-20">T.C</th>
-              <th className="w-20">S.C</th>
-              <th className="w-28">Companies</th>
-              <th className="w-28">Tags</th>
-              <th className="w-24">Next rev.</th>
-              <th className="w-8 text-center">★</th>
-              <th className="w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={18} className="text-center py-6 text-muted-foreground">
-                  Loading…
-                </td>
+    <TooltipProvider delayDuration={150}>
+      <div className="rounded-xl border border-border/40 bg-card/30 overflow-hidden">
+        <ChevronScroller>
+          <table className="w-full text-xs min-w-[1500px] border-separate border-spacing-0">
+            <thead className="bg-gradient-to-r from-card/80 via-card/60 to-card/80 text-muted-foreground sticky top-0 z-10">
+              <tr className="[&>th]:px-2 [&>th]:py-2 [&>th]:font-semibold [&>th]:text-left [&>th]:border-b [&>th]:border-border/40 [&>th]:text-[11px] [&>th]:uppercase [&>th]:tracking-wide whitespace-nowrap">
+                <th className="w-8"></th>
+                <Th className="w-8" help={COL_HELP["#"]}>#</Th>
+                {showDateCol && <Th className="w-20" help={COL_HELP.Date}>Date</Th>}
+                <Th className="min-w-[220px]" help={COL_HELP.Title}>Title</Th>
+                <Th className="w-28" help={COL_HELP.Topic}>Topic</Th>
+                <Th className="w-28" help={COL_HELP.Pattern}>Pattern</Th>
+                <Th className="w-28" help={COL_HELP.Difficulty}>Difficulty</Th>
+                <Th className="w-16" help={COL_HELP.Attempts}>Att.</Th>
+                <Th className="w-16" help={COL_HELP.Time}>Time</Th>
+                <Th className="w-24" help={COL_HELP.Status}>Status</Th>
+                <Th className="w-16" help={COL_HELP["Conf."]}>Conf.</Th>
+                <Th className="w-20" help={COL_HELP["T.C"]}>T.C</Th>
+                <Th className="w-20" help={COL_HELP["S.C"]}>S.C</Th>
+                <Th className="w-40" help={COL_HELP.Companies}>Companies</Th>
+                <Th className="w-40" help={COL_HELP.Tags}>Tags</Th>
+                <Th className="w-24" help={COL_HELP["Next rev."]}>Next rev.</Th>
+                <Th className="w-8 text-center" help={COL_HELP["★"]}>★</Th>
+                <th className="w-8"></th>
               </tr>
-            ) : entries.length === 0 && !showAddRow ? (
-              <tr>
-                <td colSpan={18} className="text-center py-6 text-muted-foreground">
-                  {emptyHint}
-                </td>
-              </tr>
-            ) : (
-              entries.map((e, i) => (
-                <SheetRow
-                  key={e.id}
-                  entry={e}
-                  index={i + 1}
-                  expanded={expanded.has(e.id)}
-                  showDateCol={showDateCol}
-                  onToggleExpand={() => toggleExpand(e.id)}
-                  onSave={(patch) => saveField(e.id, patch)}
-                  onDelete={() => {
-                    if (confirm(`Delete "${e.title}"?`)) remove.mutate(e.id);
-                  }}
-                  onToggleFav={() =>
-                    fav.mutate({ id: e.id, value: !e.is_favorite })
-                  }
-                  onSnooze={(d) => snooze.mutate({ id: e.id, days: d })}
-                  onMaster={() => master.mutate(e.id)}
-                />
-              ))
-            )}
-            {showAddRow && dayId && (
-              <DraftRow dayId={dayId} showDateCol={showDateCol} />
-            )}
-          </tbody>
-        </table>
-      </ChevronScroller>
-    </div>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={18} className="text-center py-6 text-muted-foreground">
+                    Loading…
+                  </td>
+                </tr>
+              ) : entries.length === 0 && !showAddRow ? (
+                <tr>
+                  <td colSpan={18} className="text-center py-6 text-muted-foreground">
+                    {emptyHint}
+                  </td>
+                </tr>
+              ) : (
+                entries.map((e, i) => (
+                  <SheetRow
+                    key={e.id}
+                    entry={e}
+                    index={i + 1}
+                    expanded={expanded.has(e.id)}
+                    showDateCol={showDateCol}
+                    onToggleExpand={() => toggleExpand(e.id)}
+                    onSave={(patch) => saveField(e.id, patch)}
+                    onDelete={() => {
+                      if (confirm(`Delete "${e.title}"?`)) remove.mutate(e.id);
+                    }}
+                    onToggleFav={() =>
+                      fav.mutate({ id: e.id, value: !e.is_favorite })
+                    }
+                    onSnooze={(d) => snooze.mutate({ id: e.id, days: d })}
+                    onMaster={() => master.mutate(e.id)}
+                  />
+                ))
+              )}
+              {showAddRow && dayId && (
+                <DraftRow dayId={dayId} showDateCol={showDateCol} />
+              )}
+            </tbody>
+          </table>
+        </ChevronScroller>
+      </div>
+    </TooltipProvider>
   );
 }
 
