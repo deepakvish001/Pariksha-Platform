@@ -395,7 +395,8 @@ const App = () => (
                   <Route path="dsa-studio/patterns" element={<DsaStudioPatternsPage />} />
                   <Route path="dsa-studio/tricks" element={<DsaStudioTricksPage />} />
                   <Route path="dsa-studio/edge" element={<DsaStudioEdgePage />} />
-                  <Route path="dsa-studio/journal" element={<DsaStudioJournalPage />} />
+                  <Route path="dsa-tracker" element={<DsaStudioJournalPage />} />
+                  <Route path="dsa-studio/journal" element={<Navigate to="/learn/dsa-tracker" replace />} />
                   <Route path="dsa-studio/pattern/:patternId" element={<DsaStudioPattern />} />
                   <Route path="dsa-studio/:slug" element={<DsaStudioProblem />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
