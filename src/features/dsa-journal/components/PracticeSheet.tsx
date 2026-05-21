@@ -153,7 +153,7 @@ export default function PracticeSheet({
             )}
           </tbody>
         </table>
-      </div>
+      </ChevronScroller>
     </div>
   );
 }
