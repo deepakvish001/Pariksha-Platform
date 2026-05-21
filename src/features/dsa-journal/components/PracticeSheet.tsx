@@ -685,6 +685,222 @@ function CellSelect({
   );
 }
 
+// ----------------- Colorful cells -----------------
+
+function ChipCell({
+  value,
+  onSave,
+  placeholder,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]);
+
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => {
+          setEditing(false);
+          if (v !== value) onSave(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") {
+            setV(value);
+            setEditing(false);
+          }
+        }}
+        placeholder={placeholder}
+        className="h-7 px-1.5 text-xs"
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="w-full text-left"
+    >
+      {value ? (
+        <span
+          className={cn(
+            "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border font-medium",
+            chipClass(value),
+          )}
+        >
+          {value}
+        </span>
+      ) : (
+        <span className="text-muted-foreground/60 text-[11px] italic px-1">
+          {placeholder ?? "—"}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function BadgeSelect({
+  value,
+  options,
+  styleMap,
+  onSave,
+  emptyLabel,
+}: {
+  value: string;
+  options: string[];
+  styleMap: Record<string, string>;
+  onSave: (v: string) => void;
+  emptyLabel?: string;
+}) {
+  return (
+    <Select
+      value={value || "__none__"}
+      onValueChange={(v) => onSave(v === "__none__" ? "" : v)}
+    >
+      <SelectTrigger
+        className={cn(
+          "h-7 px-2 text-[11px] border font-semibold capitalize w-full justify-between gap-1",
+          value && styleMap[value]
+            ? styleMap[value]
+            : "bg-transparent border-transparent text-muted-foreground hover:border-border",
+        )}
+      >
+        <SelectValue placeholder={emptyLabel ?? "—"} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem
+            key={o || "__none__"}
+            value={o || "__none__"}
+            className="text-xs capitalize"
+          >
+            {o ? (
+              <span
+                className={cn(
+                  "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border font-semibold",
+                  styleMap[o] ?? "",
+                )}
+              >
+                {o}
+              </span>
+            ) : (
+              emptyLabel ?? "—"
+            )}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function ChipListCell({
+  values,
+  onSave,
+  placeholder,
+  icon,
+}: {
+  values: string[];
+  onSave: (next: string[]) => void;
+  placeholder?: string;
+  icon?: React.ReactNode;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (!v) return;
+    if (values.includes(v)) {
+      setDraft("");
+      return;
+    }
+    onSave([...values, v]);
+    setDraft("");
+  };
+  const remove = (v: string) => onSave(values.filter((x) => x !== v));
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="w-full flex flex-wrap gap-1 items-center px-1 py-1 rounded hover:bg-card/60 min-h-[28px] text-left"
+        >
+          {values.length === 0 && (
+            <span className="text-muted-foreground/60 text-[11px] italic inline-flex items-center gap-1">
+              {icon} {placeholder ?? "Add"}
+            </span>
+          )}
+          {values.slice(0, 3).map((v) => (
+            <span
+              key={v}
+              className={cn(
+                "inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] border font-medium",
+                chipClass(v),
+              )}
+            >
+              {v}
+            </span>
+          ))}
+          {values.length > 3 && (
+            <span className="text-[10px] text-muted-foreground">
+              +{values.length - 3}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2 space-y-2">
+        <div className="flex flex-wrap gap-1">
+          {values.length === 0 && (
+            <span className="text-[11px] text-muted-foreground">No items yet.</span>
+          )}
+          {values.map((v) => (
+            <span
+              key={v}
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border font-medium",
+                chipClass(v),
+              )}
+            >
+              {v}
+              <button
+                type="button"
+                onClick={() => remove(v)}
+                className="hover:text-foreground"
+                aria-label={`Remove ${v}`}
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-1">
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={placeholder}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                add();
+              }
+            }}
+            className="h-7 text-xs"
+          />
+          <Button size="sm" className="h-7 px-2 text-xs" onClick={add}>
+            Add
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function TitleCell({
   entry,
   onSave,
