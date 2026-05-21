@@ -13,7 +13,7 @@ export default function RevisionsBoard() {
   const all = useAllEntries();
   const snooze = useSnoozeEntry();
   const master = useMarkMastered();
-  const [revise, setRevise] = useState<JournalEntry | null>(null);
+  
 
   const upcoming = useMemo(() => {
     const today = todayISO();
