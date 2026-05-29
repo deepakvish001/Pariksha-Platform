@@ -174,6 +174,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const sameUser = nextUser?.id && nextUser.id === loadedUserId;
 
         if (nextUser && !sameUser) {
+          setLoading(true);
+          setProfile(null);
+          setExtendedProfile(null);
           loadedUserId = nextUser.id;
           scheduleProfileFetch(nextUser.id);
         } else if (!nextUser) {
