@@ -64,7 +64,7 @@ export default function ParikshaaOverview() {
               <div className="rounded-lg border bg-amber-500/5 border-amber-500/30 p-4 text-sm">
                 <strong>{data!.pending}</strong> organization
                 {data!.pending === 1 ? "" : "s"} awaiting approval —{" "}
-                <a className="underline" href="/admin/parikshaa/orgs">review</a>.
+                <Link className="underline" to="/admin/parikshaa/orgs">review</Link>.
               </div>
             )}
             {data!.newLeads > 0 && (
