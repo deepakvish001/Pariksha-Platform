@@ -108,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let pendingFetchUserId: string | null = null;
     let fetchTimer: ReturnType<typeof setTimeout> | null = null;
     let inflightUserId: string | null = null;
+    let initialSessionResolved = false;
 
     // Debounce window for coalescing bursts of auth events (INITIAL_SESSION
     // followed quickly by SIGNED_IN, multiple tab focus events, etc.) that
@@ -143,6 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      initialSessionResolved = true;
       if (cancelled) return;
       const nextUser = initialSession?.user ?? null;
       setSession(initialSession);
@@ -160,8 +162,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
         if (cancelled) return;
+        if (!initialSessionResolved && event === "INITIAL_SESSION") return;
 
         const nextUser = nextSession?.user ?? null;
         setSession(nextSession);
