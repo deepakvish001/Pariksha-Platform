@@ -5,11 +5,11 @@ import { useAuth } from "@/contexts/AuthContext";
 export type AppRole = "admin" | "moderator" | "user";
 
 export const useUserRole = () => {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-role", user?.id],
-    enabled: !!user?.id,
+    enabled: authReady && !!user?.id,
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<AppRole[]> => {
       const { data, error } = await supabase
@@ -26,6 +26,6 @@ export const useUserRole = () => {
     roles,
     isAdmin: roles.includes("admin"),
     isModerator: roles.includes("moderator"),
-    isLoading,
+    isLoading: !authReady || (!!user?.id && isLoading),
   };
 };

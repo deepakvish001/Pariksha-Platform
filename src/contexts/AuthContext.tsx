@@ -35,6 +35,7 @@ interface AuthContextType {
   profile: Profile | null;
   extendedProfile: ExtendedProfile | null;
   loading: boolean;
+  authReady: boolean;
   onboardingCompleted: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -60,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [extendedProfile, setExtendedProfile] = useState<ExtendedProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -106,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let pendingFetchUserId: string | null = null;
     let fetchTimer: ReturnType<typeof setTimeout> | null = null;
     let inflightUserId: string | null = null;
+    let initialSessionResolved = false;
 
     // Debounce window for coalescing bursts of auth events (INITIAL_SESSION
     // followed quickly by SIGNED_IN, multiple tab focus events, etc.) that
@@ -140,17 +143,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }, FETCH_DEBOUNCE_MS);
     };
 
-    // onAuthStateChange fires INITIAL_SESSION on subscribe with the restored
-    // session from storage, so we don't need a separate getSession() call —
-    // doing both caused duplicate state updates and double profile fetches
-    // on every page load (the "checking multiple times" flicker).
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      initialSessionResolved = true;
+      if (cancelled) return;
+      const nextUser = initialSession?.user ?? null;
+      setSession(initialSession);
+      setUser(nextUser);
+      setAuthReady(true);
+
+      if (nextUser) {
+        loadedUserId = nextUser.id;
+        scheduleProfileFetch(nextUser.id);
+      } else {
+        setProfile(null);
+        setExtendedProfile(null);
+        setLoading(false);
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
         if (cancelled) return;
+        if (!initialSessionResolved && event === "INITIAL_SESSION") return;
 
         const nextUser = nextSession?.user ?? null;
         setSession(nextSession);
         setUser(nextUser);
+        setAuthReady(true);
 
         // Ignore pure token refreshes — user identity hasn't changed, no need
         // to refetch profile or flip loading. Same for USER_UPDATED metadata
@@ -158,6 +177,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const sameUser = nextUser?.id && nextUser.id === loadedUserId;
 
         if (nextUser && !sameUser) {
+          setLoading(true);
+          setProfile(null);
+          setExtendedProfile(null);
           loadedUserId = nextUser.id;
           scheduleProfileFetch(nextUser.id);
         } else if (!nextUser) {
@@ -257,6 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     profile,
     extendedProfile,
     loading,
+    authReady,
     onboardingCompleted,
     signUp,
     signIn,
