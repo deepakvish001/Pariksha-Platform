@@ -71,7 +71,7 @@ export default function ParikshaaOverview() {
               <div className="rounded-lg border bg-card p-4 text-sm">
                 <strong>{data!.newLeads}</strong> new lead
                 {data!.newLeads === 1 ? "" : "s"} in the pipeline —{" "}
-                <a className="underline" href="/admin/parikshaa/leads">view</a>.
+                <Link className="underline" to="/admin/parikshaa/leads">view</Link>.
               </div>
             )}
           </>
