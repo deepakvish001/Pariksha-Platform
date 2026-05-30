@@ -1,124 +1,89 @@
-# DSA Tracker — date control, multi-session logging, deeper tracking
+## Goal
+Rebuild the entire admin panel's look & feel as a **Dashboard Cockpit** with **Glassmorphism Premium** styling and **spacious** data density. Same amber-on-deep-black palette. **Zero feature loss** — every route, query, mutation, dialog, and permission stays exactly as-is. This is a pure presentation refactor.
 
-## 1. Schema additions (one migration)
+## Design language (locked, applied everywhere)
 
-Add to `practice_journal_entries`:
-- `started_at timestamptz` — when this attempt began
-- `ended_at timestamptz` — when it ended
-- `session_label text` — e.g. `Morning`, `Afternoon`, `Evening`, `Night`, or a custom label
+- **Surfaces**: frosted glass cards — `bg-card/40 backdrop-blur-xl` over a deep `#030305` base, hairline borders `border-border/40`, soft amber inner glow on key elements.
+- **Ambient backdrop**: AdminBackdrop upgraded — two animated amber orbs (top-left, bottom-right) + faint dot grid + top fade. Lives behind the entire shell.
+- **Accent**: amber gradient `from-amber-400 via-orange-500 to-amber-400` reserved for headlines, primary CTAs, active nav rail, and focus rings only.
+- **Typography**: tighter tracking on H1/H2, mono for IDs/counts/timestamps, slightly larger body (15px) for "spacious" feel.
+- **Motion**: framer-motion fade+rise on page mount (staggered 40ms), hover lift on cards (`-translate-y-0.5`), shimmer on skeletons.
+- **Density**: table rows go from `py-2` → `py-3.5`, card padding `p-4` → `p-6`, generous gaps.
 
-All nullable, no backfill. Indexed: `idx_pje_user_started (user_id, started_at)`.
-
-Why: schema already supports many entries per day (each row has its own `created_at`), but it can't represent "I solved these between 9–11am" vs "these between 3–5pm". `started_at`/`ended_at` + `session_label` make that explicit, drive grouping, and let `time_taken_min` auto-fill.
-
-RLS: unchanged — existing user-scoped policies cover the new columns.
-
-## 2. Date control on the Today tab → renamed "Log" tab
-
-Replace the fixed "Today" header with a **Date Navigator**:
+## Shell redesign — `AdminShell`, `AdminBackdrop`, `AdminPageHeader`
 
 ```text
-[◀]  Thu, May 21 2026  [📅 pick]  [▶]   [Today]
+┌──────────────────────────────────────────────────────────────────┐
+│ Glass Topbar: logo · breadcrumb · ⌘K · realtime dot · user menu │
+├────────────┬─────────────────────────────────────────────────────┤
+│            │ KPI strip (slot, optional per page)                 │
+│  Sidebar   ├─────────────────────────────────────────────────────┤
+│  (glass,   │                                                     │
+│  pinned    │           Page content (glass cards)                │
+│  + groups) │                                                     │
+│            │                                                     │
+└────────────┴─────────────────────────────────────────────────────┘
 ```
 
-- Prev/next day buttons.
-- Shadcn `Calendar` popover for arbitrary date (disabled if > today).
-- "Today" jump button.
-- Selected date is held in component state; we call `ensureDay(date)` lazily — only when the user actually adds an entry for that date.
-- Switching date refetches that day's entries via existing `useDayEntries(dayId)`.
+- **Sidebar**: keep all current groups, pins, badges, collapse, command palette. Repaint only — glass panel, amber active rail, group labels in micro-caps, hover row gets subtle amber wash. Icon-only collapsed mode preserved.
+- **Topbar**: new sticky glass bar with breadcrumb (already wired via `useAdminBreadcrumb`), ⌘K palette button, live-realtime pulse dot, theme toggle.
+- **`AdminPageHeader`**: keep API (eyebrow / title / description / chips / actions). New look: bigger hero, amber-gradient last word, optional KPI strip slot beneath, decorative corner orb.
+- **New shared primitives** (used by every page, no logic):
+  - `GlassCard` — replaces ad-hoc `<Card>` styling.
+  - `StatTile` — used by Overview/SystemHealth/Arena/Parikshaa overview.
+  - `DataTable` wrapper — adds zebra glass rows, spacious padding, sticky header, empty/loading states. Pages keep their own `<table>` markup; wrapper just restyles via class composition.
+  - `SectionHeader` — consistent H2 with icon + count chip.
+  - `PageTransition` — framer-motion wrapper applied in `AdminShell` so every admin page animates on route change.
 
-New hook in `src/features/dsa-journal/api.ts`:
-- `useDayByDate(date)` — fetch the day row for any ISO date (read-only; no auto-insert).
-- `useEnsureDay` stays mutation-only and is called from the add-row.
+## Page-by-page application
 
-## 3. Multi-session logging
+All ~25 admin pages get the same treatment via the new shared primitives. No content/behavior changes.
 
-### Session bar (above the sheet on the Log tab)
+**Overview / dashboards**: `AdminDashboard`, `parikshaa/Overview`, `SystemHealth`, `AdminArena` → use `StatTile` grid + glass section cards.
 
-```text
-Sessions today:  [🌅 Morning 9–11]  [☀️ Afternoon 2–4]  [🌙 Night 10–11]  [+ New session]
-                  3 solved · 1 partial · 95m            …                  …
-```
+**Lists & tables**: `AdminUsers`, `AdminProblemsList`, `AdminRoles`, `Reports`, `SubmissionsAdmin`, `QuizzesAdmin`, `LeaderboardsAdmin`, `AchievementsAdmin`, `AuditLog`, `CronJobs`, `SecurityCenter`, `NotificationsAdmin`, `AdminAlerts`, `SupportInbox`, `ArenaModeration`, `SideCamPairings`, `StorageBrowser`, `parikshaa/Users`, `parikshaa/Orgs`, `parikshaa/Leads`, `parikshaa/Moderation`, `parikshaa/Experiences`, `parikshaa/EmailPreview`, `parikshaa/ExperienceAuditLog` → wrap existing table in `DataTable`, swap `<Card>` for `GlassCard`, add `AdminPageHeader`.
 
-- Each chip shows `label`, `start–end` (HH:mm), and a mini summary.
-- Click a chip → filters the sheet to that session and pre-fills `session_label`, `started_at` on new rows.
-- "+ New session" opens a small inline form: label (preset chips Morning/Afternoon/Evening/Night + custom text), start time, optional end time. Saves to a tiny `localStorage` index `dsa-tracker:sessions:<userId>:<date>` so blank sessions persist before any entry is added; once an entry is saved with that session_label/started_at, the row drives the chip.
-- Sessions are **derived from entries** for the chosen date: distinct `session_label` (or auto-bucketed by `started_at` hour) → grouped, ordered by `min(started_at)`.
+**Editors / forms**: `ProblemEditor`, `BulkImport`, `Broadcast`, `SettingsAndFlags`, `blog/*` editors → glass panels, sticky save bar at bottom (glass), unchanged form fields/logic.
 
-### Sheet grouping on Log tab
+**Blog admin** (`src/pages/admin/blog/*`) → same treatment; the new-post editor keeps its current toolbar and markdown logic, only surface restyle.
 
-Render entries grouped by session with collapsible headers. Within each group: existing `PracticeSheet` table. Empty groups show "Add the first problem to this session".
+**Contests admin** (`src/pages/admin/contests/*` + `src/components/admin/contests/*`) → glass panels; tabs restyled to amber-underline; tables go through `DataTable`.
 
-### Add-row enhancements
+## What stays untouched
 
-The bottom add-row already exists. Extend it so when a session is active, `session_label` and `started_at` are injected into the insert payload. Also add a small **▶ Start / ■ Stop session timer** button next to the add-row that:
-1. On Start, stamps `started_at = now()` for the next entry.
-2. On Stop, stamps `ended_at = now()`, computes `time_taken_min = round((ended_at - started_at)/60)` and auto-fills it.
+- All routes (`src/App.tsx`), guards (`AdminRoute`), `useUserRole`, `AuthContext`.
+- Every hook in `src/hooks/admin/*` and every query/mutation.
+- All dialogs, drawers, command palette behavior, pinning, badges, audit logging.
+- Sidebar groups, items, icons, ordering, permissions.
+- Edge functions, migrations, schema. No backend changes.
+- shadcn primitives — no edits to `src/components/ui/*` except possibly adding variants if a glass `<Card>` variant helps (additive only).
 
-No popups — all inline.
+## Technical details
 
-## 4. Other "more better" tracking features
+- New files:
+  - `src/components/admin/ui/GlassCard.tsx`
+  - `src/components/admin/ui/StatTile.tsx`
+  - `src/components/admin/ui/DataTable.tsx`
+  - `src/components/admin/ui/SectionHeader.tsx`
+  - `src/components/admin/ui/PageTransition.tsx`
+  - `src/components/admin/AdminTopbar.tsx`
+- Edited:
+  - `src/components/admin/AdminShell.tsx` — add topbar slot, wrap content in `PageTransition`, restyle sidebar surface (no nav logic changes).
+  - `src/components/admin/AdminBackdrop.tsx` — richer orbs/grid.
+  - `src/components/admin/AdminPageHeader.tsx` — new hero look, optional `kpis` slot.
+  - Every admin page file: swap `<Card>` → `<GlassCard>`, wrap tables in `<DataTable>`, replace any ad-hoc page header with `<AdminPageHeader>`. Pure JSX restyle; imports & handlers untouched.
+- Tailwind: rely on existing CSS variables in `src/index.css` (no token changes since palette is locked). Add a few admin-scoped utility classes (e.g. `.admin-glass`, `.admin-rail-active`) in `src/index.css` under an `@layer components` block.
+- Framer-motion already in deps — used for `PageTransition` and card hover.
+- Accessibility: keep focus rings (amber), preserve all `aria-*`, keep keyboard nav for sidebar/palette.
+- Responsive: shell collapses to icon rail < `lg`; topbar stacks; tables get horizontal scroll container on `sm`.
+- No e2e test selectors removed — all `data-testid` attributes preserved.
 
-### a. Calendar heatmap → click to open that date
-On the History tab, clicking a Heatmap cell sets the Log tab's date to that day and switches tabs.
+## Out of scope
 
-### b. Time-of-day distribution chart (Analytics)
-Stacked bar 0–23h showing problems solved per hour, grouped by session label. Reuses Recharts already in the project.
+- No new admin features, no route changes, no permission changes.
+- No changes to user-side UI.
+- No copy/wording changes beyond what AdminPageHeader needs.
 
-### c. Session insights card (Analytics)
-- Avg session length (mins)
-- Avg problems per session
-- Most productive session label (e.g. "Evening — 42% of solves")
-- Longest focus session
+## Rollout
 
-### d. Per-day summary strip (Log tab)
-Inline strip showing for the selected date:
-`5 solved · 1 partial · 0 stuck · 145m total focus · 3 sessions`.
-
-### e. Quick-add improvements (carry-over)
-- "+ 3 quick rows" button — adds 3 blank rows pre-filled with the active session.
-- Keyboard shortcut `n` focuses the add-row title input when sheet is focused.
-
-### f. Streak unaffected
-Streak still counts distinct days with ≥1 entry — already correct; backfilling old days now properly increments it.
-
-### g. Past-date entry pill
-When the selected date ≠ today, show an amber pill "Logging for <date>" so the user can't forget they're back-dating. Entries created have `created_at = now()` (audit), but they belong to that date's `day_id`.
-
-## 5. UI surface
-
-| File | Change |
-|---|---|
-| `supabase/migrations/...` | Add `started_at`, `ended_at`, `session_label` + index |
-| `src/features/dsa-journal/types.ts` | Add the 3 fields to `JournalEntry` |
-| `src/features/dsa-journal/api.ts` | `useDayByDate`, accept session fields in `EntryInput`, new `useDateEntries` helper |
-| `src/features/dsa-journal/components/DateNavigator.tsx` | New: prev/next/today + shadcn date picker |
-| `src/features/dsa-journal/components/SessionBar.tsx` | New: chips + "New session" form + active session state |
-| `src/features/dsa-journal/components/SessionTimer.tsx` | New: tiny start/stop timer beside add-row |
-| `src/features/dsa-journal/components/DaySummaryStrip.tsx` | New: inline counts for selected date |
-| `src/features/dsa-journal/components/TimeOfDayChart.tsx` | New: Analytics chart |
-| `src/features/dsa-journal/components/SessionInsights.tsx` | New: Analytics card |
-| `src/features/dsa-journal/components/PracticeSheet.tsx` | Accept `sessionLabel`/`startedAt` props that the add-row uses on insert; support grouping mode (optional `groupBy="session"`) |
-| `src/features/dsa-journal/components/Heatmap.tsx` | Add `onCellClick(date)` callback |
-| `src/pages/learn/dsa-studio/JournalPage.tsx` | Rename Today tab → **Log**; mount DateNavigator + SessionBar + grouped PracticeSheet + DaySummaryStrip; wire Heatmap click → switch to Log tab on that date; add new Analytics cards |
-
-## 6. Out of scope
-
-- No changes to SRS scheduling.
-- No changes to export formats (CSV still exports the new columns automatically since it reads from entry rows).
-- No real-time presence for sessions.
-- No changes to the existing "DSA Tracker" rename / route.
-
-## 7. Notes for the migration step
-
-```sql
-ALTER TABLE public.practice_journal_entries
-  ADD COLUMN IF NOT EXISTS started_at  timestamptz,
-  ADD COLUMN IF NOT EXISTS ended_at    timestamptz,
-  ADD COLUMN IF NOT EXISTS session_label text;
-
-CREATE INDEX IF NOT EXISTS idx_pje_user_started
-  ON public.practice_journal_entries (user_id, started_at);
-```
-
-Migration is approved + run *before* code edits so the types regenerate.
+Single pass: shell + primitives first, then sweep all pages to adopt them. Verified by visiting Dashboard, Users, Problems, Blog, Contests, Reports, System Health, Parikshaa Overview in the preview after build.

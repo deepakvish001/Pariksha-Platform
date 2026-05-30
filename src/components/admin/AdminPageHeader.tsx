@@ -42,41 +42,48 @@ export const AdminPageHeader = ({
   return (
     <header
       className={cn(
-        "relative mb-6 overflow-hidden rounded-2xl border border-border/40 bg-card/40 p-5 backdrop-blur-md sm:p-6",
-        "shadow-[0_1px_0_0_hsl(var(--border)/0.4)_inset,0_24px_60px_-30px_hsl(24_95%_53%/0.35)]",
+        "relative mb-8 overflow-hidden rounded-2xl border border-border/40 bg-card/40 p-6 backdrop-blur-2xl sm:p-8",
+        "shadow-[0_1px_0_0_hsl(var(--border)/0.4)_inset,0_30px_70px_-35px_hsl(24_95%_53%/0.45)]",
         className,
       )}
     >
-      {/* Decorative gradient corner */}
+      {/* Decorative amber corner orb */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[radial-gradient(circle,hsl(24_95%_53%/0.25),transparent_60%)] blur-2xl"
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle,hsl(24_95%_53%/0.32),transparent_60%)] blur-2xl"
+      />
+      {/* Faint amber underline */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
       />
 
       <div className="relative flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           {eyebrow && (
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" />
               {eyebrow}
             </div>
           )}
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
             {lead && <span className="text-foreground">{lead} </span>}
-            <span className="bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_hsl(24_95%_53%/0.45)]">
               {accent}
             </span>
           </h1>
           {description && (
-            <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{description}</p>
+            <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+              {description}
+            </p>
           )}
           {chips && chips.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="mt-4 flex flex-wrap gap-1.5">
               {chips.map((c, i) => (
                 <span
                   key={i}
                   className={cn(
-                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
+                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium backdrop-blur",
                     toneClasses[c.tone ?? "default"],
                   )}
                 >

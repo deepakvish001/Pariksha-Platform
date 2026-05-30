@@ -356,6 +356,82 @@
   .admin-nav-flash { animation: admin-nav-flash 1.4s ease-out; }
 }
 
+/* ---------------------------------------------------------------------------
+ * Admin Cockpit — scoped redesign
+ * ---------------------------------------------------------------------------
+ * All admin pages render inside `.admin-surface`. The selectors below upgrade
+ * the existing shadcn primitives (Card, table, tabs) to a glassmorphism +
+ * spacious look WITHOUT requiring per-page edits. Logic & markup stay intact.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  .admin-surface { font-size: 15px; line-height: 1.55; }
+  .admin-surface h1 { letter-spacing: -0.02em; }
+  .admin-surface h2 { letter-spacing: -0.015em; }
+
+  /* shadcn <Card> → frosted glass */
+  .admin-surface [class*="rounded-lg"][class*="border"][class*="bg-card"],
+  .admin-surface [class*="rounded-xl"][class*="border"][class*="bg-card"] {
+    background-color: hsl(var(--card) / 0.45);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-color: hsl(var(--border) / 0.5);
+    box-shadow:
+      0 1px 0 0 hsl(var(--border) / 0.4) inset,
+      0 20px 50px -30px hsl(24 95% 53% / 0.22);
+    border-radius: 1rem;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+
+  /* Spacious data tables */
+  .admin-surface table { border-collapse: separate; border-spacing: 0; }
+  .admin-surface table thead th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+    background: hsl(var(--card) / 0.4);
+    backdrop-filter: blur(8px);
+  }
+  .admin-surface table tbody td {
+    padding-top: 0.95rem;
+    padding-bottom: 0.95rem;
+    vertical-align: middle;
+  }
+  .admin-surface table tbody tr { transition: background-color .15s ease; }
+  .admin-surface table tbody tr:hover { background-color: hsl(var(--primary) / 0.04); }
+  .admin-surface table tbody tr + tr td { border-top: 1px solid hsl(var(--border) / 0.3); }
+
+  /* Tabs — glass tablist + amber active pill */
+  .admin-surface [role="tablist"] {
+    background-color: hsl(var(--card) / 0.35) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.45);
+    padding: 4px;
+    border-radius: 0.75rem;
+  }
+  .admin-surface [role="tab"][data-state="active"] {
+    background: linear-gradient(180deg,
+      hsl(var(--primary) / 0.18),
+      hsl(var(--primary) / 0.08)) !important;
+    color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25),
+                0 6px 20px -10px hsl(var(--primary) / 0.5);
+  }
+
+  /* Frosted inputs */
+  .admin-surface input:not([type="checkbox"]):not([type="radio"]),
+  .admin-surface textarea,
+  .admin-surface select {
+    background-color: hsl(var(--card) / 0.5);
+    backdrop-filter: blur(10px);
+  }
+
+  .admin-surface :focus-visible { outline-color: hsl(var(--primary)); }
+}
+
 /* Blog post heading anchor links (rehype-autolink-headings appends a span with class .heading-anchor-icon inside an anchor.heading-anchor) */
 .prose .heading-anchor {
   margin-left: 0.5rem;

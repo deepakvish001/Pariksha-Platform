@@ -477,7 +477,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40 bg-gradient-to-b from-sidebar to-sidebar/95">
+    <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar/60 backdrop-blur-xl supports-[backdrop-filter]:bg-sidebar/40">
       <SidebarHeader className="border-b border-border/40 px-2.5 py-4">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-md shadow-primary/30">
@@ -579,7 +579,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
       <div className="flex min-h-screen w-full bg-background">
         <AdminSidebar onOpenPalette={() => setPaletteOpen(true)} />
         <SidebarInset className="min-w-0 flex-1">
-          <div className="sticky top-0 z-20 flex h-12 items-center justify-between gap-2 border-b border-border/40 bg-background/70 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
+          <div className="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b border-border/40 bg-background/50 px-4 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/30">
             {/* subtle amber underline glow */}
             <span
               aria-hidden
@@ -646,7 +646,9 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
           </div>
           <main className="relative min-w-0 flex-1 px-4 py-6 lg:px-8">
             <AdminBackdrop />
-            <div className="relative">{children}</div>
+            <div key={pathname} className="admin-surface relative animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ease-out">
+              {children}
+            </div>
           </main>
         </SidebarInset>
       </div>
