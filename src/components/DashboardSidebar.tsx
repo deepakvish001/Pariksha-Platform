@@ -224,6 +224,7 @@ export function DashboardSidebar() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Collapse sidebar"
                     onClick={() => toggleSidebar()}
                     className="h-9 w-9 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
                   >
@@ -248,6 +249,7 @@ export function DashboardSidebar() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Expand sidebar"
                   onClick={() => toggleSidebar()}
                   className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
                 >
@@ -263,6 +265,7 @@ export function DashboardSidebar() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label={`${getThemeLabel()} mode, click to switch`}
                   onClick={toggleTheme}
                   className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
                 >
@@ -421,6 +424,7 @@ export function DashboardSidebar() {
                   <Button
                     variant="default"
                     size="icon"
+                    aria-label="Sign In"
                     onClick={() => navigate("/login")}
                     className="h-10 w-10 mx-auto rounded-lg"
                   >
@@ -495,6 +499,7 @@ export function DashboardSidebar() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Sign Out"
                       onClick={() => setIsSignOutDialogOpen(true)}
                       className="h-10 w-10 mx-auto rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
                     >

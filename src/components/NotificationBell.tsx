@@ -72,6 +72,7 @@ import { useAuth } from "@/contexts/AuthContext";
              <Button
                variant="ghost"
                size="icon"
+               aria-label="Mark as read"
                className="h-6 w-6"
                onClick={onMarkRead}
              >
@@ -81,6 +82,7 @@ import { useAuth } from "@/contexts/AuthContext";
            <Button
              variant="ghost"
              size="icon"
+             aria-label="Delete notification"
              className="h-6 w-6 text-muted-foreground hover:text-destructive"
              onClick={onDelete}
            >
@@ -106,7 +108,7 @@ import { useAuth } from "@/contexts/AuthContext";
    return (
      <Popover open={open} onOpenChange={setOpen}>
        <PopoverTrigger asChild>
-         <Button variant="ghost" size="icon" className="relative">
+         <Button variant="ghost" size="icon" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} className="relative">
            <Bell className="h-5 w-5" />
            {unreadCount > 0 && (
              <Badge
