@@ -34,7 +34,19 @@ export const safeStorage = {
     return !useMemoryFallback;
   },
   get(key: string): string | null {
-    if (useMemoryFallback) return memory.has(key) ? memory.get(key)! : null;
+    if (useMemoryFallback) {
+      if (memory.has(key)) return memory.get(key)!;
+      // Falling back to memory means a *write* failed at some point (quota
+      // exceeded, etc.) — reads are usually unaffected, so a key written to
+      // localStorage before the flip can still be sitting there. Try it
+      // before giving up, otherwise it looks like the data vanished.
+      if (typeof window === "undefined") return null;
+      try {
+        return window.localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
     try {
       return window.localStorage.getItem(key);
     } catch {
