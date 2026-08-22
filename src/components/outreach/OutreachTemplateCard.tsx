@@ -76,9 +76,17 @@ const OutreachTemplateCard = ({
       whileHover={{ y: -4 }}
       className="h-full"
     >
-      <Card 
+      <Card
         className="group relative overflow-hidden h-full flex flex-col bg-card/80 dark:bg-card/40 backdrop-blur-sm border-border/50 dark:border-primary/15 hover:border-primary/40 dark:hover:border-primary/40 hover:shadow-xl dark:hover:shadow-2xl hover:shadow-primary/5 dark:hover:shadow-primary/20 transition-all duration-300 cursor-pointer rounded-2xl"
+        role="button"
+        tabIndex={0}
         onClick={onSelect}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect();
+          }
+        }}
       >
         {/* Gradient overlay on hover - enhanced for dark mode */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-violet-500/5 dark:from-primary/10 dark:via-transparent dark:to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

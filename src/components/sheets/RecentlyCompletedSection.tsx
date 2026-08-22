@@ -60,9 +60,17 @@ const RecentlyCompletedSection = ({ sheets }: RecentlyCompletedSectionProps) => 
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card 
+            <Card
               className="group cursor-pointer border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent hover:shadow-lg hover:border-emerald-500/40 transition-all duration-300"
+              role="button"
+              tabIndex={0}
               onClick={() => navigate(`/learn/sheets/${sheet.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(`/learn/sheets/${sheet.id}`);
+                }
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">

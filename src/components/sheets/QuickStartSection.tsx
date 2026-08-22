@@ -59,9 +59,17 @@ const QuickStartSection = ({ sheets }: QuickStartSectionProps) => {
               whileHover={{ scale: 1.02 }}
               className="shrink-0 sm:shrink"
             >
-              <Card 
+              <Card
                 className="w-48 sm:w-auto cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/learn/sheets/${sheet.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/learn/sheets/${sheet.id}`);
+                  }
+                }}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-2">

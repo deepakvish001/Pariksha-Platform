@@ -90,7 +90,15 @@ const OutreachSavedSection = ({
               >
                 <Card
                   className="cursor-pointer hover:shadow-md transition-all"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onSelectTemplate(template)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectTemplate(template);
+                    }
+                  }}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
