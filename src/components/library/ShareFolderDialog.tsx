@@ -120,6 +120,7 @@ const ShareFolderDialog = ({
                   variant="outline"
                   size="icon"
                   onClick={handleCopy}
+                  aria-label={copied ? "Link copied" : "Copy link"}
                   className="flex-shrink-0"
                 >
                   {copied ? (
