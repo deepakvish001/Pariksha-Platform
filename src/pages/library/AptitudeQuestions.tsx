@@ -221,7 +221,7 @@ const AptitudeQuestions = () => {
                </div>
             </div>
              <div className="flex items-center gap-2">
-               <Button variant="outline" size="sm" className="gap-2">
+               <Button variant="outline" size="sm" className="gap-2" aria-label="My progress">
                  <TrendingUp className="h-4 w-4" />
                  <span className="hidden sm:inline">My progress</span>
                </Button>
@@ -229,13 +229,14 @@ const AptitudeQuestions = () => {
                  variant="default"
                  size="sm"
                  className="gap-2"
+                 aria-label="Quiz Mode"
                  onClick={() => setPageMode("quiz")}
                >
                  <Zap className="h-4 w-4" />
                  <span className="hidden sm:inline">Quiz Mode</span>
                </Button>
                {user && (
-                 <Button variant="outline" size="sm" className="gap-2" onClick={() => setViewMode("folders")}>
+                 <Button variant="outline" size="sm" className="gap-2" aria-label="Create folder" onClick={() => setViewMode("folders")}>
                    <FolderPlus className="h-4 w-4" />
                    <span className="hidden sm:inline">Create Folder</span>
                  </Button>
@@ -301,12 +302,12 @@ const AptitudeQuestions = () => {
                  {filteredQuestions.map((question) => (
                    <React.Fragment key={question.id}>
                      <TableRow data-question-id={question.id} className={cn("cursor-pointer transition-colors", expandedQuestionId === question.id && "bg-muted/50")} onClick={() => setExpandedQuestionId(expandedQuestionId === question.id ? null : question.id)}>
-                       <TableCell><Checkbox checked={isSolved(question.id)} onCheckedChange={() => { if (!user) navigate("/login"); else toggleSolved(question.id); }} onClick={(e) => e.stopPropagation()} /></TableCell>
+                       <TableCell><Checkbox checked={isSolved(question.id)} aria-label={isSolved(question.id) ? "Mark as unsolved" : "Mark as solved"} onCheckedChange={() => { if (!user) navigate("/login"); else toggleSolved(question.id); }} onClick={(e) => e.stopPropagation()} /></TableCell>
                        <TableCell><div className="flex items-center gap-2"><span className={cn("font-medium", isSolved(question.id) && "line-through text-muted-foreground")}>{question.title}</span><ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expandedQuestionId === question.id && "rotate-180")} /></div></TableCell>
                        <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-xs">{getCategoryName(question.categoryId)}</Badge></TableCell>
                        <TableCell><Badge variant="outline" className={getDifficultyStyles(question.difficulty)}>{question.difficulty}</Badge></TableCell>
                        <TableCell className="hidden sm:table-cell capitalize text-xs text-muted-foreground">{question.type}</TableCell>
-                       <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); if (!user) navigate("/login"); else toggleRevision(question.id); }}>{isRevision(question.id) ? <Bookmark className="h-4 w-4 fill-primary text-primary" /> : <Bookmark className="h-4 w-4 text-muted-foreground" />}</Button></TableCell>
+                       <TableCell><Button variant="ghost" size="icon" className="h-8 w-8" aria-label={isRevision(question.id) ? "Remove from revision" : "Add to revision"} onClick={(e) => { e.stopPropagation(); if (!user) navigate("/login"); else toggleRevision(question.id); }}>{isRevision(question.id) ? <Bookmark className="h-4 w-4 fill-primary text-primary" /> : <Bookmark className="h-4 w-4 text-muted-foreground" />}</Button></TableCell>
                      </TableRow>
                      <AnimatePresence>{expandedQuestionId === question.id && (<motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><td colSpan={6} className="p-0"><AnswerPanel answer={question.answer} /></td></motion.tr>)}</AnimatePresence>
                    </React.Fragment>
