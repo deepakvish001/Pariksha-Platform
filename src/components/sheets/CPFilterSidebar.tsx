@@ -66,7 +66,7 @@ const CPFilterSidebar = ({
             </motion.div>
           )}
           {isMobile && onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+            <Button variant="ghost" size="icon" aria-label="Close filters" onClick={onClose} className="h-8 w-8">
               <X className="h-4 w-4" />
             </Button>
           )}
