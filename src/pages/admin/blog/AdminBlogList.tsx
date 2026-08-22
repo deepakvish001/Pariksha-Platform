@@ -80,10 +80,10 @@ export default function AdminBlogList() {
                 <TableCell className="text-xs text-muted-foreground">{new Date(p.updated_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right space-x-1">
                   {p.status === "published" && (
-                    <Button asChild size="icon" variant="ghost"><Link to={`/blog/${p.slug}`} target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
+                    <Button asChild size="icon" variant="ghost" aria-label="View post"><Link to={`/blog/${p.slug}`} target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
                   )}
-                  <Button asChild size="icon" variant="ghost"><Link to={`/admin/blog/${p.id}/edit`}><Pencil className="h-4 w-4" /></Link></Button>
-                  <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm(`Delete "${p.title}"?`)) del.mutate(p.id); }}>
+                  <Button asChild size="icon" variant="ghost" aria-label="Edit post"><Link to={`/admin/blog/${p.id}/edit`}><Pencil className="h-4 w-4" /></Link></Button>
+                  <Button size="icon" variant="ghost" className="text-destructive" aria-label="Delete post" onClick={() => { if (confirm(`Delete "${p.title}"?`)) del.mutate(p.id); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>
