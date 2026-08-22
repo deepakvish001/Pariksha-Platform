@@ -379,7 +379,7 @@ function SplitSendButton({
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="rounded-l-none px-2 border-l border-[hsl(var(--primary-foreground))/0.2]" disabled={disabled}>
+          <Button className="rounded-l-none px-2 border-l border-[hsl(var(--primary-foreground))/0.2]" disabled={disabled} aria-label="More send options">
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
