@@ -204,7 +204,7 @@ import { useToast } from "@/hooks/use-toast";
            <span className="text-sm font-medium">
              {currentIndex + 1}/{questions.length}
            </span>
-           <Button variant="ghost" size="icon" onClick={onClose}>
+           <Button variant="ghost" size="icon" aria-label="Close review" onClick={onClose}>
              <X className="h-5 w-5" />
            </Button>
          </div>
