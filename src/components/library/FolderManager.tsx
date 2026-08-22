@@ -197,7 +197,15 @@ const FolderManager = ({
                     ? "bg-primary/5 border-primary shadow-sm"
                     : "bg-card border-border"
                 )}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectFolder(folder.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelectFolder(folder.id);
+                  }
+                }}
               >
                 <div className="flex items-start gap-3">
                   <div

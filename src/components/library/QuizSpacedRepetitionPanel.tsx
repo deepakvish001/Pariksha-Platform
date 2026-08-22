@@ -128,7 +128,16 @@ import { useQuizSpacedRepetition, type QuizReviewItem } from "@/hooks/useQuizSpa
                      review.urgency === "upcoming" && "border-border",
                      expandedId === review.id && "ring-2 ring-primary/20"
                    )}
+                   role="button"
+                   tabIndex={0}
+                   aria-expanded={expandedId === review.id}
                    onClick={() => setExpandedId(expandedId === review.id ? null : review.id)}
+                   onKeyDown={(e) => {
+                     if (e.key === "Enter" || e.key === " ") {
+                       e.preventDefault();
+                       setExpandedId(expandedId === review.id ? null : review.id);
+                     }
+                   }}
                  >
                    <div className="flex items-start justify-between gap-2">
                      <div className="flex items-start gap-2 flex-1 min-w-0">

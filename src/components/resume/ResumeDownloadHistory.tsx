@@ -150,7 +150,15 @@ const ResumeDownloadHistory: React.FC<ResumeDownloadHistoryProps> = ({
                             transition={{ delay: groupIndex * 0.1 + index * 0.05 }}
                             whileHover={{ x: 4 }}
                             className="group relative flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+                            role="button"
+                            tabIndex={0}
                             onClick={() => onRedownload?.(download.template_id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onRedownload?.(download.template_id);
+                              }
+                            }}
                           >
                             {/* Icon */}
                             <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
