@@ -80,7 +80,7 @@
            <Button variant="ghost" size="icon" onClick={onPause} title="Pause quiz">
              <Pause className="h-5 w-5" />
            </Button>
-           <Button variant="ghost" size="icon" onClick={onClose}>
+           <Button variant="ghost" size="icon" aria-label="Close quiz" onClick={onClose}>
              <X className="h-5 w-5" />
            </Button>
          </div>
