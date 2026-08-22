@@ -89,6 +89,7 @@ const CollectionsHeader = ({
                   variant="outline"
                   size="sm"
                   onClick={onOpenShareDialog}
+                  aria-label="Share folder"
                   className="gap-2 border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-white/70 hover:text-white"
                 >
                   <Share2 className="h-4 w-4" />
@@ -98,6 +99,7 @@ const CollectionsHeader = ({
                   variant={isSelectionMode ? "secondary" : "outline"}
                   size="sm"
                   onClick={onToggleSelectionMode}
+                  aria-label={isSelectionMode ? "Cancel selection" : "Select items"}
                   className={cn(
                     "gap-2",
                     isSelectionMode
@@ -170,6 +172,7 @@ const CollectionsHeader = ({
               {/* Create Folder Button */}
               <Button
                 onClick={onCreateFolder}
+                aria-label="New folder"
                 className="gap-2 bg-primary hover:bg-primary/90"
               >
                 <FolderPlus className="h-4 w-4" />
