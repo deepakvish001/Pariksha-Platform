@@ -256,10 +256,10 @@ export default function SessionTimelinePlayer({ attemptId, attemptStartedAt, org
             </div>
 
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="secondary" className="h-8" onClick={() => setPlaying((p) => !p)}>
+              <Button size="sm" variant="secondary" className="h-8" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>
                 {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
               </Button>
-              <Button size="sm" variant="ghost" className="h-8" onClick={() => { setPlaying(false); setT(0); }}>
+              <Button size="sm" variant="ghost" className="h-8" onClick={() => { setPlaying(false); setT(0); }} aria-label="Restart">
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
               <span className="text-[11px] tabular-nums text-muted-foreground">
