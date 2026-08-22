@@ -33,6 +33,7 @@ const FolderColorPicker = ({ currentColor, onColorChange, disabled }: FolderColo
           variant="ghost"
           size="icon"
           disabled={disabled}
+          aria-label="Change folder color"
           className="h-8 w-8 text-white/40 hover:text-white hover:bg-white/[0.05]"
           onClick={(e) => e.stopPropagation()}
         >
