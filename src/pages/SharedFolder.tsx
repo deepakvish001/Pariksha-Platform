@@ -201,6 +201,7 @@ const SharedFolder = () => {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Go back"
               onClick={() => navigate(-1)}
             >
               <ArrowLeft className="h-5 w-5" />
