@@ -127,7 +127,7 @@ const FormatDownloadButton: React.FC<FormatDownloadButtonProps> = ({
       </Button>
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" disabled={isDownloading}>
+          <Button variant="outline" size="icon" aria-label="More download formats" disabled={isDownloading}>
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
