@@ -49,7 +49,7 @@ const StorageBrowser = () => {
               {BUCKETS.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Input placeholder="folder prefix (optional)" value={prefix} onChange={(e) => setPrefix(e.target.value)} className="max-w-sm" />
+          <Input aria-label="Folder prefix" placeholder="folder prefix (optional)" value={prefix} onChange={(e) => setPrefix(e.target.value)} className="max-w-sm" />
           <Button variant="outline" size="sm" onClick={load}>Refresh</Button>
         </div>
 

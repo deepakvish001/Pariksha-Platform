@@ -95,12 +95,14 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
                   <div className="flex flex-wrap gap-2">
                     <Input
                       type="number"
+                      aria-label="XP amount"
                       placeholder="Amount (+/-)"
                       value={xpAmount}
                       onChange={(e) => setXpAmount(e.target.value)}
                       className="w-32"
                     />
                     <Input
+                      aria-label="Reason"
                       placeholder="Reason"
                       value={xpReason}
                       onChange={(e) => setXpReason(e.target.value)}
@@ -134,7 +136,7 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
                 <Card className="p-3 space-y-2">
                   <p className="text-xs font-medium">Grant achievement</p>
                   <div className="flex gap-2">
-                    <Input placeholder="achievement_id (e.g. first_quiz)" value={achId} onChange={(e) => setAchId(e.target.value)} />
+                    <Input aria-label="Achievement ID" placeholder="achievement_id (e.g. first_quiz)" value={achId} onChange={(e) => setAchId(e.target.value)} />
                     <Button
                       size="sm"
                       disabled={!achId || !userId || grant.isPending}
@@ -211,8 +213,8 @@ const UserNotifPanel = ({ userId }: { userId: string }) => {
     <div className="space-y-2">
       <Card className="space-y-2 p-3">
         <p className="text-xs font-medium">Send notification</p>
-        <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-8 text-xs" />
-        <Input placeholder="Message" value={message} onChange={(e) => setMessage(e.target.value)} className="h-8 text-xs" />
+        <Input aria-label="Notification title" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-8 text-xs" />
+        <Input aria-label="Notification message" placeholder="Message" value={message} onChange={(e) => setMessage(e.target.value)} className="h-8 text-xs" />
         <div className="flex gap-2">
           <Button
             size="sm"

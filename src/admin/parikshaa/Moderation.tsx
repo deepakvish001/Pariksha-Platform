@@ -61,7 +61,7 @@ function AIContentPanel() {
   const del = useDeleteAIContent();
   return (
     <div className="space-y-3">
-      <Input placeholder="Search AI content by title…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-md" />
+      <Input aria-label="Search AI content by title" placeholder="Search AI content by title…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-md" />
       <div className="rounded-lg border bg-card divide-y">
         {isLoading ? (
           <div className="px-4 py-6 text-sm text-muted-foreground"></div>
