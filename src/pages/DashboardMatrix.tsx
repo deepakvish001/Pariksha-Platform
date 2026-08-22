@@ -390,7 +390,7 @@ const DashboardMatrix = () => {
                     <CardTitle className="text-base">Daily & Weekly Goals</CardTitle>
                     <CardDescription className="text-xs">Track your progress against targets</CardDescription>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => setGoalsModalOpen(true)}>
+                  <Button variant="ghost" size="icon" aria-label="Edit goals" onClick={() => setGoalsModalOpen(true)}>
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </div>
