@@ -410,7 +410,7 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
           )}
         </CardTitle>
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" onClick={refresh} disabled={loading}>
+          <Button size="sm" variant="ghost" onClick={refresh} disabled={loading} aria-label="Refresh">
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
           </Button>
           <Button
@@ -508,7 +508,7 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
                   <Button size="sm" variant="secondary" className="h-7" onClick={() => downloadOne(lightboxItem.path)}>
                     <Download className="h-3 w-3 mr-1" /> Download
                   </Button>
-                  <Button size="sm" variant="secondary" className="h-7 w-7 p-0" onClick={() => setLightboxKey(null)}>
+                  <Button size="sm" variant="secondary" className="h-7 w-7 p-0" onClick={() => setLightboxKey(null)} aria-label="Close">
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
