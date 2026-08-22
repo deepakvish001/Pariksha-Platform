@@ -893,17 +893,17 @@ function SimpleNewForm({
   return (
     <div className="space-y-4 max-w-2xl">
       <div>
-        <Label>Title</Label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
+        <Label htmlFor="qb-create-title">Title</Label>
+        <Input id="qb-create-title" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
       </div>
       <div>
-        <Label>Prompt (Markdown)</Label>
-        <Textarea value={body} onChange={(e) => setBody(e.target.value)} className="mt-1 min-h-[140px]" />
+        <Label htmlFor="qb-create-body">Prompt (Markdown)</Label>
+        <Textarea id="qb-create-body" value={body} onChange={(e) => setBody(e.target.value)} className="mt-1 min-h-[140px]" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label>Points</Label>
-          <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1 w-32" />
+          <Label htmlFor="qb-create-points">Points</Label>
+          <Input id="qb-create-points" type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1 w-32" />
         </div>
         <div>
           <Label>Tier</Label>
@@ -1241,9 +1241,9 @@ function NewQuestionDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Type</Label>
+            <Label htmlFor="qb-new-type">Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as QuestionType)}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="qb-new-type" className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TYPES.map((t) => (
                   <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -1252,22 +1252,22 @@ function NewQuestionDialog({
             </Select>
           </div>
           <div>
-            <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
+            <Label htmlFor="qb-new-title">Title</Label>
+            <Input id="qb-new-title" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
           </div>
           <div>
-            <Label>Prompt (Markdown)</Label>
-            <Textarea value={body} onChange={(e) => setBody(e.target.value)} className="mt-1 min-h-[120px]" />
+            <Label htmlFor="qb-new-body">Prompt (Markdown)</Label>
+            <Textarea id="qb-new-body" value={body} onChange={(e) => setBody(e.target.value)} className="mt-1 min-h-[120px]" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Points</Label>
-              <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1" />
+              <Label htmlFor="qb-new-points">Points</Label>
+              <Input id="qb-new-points" type="number" value={points} onChange={(e) => setPoints(Number(e.target.value) || 0)} className="mt-1" />
             </div>
             {(type === "coding" || type === "sql") && (
               <div>
-                <Label>Language</Label>
-                <Input value={language} onChange={(e) => setLanguage(e.target.value)} placeholder={type === "sql" ? "postgres" : "javascript"} className="mt-1" />
+                <Label htmlFor="qb-new-language">Language</Label>
+                <Input id="qb-new-language" value={language} onChange={(e) => setLanguage(e.target.value)} placeholder={type === "sql" ? "postgres" : "javascript"} className="mt-1" />
               </div>
             )}
           </div>
@@ -1572,8 +1572,9 @@ function AIGenerateDialog({ orgId }: { orgId: string }) {
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Topic</Label>
+            <Label htmlFor="qb-ai-topic">Topic</Label>
             <Input
+              id="qb-ai-topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. JavaScript closures, SQL joins, REST APIs…"
@@ -1583,9 +1584,9 @@ function AIGenerateDialog({ orgId }: { orgId: string }) {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label>Type</Label>
+              <Label htmlFor="qb-ai-type">Type</Label>
               <Select value={type} onValueChange={(v) => setType(v as QuestionType)}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="qb-ai-type" className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {TYPES.map((t) => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -1594,8 +1595,9 @@ function AIGenerateDialog({ orgId }: { orgId: string }) {
               </Select>
             </div>
             <div>
-              <Label>Count</Label>
+              <Label htmlFor="qb-ai-count">Count</Label>
               <Input
+                id="qb-ai-count"
                 type="number"
                 min={1}
                 max={10}
@@ -1605,9 +1607,9 @@ function AIGenerateDialog({ orgId }: { orgId: string }) {
               />
             </div>
             <div>
-              <Label>Difficulty</Label>
+              <Label htmlFor="qb-ai-difficulty">Difficulty</Label>
               <Select value={difficulty} onValueChange={(v) => setDifficulty(v as any)}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="qb-ai-difficulty" className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
@@ -1787,8 +1789,9 @@ function ShortAnswerEditor({ question }: { question: Question }) {
           Case sensitive
         </label>
         <div className="flex items-center gap-2 text-sm">
-          <Label className="text-xs">Max length</Label>
+          <Label htmlFor="qb-shortanswer-maxlength" className="text-xs">Max length</Label>
           <Input
+            id="qb-shortanswer-maxlength"
             type="number"
             min={1}
             max={1000}
@@ -1880,16 +1883,16 @@ function NumericalEditor({ question }: { question: Question }) {
       <h4 className="text-sm font-medium">Expected answer</h4>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <Label className="text-xs">Expected value</Label>
-          <Input type="number" step="any" value={expected} onChange={(e) => { setExpected(e.target.value); setDirty(true); }} className="mt-1" />
+          <Label htmlFor="qb-numerical-expected" className="text-xs">Expected value</Label>
+          <Input id="qb-numerical-expected" type="number" step="any" value={expected} onChange={(e) => { setExpected(e.target.value); setDirty(true); }} className="mt-1" />
         </div>
         <div>
-          <Label className="text-xs">± Tolerance</Label>
-          <Input type="number" step="any" min="0" value={tolerance} onChange={(e) => { setTolerance(e.target.value); setDirty(true); }} className="mt-1" />
+          <Label htmlFor="qb-numerical-tolerance" className="text-xs">± Tolerance</Label>
+          <Input id="qb-numerical-tolerance" type="number" step="any" min="0" value={tolerance} onChange={(e) => { setTolerance(e.target.value); setDirty(true); }} className="mt-1" />
         </div>
         <div>
-          <Label className="text-xs">Unit (optional)</Label>
-          <Input value={unit} onChange={(e) => { setUnit(e.target.value); setDirty(true); }} placeholder="e.g. kg, %, m/s" className="mt-1" />
+          <Label htmlFor="qb-numerical-unit" className="text-xs">Unit (optional)</Label>
+          <Input id="qb-numerical-unit" value={unit} onChange={(e) => { setUnit(e.target.value); setDirty(true); }} placeholder="e.g. kg, %, m/s" className="mt-1" />
         </div>
       </div>
       <p className="text-xs text-[hsl(var(--muted-foreground))]">
