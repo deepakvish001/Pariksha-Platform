@@ -286,7 +286,18 @@ const ResumeTemplateCard: React.FC<ResumeTemplateCardProps> = ({
         <CardContent className="p-4 space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
-            <div className="cursor-pointer" onClick={handlePreview}>
+            <div
+              className="cursor-pointer"
+              role="button"
+              tabIndex={0}
+              onClick={handlePreview}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handlePreview();
+                }
+              }}
+            >
               <h3 className="font-semibold text-base group-hover:text-primary transition-colors">
                 {template.name}
               </h3>
