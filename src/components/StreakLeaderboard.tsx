@@ -127,6 +127,7 @@ import { useAuth } from "@/contexts/AuthContext";
                  {entry.username && (
                    <Link
                      to={`/u/${entry.username}`}
+                    aria-label={`View ${entry.username}'s profile`}
                      className="text-muted-foreground hover:text-primary transition-colors"
                    >
                      <ExternalLink className="h-3 w-3" />
@@ -137,6 +138,7 @@ import { useAuth } from "@/contexts/AuthContext";
                   variant="ghost"
                   size="icon"
                   className="h-5 w-5 ml-1"
+                  aria-label={isFollowing(entry.userId) ? "Unfollow" : "Follow"}
                   onClick={(e) => handleFollow(e, entry.userId)}
                 >
                   {isFollowing(entry.userId) ? (
