@@ -280,17 +280,17 @@ export default function AdminBlogEditor() {
         <div className="space-y-4">
           <Card className="p-4 space-y-3">
             <div>
-              <Label>Title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="An awesome blog post title" className="text-lg" />
+              <Label htmlFor="blog-title">Title</Label>
+              <Input id="blog-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="An awesome blog post title" className="text-lg" />
             </div>
             <div>
-              <Label>Slug (URL)</Label>
-              <Input value={slug} onChange={(e) => setSlug(slugify(e.target.value))} placeholder="my-awesome-post" />
+              <Label htmlFor="blog-slug">Slug (URL)</Label>
+              <Input id="blog-slug" value={slug} onChange={(e) => setSlug(slugify(e.target.value))} placeholder="my-awesome-post" />
               <p className="text-xs text-muted-foreground mt-1">/blog/{slug || "your-slug"}</p>
             </div>
             <div>
-              <Label>Excerpt</Label>
-              <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={2} placeholder="Short summary shown in cards and search." />
+              <Label htmlFor="blog-excerpt">Excerpt</Label>
+              <Textarea id="blog-excerpt" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={2} placeholder="Short summary shown in cards and search." />
             </div>
           </Card>
 
@@ -329,9 +329,9 @@ export default function AdminBlogEditor() {
           <Card className="p-4 space-y-3">
             <h3 className="font-semibold">Publish</h3>
             <div>
-              <Label>Status</Label>
+              <Label htmlFor="blog-status">Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as BlogPostStatus)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="blog-status"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="scheduled">Scheduled</SelectItem>
@@ -342,8 +342,8 @@ export default function AdminBlogEditor() {
             </div>
             {status === "scheduled" && (
               <div>
-                <Label>Publish at</Label>
-                <Input type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
+                <Label htmlFor="blog-publish-at">Publish at</Label>
+                <Input id="blog-publish-at" type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
               </div>
             )}
             <div className="flex items-center justify-between"><Label htmlFor="featured">Featured</Label><Switch id="featured" checked={featured} onCheckedChange={setFeatured} /></div>
@@ -404,13 +404,13 @@ export default function AdminBlogEditor() {
           <Card className="p-4 space-y-3">
             <h3 className="font-semibold">SEO</h3>
             <div>
-              <Label>SEO title</Label>
-              <Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} maxLength={60} />
+              <Label htmlFor="blog-seo-title">SEO title</Label>
+              <Input id="blog-seo-title" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} maxLength={60} />
               <p className="text-[11px] text-muted-foreground mt-1">{seoTitle.length}/60</p>
             </div>
             <div>
-              <Label>Meta description</Label>
-              <Textarea value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} rows={3} maxLength={160} />
+              <Label htmlFor="blog-meta-desc">Meta description</Label>
+              <Textarea id="blog-meta-desc" value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} rows={3} maxLength={160} />
               <p className="text-[11px] text-muted-foreground mt-1">{seoDesc.length}/160</p>
             </div>
 
