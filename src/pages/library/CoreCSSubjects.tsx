@@ -549,9 +549,16 @@ const CoreCSSubjects = () => {
                             "cursor-pointer hover:bg-muted/50 transition-colors",
                             expandedQuestionId === question.id && "bg-muted/30"
                           )}
+                          tabIndex={0}
                           onClick={() =>
                             setExpandedQuestionId(expandedQuestionId === question.id ? null : question.id)
                           }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setExpandedQuestionId(expandedQuestionId === question.id ? null : question.id);
+                            }
+                          }}
                         >
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox

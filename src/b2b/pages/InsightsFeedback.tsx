@@ -321,9 +321,16 @@ export default function InsightsFeedback() {
                   return (
                     <TableRow
                       key={r.insight_key}
+                      tabIndex={0}
                       onClick={() =>
                         setSelectedKey(isActive ? null : r.insight_key)
                       }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedKey(isActive ? null : r.insight_key);
+                        }
+                      }}
                       className={`cursor-pointer ${isActive ? "bg-[hsl(var(--accent))]/40" : ""}`}
                     >
                       <TableCell className="max-w-[420px]">
