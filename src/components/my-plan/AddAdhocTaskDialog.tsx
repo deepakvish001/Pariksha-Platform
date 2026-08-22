@@ -174,12 +174,12 @@ export const AddAdhocTaskDialog = ({ defaultDay, onAdd, trigger }: Props) => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Difficulty</Label>
+              <Label htmlFor="adhoc-task-difficulty">Difficulty</Label>
               <Select
                 value={difficulty}
                 onValueChange={(v) => setDifficulty(v as "easy" | "medium" | "hard")}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="adhoc-task-difficulty"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
