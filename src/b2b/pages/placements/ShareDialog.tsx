@@ -382,7 +382,7 @@ export function ShareDialog({
             </div>
             <div className="flex gap-2">
               <Input value={shareUrl!} readOnly className="font-mono text-xs" />
-              <Button size="icon" onClick={() => copy(shareUrl!, "url")} variant="outline">
+              <Button size="icon" onClick={() => copy(shareUrl!, "url")} variant="outline" aria-label={copied ? "Link copied" : "Copy link"}>
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
