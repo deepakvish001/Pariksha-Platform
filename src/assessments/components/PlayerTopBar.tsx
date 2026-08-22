@@ -250,7 +250,7 @@ export function PlayerTopBar({
 
 
             {isPreview && (
-              <Button size="sm" variant="outline" onClick={onPrefillKey} className="h-8">
+              <Button size="sm" variant="outline" onClick={onPrefillKey} aria-label="Prefill key" className="h-8">
                 <Wand2 className="h-4 w-4 sm:mr-1.5" />
                 <span className="hidden sm:inline">Prefill key</span>
               </Button>
@@ -260,6 +260,7 @@ export function PlayerTopBar({
               size="sm"
               onClick={onSubmit}
               disabled={submitting}
+              aria-label={submitting ? "Submitting…" : "Submit"}
               className="h-8 font-semibold"
             >
               {submitting ? (

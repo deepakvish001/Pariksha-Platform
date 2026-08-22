@@ -95,6 +95,7 @@ export function PlayerBottomBar({
                 "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/50 hover:bg-amber-500/20"
             )}
             aria-pressed={isFlagged}
+            aria-label={isFlagged ? "Flagged" : "Flag"}
           >
             <Flag className={cn("h-3.5 w-3.5 sm:mr-1.5", isFlagged && "fill-current")} />
             <span className="hidden sm:inline">{isFlagged ? "Flagged" : "Flag"}</span>

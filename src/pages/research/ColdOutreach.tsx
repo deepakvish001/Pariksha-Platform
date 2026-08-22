@@ -119,7 +119,7 @@ const ColdOutreach = () => {
               </div>
             </div>
           </div>
-          <Button onClick={() => requireAuth(() => setShowCreateForm(true))} className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
+          <Button onClick={() => requireAuth(() => setShowCreateForm(true))} aria-label="Create Template" className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Create Template</span>
           </Button>

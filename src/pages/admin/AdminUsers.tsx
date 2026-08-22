@@ -99,6 +99,7 @@ const AdminUsers = () => {
                             onClick={() => isAdmin
                               ? revoke.mutate({ userId: u.user_id, role: "admin" })
                               : grant.mutate({ userId: u.user_id, role: "admin" })}
+                            aria-label={isAdmin ? "Revoke admin" : "Make admin"}
                           >
                             {isAdmin ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                             <span className="ml-1 hidden sm:inline">{isAdmin ? "Revoke admin" : "Make admin"}</span>
