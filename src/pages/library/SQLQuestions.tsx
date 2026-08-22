@@ -248,6 +248,7 @@ const SQLQuestions = () => {
                  variant="default"
                  size="sm"
                  className="gap-2"
+                 aria-label="Quiz Mode"
                  onClick={() => setPageMode("quiz")}
                >
                  <Zap className="h-4 w-4" />
@@ -262,6 +263,7 @@ const SQLQuestions = () => {
                    variant="outline"
                    size="sm"
                    className="gap-2"
+                   aria-label="Create folder"
                    onClick={() => setViewMode("folders")}
                  >
                    <FolderPlus className="h-4 w-4" />
@@ -704,6 +706,7 @@ const SQLQuestions = () => {
                  <Checkbox
                    checked={isSolved}
                    onCheckedChange={onToggleSolved}
+                   aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
                    className={cn(
                      "transition-all duration-200",
                      "data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
@@ -733,6 +736,7 @@ const SQLQuestions = () => {
                      e.stopPropagation();
                      onToggleRevision();
                    }}
+                   aria-label={isRevision ? "Remove from revision" : "Add to revision"}
                    className={cn(
                      "h-8 w-8 transition-colors",
                      isRevision
