@@ -566,7 +566,7 @@ export default function SideCameraUploadPage() {
             <Camera className="h-4 w-4 mr-2" /> Capture page {pages.length + 1}
           </Button>
           {status === "error" && (
-            <Button variant="outline" onClick={startCamera}>
+            <Button variant="outline" onClick={startCamera} aria-label="Retry camera">
               <RotateCcw className="h-4 w-4" />
             </Button>
           )}
