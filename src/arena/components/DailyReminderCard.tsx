@@ -42,6 +42,7 @@ export function DailyReminderCard() {
           disabled={loading}
           data-testid="daily-reminder-toggle"
           aria-pressed={enabled}
+          aria-label="Daily challenge reminder"
           className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
             enabled ? "bg-primary" : "bg-border"
           }`}
