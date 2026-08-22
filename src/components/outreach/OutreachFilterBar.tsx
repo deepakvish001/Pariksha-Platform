@@ -80,6 +80,7 @@ const OutreachFilterBar = ({
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Clear search"
               className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={() => onSearchChange('')}
             >
