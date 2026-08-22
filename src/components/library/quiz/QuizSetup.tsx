@@ -209,9 +209,9 @@ const QuizSetup = ({
                <Clock className="h-4 w-4 text-muted-foreground" />
                <Label>Timed Mode</Label>
              </div>
-             <Switch checked={timedMode} onCheckedChange={setTimedMode} />
+             <Switch checked={timedMode} onCheckedChange={setTimedMode} aria-label="Timed Mode" />
            </div>
- 
+
            {timedMode && (
              <div>
                <Label className="text-sm font-medium mb-3 block">

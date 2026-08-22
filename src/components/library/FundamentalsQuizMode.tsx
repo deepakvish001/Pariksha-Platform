@@ -328,7 +328,7 @@ const FundamentalsQuizMode = ({ title, questions, sheetId, onClose }: Fundamenta
                     <Label>Timed Mode</Label>
                     <p className="text-xs text-muted-foreground">Set a time limit for the quiz</p>
                   </div>
-                  <Switch checked={timedMode} onCheckedChange={setTimedMode} />
+                  <Switch checked={timedMode} onCheckedChange={setTimedMode} aria-label="Timed Mode" />
                 </div>
 
                 {timedMode && (

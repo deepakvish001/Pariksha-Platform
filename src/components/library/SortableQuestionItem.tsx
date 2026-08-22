@@ -74,6 +74,7 @@ const SortableQuestionItem = ({
           onCheckedChange={(checked) => onSelect?.(!!checked)}
           className="flex-shrink-0 border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           onClick={(e) => e.stopPropagation()}
+          aria-label={`Select ${question.text}`}
         />
       )}
 
