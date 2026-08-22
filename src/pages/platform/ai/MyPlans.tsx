@@ -78,10 +78,18 @@ const MyPlans = () => {
             {contents.map((plan) => {
               const content = plan.content as PlanContent;
               return (
-                <Card 
-                  key={plan.id} 
+                <Card
+                  key={plan.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/platform/ai/content/${plan.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/platform/ai/content/${plan.id}`);
+                    }
+                  }}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
