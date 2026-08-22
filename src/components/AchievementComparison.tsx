@@ -81,6 +81,7 @@ import { useFollows } from "@/hooks/useFollows";
           variant="ghost"
           size="icon"
           className="h-7 w-7"
+          aria-label={isFollowing(user.userId) ? "Unfollow" : "Follow"}
           onClick={(e) => handleFollow(e, user.userId)}
         >
           {isFollowing(user.userId) ? (
