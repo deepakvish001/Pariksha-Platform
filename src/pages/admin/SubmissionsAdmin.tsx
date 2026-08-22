@@ -62,8 +62,8 @@ const SubmissionsAdmin = () => {
         <div className="grid gap-2 md:grid-cols-3 mb-3">
           <AdminUserPicker value={user} onChange={setUser} placeholder="Filter by user…" />
           <div className="relative"><Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input className="pl-7" placeholder="Filter by problem slug" value={slug} onChange={(e) => setSlug(e.target.value)} /></div>
-          <Input placeholder="Verdict (e.g. accepted)" value={verdict} onChange={(e) => setVerdict(e.target.value)} />
+            <Input aria-label="Filter by problem slug" className="pl-7" placeholder="Filter by problem slug" value={slug} onChange={(e) => setSlug(e.target.value)} /></div>
+          <Input aria-label="Filter by verdict" placeholder="Verdict (e.g. accepted)" value={verdict} onChange={(e) => setVerdict(e.target.value)} />
         </div>
         {list.isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>

@@ -39,7 +39,7 @@ export default function AdminBlogList() {
 
       <Card className="p-4 space-y-4">
         <div className="flex gap-2">
-          <Input placeholder="Search by title…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+          <Input aria-label="Search by title" placeholder="Search by title…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
           <Select value={status} onValueChange={(v) => setStatus(v as any)}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>

@@ -169,13 +169,13 @@ function EnrollDialog({ orgId, basePath }: { orgId: string; basePath: string }) 
             <TabsTrigger value="csv">CSV upload</TabsTrigger>
           </TabsList>
           <TabsContent value="single" className="space-y-3 pt-3">
-            <Input placeholder="Email *" value={single.email} onChange={(e) => setSingle((s) => ({ ...s, email: e.target.value }))} />
-            <Input placeholder="Full name" value={single.full_name ?? ""} onChange={(e) => setSingle((s) => ({ ...s, full_name: e.target.value }))} />
+            <Input aria-label="Email" placeholder="Email *" value={single.email} onChange={(e) => setSingle((s) => ({ ...s, email: e.target.value }))} />
+            <Input aria-label="Full name" placeholder="Full name" value={single.full_name ?? ""} onChange={(e) => setSingle((s) => ({ ...s, full_name: e.target.value }))} />
             <div className="grid grid-cols-2 gap-3">
-              <Input placeholder="Roll number" value={single.roll_number ?? ""} onChange={(e) => setSingle((s) => ({ ...s, roll_number: e.target.value }))} />
-              <Input placeholder="Branch (e.g. CSE)" value={single.branch ?? ""} onChange={(e) => setSingle((s) => ({ ...s, branch: e.target.value }))} />
-              <Input placeholder="Batch year (e.g. 2026)" type="number" value={single.batch_year ?? ""} onChange={(e) => setSingle((s) => ({ ...s, batch_year: parseInt(e.target.value || "0", 10) || undefined }))} />
-              <Input placeholder="Section" value={single.section ?? ""} onChange={(e) => setSingle((s) => ({ ...s, section: e.target.value }))} />
+              <Input aria-label="Roll number" placeholder="Roll number" value={single.roll_number ?? ""} onChange={(e) => setSingle((s) => ({ ...s, roll_number: e.target.value }))} />
+              <Input aria-label="Branch" placeholder="Branch (e.g. CSE)" value={single.branch ?? ""} onChange={(e) => setSingle((s) => ({ ...s, branch: e.target.value }))} />
+              <Input aria-label="Batch year" placeholder="Batch year (e.g. 2026)" type="number" value={single.batch_year ?? ""} onChange={(e) => setSingle((s) => ({ ...s, batch_year: parseInt(e.target.value || "0", 10) || undefined }))} />
+              <Input aria-label="Section" placeholder="Section" value={single.section ?? ""} onChange={(e) => setSingle((s) => ({ ...s, section: e.target.value }))} />
             </div>
           </TabsContent>
           <TabsContent value="paste" className="space-y-2 pt-3">
@@ -299,7 +299,7 @@ export default function B2BStudents() {
       <div className="b2b-card p-3 mb-3 flex gap-3 flex-wrap items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="h-4 w-4 absolute left-2 top-2.5 text-[hsl(var(--muted-foreground))]" />
-          <Input className="pl-8" placeholder="Search email, name, roll, branch…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input aria-label="Search students" className="pl-8" placeholder="Search email, name, roll, branch…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <select
           className="text-sm rounded border bg-transparent px-2 py-1.5"

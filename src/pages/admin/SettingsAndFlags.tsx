@@ -63,8 +63,8 @@ const SettingsAndFlags = () => {
       <Card className="mt-4 p-4">
         <h2 className="mb-2 text-sm font-semibold">Custom key/value</h2>
         <div className="grid gap-2 sm:grid-cols-[200px_1fr_auto]">
-          <Input placeholder="key" value={customKey} onChange={(e) => setCustomKey(e.target.value)} />
-          <Input placeholder='{"foo":"bar"}' value={customValue} onChange={(e) => setCustomValue(e.target.value)} />
+          <Input aria-label="Setting key" placeholder="key" value={customKey} onChange={(e) => setCustomKey(e.target.value)} />
+          <Input aria-label="Setting value (JSON)" placeholder='{"foo":"bar"}' value={customValue} onChange={(e) => setCustomValue(e.target.value)} />
           <Button onClick={() => {
             try {
               const v = JSON.parse(customValue);
@@ -124,13 +124,13 @@ const FlagRegistryCard = () => {
       </p>
 
       <div className="grid gap-2 sm:grid-cols-[1fr_140px_120px_auto]">
-        <Input placeholder="key (e.g. ai_generation_enabled)" value={key} onChange={(e) => setKey(e.target.value)} />
-        <Input placeholder="type" value={type} onChange={(e) => setType(e.target.value)} />
-        <Input type="number" min={0} max={100} value={rolloutPct} onChange={(e) => setRolloutPct(Number(e.target.value))} />
+        <Input aria-label="Flag key" placeholder="key (e.g. ai_generation_enabled)" value={key} onChange={(e) => setKey(e.target.value)} />
+        <Input aria-label="Flag type" placeholder="type" value={type} onChange={(e) => setType(e.target.value)} />
+        <Input aria-label="Rollout percentage" type="number" min={0} max={100} value={rolloutPct} onChange={(e) => setRolloutPct(Number(e.target.value))} />
         <Button onClick={submit} disabled={!key || upsert.isPending}><Plus className="mr-1 h-4 w-4" /> Save</Button>
       </div>
-      <Input className="mt-2" placeholder="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-      <Textarea className="mt-2 font-mono text-xs" rows={3} placeholder='JSON schema (e.g. {"type":"boolean"})' value={schemaText} onChange={(e) => setSchemaText(e.target.value)} />
+      <Input aria-label="Flag description" className="mt-2" placeholder="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <Textarea aria-label="Flag JSON schema" className="mt-2 font-mono text-xs" rows={3} placeholder='JSON schema (e.g. {"type":"boolean"})' value={schemaText} onChange={(e) => setSchemaText(e.target.value)} />
 
       <div className="mt-4 space-y-1.5">
         {flags.length === 0 && <p className="text-xs text-muted-foreground">No flags registered yet.</p>}
