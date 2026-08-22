@@ -69,7 +69,7 @@ const AdminContestRegistrations = () => {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Input placeholder="Search by name or user id..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
+          <Input aria-label="Search by name or user id" placeholder="Search by name or user id..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
           <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>

@@ -111,7 +111,7 @@ const ContestDetail = () => {
             ) : canRegister ? (
               <div className="flex flex-col items-end gap-2">
                 {contest.visibility === "private" && (
-                  <Input placeholder="Invite code" value={invite} onChange={(e) => setInvite(e.target.value)}
+                  <Input aria-label="Invite code" placeholder="Invite code" value={invite} onChange={(e) => setInvite(e.target.value)}
                          className="w-48" />
                 )}
                 <Button onClick={onRegister} disabled={register.isPending}>

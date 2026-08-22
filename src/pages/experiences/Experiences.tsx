@@ -186,12 +186,12 @@ export default function Experiences() {
               </SheetHeader>
               <div className="flex-1 overflow-y-auto space-y-4 py-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Company</label>
-                  <Input placeholder="Any company" value={filters.company ?? ""} onChange={(e) => set({ company: e.target.value || undefined })} />
+                  <label htmlFor="exp-filter-company" className="text-xs font-medium text-muted-foreground">Company</label>
+                  <Input id="exp-filter-company" placeholder="Any company" value={filters.company ?? ""} onChange={(e) => set({ company: e.target.value || undefined })} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Role</label>
-                  <Input placeholder="Any role" value={filters.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} />
+                  <label htmlFor="exp-filter-role" className="text-xs font-medium text-muted-foreground">Role</label>
+                  <Input id="exp-filter-role" placeholder="Any role" value={filters.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Category</label>
@@ -252,8 +252,8 @@ export default function Experiences() {
         {/* Desktop filter row */}
         <div className="hidden md:flex gap-2 items-center">
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Filter className="size-4" /> Filter</div>
-          <Input placeholder="Company" value={filters.company ?? ""} onChange={(e) => set({ company: e.target.value || undefined })} className="md:max-w-[180px]" />
-          <Input placeholder="Role" value={filters.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} className="md:max-w-[180px]" />
+          <Input aria-label="Company" placeholder="Company" value={filters.company ?? ""} onChange={(e) => set({ company: e.target.value || undefined })} className="md:max-w-[180px]" />
+          <Input aria-label="Role" placeholder="Role" value={filters.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} className="md:max-w-[180px]" />
           <Select value={filters.experience_type ?? "all"} onValueChange={(v) => set({ experience_type: v === "all" ? undefined : (v as any) })}>
             <SelectTrigger className="md:w-40"><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>

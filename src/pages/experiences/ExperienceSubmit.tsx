@@ -241,11 +241,12 @@ export default function ExperienceSubmit() {
               )}
             </div>
             <div className="grid md:grid-cols-3 gap-3">
-              <Input placeholder="Round name (e.g. Technical 1)" value={r.name} onChange={(e) => updateRound(i, "name", e.target.value)} />
-              <Input placeholder="Type (DSA, System Design, HR...)" value={r.type ?? ""} onChange={(e) => updateRound(i, "type", e.target.value)} />
-              <Input placeholder="Duration (e.g. 60 min)" value={r.duration ?? ""} onChange={(e) => updateRound(i, "duration", e.target.value)} />
+              <Input aria-label={`Round ${i + 1} name`} placeholder="Round name (e.g. Technical 1)" value={r.name} onChange={(e) => updateRound(i, "name", e.target.value)} />
+              <Input aria-label={`Round ${i + 1} type`} placeholder="Type (DSA, System Design, HR...)" value={r.type ?? ""} onChange={(e) => updateRound(i, "type", e.target.value)} />
+              <Input aria-label={`Round ${i + 1} duration`} placeholder="Duration (e.g. 60 min)" value={r.duration ?? ""} onChange={(e) => updateRound(i, "duration", e.target.value)} />
             </div>
             <Textarea
+              aria-label={`Round ${i + 1} questions asked`}
               rows={4}
               placeholder="Questions asked, topics covered (markdown supported)"
               value={r.questions ?? ""}
