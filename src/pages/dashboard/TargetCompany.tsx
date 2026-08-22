@@ -64,8 +64,8 @@ const TargetCompanyPage = () => {
           <h2 className="text-sm font-semibold">Add target</h2>
           <div className="space-y-3">
             <div>
-              <Label className="text-xs">Company</Label>
-              <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Google" />
+              <Label className="text-xs" htmlFor="target-company">Company</Label>
+              <Input id="target-company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. Google" />
               <div className="flex flex-wrap gap-1 mt-2">
                 {POPULAR.map((c) => (
                   <button key={c} type="button" onClick={() => setCompanyName(c)}
@@ -74,19 +74,19 @@ const TargetCompanyPage = () => {
               </div>
             </div>
             <div>
-              <Label className="text-xs">Role</Label>
+              <Label className="text-xs" htmlFor="target-role">Role</Label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="target-role"><SelectValue /></SelectTrigger>
                 <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Timeline (weeks)</Label>
-              <Input type="number" min={2} max={52} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} />
+              <Label className="text-xs" htmlFor="target-weeks">Timeline (weeks)</Label>
+              <Input id="target-weeks" type="number" min={2} max={52} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} />
             </div>
             <div>
-              <Label className="text-xs">Notes</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              <Label className="text-xs" htmlFor="target-notes">Notes</Label>
+              <Textarea id="target-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
                 placeholder="Optional: weak areas, interview rounds you've heard about, deadlines…" />
             </div>
             <Button className="w-full" onClick={handleAdd} disabled={create.isPending || !companyName.trim()}>
