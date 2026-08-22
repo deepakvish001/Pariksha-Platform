@@ -63,7 +63,7 @@ export default function GoalsRing({ todayCount, weekCount }: Props) {
           <span className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-md border ${paceColor}`}>
             {paceLabel}
           </span>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEdit((e) => !e)}>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEdit((e) => !e)} aria-label={edit ? "Done editing goals" : "Edit goals"}>
             {edit ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
           </Button>
         </div>
