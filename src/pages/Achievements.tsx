@@ -282,7 +282,7 @@ const getCategoryFromAchievement = (achievement: Achievement): string => {
            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <TabsList className="grid w-full grid-cols-7 max-w-3xl">
                 {categories.map((cat) => (
-                 <TabsTrigger key={cat.id} value={cat.id} className="flex items-center gap-1.5">
+                 <TabsTrigger key={cat.id} value={cat.id} aria-label={cat.label} className="flex items-center gap-1.5">
                    <cat.icon className="w-4 h-4" />
                    <span className="hidden sm:inline">{cat.label}</span>
                  </TabsTrigger>

@@ -75,7 +75,7 @@ const SheetsFilterBar = ({
         {/* Sort Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 h-11 px-4 shrink-0">
+            <Button variant="outline" className="gap-2 h-11 px-4 shrink-0" aria-label={`Sort: ${currentSort.label}`}>
               <ArrowUpDown className="h-4 w-4" />
               <span className="hidden sm:inline">{currentSort.label}</span>
             </Button>

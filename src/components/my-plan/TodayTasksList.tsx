@@ -170,14 +170,14 @@ export const TodayTasksList = ({
                 {link && (
                   isExternal ? (
                     <a href={link} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" variant="outline" onClick={() => onStartTask?.(t.id)}>
+                      <Button size="sm" variant="outline" onClick={() => onStartTask?.(t.id)} aria-label={taskLinkLabel(t)}>
                         <ExternalLink className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">{taskLinkLabel(t)}</span>
                       </Button>
                     </a>
                   ) : (
                     <Link to={link} target="_blank">
-                      <Button size="sm" variant="outline" onClick={() => onStartTask?.(t.id)}>
+                      <Button size="sm" variant="outline" onClick={() => onStartTask?.(t.id)} aria-label={taskLinkLabel(t)}>
                         <Play className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">{taskLinkLabel(t)}</span>
                       </Button>
