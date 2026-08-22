@@ -206,9 +206,17 @@ const SystemDesignOverview: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="grid gap-4 md:grid-cols-2"
         >
-          <Card 
+          <Card
             className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate("/system-design/hld")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/system-design/hld");
+              }
+            }}
           >
             <div className="h-1 bg-gradient-to-r from-orange-500 to-red-500" />
             <CardHeader>
@@ -241,9 +249,17 @@ const SystemDesignOverview: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate("/system-design/lld")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/system-design/lld");
+              }
+            }}
           >
             <div className="h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
             <CardHeader>
@@ -300,10 +316,18 @@ const SystemDesignOverview: React.FC = () => {
                   { title: "SOLID Principles", type: "LLD", difficulty: "Intermediate", icon: LayoutGrid },
                   { title: "Class Diagrams", type: "LLD", difficulty: "Basic", icon: Server },
                 ].map((topic, index) => (
-                  <Card 
+                  <Card
                     key={topic.title}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => navigate(`/system-design/${topic.type.toLowerCase()}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/system-design/${topic.type.toLowerCase()}`);
+                      }
+                    }}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">

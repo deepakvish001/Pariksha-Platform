@@ -416,12 +416,21 @@ const HighLevelDesign: React.FC = () => {
                             
                             return (
                               <div key={question.id}>
-                                <div 
+                                <div
                                   className={cn(
                                     "flex items-center gap-4 py-3 px-2 hover:bg-muted/30 rounded-lg cursor-pointer transition-colors",
                                     isSolved && "bg-emerald-500/5"
                                   )}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-expanded={isAnswerOpen}
                                   onClick={() => setExpandedAnswer(isAnswerOpen ? null : question.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      setExpandedAnswer(isAnswerOpen ? null : question.id);
+                                    }
+                                  }}
                                 >
                                   <Button
                                     variant="ghost"
@@ -536,9 +545,17 @@ const HighLevelDesign: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card 
+                <Card
                   className="hover:shadow-lg transition-all cursor-pointer group"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedCategory(category)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedCategory(category);
+                    }
+                  }}
                 >
                   <CardHeader>
                     <div className="flex items-center gap-3">

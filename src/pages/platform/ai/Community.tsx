@@ -60,10 +60,18 @@ const Community = () => {
   const renderContentCard = (item: PublicAIContent) => {
     const Icon = typeIcons[item.content_type as AIContentType] || BookOpen;
     return (
-      <Card 
-        key={item.id} 
+      <Card
+        key={item.id}
         className="hover:shadow-md transition-shadow cursor-pointer"
+        role="button"
+        tabIndex={0}
         onClick={() => navigate(`/platform/ai/content/${item.id}`)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate(`/platform/ai/content/${item.id}`);
+          }
+        }}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">

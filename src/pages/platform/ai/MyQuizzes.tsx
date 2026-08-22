@@ -79,10 +79,18 @@ const MyQuizzes = () => {
             {contents.map((quiz) => {
               const content = quiz.content as QuizContent;
               return (
-                <Card 
-                  key={quiz.id} 
+                <Card
+                  key={quiz.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/platform/ai/content/${quiz.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/platform/ai/content/${quiz.id}`);
+                    }
+                  }}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">

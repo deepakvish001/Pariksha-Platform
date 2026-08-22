@@ -78,10 +78,18 @@ const MyCourses = () => {
             {contents.map((course) => {
               const content = course.content as CourseContent;
               return (
-                <Card 
-                  key={course.id} 
+                <Card
+                  key={course.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/platform/ai/content/${course.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/platform/ai/content/${course.id}`);
+                    }
+                  }}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">

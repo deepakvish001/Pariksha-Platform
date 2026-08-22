@@ -65,10 +65,18 @@ const StaffPicks = () => {
             {staffPicks.map((item: PublicAIContent, index) => {
               const Icon = typeIcons[item.content_type as AIContentType] || BookOpen;
               return (
-                <Card 
-                  key={item.id} 
+                <Card
+                  key={item.id}
                   className="hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/platform/ai/content/${item.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/platform/ai/content/${item.id}`);
+                    }
+                  }}
                 >
                   {index === 0 && (
                     <div className="absolute top-0 right-0 bg-amber-500 text-amber-950 text-xs font-bold px-3 py-1 rounded-bl-lg">
