@@ -438,8 +438,9 @@ export default function AttemptDetail() {
                   </div>
                   <div className="flex items-end gap-2">
                     <div>
-                      <label className="text-xs text-[hsl(var(--muted-foreground))]">Manual score (0–{q.points})</label>
+                      <label htmlFor={`manual-score-${a.id}`} className="text-xs text-[hsl(var(--muted-foreground))]">Manual score (0–{q.points})</label>
                       <Input
+                        id={`manual-score-${a.id}`}
                         type="number"
                         min={0}
                         max={q.points}

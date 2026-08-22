@@ -549,8 +549,9 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
 
       <div className="flex items-end gap-2 border-t border-border/40 pt-3">
         <div className="flex-1">
-          <label className="text-[11px] text-muted-foreground">Bulk reviewer note (applies to selected)</label>
+          <label htmlFor="side-eye-bulk-note" className="text-[11px] text-muted-foreground">Bulk reviewer note (applies to selected)</label>
           <Textarea
+            id="side-eye-bulk-note"
             value={bulkNote}
             onChange={(e) => setBulkNote(e.target.value)}
             placeholder="e.g. False positive — reflective glare on screen."

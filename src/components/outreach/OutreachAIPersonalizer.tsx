@@ -171,10 +171,11 @@ Only output the message itself, no explanations or alternatives.`;
 
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-muted-foreground mb-1 block">
+          <label htmlFor="outreach-additional-context" className="text-sm text-muted-foreground mb-1 block">
             Add context (optional)
           </label>
           <Textarea
+            id="outreach-additional-context"
             placeholder="E.g., 'I saw they recently gave a talk about AI', 'We have a mutual connection through a hackathon', etc."
             value={additionalContext}
             onChange={(e) => setAdditionalContext(e.target.value)}

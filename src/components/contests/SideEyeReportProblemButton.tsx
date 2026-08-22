@@ -69,9 +69,9 @@ export function SideEyeReportProblemButton({ contestId, sessionId }: Props) {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-muted-foreground">Category</label>
+              <label htmlFor="side-eye-report-category" className="text-xs text-muted-foreground">Category</label>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="side-eye-report-category"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>

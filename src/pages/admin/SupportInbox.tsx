@@ -327,7 +327,7 @@ export default function SupportInbox() {
 
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label htmlFor="support-reply" className="text-xs font-medium text-muted-foreground">
                     Reply (saved to record)
                   </label>
                   <CannedRepliesPicker
@@ -335,6 +335,7 @@ export default function SupportInbox() {
                   />
                 </div>
                 <Textarea
+                  id="support-reply"
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   rows={4}
