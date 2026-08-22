@@ -715,7 +715,7 @@ const CPProblemSetsView = () => {
             {/* Mobile Filter Button */}
             <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="lg:hidden h-9 w-9 shrink-0">
+                <Button variant="outline" size="icon" aria-label="Open filters" className="lg:hidden h-9 w-9 shrink-0">
                   <Filter className="h-4 w-4" />
                 </Button>
               </SheetTrigger>
