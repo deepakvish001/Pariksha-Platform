@@ -618,17 +618,18 @@ export default function ParikshaaProctoring() {
       {/* Filters */}
       <div className="rounded-lg border bg-card p-3 grid gap-3 md:grid-cols-6">
         <div className="md:col-span-2 space-y-1">
-          <Label className="text-xs">Search</Label>
+          <Label htmlFor="proctoring-search" className="text-xs">Search</Label>
           <Input
+            id="proctoring-search"
             placeholder="User ID, attempt ID, or assessment title"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Assessment</Label>
+          <Label htmlFor="proctoring-assessment" className="text-xs">Assessment</Label>
           <Select value={assessmentId} onValueChange={setAssessmentId}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="proctoring-assessment"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               {assessments.map((a) => (
@@ -638,9 +639,9 @@ export default function ParikshaaProctoring() {
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Status</Label>
+          <Label htmlFor="proctoring-status" className="text-xs">Status</Label>
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="proctoring-status"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STATUS_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
@@ -649,16 +650,16 @@ export default function ParikshaaProctoring() {
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Min violations</Label>
-          <Input type="number" min={0} value={minViolations} onChange={(e) => setMinViolations(e.target.value)} />
+          <Label htmlFor="proctoring-min-violations" className="text-xs">Min violations</Label>
+          <Input id="proctoring-min-violations" type="number" min={0} value={minViolations} onChange={(e) => setMinViolations(e.target.value)} />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">From</Label>
-          <Input type="datetime-local" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <Label htmlFor="proctoring-from" className="text-xs">From</Label>
+          <Input id="proctoring-from" type="datetime-local" value={from} onChange={(e) => setFrom(e.target.value)} />
         </div>
         <div className="space-y-1 md:col-start-6">
-          <Label className="text-xs">To</Label>
-          <Input type="datetime-local" value={to} onChange={(e) => setTo(e.target.value)} />
+          <Label htmlFor="proctoring-to" className="text-xs">To</Label>
+          <Input id="proctoring-to" type="datetime-local" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
       </div>
 
@@ -1763,8 +1764,9 @@ function RetentionCard() {
       </div>
       <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto_auto] items-end">
         <div className="space-y-1">
-          <Label className="text-xs">Webcam snapshots — keep for (days)</Label>
+          <Label htmlFor="proctoring-retention-snapshots" className="text-xs">Webcam snapshots — keep for (days)</Label>
           <Input
+            id="proctoring-retention-snapshots"
             type="number"
             min={1}
             max={3650}
@@ -1774,8 +1776,9 @@ function RetentionCard() {
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Proctoring events — keep for (days)</Label>
+          <Label htmlFor="proctoring-retention-events" className="text-xs">Proctoring events — keep for (days)</Label>
           <Input
+            id="proctoring-retention-events"
             type="number"
             min={1}
             max={3650}

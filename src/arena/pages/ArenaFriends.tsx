@@ -948,8 +948,9 @@ export default function ArenaFriends() {
               </select>
             </div>
             <div>
-              <Label className="text-xs">Additional details (optional)</Label>
+              <Label htmlFor="arena-report-details" className="text-xs">Additional details (optional)</Label>
               <Textarea
+                id="arena-report-details"
                 value={reportDetails}
                 onChange={(e) => setReportDetails(e.target.value)}
                 rows={4}
@@ -982,8 +983,9 @@ export default function ArenaFriends() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Room type</Label>
+                  <Label htmlFor="arena-challenge-room-type" className="text-xs">Room type</Label>
                   <select
+                    id="arena-challenge-room-type"
                     value={challengeRoomType}
                     onChange={(e) => setChallengeRoomType(e.target.value as "private" | "public")}
                     className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
@@ -993,8 +995,9 @@ export default function ArenaFriends() {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs">Room name</Label>
+                  <Label htmlFor="arena-challenge-room-name" className="text-xs">Room name</Label>
                   <Input
+                    id="arena-challenge-room-name"
                     value={challengeRoomName}
                     onChange={(e) => setChallengeRoomName(e.target.value)}
                     placeholder="e.g. Friday Showdown"

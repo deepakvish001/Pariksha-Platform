@@ -292,8 +292,9 @@ export function AiGenerateQuestionsDialog({
           <TabsContent value="topic" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-4 space-y-1">
-                <Label>Topic / Prompt</Label>
+                <Label htmlFor="ai-gen-topic">Topic / Prompt</Label>
                 <Textarea
+                  id="ai-gen-topic"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="e.g. Arrays & hashing for SDE-1 screening; OOP basics for Java backend role"
@@ -302,9 +303,9 @@ export function AiGenerateQuestionsDialog({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Type</Label>
+                <Label htmlFor="ai-gen-type">Type</Label>
                 <Select value={type} onValueChange={(v) => setType(v as GenType)} disabled={loading || saving}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="ai-gen-type"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mcq">MCQ</SelectItem>
                     <SelectItem value="coding">Coding</SelectItem>
@@ -314,9 +315,9 @@ export function AiGenerateQuestionsDialog({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Difficulty</Label>
+                <Label htmlFor="ai-gen-difficulty">Difficulty</Label>
                 <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)} disabled={loading || saving}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="ai-gen-difficulty"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="easy">Easy</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -325,8 +326,9 @@ export function AiGenerateQuestionsDialog({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Count</Label>
+                <Label htmlFor="ai-gen-count">Count</Label>
                 <Input
+                  id="ai-gen-count"
                   type="number"
                   min={1}
                   max={10}
@@ -347,8 +349,9 @@ export function AiGenerateQuestionsDialog({
           <TabsContent value="jd" className="mt-0 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-3 space-y-1">
-                <Label>Job description</Label>
+                <Label htmlFor="ai-gen-jd">Job description</Label>
                 <Textarea
+                  id="ai-gen-jd"
                   value={jd}
                   onChange={(e) => setJd(e.target.value)}
                   placeholder="Paste the full JD here — responsibilities, required skills, stack, seniority…"
@@ -357,8 +360,9 @@ export function AiGenerateQuestionsDialog({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Role hint (optional)</Label>
+                <Label htmlFor="ai-gen-role-hint">Role hint (optional)</Label>
                 <Input
+                  id="ai-gen-role-hint"
                   value={roleHint}
                   onChange={(e) => setRoleHint(e.target.value)}
                   placeholder="e.g. SDE-1 Backend"
