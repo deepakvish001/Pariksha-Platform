@@ -127,7 +127,7 @@ const AdminContestRegistrations = () => {
                     </TableCell>
                     <TableCell className="text-xs">{new Date(r.registered_at).toLocaleString()}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => {
+                      <Button size="icon" variant="ghost" aria-label="Remove registration" onClick={() => {
                         if (confirm("Remove this registration?")) del.mutate(r.id);
                       }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
