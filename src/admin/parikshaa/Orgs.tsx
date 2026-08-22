@@ -89,6 +89,7 @@ function OrgTable({ type }: { type: "company" | "college" }) {
                   <Button
                     size="icon"
                     variant="ghost"
+                    aria-label={`Edit slug for ${o.name}`}
                     className="h-6 w-6 shrink-0"
                     onClick={() => {
                       const next = window.prompt("New slug (lowercase, hyphenated)", o.slug);
@@ -107,6 +108,7 @@ function OrgTable({ type }: { type: "company" | "college" }) {
                   <Button
                     size="sm"
                     variant="ghost"
+                    aria-label={o.featured ? `Remove ${o.name} from featured` : `Mark ${o.name} as featured`}
                     onClick={() => update.mutate({ id: o.id, patch: { featured: !o.featured } })}
                   >
                     <Star className={`h-4 w-4 ${o.featured ? "fill-amber-400 text-amber-400" : ""}`} />
@@ -136,7 +138,7 @@ function OrgTable({ type }: { type: "company" | "college" }) {
                     </Button>
                   )}
                   <a href={baseUrl} target="_blank" rel="noreferrer">
-                    <Button size="sm" variant="ghost"><ExternalLink className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label={`View ${o.name} page`}><ExternalLink className="h-4 w-4" /></Button>
                   </a>
                 </div>
               </div>
