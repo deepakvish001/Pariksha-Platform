@@ -137,6 +137,7 @@ export default function B2BTeam() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      aria-label={`Revoke invite for ${inv.email}`}
                       className="text-destructive hover:text-destructive"
                       onClick={() => {
                         if (!confirm(`Revoke invite for ${inv.email}?`)) return;
@@ -224,6 +225,7 @@ export default function B2BTeam() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        aria-label={`Remove ${m.full_name ?? "member"}`}
                         className="h-8 w-8 text-[hsl(var(--muted-foreground))] hover:text-destructive"
                         disabled={busyId === m.id}
                         onClick={() => {
