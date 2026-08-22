@@ -293,18 +293,18 @@ function SnapshotLightbox({ snapshots, index, onClose, onIndexChange }: {
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <span className="text-[11px] text-muted-foreground tabular-nums">{index! + 1} / {snapshots.length}</span>
-                <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index! <= 0} onClick={() => onIndexChange(index! - 1)}>
+                <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Previous snapshot" disabled={index! <= 0} onClick={() => onIndexChange(index! - 1)}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index! >= snapshots.length - 1} onClick={() => onIndexChange(index! + 1)}>
+                <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Next snapshot" disabled={index! >= snapshots.length - 1} onClick={() => onIndexChange(index! + 1)}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 {url && (
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={download}>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" aria-label="Download snapshot" onClick={download}>
                     <Download className="h-4 w-4" />
                   </Button>
                 )}
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}><X className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Close snapshot viewer" onClick={onClose}><X className="h-4 w-4" /></Button>
               </div>
             </div>
             <div className="bg-black grid place-items-center min-h-[320px] max-h-[70vh]">
