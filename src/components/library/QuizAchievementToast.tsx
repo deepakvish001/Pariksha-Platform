@@ -44,7 +44,7 @@ const QuizAchievementToast: React.FC<QuizAchievementToastProps> = ({
                 {achievements.length === 1 ? "Achievement Unlocked!" : `${achievements.length} Achievements Unlocked!`}
               </span>
             </div>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+            <Button variant="ghost" size="icon" aria-label="Dismiss" className="h-6 w-6" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
