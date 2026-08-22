@@ -224,6 +224,7 @@ export default function B2BTeam() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        aria-label={`Remove ${m.full_name ?? "member"}`}
                         className="h-8 w-8 text-[hsl(var(--muted-foreground))] hover:text-destructive"
                         disabled={busyId === m.id}
                         onClick={() => {
