@@ -282,16 +282,18 @@ const FolderManager = ({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
+              <label htmlFor="folder-name" className="text-sm font-medium">Name</label>
               <Input
+                id="folder-name"
                 placeholder="e.g., React Interview Prep"
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Description (optional)</label>
+              <label htmlFor="folder-description" className="text-sm font-medium">Description (optional)</label>
               <Input
+                id="folder-description"
                 placeholder="A short description..."
                 value={newFolderDescription}
                 onChange={(e) => setNewFolderDescription(e.target.value)}
