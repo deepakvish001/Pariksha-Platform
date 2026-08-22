@@ -462,7 +462,7 @@ function IconBtn({ tip, onClick, children }: { tip: string; onClick: () => void;
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onClick}>
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onClick} aria-label={tip}>
           {children}
         </Button>
       </TooltipTrigger>
@@ -518,7 +518,7 @@ function CopyBlock({ label, value, copied, onCopy }: { label: string; value: str
     <div className="bg-card p-3 group relative">
       <div className="flex items-center justify-between mb-1">
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{label}</div>
-        <button onClick={onCopy} className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 grid place-items-center rounded hover:bg-muted">
+        <button onClick={onCopy} className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 grid place-items-center rounded hover:bg-muted" aria-label={copied ? "Copied" : `Copy ${label.toLowerCase()}`}>
           {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
         </button>
       </div>
