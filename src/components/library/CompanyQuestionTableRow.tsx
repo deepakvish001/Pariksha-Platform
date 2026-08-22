@@ -178,6 +178,13 @@ const CompanyQuestionTableRow = ({
                   checked={isSolved}
                   onCheckedChange={() => onToggleSolved()}
                   disabled={!isLoggedIn}
+                  aria-label={
+                    isLoggedIn
+                      ? isSolved
+                        ? "Mark as unsolved"
+                        : "Mark as solved"
+                      : "Sign in to track progress"
+                  }
                   className={cn(
                     "h-5 w-5 transition-all duration-200",
                     "data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
@@ -214,6 +221,7 @@ const CompanyQuestionTableRow = ({
                     onToggleRevision();
                   }}
                   disabled={!isLoggedIn}
+                  aria-label={isRevision ? "Remove from revision" : "Add to revision"}
                   className={cn(
                     "h-8 w-8 transition-colors",
                     isRevision
