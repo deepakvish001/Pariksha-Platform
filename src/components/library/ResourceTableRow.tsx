@@ -76,7 +76,7 @@ export const JobPortalRow = ({
             rel="noopener noreferrer"
             className="inline-flex"
           >
-            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" aria-label="Visit">
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Visit</span>
             </Button>
