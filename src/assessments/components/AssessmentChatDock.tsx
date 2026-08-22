@@ -306,7 +306,7 @@ export function AssessmentChatDock({
           </Button>
         )}
         {variant === "floating" && (
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)}>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)} aria-label="Close chat">
             <X className="h-4 w-4" />
           </Button>
         )}
