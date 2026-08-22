@@ -982,7 +982,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                           <BarChart3 className="h-3.5 w-3.5" />
                         </Button>
                         <Button asChild size="sm" variant="ghost" className="h-7 px-2">
-                          <Link to={`/b2b/placements/students/${r.student_id}`}>
+                          <Link to={`/b2b/placements/students/${r.student_id}`} aria-label={`Open profile for ${r.full_name || r.email}`}>
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
@@ -992,7 +992,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                           studentName={r.full_name || r.email}
                           onOpenFullDialog={() => setShareTarget({ kind: "profile", studentId: r.student_id, studentName: r.full_name || r.email })}
                           trigger={
-                            <Button size="sm" variant="ghost" className="h-7 px-2">
+                            <Button size="sm" variant="ghost" className="h-7 px-2" aria-label={`Share profile for ${r.full_name || r.email}`}>
                               <Share2 className="h-3.5 w-3.5" />
                             </Button>
                           }
