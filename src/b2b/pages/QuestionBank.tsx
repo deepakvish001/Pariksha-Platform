@@ -1392,7 +1392,7 @@ function McqEditor({ questionId }: { questionId: string }) {
               }
             />
             <span className="flex-1 text-sm">{o.body}</span>
-            <Button variant="ghost" size="sm" onClick={() => del.mutate({ id: o.id, question_id: questionId })}>
+            <Button variant="ghost" size="sm" onClick={() => del.mutate({ id: o.id, question_id: questionId })} aria-label="Remove option">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -1437,7 +1437,7 @@ function TestCaseEditor({ questionId }: { questionId: string }) {
           <div key={t.id} className="border rounded-md p-3 text-xs space-y-1">
             <div className="flex items-center justify-between">
               <Badge variant={t.is_hidden ? "secondary" : "outline"}>{t.is_hidden ? "Hidden" : "Sample"}</Badge>
-              <Button variant="ghost" size="sm" onClick={() => del.mutate({ id: t.id, question_id: questionId })}>
+              <Button variant="ghost" size="sm" onClick={() => del.mutate({ id: t.id, question_id: questionId })} aria-label="Remove test case">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -1720,7 +1720,7 @@ function MatchingEditor({ question }: { question: Question }) {
             <Input value={p.left} onChange={(e) => updatePair(i, { left: e.target.value })} placeholder="Left item" maxLength={120} />
             <span className="text-[hsl(var(--muted-foreground))]">→</span>
             <Input value={p.right} onChange={(e) => updatePair(i, { right: e.target.value })} placeholder="Match (right)" maxLength={120} />
-            <Button variant="ghost" size="sm" onClick={() => removePair(i)}><Trash2 className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => removePair(i)} aria-label="Remove pair"><Trash2 className="h-4 w-4" /></Button>
           </div>
         ))}
       </div>
@@ -1773,13 +1773,13 @@ function ShortAnswerEditor({ question }: { question: Question }) {
         {accepted.map((a, i) => (
           <div key={i} className="flex items-center gap-2 border rounded-md px-3 py-2">
             <span className="flex-1 text-sm font-mono">{a}</span>
-            <Button variant="ghost" size="sm" onClick={() => removeVariant(i)}><Trash2 className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => removeVariant(i)} aria-label="Remove variant"><Trash2 className="h-4 w-4" /></Button>
           </div>
         ))}
       </div>
       <div className="flex gap-2">
         <Input value={newVariant} onChange={(e) => setNewVariant(e.target.value)} placeholder="Add variant…" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addVariant(); } }} />
-        <Button variant="outline" onClick={addVariant} disabled={!newVariant.trim()}><Plus className="h-4 w-4" /></Button>
+        <Button variant="outline" onClick={addVariant} disabled={!newVariant.trim()} aria-label="Add variant"><Plus className="h-4 w-4" /></Button>
       </div>
       <div className="grid grid-cols-2 gap-3 pt-2 border-t">
         <label className="flex items-center gap-2 text-sm">
@@ -1944,7 +1944,7 @@ function FillBlanksEditor({ question }: { question: Question }) {
               <Checkbox checked={!!b.case_sensitive} onCheckedChange={(v) => setBlank(i, { case_sensitive: !!v })} />
               Case
             </label>
-            <Button variant="ghost" size="sm" onClick={() => removeBlank(i)}><Trash2 className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => removeBlank(i)} aria-label="Remove blank"><Trash2 className="h-4 w-4" /></Button>
           </div>
         ))}
       </div>
