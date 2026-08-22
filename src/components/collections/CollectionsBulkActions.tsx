@@ -85,6 +85,7 @@ const CollectionsBulkActions = ({
                   <Button
                     variant="outline"
                     size="sm"
+                    aria-label="Move to folder"
                     className="gap-2 border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-white/70 hover:text-white"
                   >
                     <FolderInput className="h-4 w-4" />
@@ -125,6 +126,7 @@ const CollectionsBulkActions = ({
                 variant="destructive"
                 size="sm"
                 onClick={onDelete}
+                aria-label="Delete"
                 className="gap-2"
               >
                 <Trash2 className="h-4 w-4" />
