@@ -196,12 +196,12 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
       {rangeMode ? (
         <div className="flex items-end gap-2 flex-wrap" data-testid="review-range-form">
           <div>
-            <label className="text-[10px] uppercase text-muted-foreground">From</label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8 text-xs" />
+            <label htmlFor="daily-challenge-review-from" className="text-[10px] uppercase text-muted-foreground">From</label>
+            <Input id="daily-challenge-review-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8 text-xs" />
           </div>
           <div>
-            <label className="text-[10px] uppercase text-muted-foreground">To</label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8 text-xs" />
+            <label htmlFor="daily-challenge-review-to" className="text-[10px] uppercase text-muted-foreground">To</label>
+            <Input id="daily-challenge-review-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8 text-xs" />
           </div>
           <Button size="sm" className="h-8" onClick={loadRange} data-testid="review-range-apply">Apply</Button>
         </div>

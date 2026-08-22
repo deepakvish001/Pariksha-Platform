@@ -148,9 +148,9 @@ export function DangerSection({
 
           <div className="space-y-3 py-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">New owner</label>
+              <label htmlFor="danger-new-owner" className="text-xs font-medium">New owner</label>
               <Select value={targetUserId} onValueChange={setTargetUserId}>
-                <SelectTrigger>
+                <SelectTrigger id="danger-new-owner">
                   <SelectValue placeholder="Choose a member…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -167,10 +167,11 @@ export function DangerSection({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">
+              <label htmlFor="danger-confirm-text" className="text-xs font-medium">
                 Type <span className="font-mono">{org.name}</span> to confirm
               </label>
               <Input
+                id="danger-confirm-text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={org.name}

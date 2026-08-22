@@ -146,9 +146,9 @@ export const GoalProgressWidget = ({ tasks, activity = [], onClearActivity }: Pr
 
       {allTopics.length > 1 && (
         <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground shrink-0">Focus topic</label>
+          <label htmlFor="goal-focus-topic" className="text-xs text-muted-foreground shrink-0">Focus topic</label>
           <Select value={topicFilter} onValueChange={setTopicFilter}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger id="goal-focus-topic" className="h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
