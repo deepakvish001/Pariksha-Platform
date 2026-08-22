@@ -446,7 +446,7 @@ function SheetRow({
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" aria-label="More options">
                   <MoreVertical className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
