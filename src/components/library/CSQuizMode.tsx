@@ -382,9 +382,9 @@
            <CardContent className="space-y-4">
              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                <div className="space-y-2">
-                 <Label>Questions</Label>
+                 <Label htmlFor="cs-quiz-count">Questions</Label>
                  <Select value={config.questionCount.toString()} onValueChange={(v) => setConfig((prev) => ({ ...prev, questionCount: parseInt(v) }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="cs-quiz-count"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="5">5 Questions</SelectItem>
                      <SelectItem value="10">10 Questions</SelectItem>
@@ -394,9 +394,9 @@
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Time per Question</Label>
+                 <Label htmlFor="cs-quiz-time">Time per Question</Label>
                  <Select value={config.timePerQuestion.toString()} onValueChange={(v) => setConfig((prev) => ({ ...prev, timePerQuestion: parseInt(v) }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="cs-quiz-time"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="45">45 seconds</SelectItem>
                      <SelectItem value="60">60 seconds</SelectItem>
@@ -406,9 +406,9 @@
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Subject</Label>
+                 <Label htmlFor="cs-quiz-subject">Subject</Label>
                  <Select value={config.subject} onValueChange={(v) => setConfig((prev) => ({ ...prev, subject: v }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="cs-quiz-subject"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="all">All Subjects</SelectItem>
                      {csSubjects.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}
@@ -416,9 +416,9 @@
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Difficulty</Label>
+                 <Label htmlFor="cs-quiz-difficulty">Difficulty</Label>
                  <Select value={config.difficulty} onValueChange={(v) => setConfig((prev) => ({ ...prev, difficulty: v }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="cs-quiz-difficulty"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="all">All Levels</SelectItem>
                      <SelectItem value="Easy">Easy</SelectItem>

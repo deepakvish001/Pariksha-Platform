@@ -396,9 +396,9 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
            <CardContent className="space-y-4">
              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                <div className="space-y-2">
-                 <Label>Questions</Label>
+                 <Label htmlFor="sql-quiz-count">Questions</Label>
                  <Select value={config.questionCount.toString()} onValueChange={(v) => setConfig((prev) => ({ ...prev, questionCount: parseInt(v) }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="sql-quiz-count"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="5">5 Questions</SelectItem>
                      <SelectItem value="10">10 Questions</SelectItem>
@@ -408,9 +408,9 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Time per Question</Label>
+                 <Label htmlFor="sql-quiz-time">Time per Question</Label>
                  <Select value={config.timePerQuestion.toString()} onValueChange={(v) => setConfig((prev) => ({ ...prev, timePerQuestion: parseInt(v) }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="sql-quiz-time"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="30">30 seconds</SelectItem>
                      <SelectItem value="45">45 seconds</SelectItem>
@@ -420,9 +420,9 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Category</Label>
+                 <Label htmlFor="sql-quiz-category">Category</Label>
                  <Select value={config.category} onValueChange={(v) => setConfig((prev) => ({ ...prev, category: v }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="sql-quiz-category"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="all">All Categories</SelectItem>
                      {sqlCategories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
@@ -430,9 +430,9 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Difficulty</Label>
+                 <Label htmlFor="sql-quiz-difficulty">Difficulty</Label>
                  <Select value={config.difficulty} onValueChange={(v) => setConfig((prev) => ({ ...prev, difficulty: v }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="sql-quiz-difficulty"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="all">All Levels</SelectItem>
                      <SelectItem value="Easy">Easy</SelectItem>
