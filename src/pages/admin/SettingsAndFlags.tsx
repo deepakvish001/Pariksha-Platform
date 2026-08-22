@@ -40,10 +40,11 @@ const SettingsAndFlags = () => {
           return (
             <div key={f.key} className="flex items-center justify-between gap-3 border-b border-border/30 pb-3 last:border-0 last:pb-0">
               <div>
-                <Label>{f.label}</Label>
+                <Label htmlFor={`flag-${f.key}`}>{f.label}</Label>
                 <p className="text-xs text-muted-foreground">{f.description}</p>
               </div>
               <Switch
+                id={`flag-${f.key}`}
                 checked={enabled}
                 onCheckedChange={(v) => setSetting.mutate({ key: f.key, value: { enabled: v } })}
               />

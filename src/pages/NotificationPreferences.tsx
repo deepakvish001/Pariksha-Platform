@@ -291,14 +291,15 @@ const NotificationPreferences = () => {
               {isSupported ? (
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <Label className="text-base">Browser Push Notifications</Label>
+                    <Label htmlFor="push-notifications" className="text-base">Browser Push Notifications</Label>
                     <p className="text-sm text-muted-foreground">
-                      {isSubscribed 
-                        ? "You're receiving push notifications" 
+                      {isSubscribed
+                        ? "You're receiving push notifications"
                         : "Enable to get instant updates even when the app is closed"}
                     </p>
                   </div>
                   <Switch
+                    id="push-notifications"
                     checked={isSubscribed}
                     onCheckedChange={handlePushToggle}
                     disabled={pushLoading}
@@ -333,10 +334,11 @@ const NotificationPreferences = () => {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label className="text-base">All Email Notifications</Label>
+                  <Label htmlFor="email-notifications-enabled" className="text-base">All Email Notifications</Label>
                   <p className="text-sm text-muted-foreground">Master toggle for all email communications</p>
                 </div>
                 <Switch
+                  id="email-notifications-enabled"
                   checked={settings.email_notifications_enabled}
                   onCheckedChange={(v) => setSettings((prev) => ({ ...prev, email_notifications_enabled: v }))}
                 />
@@ -351,11 +353,12 @@ const NotificationPreferences = () => {
                       <Calendar className="h-4 w-4 text-purple-500" />
                     </div>
                     <div className="space-y-0.5">
-                      <Label className="text-sm">Weekly Quiz Summary</Label>
+                      <Label htmlFor="weekly-digest-enabled" className="text-sm">Weekly Quiz Summary</Label>
                       <p className="text-xs text-muted-foreground">Get a weekly report of your quiz performance</p>
                     </div>
                   </div>
                   <Switch
+                    id="weekly-digest-enabled"
                     checked={settings.weekly_digest_enabled}
                     onCheckedChange={(v) => setSettings((prev) => ({ ...prev, weekly_digest_enabled: v }))}
                   />
@@ -367,11 +370,12 @@ const NotificationPreferences = () => {
                       <Sparkles className="h-4 w-4 text-green-500" />
                     </div>
                     <div className="space-y-0.5">
-                      <Label className="text-sm">New Feature Alerts</Label>
+                      <Label htmlFor="new-feature-alerts-enabled" className="text-sm">New Feature Alerts</Label>
                       <p className="text-xs text-muted-foreground">Be the first to know about new features</p>
                     </div>
                   </div>
                   <Switch
+                    id="new-feature-alerts-enabled"
                     checked={settings.new_feature_alerts_enabled}
                     onCheckedChange={(v) => setSettings((prev) => ({ ...prev, new_feature_alerts_enabled: v }))}
                   />
@@ -383,11 +387,12 @@ const NotificationPreferences = () => {
                       <Mail className="h-4 w-4 text-blue-500" />
                     </div>
                     <div className="space-y-0.5">
-                      <Label className="text-sm">Marketing Emails</Label>
+                      <Label htmlFor="marketing-emails-enabled" className="text-sm">Marketing Emails</Label>
                       <p className="text-xs text-muted-foreground">Promotional offers and partner content</p>
                     </div>
                   </div>
                   <Switch
+                    id="marketing-emails-enabled"
                     checked={settings.marketing_emails_enabled}
                     onCheckedChange={(v) => setSettings((prev) => ({ ...prev, marketing_emails_enabled: v }))}
                   />
@@ -457,6 +462,7 @@ const NotificationPreferences = () => {
                       <Switch
                         checked={isEnabled}
                         onCheckedChange={(v) => setSettings((prev) => ({ ...prev, [type.id]: v }))}
+                        aria-label={type.title}
                       />
                     </div>
                   );
