@@ -409,6 +409,7 @@ const JobPortals: React.FC = () => {
                                         e.stopPropagation();
                                         handleProgressUpdate(question.id, "revision");
                                       }}
+                                      aria-label={questionProgress.revision ? "Remove from revision" : "Add to revision"}
                                       className={cn(
                                         "p-1 rounded hover:bg-muted transition-colors",
                                         questionProgress.revision && "text-amber-500"

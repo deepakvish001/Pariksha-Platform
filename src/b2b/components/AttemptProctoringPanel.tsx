@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle, Video, Trash2, Download, ChevronLeft, ChevronRight, X, Play } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 type Snap = { id: string; source: string; storage_path: string; captured_at: string; reviewed: boolean };
 type Frame = { id: string; storage_path: string; captured_at: string };
@@ -485,6 +486,9 @@ export default function AttemptProctoringPanel({ attemptId, orgId }: { attemptId
 
       <Dialog open={!!lightboxItem} onOpenChange={(o) => !o && setLightboxKey(null)}>
         <DialogContent className="max-w-5xl p-0 overflow-hidden bg-black border-[hsl(var(--border))]">
+          <VisuallyHidden>
+            <DialogTitle>{lightboxItem ? `${lightboxItem.label} preview` : "Snapshot preview"}</DialogTitle>
+          </VisuallyHidden>
           {lightboxItem && (() => {
             const url = urls[lightboxItem.path];
             const rec = lightboxItem.kind === "video"
