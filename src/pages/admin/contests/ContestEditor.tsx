@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Children, cloneElement, isValidElement, useEffect, useId, useState, type ReactElement } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -284,12 +284,29 @@ const ContestEditor = () => {
   );
 };
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-1.5">
-    <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
-    {children}
-  </div>
-);
+// Select (Radix Root) doesn't forward an `id` to a DOM node itself — it needs
+// to land on the nested SelectTrigger instead of the Select wrapper.
+const withFieldId = (node: ReactElement, id: string): ReactElement => {
+  if (node.type === Select) {
+    const kids = Children.map(node.props.children, (child) =>
+      isValidElement(child) && child.type === SelectTrigger
+        ? cloneElement<{ id?: string }>(child, { id })
+        : child,
+    );
+    return cloneElement(node, {}, kids);
+  }
+  return cloneElement<{ id?: string }>(node, { id });
+};
+
+const Field = ({ label, children }: { label: string; children: ReactElement }) => {
+  const id = useId();
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+      {withFieldId(children, id)}
+    </div>
+  );
+};
 
 const toLocal = (iso: string) => {
   const d = new Date(iso);
