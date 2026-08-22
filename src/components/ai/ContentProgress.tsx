@@ -34,6 +34,7 @@ export const ContentProgressCheckbox = ({
           });
         }}
         disabled={isUpdating}
+        aria-label={isCompleted ? "Mark as incomplete" : "Mark as complete"}
         className={cn("h-6 w-6 p-0", className)}
       >
         {isCompleted ? (
