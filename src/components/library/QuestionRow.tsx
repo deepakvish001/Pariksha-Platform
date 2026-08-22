@@ -191,6 +191,7 @@ const QuestionRow = ({
                 <Checkbox
                   checked={isSolved}
                   onCheckedChange={onToggleSolved}
+                  aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
                   className={cn(
                     "transition-all duration-200",
                     "data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
@@ -218,6 +219,7 @@ const QuestionRow = ({
                   variant="ghost"
                   size="icon"
                   onClick={onToggleRevision}
+                  aria-label={isRevision ? "Remove from revision" : "Add to revision list"}
                   className={cn(
                     "h-7 w-7 sm:h-8 sm:w-8 transition-colors",
                     isRevision
@@ -252,6 +254,7 @@ const QuestionRow = ({
                   variant="ghost"
                   size="icon"
                   onClick={onOpenNote}
+                  aria-label={hasNote ? "Edit note" : "Add note"}
                   className={cn(
                     "h-7 w-7 sm:h-8 sm:w-8 transition-colors",
                     hasNote
