@@ -53,8 +53,9 @@ export default function ReviseDialog({ open, onOpenChange, entry }: Props) {
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Attempts</Label>
+              <Label htmlFor="revise-dialog-attempts">Attempts</Label>
               <Input
+                id="revise-dialog-attempts"
                 type="number"
                 min={1}
                 value={attempts}
@@ -62,8 +63,9 @@ export default function ReviseDialog({ open, onOpenChange, entry }: Props) {
               />
             </div>
             <div>
-              <Label>Time (min)</Label>
+              <Label htmlFor="revise-dialog-time">Time (min)</Label>
               <Input
+                id="revise-dialog-time"
                 type="number"
                 min={0}
                 value={time}
@@ -83,8 +85,9 @@ export default function ReviseDialog({ open, onOpenChange, entry }: Props) {
             <Switch checked={clean} onCheckedChange={setClean} />
           </div>
           <div>
-            <Label>Note</Label>
+            <Label htmlFor="revise-dialog-note">Note</Label>
             <Textarea
+              id="revise-dialog-note"
               rows={2}
               value={note}
               onChange={(e) => setNote(e.target.value)}
