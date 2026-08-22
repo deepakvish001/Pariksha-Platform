@@ -368,7 +368,15 @@ const JobPortals: React.FC = () => {
                               <div key={question.id} className="border rounded-lg">
                                 <div
                                   className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={() => toggleQuestion(question.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      toggleQuestion(question.id);
+                                    }
+                                  }}
                                 >
                                   <div className="flex items-center gap-3 flex-1 min-w-0">
                                     <button
