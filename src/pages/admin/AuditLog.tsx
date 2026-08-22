@@ -64,13 +64,13 @@ const AuditLog = () => {
       <Card className="mb-4 p-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
           <div>
-            <Label className="text-xs">Action contains</Label>
-            <Input value={action} onChange={(e) => { setAction(e.target.value); setPage(0); }} placeholder="save_problem" />
+            <Label className="text-xs" htmlFor="audit-action">Action contains</Label>
+            <Input id="audit-action" value={action} onChange={(e) => { setAction(e.target.value); setPage(0); }} placeholder="save_problem" />
           </div>
           <div>
-            <Label className="text-xs">Entity type</Label>
+            <Label className="text-xs" htmlFor="audit-entity-type">Entity type</Label>
             <Select value={entityType} onValueChange={(v) => { setEntityType(v); setPage(0); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="audit-entity-type"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 {entityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -78,16 +78,16 @@ const AuditLog = () => {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Actor ID</Label>
-            <Input value={actor} onChange={(e) => { setActor(e.target.value); setPage(0); }} placeholder="uuid" />
+            <Label className="text-xs" htmlFor="audit-actor">Actor ID</Label>
+            <Input id="audit-actor" value={actor} onChange={(e) => { setActor(e.target.value); setPage(0); }} placeholder="uuid" />
           </div>
           <div>
-            <Label className="text-xs">From</Label>
-            <Input type="datetime-local" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0); }} />
+            <Label className="text-xs" htmlFor="audit-from">From</Label>
+            <Input id="audit-from" type="datetime-local" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0); }} />
           </div>
           <div>
-            <Label className="text-xs">To</Label>
-            <Input type="datetime-local" value={to} onChange={(e) => { setTo(e.target.value); setPage(0); }} />
+            <Label className="text-xs" htmlFor="audit-to">To</Label>
+            <Input id="audit-to" type="datetime-local" value={to} onChange={(e) => { setTo(e.target.value); setPage(0); }} />
           </div>
         </div>
       </Card>

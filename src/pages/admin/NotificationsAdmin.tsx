@@ -49,13 +49,13 @@ const NotificationsAdmin = () => {
             <div className="mt-1"><AdminUserPicker value={target} onChange={setTarget} /></div>
           </div>
           <div>
-            <Label className="text-xs">Title</Label>
-            <Input className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
+            <Label className="text-xs" htmlFor="notif-title">Title</Label>
+            <Input id="notif-title" className="mt-1" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
           </div>
         </div>
         <div className="mt-3">
-          <Label className="text-xs">Message</Label>
-          <Textarea className="mt-1" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
+          <Label className="text-xs" htmlFor="notif-message">Message</Label>
+          <Textarea id="notif-message" className="mt-1" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
         </div>
         <Button size="sm" className="mt-3" onClick={submit} disabled={!target || !title.trim() || !message.trim() || send.isPending}>
           {send.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Send className="h-3.5 w-3.5 mr-1" />} Send

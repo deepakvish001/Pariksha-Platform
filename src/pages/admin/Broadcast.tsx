@@ -55,14 +55,14 @@ const Broadcast = () => {
             </Select>
           </div>
           {kind === "level" && (
-            <div><Label>Minimum level</Label>
-              <Input type="number" min={1} max={20} value={minLevel} onChange={(e) => setMinLevel(Number(e.target.value))} />
+            <div><Label htmlFor="broadcast-min-level">Minimum level</Label>
+              <Input id="broadcast-min-level" type="number" min={1} max={20} value={minLevel} onChange={(e) => setMinLevel(Number(e.target.value))} />
             </div>
           )}
           {kind === "role" && (
-            <div><Label>Role</Label>
+            <div><Label htmlFor="broadcast-role">Role</Label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="broadcast-role"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">admin</SelectItem>
                   <SelectItem value="moderator">moderator</SelectItem>
@@ -72,8 +72,8 @@ const Broadcast = () => {
             </div>
           )}
           {kind === "user" && (
-            <div><Label>User ID (UUID)</Label>
-              <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="00000000-0000-…" />
+            <div><Label htmlFor="broadcast-user-id">User ID (UUID)</Label>
+              <Input id="broadcast-user-id" value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="00000000-0000-…" />
             </div>
           )}
           <Button onClick={send} disabled={!title || !message || broadcast.isPending}>
