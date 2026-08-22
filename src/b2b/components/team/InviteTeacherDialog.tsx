@@ -145,6 +145,7 @@ export function InviteTeacherDialog({ open, onOpenChange, orgId }: Props) {
               <Button
                 variant="outline"
                 size="icon"
+                aria-label="Copy invite link"
                 onClick={() => {
                   navigator.clipboard.writeText(createdLink);
                   toast.success("Link copied");
