@@ -210,6 +210,7 @@ const ImageCropper = ({
                 min={0.5}
                 max={2}
                 step={0.1}
+                aria-label="Zoom"
                 className="flex-1"
               />
               <ZoomIn className="w-4 h-4 text-muted-foreground" />
@@ -224,6 +225,7 @@ const ImageCropper = ({
                 min={-180}
                 max={180}
                 step={1}
+                aria-label="Rotation"
                 className="flex-1"
               />
               <span className="text-xs text-muted-foreground w-12 text-right">

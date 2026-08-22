@@ -319,6 +319,7 @@ export function StudentMetricsDrawer({
                           onValueChange={([v]) =>
                             setWmPrefs((p) => ({ ...p, opacity: (v ?? 6) / 100 }))
                           }
+                          aria-label="Watermark opacity"
                         />
                       </div>
                       <button

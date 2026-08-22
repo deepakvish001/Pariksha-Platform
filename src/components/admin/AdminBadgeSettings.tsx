@@ -64,6 +64,7 @@ export const AdminBadgeSettings = ({ onMarkAllRead }: Props) => {
             step={15}
             value={[prefs.refreshSeconds]}
             onValueChange={([v]) => update({ refreshSeconds: v })}
+            aria-label="Refresh interval"
           />
         </div>
 
