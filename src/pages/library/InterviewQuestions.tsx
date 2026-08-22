@@ -625,7 +625,14 @@ const QuestionRow = ({
           isSolved && "bg-emerald-500/5",
           isExpanded && "bg-muted/50"
         )}
+        tabIndex={0}
         onClick={onToggleExpand}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggleExpand();
+          }
+        }}
       >
         <TableCell className="font-medium text-muted-foreground text-sm">
           {index + 1}

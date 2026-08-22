@@ -742,7 +742,17 @@ export default function ParikshaaProctoring() {
                 const events = expanded[r.id];
                 return (
                   <Fragment key={r.id}>
-                    <TableRow className="hover:bg-muted/40 cursor-pointer" onClick={() => toggleExpand(r.id)}>
+                    <TableRow
+                      className="hover:bg-muted/40 cursor-pointer"
+                      tabIndex={0}
+                      onClick={() => toggleExpand(r.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          toggleExpand(r.id);
+                        }
+                      }}
+                    >
                       <TableCell>
                         {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                       </TableCell>

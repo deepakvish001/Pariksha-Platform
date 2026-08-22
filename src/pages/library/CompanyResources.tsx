@@ -402,7 +402,14 @@ const CompanyResources = () => {
                   return (
                     <TableRow
                       key={company.id}
+                      tabIndex={0}
                       onClick={() => navigate(`/library/companies/${company.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigate(`/library/companies/${company.id}`);
+                        }
+                      }}
                       className="cursor-pointer group"
                     >
                       <TableCell className="text-center text-muted-foreground font-medium">

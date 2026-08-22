@@ -301,7 +301,18 @@ const AptitudeQuestions = () => {
                <TableBody>
                  {filteredQuestions.map((question) => (
                    <React.Fragment key={question.id}>
-                     <TableRow data-question-id={question.id} className={cn("cursor-pointer transition-colors", expandedQuestionId === question.id && "bg-muted/50")} onClick={() => setExpandedQuestionId(expandedQuestionId === question.id ? null : question.id)}>
+                     <TableRow
+                       data-question-id={question.id}
+                       className={cn("cursor-pointer transition-colors", expandedQuestionId === question.id && "bg-muted/50")}
+                       tabIndex={0}
+                       onClick={() => setExpandedQuestionId(expandedQuestionId === question.id ? null : question.id)}
+                       onKeyDown={(e) => {
+                         if (e.key === "Enter" || e.key === " ") {
+                           e.preventDefault();
+                           setExpandedQuestionId(expandedQuestionId === question.id ? null : question.id);
+                         }
+                       }}
+                     >
                        <TableCell><Checkbox checked={isSolved(question.id)} aria-label={isSolved(question.id) ? "Mark as unsolved" : "Mark as solved"} onCheckedChange={() => { if (!user) navigate("/login"); else toggleSolved(question.id); }} onClick={(e) => e.stopPropagation()} /></TableCell>
                        <TableCell><div className="flex items-center gap-2"><span className={cn("font-medium", isSolved(question.id) && "line-through text-muted-foreground")}>{question.title}</span><ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expandedQuestionId === question.id && "rotate-180")} /></div></TableCell>
                        <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-xs">{getCategoryName(question.categoryId)}</Badge></TableCell>
