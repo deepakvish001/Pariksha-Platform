@@ -347,7 +347,15 @@ const DashboardMatrix = () => {
         >
           <Card
             className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all group"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate("/library/quiz")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/library/quiz");
+              }
+            }}
           >
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -363,7 +371,15 @@ const DashboardMatrix = () => {
 
           <Card
             className="cursor-pointer hover:shadow-md hover:border-emerald-500/30 transition-all group"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate("/learn/sheets")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/learn/sheets");
+              }
+            }}
           >
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-colors">
@@ -499,7 +515,15 @@ const DashboardMatrix = () => {
                       <div
                         key={sheet.id}
                         className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors cursor-pointer group"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => navigate(sheet.route)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate(sheet.route);
+                          }
+                        }}
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{sheet.name}</p>

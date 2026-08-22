@@ -222,9 +222,17 @@ const FundamentalsOverview: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="grid gap-4 md:grid-cols-2"
         >
-          <Card 
+          <Card
             className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate("/fundamentals/language")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/fundamentals/language");
+              }
+            }}
           >
             <div className="h-1 bg-gradient-to-r from-orange-500 to-red-500" />
             <CardHeader>
@@ -257,9 +265,17 @@ const FundamentalsOverview: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card 
+          <Card
             className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate("/fundamentals/oops")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/fundamentals/oops");
+              }
+            }}
           >
             <div className="h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
             <CardHeader>

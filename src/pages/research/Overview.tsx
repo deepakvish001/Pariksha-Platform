@@ -203,9 +203,17 @@ const ResearchOverview: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="grid gap-4 md:grid-cols-2"
         >
-          <Card 
+          <Card
             className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate("/research/jobs")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/research/jobs");
+              }
+            }}
           >
             <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
             <CardHeader>
