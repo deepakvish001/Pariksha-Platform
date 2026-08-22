@@ -54,26 +54,26 @@ export default function EmailPreview() {
           </div>
           <div className="space-y-3">
             <div>
-              <Label className="text-xs">Recipient name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9 mt-1" />
+              <Label htmlFor="email-preview-recipient" className="text-xs">Recipient name</Label>
+              <Input id="email-preview-recipient" value={name} onChange={(e) => setName(e.target.value)} className="h-9 mt-1" />
             </div>
             <div>
-              <Label className="text-xs">Organization</Label>
-              <Input value={org} onChange={(e) => setOrg(e.target.value)} className="h-9 mt-1" />
+              <Label htmlFor="email-preview-org" className="text-xs">Organization</Label>
+              <Input id="email-preview-org" value={org} onChange={(e) => setOrg(e.target.value)} className="h-9 mt-1" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs">Use case</Label>
-                <Input value={useCase} onChange={(e) => setUseCase(e.target.value)} className="h-9 mt-1" />
+                <Label htmlFor="email-preview-usecase" className="text-xs">Use case</Label>
+                <Input id="email-preview-usecase" value={useCase} onChange={(e) => setUseCase(e.target.value)} className="h-9 mt-1" />
               </div>
               <div>
-                <Label className="text-xs">Candidates</Label>
-                <Input value={candidates} onChange={(e) => setCandidates(e.target.value)} className="h-9 mt-1" />
+                <Label htmlFor="email-preview-candidates" className="text-xs">Candidates</Label>
+                <Input id="email-preview-candidates" value={candidates} onChange={(e) => setCandidates(e.target.value)} className="h-9 mt-1" />
               </div>
             </div>
             <div>
-              <Label className="text-xs">Calendar URL (CTA)</Label>
-              <Input value={calendarUrl} onChange={(e) => setCalendarUrl(e.target.value)} className="h-9 mt-1 font-mono text-xs" />
+              <Label htmlFor="email-preview-calendar-url" className="text-xs">Calendar URL (CTA)</Label>
+              <Input id="email-preview-calendar-url" value={calendarUrl} onChange={(e) => setCalendarUrl(e.target.value)} className="h-9 mt-1 font-mono text-xs" />
               <p className="text-[10px] text-muted-foreground mt-1">
                 Live value comes from the <code>DEMO_CALENDAR_URL</code> secret.
               </p>
