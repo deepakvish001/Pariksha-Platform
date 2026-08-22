@@ -443,8 +443,9 @@ const Onboarding = () => {
             {/* Full Name & Mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Full Name</Label>
+                <Label htmlFor="onboarding-full-name" className="text-muted-foreground">Full Name</Label>
                 <Input
+                  id="onboarding-full-name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your full name"
@@ -453,10 +454,11 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Mobile Number</Label>
+                <Label htmlFor="onboarding-mobile" className="text-muted-foreground">Mobile Number</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
+                    id="onboarding-mobile"
                     type="tel"
                     value={mobileNumber}
                     onChange={(e) => handlePhoneChange(e.target.value)}
@@ -475,9 +477,9 @@ const Onboarding = () => {
             {/* Experience & Goal Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Your current experience *</Label>
+                <Label htmlFor="onboarding-current-experience" className="text-muted-foreground">Your current experience *</Label>
                 <Select value={currentExperience} onValueChange={setCurrentExperience}>
-                  <SelectTrigger className={cn(
+                  <SelectTrigger id="onboarding-current-experience" className={cn(
                     "h-12 bg-muted/50 border-border",
                     errors.currentExperience && "border-destructive"
                   )}>
@@ -495,9 +497,9 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Your target/goal *</Label>
+                <Label htmlFor="onboarding-target-goal" className="text-muted-foreground">Your target/goal *</Label>
                 <Select value={targetGoal} onValueChange={setTargetGoal}>
-                  <SelectTrigger className={cn(
+                  <SelectTrigger id="onboarding-target-goal" className={cn(
                     "h-12 bg-muted/50 border-border",
                     errors.targetGoal && "border-destructive"
                   )}>
@@ -532,10 +534,11 @@ const Onboarding = () => {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">College/University Name *</Label>
+                        <Label htmlFor="onboarding-college" className="text-muted-foreground">College/University Name *</Label>
                         <div className="relative">
                           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                           <Input
+                            id="onboarding-college"
                             value={collegeName}
                             onChange={(e) => setCollegeName(e.target.value)}
                             placeholder="e.g., IIT Delhi"
@@ -549,8 +552,9 @@ const Onboarding = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">Course Name *</Label>
+                        <Label htmlFor="onboarding-course" className="text-muted-foreground">Course Name *</Label>
                         <Input
+                          id="onboarding-course"
                           value={courseName}
                           onChange={(e) => setCourseName(e.target.value)}
                           placeholder="e.g., B.Tech, MBA, BCA"
@@ -563,8 +567,9 @@ const Onboarding = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">Branch/Specialization</Label>
+                        <Label htmlFor="onboarding-branch" className="text-muted-foreground">Branch/Specialization</Label>
                         <Input
+                          id="onboarding-branch"
                           value={branch}
                           onChange={(e) => setBranch(e.target.value)}
                           placeholder="e.g., Computer Science"
@@ -573,9 +578,9 @@ const Onboarding = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">Year of Study *</Label>
+                        <Label htmlFor="onboarding-study-year" className="text-muted-foreground">Year of Study *</Label>
                         <Select value={studyYear} onValueChange={setStudyYear}>
-                          <SelectTrigger className={cn(
+                          <SelectTrigger id="onboarding-study-year" className={cn(
                             "h-11 bg-muted/50 border-border",
                             errors.studyYear && "border-destructive"
                           )}>
@@ -613,10 +618,11 @@ const Onboarding = () => {
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">Company Name *</Label>
+                        <Label htmlFor="onboarding-company" className="text-muted-foreground">Company Name *</Label>
                         <div className="relative">
                           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                           <Input
+                            id="onboarding-company"
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
                             placeholder="e.g., Google, TCS"
@@ -630,8 +636,9 @@ const Onboarding = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">Role/Designation *</Label>
+                        <Label htmlFor="onboarding-role" className="text-muted-foreground">Role/Designation *</Label>
                         <Input
+                          id="onboarding-role"
                           value={role}
                           onChange={(e) => setRole(e.target.value)}
                           placeholder="e.g., Software Engineer"
@@ -644,9 +651,9 @@ const Onboarding = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground">Years of Experience</Label>
+                        <Label htmlFor="onboarding-experience-years" className="text-muted-foreground">Years of Experience</Label>
                         <Select value={experienceYears} onValueChange={setExperienceYears}>
-                          <SelectTrigger className="h-11 bg-muted/50 border-border">
+                          <SelectTrigger id="onboarding-experience-years" className="h-11 bg-muted/50 border-border">
                             <SelectValue placeholder="Select experience" />
                           </SelectTrigger>
                           <SelectContent className="bg-popover border-border">
@@ -666,9 +673,9 @@ const Onboarding = () => {
 
             {/* Referral Source */}
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Where did you find Parikshaa *</Label>
+              <Label htmlFor="onboarding-referral-source" className="text-muted-foreground">Where did you find Parikshaa *</Label>
               <Select value={referralSource} onValueChange={setReferralSource}>
-                <SelectTrigger className={cn(
+                <SelectTrigger id="onboarding-referral-source" className={cn(
                   "h-12 bg-muted/50 border-border w-full md:w-1/2",
                   errors.referralSource && "border-destructive"
                 )}>
