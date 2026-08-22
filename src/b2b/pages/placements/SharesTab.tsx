@@ -387,7 +387,15 @@ function VirtualizedShareList({
                     ref={rowVirtualizer.measureElement}
                     style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vi.start}px)` }}
                     className={cn("grid", GRID_COLS, "items-center px-2 py-2 border-b border-border/40 hover:bg-muted/30 cursor-pointer text-sm")}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onOpen(r)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onOpen(r);
+                      }
+                    }}
                   >
                     <div className="min-w-0">
                       <div className="font-medium text-sm truncate">{r.recruiter_name || "Unnamed"}</div>
