@@ -444,7 +444,7 @@ const ProblemEditor = () => {
     <AdminShell>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => nav("/admin/problems")}>
+          <Button variant="ghost" size="icon" onClick={() => nav("/admin/problems")} aria-label="Back to problems">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl font-semibold">
@@ -662,6 +662,7 @@ const ProblemEditor = () => {
                     variant="ghost"
                     size="icon"
                     className="ml-auto h-6 w-6"
+                    aria-label="Copy public URL"
                     onClick={() => {
                       navigator.clipboard.writeText(`${location.origin}/library/problems/${form.slug}`);
                       toast({ title: "Copied", description: "Public URL copied to clipboard." });
@@ -724,6 +725,7 @@ const ProblemEditor = () => {
                     {t}
                     <button
                       type="button"
+                      aria-label={`Remove topic ${t}`}
                       onClick={() => update("topics", form.topics.filter((x) => x !== t))}
                     >
                       <X className="h-3 w-3" />
@@ -855,6 +857,7 @@ const ProblemEditor = () => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label={`Remove example ${i + 1}`}
                       onClick={() =>
                         update("examples", form.examples.filter((_, x) => x !== i))
                       }
@@ -1488,6 +1491,7 @@ const ListEditor = ({
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label={`Remove ${title.toLowerCase()} ${i + 1}`}
                   onClick={() => onChange(items.filter((_, x) => x !== i))}
                 >
                   <X className="h-4 w-4" />
@@ -1690,6 +1694,7 @@ const TestsTable = ({
             <Button
               variant="ghost"
               size="icon"
+              aria-label={`Remove ${title.toLowerCase()} ${i + 1}`}
               onClick={() => onChange(tests.filter((_, x) => x !== i))}
             >
               <Trash2 className="h-4 w-4 text-destructive" />
