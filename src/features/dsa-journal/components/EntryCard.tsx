@@ -135,7 +135,7 @@ export default function EntryCard({ entry }: Props) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60 group-hover:opacity-100">
+            <Button variant="ghost" size="icon" aria-label={`More options for ${entry.title}`} className="h-7 w-7 opacity-60 group-hover:opacity-100">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
