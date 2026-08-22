@@ -178,10 +178,11 @@ const AchievementsAdmin = () => {
 
           {/* Achievement picker with search */}
           <div>
-            <Label className="text-xs text-muted-foreground">Achievement</Label>
+            <Label htmlFor="achievements-search" className="text-xs text-muted-foreground">Achievement</Label>
             <div className="relative mt-1">
               <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
+                id="achievements-search"
                 className="pl-7"
                 placeholder="Search by name, id, or description…"
                 value={achQuery}
