@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Bell, X, Plus, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,7 @@ interface ChipListProps {
 
 function EmailChipList({ label, help, placeholder, disabled, values, onChange }: ChipListProps) {
   const [draft, setDraft] = useState("");
+  const inputId = useId();
   const add = () => {
     const e = normalizeEmail(draft);
     if (!e) {
@@ -56,9 +57,10 @@ function EmailChipList({ label, help, placeholder, disabled, values, onChange }:
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
+      <Label htmlFor={inputId} className="text-xs">{label}</Label>
       <div className="flex gap-2">
         <Input
+          id={inputId}
           value={draft}
           disabled={disabled}
           placeholder={placeholder}
