@@ -648,6 +648,7 @@ const TIMED_CHALLENGES: QuizPreset[] = [
              <Button
                variant="ghost"
                size="icon"
+               aria-label={isPaused ? "Resume quiz" : "Pause quiz"}
                onClick={() => setIsPaused(!isPaused)}
              >
                {isPaused ? (
