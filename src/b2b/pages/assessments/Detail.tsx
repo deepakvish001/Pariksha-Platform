@@ -394,13 +394,14 @@ function SettingsPanel({
       <SectionCard icon={Sliders} title="Basics" description="Title, duration, and how many times a candidate can attempt.">
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1.5" />
+            <label htmlFor="assessment-title" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</label>
+            <Input id="assessment-title" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1.5" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Duration (min)</label>
+              <label htmlFor="assessment-duration" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Duration (min)</label>
               <Input
+                id="assessment-duration"
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value) || 60)}
@@ -408,8 +409,9 @@ function SettingsPanel({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max attempts</label>
+              <label htmlFor="assessment-max-attempts" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Max attempts</label>
               <Input
+                id="assessment-max-attempts"
                 type="number"
                 value={maxAttempts}
                 onChange={(e) => setMaxAttempts(Number(e.target.value) || 1)}
@@ -428,8 +430,9 @@ function SettingsPanel({
       >
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-muted-foreground">Opens at</label>
+            <label htmlFor="assessment-starts-at" className="text-xs text-muted-foreground">Opens at</label>
             <Input
+              id="assessment-starts-at"
               type="datetime-local"
               value={startsAt}
               onChange={(e) => setStartsAt(e.target.value)}
@@ -437,8 +440,9 @@ function SettingsPanel({
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Closes at</label>
+            <label htmlFor="assessment-ends-at" className="text-xs text-muted-foreground">Closes at</label>
             <Input
+              id="assessment-ends-at"
               type="datetime-local"
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}

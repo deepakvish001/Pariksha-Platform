@@ -1085,8 +1085,9 @@ const PositionDetail = () => {
                   <p className="text-sm font-medium">{noteDialog.questionText}</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Your Notes</label>
+                  <label htmlFor="position-note-text" className="text-sm font-medium">Your Notes</label>
                   <textarea
+                    id="position-note-text"
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Add your personal notes, hints, or key points..."
