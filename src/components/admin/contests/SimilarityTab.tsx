@@ -105,8 +105,9 @@ export function SimilarityTab({ contestId }: { contestId: string }) {
     <div className="space-y-3">
       <Card className="flex flex-wrap items-end gap-3 p-4">
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Auto-flag ≥</label>
+          <label htmlFor="similarity-autoflag" className="text-xs text-muted-foreground">Auto-flag ≥</label>
           <Input
+            id="similarity-autoflag"
             type="number" step="0.01" min="0" max="1"
             value={autoflag}
             onChange={(e) => setAutoflag(Math.min(1, Math.max(0, Number(e.target.value) || 0)))}
@@ -114,8 +115,9 @@ export function SimilarityTab({ contestId }: { contestId: string }) {
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Auto-DQ ≥</label>
+          <label htmlFor="similarity-autodq" className="text-xs text-muted-foreground">Auto-DQ ≥</label>
           <Input
+            id="similarity-autodq"
             type="number" step="0.01" min="0" max="1"
             value={autodq}
             onChange={(e) => setAutodq(Math.min(1, Math.max(0, Number(e.target.value) || 0)))}

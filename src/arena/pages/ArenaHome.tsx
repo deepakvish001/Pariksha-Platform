@@ -202,8 +202,8 @@ export default function ArenaHome() {
           <GlassPanel className="p-5 space-y-4 flex flex-col">
             <ModeHeader icon={KeyRound} title="Create Room" desc="Invite anyone with a code" />
             <div>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Problem</label>
-              <select value={roomProblem} onChange={(e) => setRoomProblem(e.target.value)} className="mt-1.5 w-full rounded-md border border-border bg-card/60 p-2 text-sm">
+              <label htmlFor="arena-room-problem" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Problem</label>
+              <select id="arena-room-problem" value={roomProblem} onChange={(e) => setRoomProblem(e.target.value)} className="mt-1.5 w-full rounded-md border border-border bg-card/60 p-2 text-sm">
                 <option value="">— select problem —</option>
                 {problems.map((p) => <option key={p.slug} value={p.slug}>{p.title} ({p.difficulty})</option>)}
               </select>
