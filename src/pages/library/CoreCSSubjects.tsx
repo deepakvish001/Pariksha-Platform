@@ -420,9 +420,18 @@ const CoreCSSubjects = () => {
                 <Card
                   key={subject.id}
                   className="cursor-pointer hover:border-primary/50 transition-all"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     setSubjectFilter(subject.id);
                     setTopicFilter("all");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSubjectFilter(subject.id);
+                      setTopicFilter("all");
+                    }
                   }}
                 >
                   <CardContent className="p-4 text-center">

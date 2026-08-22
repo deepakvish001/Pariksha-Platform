@@ -373,7 +373,15 @@ const PositionResources = () => {
                       "hover:shadow-lg transition-all cursor-pointer group h-full relative",
                       role.isFavorite && "ring-1 ring-yellow-500/30"
                     )}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => navigate(`/library/positions/${role.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/library/positions/${role.id}`);
+                      }
+                    }}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
