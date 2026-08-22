@@ -64,6 +64,7 @@ const AddToFolderButton = ({
           variant="ghost"
           size="icon"
           disabled={disabled}
+          aria-label={inFolderCount > 0 ? `In ${inFolderCount} folder${inFolderCount === 1 ? "" : "s"}` : "Add to folder"}
           className={cn("h-8 w-8", inFolderCount > 0 && "text-primary")}
           onClick={(e) => e.stopPropagation()}
         >
