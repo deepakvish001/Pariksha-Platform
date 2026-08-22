@@ -108,6 +108,7 @@ const SettingsHeader = () => {
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
               className="relative text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <motion.div
