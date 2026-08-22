@@ -536,6 +536,7 @@ export default function StudentPlacementProfile() {
                   <Checkbox
                     checked={isOn(b.id)}
                     onCheckedChange={(v) => setEnabled((e) => ({ ...e, [b.id]: !!v }))}
+                    aria-label={b.text}
                     className="mt-0.5"
                   />
                   <span className={isOn(b.id) ? "" : "text-muted-foreground line-through"}>{b.text}</span>
