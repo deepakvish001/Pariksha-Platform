@@ -615,6 +615,7 @@ const MassRecruitment = () => {
                 variant="outline"
                 size="sm"
                 onClick={toggleFavorite}
+                aria-label={isFavorited ? "Favorited" : "Favorite"}
                 className={cn(
                   "ml-auto gap-1.5 h-8",
                   isFavorited && "text-amber-500 border-amber-500/50 bg-amber-500/10"
@@ -643,6 +644,7 @@ const MassRecruitment = () => {
                             variant={layoutMode === "sections" ? "secondary" : "ghost"}
                             size="sm"
                             onClick={() => setLayoutMode("sections")}
+                            aria-label="Section view"
                             className="h-7 px-2 gap-1"
                           >
                             <LayoutGrid className="h-3.5 w-3.5" />
@@ -657,6 +659,7 @@ const MassRecruitment = () => {
                             variant={layoutMode === "tabs" ? "secondary" : "ghost"}
                             size="sm"
                             onClick={() => setLayoutMode("tabs")}
+                            aria-label="Tab view"
                             className="h-7 px-2 gap-1"
                           >
                             <List className="h-3.5 w-3.5" />
@@ -676,6 +679,7 @@ const MassRecruitment = () => {
                               variant="ghost"
                               size="sm"
                               onClick={expandAllSections}
+                              aria-label="Expand first section"
                               className="h-7 px-2"
                             >
                               <ChevronsUpDown className="h-3.5 w-3.5" />
@@ -689,6 +693,7 @@ const MassRecruitment = () => {
                               variant="ghost"
                               size="sm"
                               onClick={collapseAllSections}
+                              aria-label="Collapse all"
                               className="h-7 px-2"
                             >
                               <ChevronsDownUp className="h-3.5 w-3.5" />
@@ -768,6 +773,7 @@ const MassRecruitment = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => setSearchQuery("")}
+                        aria-label="Clear search"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -807,6 +813,7 @@ const MassRecruitment = () => {
                           size="sm"
                           onClick={goToRandomQuestion}
                           disabled={unsolvedCount === 0}
+                          aria-label="Random question"
                           className="h-9 gap-1.5"
                         >
                           <Shuffle className="h-3.5 w-3.5" />
