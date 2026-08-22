@@ -82,7 +82,7 @@ const ContinueLearningSection = ({ sheets }: ContinueLearningSectionProps) => {
                     animate={{ scale: 1, opacity: 1 }}
                     whileHover={{ scale: 1.1 }}
                   >
-                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0">
+                    <Button size="icon" variant="ghost" aria-label={`Continue ${sheet.title}`} className="h-8 w-8 shrink-0">
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </motion.div>
