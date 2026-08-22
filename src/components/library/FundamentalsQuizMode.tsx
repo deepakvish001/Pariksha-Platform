@@ -276,7 +276,7 @@ const FundamentalsQuizMode = ({ title, questions, sheetId, onClose }: Fundamenta
                 <h2 className="text-2xl font-bold">{title} Quiz</h2>
                 <p className="text-muted-foreground">Configure your quiz session</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={onClose}>
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close quiz setup">
                 <X className="h-5 w-5" />
               </Button>
             </div>
@@ -538,7 +538,7 @@ const FundamentalsQuizMode = ({ title, questions, sheetId, onClose }: Fundamenta
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">Quiz Complete!</h2>
-              <Button variant="ghost" size="icon" onClick={onClose}>
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close quiz results">
                 <X className="h-5 w-5" />
               </Button>
             </div>
@@ -638,7 +638,7 @@ const FundamentalsQuizMode = ({ title, questions, sheetId, onClose }: Fundamenta
               <Badge variant="outline">
                 Question {reviewIndex + 1} of {quizQuestions.length}
               </Badge>
-              <Button variant="ghost" size="icon" onClick={onClose}>
+              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close quiz review">
                 <X className="h-4 w-4" />
               </Button>
             </div>
