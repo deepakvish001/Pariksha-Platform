@@ -112,9 +112,9 @@ export function InviteTeacherDialog({ open, onOpenChange, orgId }: Props) {
                 />
               </div>
               <div>
-                <Label>Preset</Label>
+                <Label htmlFor="invite-teacher-preset">Preset</Label>
                 <Select value={preset} onValueChange={(v) => setPreset(v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="invite-teacher-preset"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PRESET_OPTIONS.map((o) => (
                       <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>

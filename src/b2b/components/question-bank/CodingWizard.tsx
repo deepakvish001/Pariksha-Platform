@@ -437,8 +437,9 @@ function BasicsStep({
   return (
     <div className="space-y-4">
       <div>
-        <Label>Title <span className="text-rose-500">*</span></Label>
+        <Label htmlFor="coding-wizard-title">Title <span className="text-rose-500">*</span></Label>
         <Input
+          id="coding-wizard-title"
           value={draft.title}
           onChange={(e) => patch({ title: e.target.value })}
           placeholder="Two Sum, Validate BST, Rate Limiter…"
@@ -469,8 +470,9 @@ function BasicsStep({
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <Label>Points</Label>
+          <Label htmlFor="coding-wizard-points">Points</Label>
           <Input
+            id="coding-wizard-points"
             type="number"
             min={1}
             value={draft.points}
@@ -479,8 +481,9 @@ function BasicsStep({
           />
         </div>
         <div>
-          <Label>Time limit (ms)</Label>
+          <Label htmlFor="coding-wizard-time-limit">Time limit (ms)</Label>
           <Input
+            id="coding-wizard-time-limit"
             type="number"
             min={100}
             step={100}
@@ -490,8 +493,9 @@ function BasicsStep({
           />
         </div>
         <div>
-          <Label>Est. minutes</Label>
+          <Label htmlFor="coding-wizard-est-minutes">Est. minutes</Label>
           <Input
+            id="coding-wizard-est-minutes"
             type="number"
             min={1}
             value={draft.est_minutes}
@@ -519,8 +523,9 @@ function ProblemStep({
   return (
     <div className="space-y-4">
       <div>
-        <Label>Problem statement (Markdown) <span className="text-rose-500">*</span></Label>
+        <Label htmlFor="coding-wizard-body-md">Problem statement (Markdown) <span className="text-rose-500">*</span></Label>
         <Textarea
+          id="coding-wizard-body-md"
           value={draft.body_md}
           onChange={(e) => patch({ body_md: e.target.value })}
           placeholder={"Describe the problem clearly.\n\n- What input does the function receive?\n- What should it return?\n- Any edge cases to be aware of?"}
@@ -585,10 +590,11 @@ function ProblemStep({
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className={`text-xs ${missingIn ? "text-amber-600 dark:text-amber-400" : ""}`}>
+                    <Label htmlFor={`coding-wizard-example-input-${i}`} className={`text-xs ${missingIn ? "text-amber-600 dark:text-amber-400" : ""}`}>
                       Input{missingIn ? " *" : ""}
                     </Label>
                     <Textarea
+                      id={`coding-wizard-example-input-${i}`}
                       value={ex.input}
                       onChange={(e) => updateExample(i, { input: e.target.value })}
                       className={`mt-1 min-h-[60px] font-mono text-xs ${
@@ -598,10 +604,11 @@ function ProblemStep({
                     />
                   </div>
                   <div>
-                    <Label className={`text-xs ${missingOut ? "text-amber-600 dark:text-amber-400" : ""}`}>
+                    <Label htmlFor={`coding-wizard-example-output-${i}`} className={`text-xs ${missingOut ? "text-amber-600 dark:text-amber-400" : ""}`}>
                       Output{missingOut ? " *" : ""}
                     </Label>
                     <Textarea
+                      id={`coding-wizard-example-output-${i}`}
                       value={ex.output}
                       onChange={(e) => updateExample(i, { output: e.target.value })}
                       className={`mt-1 min-h-[60px] font-mono text-xs ${
@@ -612,8 +619,9 @@ function ProblemStep({
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs">Explanation (optional)</Label>
+                  <Label htmlFor={`coding-wizard-example-explanation-${i}`} className="text-xs">Explanation (optional)</Label>
                   <Textarea
+                    id={`coding-wizard-example-explanation-${i}`}
                     value={ex.explanation ?? ""}
                     onChange={(e) => updateExample(i, { explanation: e.target.value })}
                     className="mt-1 min-h-[40px] text-xs"
@@ -697,12 +705,12 @@ function CodeStep({
       </div>
 
       <div>
-        <Label>Primary language</Label>
+        <Label htmlFor="coding-wizard-primary-language">Primary language</Label>
         <Select
           value={draft.primary_language}
           onValueChange={(v) => patch({ primary_language: v as Language })}
         >
-          <SelectTrigger className="mt-1 w-48">
+          <SelectTrigger id="coding-wizard-primary-language" className="mt-1 w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -716,8 +724,9 @@ function CodeStep({
       </div>
 
       <div>
-        <Label>Function signature <span className="text-rose-500">*</span></Label>
+        <Label htmlFor="coding-wizard-function-signature">Function signature <span className="text-rose-500">*</span></Label>
         <Input
+          id="coding-wizard-function-signature"
           value={draft.function_signature}
           onChange={(e) => patch({ function_signature: e.target.value })}
           placeholder="function twoSum(nums: number[], target: number): number[]"
@@ -823,8 +832,9 @@ function TestsStep({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Expected time complexity</Label>
+          <Label htmlFor="coding-wizard-complexity-time">Expected time complexity</Label>
           <Input
+            id="coding-wizard-complexity-time"
             value={draft.complexity.time}
             onChange={(e) =>
               patch({ complexity: { ...draft.complexity, time: e.target.value } })
@@ -834,8 +844,9 @@ function TestsStep({
           />
         </div>
         <div>
-          <Label>Expected space complexity</Label>
+          <Label htmlFor="coding-wizard-complexity-space">Expected space complexity</Label>
           <Input
+            id="coding-wizard-complexity-space"
             value={draft.complexity.space}
             onChange={(e) =>
               patch({ complexity: { ...draft.complexity, space: e.target.value } })

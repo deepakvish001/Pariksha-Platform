@@ -287,8 +287,9 @@ export function SqlWizard({
       {step === 0 && (
         <div className="space-y-4">
           <div>
-            <Label>Title <span className="text-rose-500">*</span></Label>
+            <Label htmlFor="sql-wizard-title">Title <span className="text-rose-500">*</span></Label>
             <Input
+              id="sql-wizard-title"
               value={draft.title}
               onChange={(e) => patch({ title: e.target.value })}
               placeholder="Top customers by revenue…"
@@ -296,8 +297,9 @@ export function SqlWizard({
             />
           </div>
           <div>
-            <Label>Prompt (Markdown)</Label>
+            <Label htmlFor="sql-wizard-body-md">Prompt (Markdown)</Label>
             <Textarea
+              id="sql-wizard-body-md"
               value={draft.body_md}
               onChange={(e) => patch({ body_md: e.target.value })}
               placeholder="What does the candidate need to query?"
@@ -306,9 +308,9 @@ export function SqlWizard({
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label>Dialect</Label>
+              <Label htmlFor="sql-wizard-dialect">Dialect</Label>
               <Select value={draft.dialect} onValueChange={(v) => patch({ dialect: v as SqlDialect })}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="sql-wizard-dialect" className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SQL_DIALECTS.map((d) => (
                     <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
@@ -330,8 +332,9 @@ export function SqlWizard({
             </div>
           </div>
           <div>
-            <Label>Points</Label>
+            <Label htmlFor="sql-wizard-points">Points</Label>
             <Input
+              id="sql-wizard-points"
               type="number"
               min={1}
               value={draft.points}
@@ -352,8 +355,9 @@ export function SqlWizard({
             </div>
           )}
           <div>
-            <Label>Schema (DDL) <span className="text-rose-500">*</span></Label>
+            <Label htmlFor="sql-wizard-schema-ddl">Schema (DDL) <span className="text-rose-500">*</span></Label>
             <Textarea
+              id="sql-wizard-schema-ddl"
               value={draft.schema_ddl}
               onChange={(e) => patch({ schema_ddl: e.target.value })}
               placeholder={`CREATE TABLE customers (\n  id INT PRIMARY KEY,\n  name TEXT NOT NULL\n);`}
@@ -364,8 +368,9 @@ export function SqlWizard({
             </ValidationHint>
           </div>
           <div>
-            <Label>Seed data (INSERTs)</Label>
+            <Label htmlFor="sql-wizard-seed-sql">Seed data (INSERTs)</Label>
             <Textarea
+              id="sql-wizard-seed-sql"
               value={draft.seed_sql}
               onChange={(e) => patch({ seed_sql: e.target.value })}
               placeholder={`INSERT INTO customers VALUES (1, 'Acme');`}
@@ -378,8 +383,9 @@ export function SqlWizard({
       {step === 2 && (
         <div className="space-y-4">
           <div>
-            <Label>Reference query <span className="text-rose-500">*</span></Label>
+            <Label htmlFor="sql-wizard-reference-query">Reference query <span className="text-rose-500">*</span></Label>
             <Textarea
+              id="sql-wizard-reference-query"
               value={draft.reference_query}
               onChange={(e) => patch({ reference_query: e.target.value })}
               placeholder={`SELECT name FROM customers ORDER BY revenue DESC LIMIT 5;`}
