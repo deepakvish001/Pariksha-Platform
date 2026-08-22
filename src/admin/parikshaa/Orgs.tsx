@@ -89,6 +89,7 @@ function OrgTable({ type }: { type: "company" | "college" }) {
                   <Button
                     size="icon"
                     variant="ghost"
+                    aria-label={`Edit slug for ${o.name}`}
                     className="h-6 w-6 shrink-0"
                     onClick={() => {
                       const next = window.prompt("New slug (lowercase, hyphenated)", o.slug);
