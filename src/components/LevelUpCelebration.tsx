@@ -75,6 +75,7 @@
              variant="ghost"
              size="icon"
              className="absolute top-4 right-4"
+             aria-label="Close"
              onClick={onClose}
            >
              <X className="h-4 w-4" />
