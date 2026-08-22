@@ -108,7 +108,7 @@ const Quiz = () => {
             </div>
           </div>
           {activeQuiz && (
-            <Button variant="ghost" size="icon" onClick={() => setActiveQuiz(null)}>
+            <Button variant="ghost" size="icon" aria-label="Close quiz" onClick={() => setActiveQuiz(null)}>
               <X className="h-5 w-5" />
             </Button>
           )}
