@@ -144,6 +144,7 @@ const FolderManager = ({
         <Button
           variant="ghost"
           size="sm"
+          aria-label="New folder"
           onClick={() => {
             setNewFolderName("");
             setNewFolderDescription("");
@@ -224,6 +225,7 @@ const FolderManager = ({
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={`More options for ${folder.name}`}
                         className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <MoreHorizontal className="h-4 w-4" />
