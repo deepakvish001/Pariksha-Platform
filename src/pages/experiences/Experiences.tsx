@@ -194,9 +194,9 @@ export default function Experiences() {
                   <Input id="exp-filter-role" placeholder="Any role" value={filters.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} />
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="exp-filter-category" className="text-xs font-medium text-muted-foreground">Category</label>
+                  <label className="text-xs font-medium text-muted-foreground">Category</label>
                   <Select value={filters.experience_type ?? "all"} onValueChange={(v) => set({ experience_type: v === "all" ? undefined : (v as any) })}>
-                    <SelectTrigger id="exp-filter-category"><SelectValue placeholder="Category" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All categories</SelectItem>
                       <SelectItem value="on_campus">On-Campus</SelectItem>
@@ -207,9 +207,9 @@ export default function Experiences() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="exp-filter-difficulty" className="text-xs font-medium text-muted-foreground">Difficulty</label>
+                  <label className="text-xs font-medium text-muted-foreground">Difficulty</label>
                   <Select value={filters.difficulty ?? "all"} onValueChange={(v) => set({ difficulty: v === "all" ? undefined : v })}>
-                    <SelectTrigger id="exp-filter-difficulty"><SelectValue placeholder="Difficulty" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Difficulty" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All difficulty</SelectItem>
                       <SelectItem value="easy">Easy</SelectItem>
@@ -219,9 +219,9 @@ export default function Experiences() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="exp-filter-year" className="text-xs font-medium text-muted-foreground">Year</label>
+                  <label className="text-xs font-medium text-muted-foreground">Year</label>
                   <Select value={filters.year ? String(filters.year) : "all"} onValueChange={(v) => set({ year: v === "all" ? undefined : Number(v) })}>
-                    <SelectTrigger id="exp-filter-year"><SelectValue placeholder="Year" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Any year</SelectItem>
                       {years.map((y) => (<SelectItem key={y} value={String(y)}>{y}</SelectItem>))}
@@ -229,9 +229,9 @@ export default function Experiences() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="exp-filter-sort" className="text-xs font-medium text-muted-foreground">Sort by</label>
+                  <label className="text-xs font-medium text-muted-foreground">Sort by</label>
                   <Select value={filters.sort ?? "recent"} onValueChange={(v) => set({ sort: v as any })}>
-                    <SelectTrigger id="exp-filter-sort"><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="recent">Most recent</SelectItem>
                       <SelectItem value="top">Most upvoted</SelectItem>
