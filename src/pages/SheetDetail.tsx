@@ -1436,6 +1436,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
             variant="ghost"
             size="icon"
             onClick={() => navigate("/learn/sheets")}
+            aria-label="Back to sheets"
             className="shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
