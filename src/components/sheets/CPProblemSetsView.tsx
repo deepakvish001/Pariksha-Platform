@@ -1494,6 +1494,7 @@ const CPProblemSetsView = () => {
                                                       href={problem.problemUrl}
                                                       target="_blank"
                                                       rel="noopener noreferrer"
+                                                      aria-label={`Open ${problem.title} on external site`}
                                                       className="text-muted-foreground hover:text-primary transition-colors"
                                                       onClick={(e) => e.stopPropagation()}
                                                     >
