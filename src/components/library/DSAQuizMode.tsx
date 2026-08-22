@@ -398,9 +398,9 @@ const DSA_TIMED_CHALLENGES: QuizPreset[] = [
            <CardContent className="space-y-4">
              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                <div className="space-y-2">
-                 <Label>Questions</Label>
+                 <Label htmlFor="dsa-quiz-count">Questions</Label>
                  <Select value={config.questionCount.toString()} onValueChange={(v) => setConfig((prev) => ({ ...prev, questionCount: parseInt(v) }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="dsa-quiz-count"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="5">5 Questions</SelectItem>
                      <SelectItem value="10">10 Questions</SelectItem>
@@ -410,9 +410,9 @@ const DSA_TIMED_CHALLENGES: QuizPreset[] = [
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Time per Question</Label>
+                 <Label htmlFor="dsa-quiz-time">Time per Question</Label>
                  <Select value={config.timePerQuestion.toString()} onValueChange={(v) => setConfig((prev) => ({ ...prev, timePerQuestion: parseInt(v) }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="dsa-quiz-time"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="45">45 seconds</SelectItem>
                      <SelectItem value="60">60 seconds</SelectItem>
@@ -422,9 +422,9 @@ const DSA_TIMED_CHALLENGES: QuizPreset[] = [
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Topic</Label>
+                 <Label htmlFor="dsa-quiz-topic">Topic</Label>
                  <Select value={config.topic} onValueChange={(v) => setConfig((prev) => ({ ...prev, topic: v }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="dsa-quiz-topic"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="all">All Topics</SelectItem>
                      {dsaTopics.map((t) => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
@@ -432,9 +432,9 @@ const DSA_TIMED_CHALLENGES: QuizPreset[] = [
                  </Select>
                </div>
                <div className="space-y-2">
-                 <Label>Difficulty</Label>
+                 <Label htmlFor="dsa-quiz-difficulty">Difficulty</Label>
                  <Select value={config.difficulty} onValueChange={(v) => setConfig((prev) => ({ ...prev, difficulty: v }))}>
-                   <SelectTrigger><SelectValue /></SelectTrigger>
+                   <SelectTrigger id="dsa-quiz-difficulty"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      <SelectItem value="all">All Levels</SelectItem>
                      <SelectItem value="Easy">Easy</SelectItem>

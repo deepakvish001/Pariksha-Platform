@@ -380,12 +380,12 @@ function SettingsPopover({
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs">Week starts on</Label>
+          <Label htmlFor="pattern-week-start" className="text-xs">Week starts on</Label>
           <Select
             value={String(settings.weekStart)}
             onValueChange={(v) => onUpdate({ weekStart: v === "0" ? 0 : 1 })}
           >
-            <SelectTrigger className="h-8 text-sm">
+            <SelectTrigger id="pattern-week-start" className="h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
