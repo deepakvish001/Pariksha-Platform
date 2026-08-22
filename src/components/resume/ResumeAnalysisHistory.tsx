@@ -85,12 +85,12 @@ export const ResumeAnalysisHistory = ({
               <Badge variant="outline" className={getScoreColor(analysis.overall_score)}>
                 {analysis.overall_score}/100
               </Badge>
-              <Button variant="ghost" size="icon" onClick={() => onView(analysis)}>
+              <Button variant="ghost" size="icon" aria-label="View analysis" onClick={() => onView(analysis)}>
                 <Eye className="h-4 w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={isDeleting}>
+                  <Button variant="ghost" size="icon" aria-label="Delete analysis" disabled={isDeleting}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </AlertDialogTrigger>
