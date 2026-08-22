@@ -65,10 +65,12 @@ export function SideEyeAnomalyTicker({ contestId }: { contestId: string }) {
         </div>
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" className="h-6 w-6"
+            aria-label={collapsed ? "Expand anomaly list" : "Collapse anomaly list"}
             onClick={() => setCollapsed((c) => !c)}>
             <AlertTriangle className="h-3 w-3" />
           </Button>
           <Button size="icon" variant="ghost" className="h-6 w-6"
+            aria-label="Dismiss all anomalies"
             onClick={() => setEvents([])}>
             <X className="h-3 w-3" />
           </Button>
