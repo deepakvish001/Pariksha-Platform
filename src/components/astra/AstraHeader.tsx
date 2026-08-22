@@ -68,19 +68,21 @@ const AstraHeader = ({ onNewChat, onOpenHistory }: AstraHeaderProps) => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onOpenHistory}
+            aria-label="History"
             className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent hover:border-border/50"
           >
             <History className="h-4 w-4" />
             <span className="hidden sm:inline">History</span>
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onNewChat} 
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onNewChat}
+            aria-label="New Chat"
             className="gap-2 bg-muted/30 text-foreground/80 hover:text-foreground hover:bg-muted/50 border border-border/50"
           >
             <Plus className="h-4 w-4" />
