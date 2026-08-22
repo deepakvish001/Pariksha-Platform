@@ -40,7 +40,7 @@ export function BulkActionBar({
         <Button variant="outline" size="sm" onClick={onDelete} className="text-[hsl(var(--destructive))]">
           <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
         </Button>
-        <Button variant="ghost" size="sm" onClick={onClear} className="ml-auto">
+        <Button variant="ghost" size="sm" onClick={onClear} className="ml-auto" aria-label="Clear selection">
           <X className="h-4 w-4" />
         </Button>
       </div>
