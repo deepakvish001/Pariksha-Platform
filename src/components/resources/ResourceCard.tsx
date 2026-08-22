@@ -93,6 +93,7 @@ const ResourceCard = ({ resource, index, isFavorite, onToggleFavorite }: Resourc
                 ? "text-rose-500 hover:text-rose-400 bg-rose-500/10"
                 : "text-white/40 hover:text-rose-400 hover:bg-rose-500/10"
             )}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             onClick={() => onToggleFavorite(resource.id)}
           >
             <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
