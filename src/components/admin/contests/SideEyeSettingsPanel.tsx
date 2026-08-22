@@ -196,12 +196,13 @@ export const SideEyeSettingsPanel = () => {
 
       <div className="flex items-center justify-between rounded border border-border/40 px-3 py-2">
         <div>
-          <Label className="text-xs">Notify all admins</Label>
+          <Label htmlFor="notify-all-admins" className="text-xs">Notify all admins</Label>
           <p className="text-[11px] text-muted-foreground">
             Off = only the recipient list below receives notifications.
           </p>
         </div>
         <Switch
+          id="notify-all-admins"
           checked={settings.notify_all_admins}
           onCheckedChange={(v) => setSettings((p) => ({ ...p, notify_all_admins: v }))}
         />

@@ -1194,8 +1194,9 @@ const ProblemEditor = () => {
         <TabsContent value="sql">
           <Card className="space-y-3 p-4">
             <div className="flex items-center justify-between">
-              <Label>Enable SQL spec</Label>
+              <Label htmlFor="enable-sql-spec">Enable SQL spec</Label>
               <Switch
+                id="enable-sql-spec"
                 checked={!!form.sql_spec}
                 onCheckedChange={(v) =>
                   update(
@@ -1246,12 +1247,13 @@ const ProblemEditor = () => {
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
                     <Switch
+                      id="sql-order-matters"
                       checked={form.sql_spec.order_matters}
                       onCheckedChange={(v) =>
                         update("sql_spec", { ...form.sql_spec!, order_matters: v })
                       }
                     />
-                    <Label>Row order matters</Label>
+                    <Label htmlFor="sql-order-matters">Row order matters</Label>
                   </div>
                   <Button
                     type="button"

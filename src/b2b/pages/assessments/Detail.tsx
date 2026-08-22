@@ -490,7 +490,7 @@ function SettingsPanel({
               When off, candidates only see a submission confirmation — no score, breakdown, integrity, or receipt PDF.
             </p>
           </div>
-          <Switch checked={showResults} onCheckedChange={setShowResults} />
+          <Switch checked={showResults} onCheckedChange={setShowResults} aria-label="Show results to candidate" />
         </div>
       </SectionCard>
 

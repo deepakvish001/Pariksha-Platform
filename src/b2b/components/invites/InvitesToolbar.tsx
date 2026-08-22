@@ -159,6 +159,7 @@ export function InvitesToolbar({
                 <Switch
                   checked={reminderEnabled}
                   onCheckedChange={(v) => onReminderChange(v, reminderDays)}
+                  aria-label="Auto-remind pending"
                 />
               </div>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">

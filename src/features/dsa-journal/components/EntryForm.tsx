@@ -290,9 +290,10 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
         </div>
         <div className="flex items-end gap-3">
           <div>
-            <Label>Solved clean (1 try)</Label>
+            <Label htmlFor="solved-clean">Solved clean (1 try)</Label>
             <div className="h-10 flex items-center">
               <Switch
+                id="solved-clean"
                 checked={form.watch("solved_clean")}
                 onCheckedChange={(c) => form.setValue("solved_clean", c)}
               />
