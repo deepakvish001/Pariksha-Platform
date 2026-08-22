@@ -144,6 +144,7 @@ const FolderManager = ({
         <Button
           variant="ghost"
           size="sm"
+          aria-label="New folder"
           onClick={() => {
             setNewFolderName("");
             setNewFolderDescription("");
