@@ -447,6 +447,7 @@ const CompanyDetail = () => {
               variant="outline"
               size="sm"
               onClick={toggleFavorite}
+              aria-label={isFavorited ? "Favorited" : "Favorite"}
               className={cn(
                 "gap-2 shrink-0",
                 isFavorited && "text-amber-500 border-amber-500/50 bg-amber-500/10"
