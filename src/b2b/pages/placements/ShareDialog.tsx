@@ -246,8 +246,9 @@ export function ShareDialog({
                 />
               </div>
               <div>
-                <Label className="text-xs">Expires in</Label>
+                <Label htmlFor="share-expires-mode" className="text-xs">Expires in</Label>
                 <select
+                  id="share-expires-mode"
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   value={expiresMode}
                   onChange={(e) => setExpiresMode(e.target.value)}
@@ -259,8 +260,9 @@ export function ShareDialog({
 
             {expiresMode === "custom" && (
               <div>
-                <Label className="text-xs">Custom expiry date</Label>
+                <Label htmlFor="share-custom-expiry" className="text-xs">Custom expiry date</Label>
                 <Input
+                  id="share-custom-expiry"
                   type="date"
                   value={customDate}
                   min={minDate}
@@ -272,8 +274,9 @@ export function ShareDialog({
             )}
 
             <div>
-              <Label className="text-xs">Recruiter email (optional)</Label>
+              <Label htmlFor="share-recruiter-email" className="text-xs">Recruiter email (optional)</Label>
               <Input
+                id="share-recruiter-email"
                 type="email"
                 value={recruiterEmail}
                 onChange={(e) => setRecruiterEmail(e.target.value)}
@@ -282,8 +285,9 @@ export function ShareDialog({
             </div>
 
             <div>
-              <Label className="text-xs">Message to HR (optional)</Label>
+              <Label htmlFor="share-hr-message" className="text-xs">Message to HR (optional)</Label>
               <Textarea
+                id="share-hr-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Top candidates from our 2025 batch…"
