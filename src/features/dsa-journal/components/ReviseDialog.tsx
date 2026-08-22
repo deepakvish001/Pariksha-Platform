@@ -80,7 +80,7 @@ export default function ReviseDialog({ open, onOpenChange, entry }: Props) {
                 Cleanly solved → next revision pushed further out.
               </div>
             </div>
-            <Switch checked={clean} onCheckedChange={setClean} />
+            <Switch checked={clean} onCheckedChange={setClean} aria-label="Solved cleanly in 1 try?" />
           </div>
           <div>
             <Label>Note</Label>

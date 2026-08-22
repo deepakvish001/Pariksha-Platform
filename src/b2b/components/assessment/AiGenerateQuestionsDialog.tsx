@@ -462,7 +462,7 @@ export function AiGenerateQuestionsDialog({
               }`}
             >
               <div className="flex items-start gap-2">
-                <Checkbox checked={selected.has(i)} onCheckedChange={() => toggle(i)} className="mt-1" />
+                <Checkbox checked={selected.has(i)} onCheckedChange={() => toggle(i)} className="mt-1" aria-label={`Select ${d.title}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline" className="text-[10px]">{d.type.toUpperCase()}</Badge>

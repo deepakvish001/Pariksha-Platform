@@ -73,7 +73,7 @@ export function InviteRow({
   const scheduledAt = (invite as any).scheduled_send_at as string | null;
   return (
     <div className="px-3 py-2.5 flex items-center gap-3 text-sm hover:bg-[hsl(var(--muted))/0.3]">
-      <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
+      <Checkbox checked={selected} onCheckedChange={onToggleSelect} aria-label={`Select ${invite.name ?? invite.email}`} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <div className="font-medium truncate">{invite.name ?? invite.email}</div>

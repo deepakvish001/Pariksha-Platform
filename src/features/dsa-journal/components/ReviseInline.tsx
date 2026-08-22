@@ -81,7 +81,7 @@ export default function ReviseInline({
           </div>
           <div className="flex items-center justify-between rounded-md border p-2">
             <div className="text-xs">Solved cleanly in 1 try?</div>
-            <Switch checked={clean} onCheckedChange={setClean} />
+            <Switch checked={clean} onCheckedChange={setClean} aria-label="Solved cleanly in 1 try?" />
           </div>
           <div>
             <Label className="text-[11px]">Note</Label>

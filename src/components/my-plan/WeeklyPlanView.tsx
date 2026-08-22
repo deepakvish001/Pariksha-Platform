@@ -88,6 +88,7 @@ const DraggableTask = ({ task, onToggle }: DraggableTaskProps) => {
       <Checkbox
         checked={task.status === "done"}
         onCheckedChange={(c) => onToggle(task.id, c ? "done" : "pending")}
+        aria-label={`Mark "${task.title}" as ${task.status === "done" ? "not done" : "done"}`}
       />
       <span className={cn("text-sm flex-1 min-w-0 truncate", task.status === "done" && "line-through opacity-60")}>
         {task.title}

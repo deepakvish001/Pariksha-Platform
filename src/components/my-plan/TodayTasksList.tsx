@@ -134,6 +134,7 @@ export const TodayTasksList = ({
                 checked={t.status === "done"}
                 onCheckedChange={(c) => onToggle(t.id, c ? "done" : "pending")}
                 className="mt-1"
+                aria-label={`Mark "${t.title}" as ${t.status === "done" ? "not done" : "done"}`}
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">

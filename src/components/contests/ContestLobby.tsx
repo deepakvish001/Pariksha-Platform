@@ -69,6 +69,7 @@ export default function ContestLobby({ startsAt, registeredCount, onChecklistCom
                 onCheckedChange={(c) =>
                   setChecked((prev) => prev.map((v, i) => (i === idx ? !!c : v)))
                 }
+                aria-label={item.label}
               />
               <Icon className="mt-0.5 h-4 w-4 text-primary" />
               <span className="text-sm">{item.label}</span>
