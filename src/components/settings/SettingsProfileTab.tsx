@@ -372,6 +372,7 @@ const SettingsProfileTab = () => {
                   onClick={handleSaveProfile}
                   disabled={isSavingProfile}
                   size="icon"
+                  aria-label={isSavingProfile ? "Saving name" : showSavedIndicator ? "Name saved" : "Save name"}
                   className="shrink-0"
                 >
                   {isSavingProfile ? (
