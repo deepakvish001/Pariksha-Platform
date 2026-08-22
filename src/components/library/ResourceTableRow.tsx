@@ -76,7 +76,7 @@ export const JobPortalRow = ({
             rel="noopener noreferrer"
             className="inline-flex"
           >
-            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" aria-label="Visit">
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Visit</span>
             </Button>
@@ -185,7 +185,7 @@ export const ResumeTemplateRow = ({ template, index }: ResumeTemplateRowProps) =
         </Badge>
       </TableCell>
       <TableCell className="w-24 text-center">
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" aria-label="Preview">
           <ExternalLink className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Preview</span>
         </Button>
@@ -258,6 +258,7 @@ export const ColdDMRow = ({
           variant={copied ? "default" : "outline"}
           size="sm"
           onClick={handleCopy}
+          aria-label={copied ? "Copied!" : "Copy"}
           className={cn(
             "h-8 gap-1.5 text-xs transition-all",
             copied && "bg-emerald-500 hover:bg-emerald-600"
