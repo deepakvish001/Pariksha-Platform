@@ -208,7 +208,7 @@ const QuizResultExport = ({ result }: QuizResultExportProps) => {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" onClick={handleDownloadImage} disabled={isExporting}>
+          <Button variant="outline" onClick={handleDownloadImage} disabled={isExporting} aria-label="Save as image" aria-busy={isExporting}>
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -218,7 +218,7 @@ const QuizResultExport = ({ result }: QuizResultExportProps) => {
               </>
             )}
           </Button>
-          <Button variant="outline" onClick={handleCopyToClipboard} disabled={isExporting}>
+          <Button variant="outline" onClick={handleCopyToClipboard} disabled={isExporting} aria-label="Copy to clipboard" aria-busy={isExporting}>
             {copied ? (
               <>
                 <Check className="h-4 w-4 mr-2" />
@@ -233,7 +233,7 @@ const QuizResultExport = ({ result }: QuizResultExportProps) => {
               </>
             )}
           </Button>
-          <Button onClick={handleShare} disabled={isExporting}>
+          <Button onClick={handleShare} disabled={isExporting} aria-label="Share result" aria-busy={isExporting}>
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
