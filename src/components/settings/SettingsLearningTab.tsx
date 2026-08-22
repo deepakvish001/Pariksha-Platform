@@ -126,6 +126,7 @@ const SettingsLearningTab = () => {
                 min={2}
                 max={5}
                 step={1}
+                aria-label="Mastery threshold"
                 className="flex-1"
               />
               <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20">

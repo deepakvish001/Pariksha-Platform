@@ -79,6 +79,7 @@ import { useXPGoalNotifications } from "@/hooks/useXPGoalNotifications";
                        min={10}
                        max={500}
                        step={10}
+                       aria-label="Daily goal"
                        className="mt-2"
                      />
                    </div>
@@ -90,6 +91,7 @@ import { useXPGoalNotifications } from "@/hooks/useXPGoalNotifications";
                        min={50}
                        max={2000}
                        step={50}
+                       aria-label="Weekly goal"
                        className="mt-2"
                      />
                    </div>

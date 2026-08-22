@@ -104,7 +104,7 @@ export function CodeTimelineReplay({ sessionId }: { sessionId: string }) {
         })}
       </div>
 
-      <Slider min={0} max={events.length - 1} step={1} value={[idx]} onValueChange={(v) => setIdx(v[0] ?? 0)} />
+      <Slider min={0} max={events.length - 1} step={1} value={[idx]} onValueChange={(v) => setIdx(v[0] ?? 0)} aria-label="Timeline position" />
 
       <div className="space-y-2 rounded border p-3 text-xs">
         <div className="flex flex-wrap items-center gap-2">
