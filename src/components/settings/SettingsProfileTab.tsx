@@ -360,9 +360,10 @@ const SettingsProfileTab = () => {
               </button>
             </div>
             <div className="flex-1 space-y-2">
-              <Label className="text-muted-foreground">Full Name</Label>
+              <Label htmlFor="profile-full-name" className="text-muted-foreground">Full Name</Label>
               <div className="flex gap-2">
                 <Input
+                  id="profile-full-name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Your name"
@@ -395,8 +396,9 @@ const SettingsProfileTab = () => {
 
           {/* Email */}
           <div className="space-y-2">
-            <Label className="text-muted-foreground">Email</Label>
+            <Label htmlFor="profile-email" className="text-muted-foreground">Email</Label>
             <Input
+              id="profile-email"
               value={user?.email || ""}
               disabled
               className="bg-muted border-border"
@@ -406,10 +408,11 @@ const SettingsProfileTab = () => {
 
           {/* Phone */}
           <div className="space-y-2">
-            <Label className="text-muted-foreground">Mobile Number</Label>
+            <Label htmlFor="profile-mobile" className="text-muted-foreground">Mobile Number</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
+                id="profile-mobile"
                 type="tel"
                 value={editForm.mobile_number}
                 onChange={(e) => handlePhoneChange(e.target.value)}
@@ -437,12 +440,12 @@ const SettingsProfileTab = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Experience Level</Label>
+              <Label htmlFor="profile-experience-level" className="text-muted-foreground">Experience Level</Label>
               <Select
                 value={editForm.current_experience}
                 onValueChange={(v) => setEditForm((prev) => ({ ...prev, current_experience: v }))}
               >
-                <SelectTrigger className="bg-secondary/50 border-border">
+                <SelectTrigger id="profile-experience-level" className="bg-secondary/50 border-border">
                   <SelectValue placeholder="Select experience" />
                 </SelectTrigger>
                 <SelectContent>
@@ -455,12 +458,12 @@ const SettingsProfileTab = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Primary Goal</Label>
+              <Label htmlFor="profile-primary-goal" className="text-muted-foreground">Primary Goal</Label>
               <Select
                 value={editForm.target_goal}
                 onValueChange={(v) => setEditForm((prev) => ({ ...prev, target_goal: v }))}
               >
-                <SelectTrigger className="bg-secondary/50 border-border">
+                <SelectTrigger id="profile-primary-goal" className="bg-secondary/50 border-border">
                   <SelectValue placeholder="Select goal" />
                 </SelectTrigger>
                 <SelectContent>
@@ -487,8 +490,9 @@ const SettingsProfileTab = () => {
                   <GraduationCap className="w-4 h-4" /> Academic Details
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">College/University</Label>
+                  <Label htmlFor="profile-college" className="text-muted-foreground">College/University</Label>
                   <Input
+                    id="profile-college"
                     value={editForm.college_name}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, college_name: e.target.value }))}
                     placeholder="e.g., IIT Delhi"
@@ -497,8 +501,9 @@ const SettingsProfileTab = () => {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground">Course</Label>
+                    <Label htmlFor="profile-course" className="text-muted-foreground">Course</Label>
                     <Input
+                      id="profile-course"
                       value={editForm.course_name}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, course_name: e.target.value }))}
                       placeholder="B.Tech"
@@ -506,8 +511,9 @@ const SettingsProfileTab = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground">Branch</Label>
+                    <Label htmlFor="profile-branch" className="text-muted-foreground">Branch</Label>
                     <Input
+                      id="profile-branch"
                       value={editForm.branch}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, branch: e.target.value }))}
                       placeholder="CSE"
@@ -515,12 +521,12 @@ const SettingsProfileTab = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground">Year</Label>
+                    <Label htmlFor="profile-year" className="text-muted-foreground">Year</Label>
                     <Select
                       value={editForm.study_year}
                       onValueChange={(v) => setEditForm((prev) => ({ ...prev, study_year: v }))}
                     >
-                      <SelectTrigger className="bg-secondary/50 border-border">
+                      <SelectTrigger id="profile-year" className="bg-secondary/50 border-border">
                         <SelectValue placeholder="Year" />
                       </SelectTrigger>
                       <SelectContent>
@@ -548,8 +554,9 @@ const SettingsProfileTab = () => {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground">Company</Label>
+                    <Label htmlFor="profile-company" className="text-muted-foreground">Company</Label>
                     <Input
+                      id="profile-company"
                       value={editForm.company_name}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, company_name: e.target.value }))}
                       placeholder="Google"
@@ -557,8 +564,9 @@ const SettingsProfileTab = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground">Role</Label>
+                    <Label htmlFor="profile-role" className="text-muted-foreground">Role</Label>
                     <Input
+                      id="profile-role"
                       value={editForm.role}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
                       placeholder="SDE"
@@ -566,12 +574,12 @@ const SettingsProfileTab = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-muted-foreground">Experience</Label>
+                    <Label htmlFor="profile-work-experience" className="text-muted-foreground">Experience</Label>
                     <Select
                       value={editForm.experience}
                       onValueChange={(v) => setEditForm((prev) => ({ ...prev, experience: v }))}
                     >
-                      <SelectTrigger className="bg-secondary/50 border-border">
+                      <SelectTrigger id="profile-work-experience" className="bg-secondary/50 border-border">
                         <SelectValue placeholder="Years" />
                       </SelectTrigger>
                       <SelectContent>

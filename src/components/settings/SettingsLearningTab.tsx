@@ -154,10 +154,11 @@ const SettingsLearningTab = () => {
                   transition={{ delay: 0.1 + idx * 0.03 }}
                   className="space-y-1"
                 >
-                  <Label className="text-xs text-center block text-muted-foreground">
+                  <Label htmlFor={`srs-interval-${idx}`} className="text-xs text-center block text-muted-foreground">
                     {idx + 1}{ordinalSuffix(idx + 1)}
                   </Label>
                   <Input
+                    id={`srs-interval-${idx}`}
                     type="number"
                     min={1}
                     max={120}

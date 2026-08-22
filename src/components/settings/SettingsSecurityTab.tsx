@@ -107,10 +107,11 @@ const SettingsSecurityTab = () => {
         ) : (
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Current Password</Label>
+              <Label htmlFor="security-current-password" className="text-muted-foreground">Current Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
+                  id="security-current-password"
                   type={showCurrentPassword ? "text" : "password"}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
@@ -128,10 +129,11 @@ const SettingsSecurityTab = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-muted-foreground">New Password</Label>
+              <Label htmlFor="security-new-password" className="text-muted-foreground">New Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
+                  id="security-new-password"
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -150,10 +152,11 @@ const SettingsSecurityTab = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Confirm New Password</Label>
+              <Label htmlFor="security-confirm-password" className="text-muted-foreground">Confirm New Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
+                  id="security-confirm-password"
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
