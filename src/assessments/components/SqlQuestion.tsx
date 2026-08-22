@@ -253,7 +253,7 @@ function IconBtn({ tip, onClick, children }: { tip: string; onClick: () => void;
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onClick}>{children}</Button>
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onClick} aria-label={tip}>{children}</Button>
       </TooltipTrigger>
       <TooltipContent>{tip}</TooltipContent>
     </Tooltip>
