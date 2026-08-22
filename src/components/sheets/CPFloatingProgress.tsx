@@ -287,6 +287,7 @@ const CPFloatingProgress: React.FC<CPFloatingProgressProps> = memo(({
               size="icon"
               variant="outline"
               onClick={scrollToTop}
+              aria-label="Scroll to top"
               className={cn(
                 "h-10 w-10 rounded-full shadow-lg",
                 "bg-background/90 backdrop-blur-xl hover:bg-primary hover:text-primary-foreground",
