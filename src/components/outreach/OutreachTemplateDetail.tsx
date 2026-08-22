@@ -284,6 +284,7 @@ const OutreachTemplateDetail = ({
             <Button
               variant="ghost"
               size="icon"
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
               className={isFavorite ? "text-yellow-500" : "text-muted-foreground"}
               onClick={onToggleFavorite}
             >
