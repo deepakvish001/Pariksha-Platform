@@ -307,6 +307,7 @@ const DSAQuestions = () => {
                      variant="default"
                      size="sm"
                      className="gap-2"
+                     aria-label="Quiz Mode"
                      onClick={() => setPageMode("quiz")}
                    >
                      <Zap className="h-4 w-4" />
@@ -331,6 +332,7 @@ const DSAQuestions = () => {
                        variant="outline"
                       size="sm"
                       className="gap-2"
+                      aria-label="Create folder"
                       onClick={() => {
                         setViewMode("folders");
                       }}
@@ -475,6 +477,7 @@ const DSAQuestions = () => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Clear search"
                   onClick={() => setSearchQuery("")}
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                 >
@@ -523,6 +526,7 @@ const DSAQuestions = () => {
                   size="sm"
                   onClick={goToRandomQuestion}
                   disabled={unsolvedCount === 0}
+                  aria-label="Pick random unsolved question"
                   className="gap-1.5 ml-auto"
                 >
                   <Shuffle className="h-3.5 w-3.5" />
@@ -707,6 +711,7 @@ const DSAQuestionRow = ({
                 size="icon"
                 onClick={onToggleSolved}
                 disabled={!isLoggedIn}
+                aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
                 className={cn("h-8 w-8", isSolved && "text-emerald-500")}
               >
                 <CheckCircle2 className={cn("h-4 w-4", isSolved && "fill-emerald-500")} />
@@ -723,6 +728,7 @@ const DSAQuestionRow = ({
                 size="icon"
                 onClick={onToggleRevision}
                 disabled={!isLoggedIn}
+                aria-label={isRevision ? "Remove from revision" : "Add to revision"}
                 className={cn("h-8 w-8", isRevision && "text-amber-500")}
               >
                 <Bookmark className={cn("h-4 w-4", isRevision && "fill-amber-500")} />
