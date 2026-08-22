@@ -141,6 +141,7 @@ export const QuizPlayer = ({ questions, timeLimit, onComplete, onExit }: QuizPla
                   variant="ghost"
                   size="icon"
                   onClick={toggleFlag}
+                  aria-label={flagged.includes(currentIndex) ? "Unflag question" : "Flag question"}
                   className={cn(
                     "flex-shrink-0",
                     flagged.includes(currentIndex) && "text-yellow-500"
