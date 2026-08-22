@@ -145,7 +145,18 @@ const ArrayField = ({
         ))}
       </div>
     ) : (
-      <div className="p-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all" onClick={onEdit}>
+      <div
+        className="p-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+        role="button"
+        tabIndex={0}
+        onClick={onEdit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onEdit();
+          }
+        }}
+      >
         <Plus className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
         <p className="text-xs text-muted-foreground">No items added</p>
       </div>
