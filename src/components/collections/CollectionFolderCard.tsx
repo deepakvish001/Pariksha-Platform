@@ -59,7 +59,15 @@ const CollectionFolderCard = ({ folder, index, onSelect, onShare, onColorChange,
       className="group relative"
     >
       <div
+        role="button"
+        tabIndex={0}
         onClick={() => onSelect(folder)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(folder);
+          }
+        }}
         className={cn(
           "relative h-full rounded-2xl border border-white/[0.05] bg-black/40 backdrop-blur-2xl p-5 cursor-pointer",
           "transition-all duration-300",

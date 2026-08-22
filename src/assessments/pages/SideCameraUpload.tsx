@@ -691,7 +691,15 @@ export default function SideCameraUploadPage() {
       {previewIdx !== null && pages[previewIdx] && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+          role="button"
+          tabIndex={0}
           onClick={() => setPreviewIdx(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+              e.preventDefault();
+              setPreviewIdx(null);
+            }
+          }}
         >
           <div className="flex-1 grid place-items-center p-4">
             <img
