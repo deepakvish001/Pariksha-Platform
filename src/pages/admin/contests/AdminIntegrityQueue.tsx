@@ -199,7 +199,7 @@ export default function AdminIntegrityQueue() {
                         </Button>
                         {r.public_token && (
                           <Button asChild size="sm" variant="ghost">
-                            <Link to={`/verify/${r.public_token}`} target="_blank" rel="noopener">
+                            <Link to={`/verify/${r.public_token}`} target="_blank" rel="noopener" aria-label="Open public verification page">
                               <ExternalLink className="h-3 w-3" />
                             </Link>
                           </Button>

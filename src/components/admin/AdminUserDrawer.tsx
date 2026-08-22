@@ -65,7 +65,7 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
               </div>
               {profile?.username && (
                 <Button asChild variant="outline" size="sm">
-                  <Link to={`/u/${profile.username}`} target="_blank">
+                  <Link to={`/u/${profile.username}`} target="_blank" aria-label="View public profile">
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                 </Button>

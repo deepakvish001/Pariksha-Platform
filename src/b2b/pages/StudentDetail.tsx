@@ -134,7 +134,7 @@ export default function B2BStudentDetail() {
     <OrgShell
       title={
         <div className="flex items-center gap-2">
-          <Link to={`${basePath}/students`} className="opacity-70 hover:opacity-100">
+          <Link to={`${basePath}/students`} className="opacity-70 hover:opacity-100" aria-label="Back to students">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <span>{student.full_name || student.email}</span>
