@@ -176,7 +176,7 @@ export default function ProctoringTriagePanel({ assessmentId }: { assessmentId: 
                 <SelectItem value="clean">Clean</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm" variant="ghost" onClick={refresh} disabled={loading}>
+            <Button size="sm" variant="ghost" onClick={refresh} disabled={loading} aria-label="Refresh">
               <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
