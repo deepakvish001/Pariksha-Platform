@@ -234,7 +234,7 @@ export default function ExperienceSubmit() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Round {i + 1}</span>
               {rounds.length > 1 && (
-                <Button size="icon" variant="ghost" onClick={() => setRounds((rr) => rr.filter((_, idx) => idx !== i))}>
+                <Button size="icon" variant="ghost" aria-label={`Remove round ${i + 1}`} onClick={() => setRounds((rr) => rr.filter((_, idx) => idx !== i))}>
                   <Trash2 className="size-4" />
                 </Button>
               )}
