@@ -179,9 +179,10 @@ const OutreachTemplateCard = ({
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 className={`h-9 w-9 rounded-xl transition-all ${
-                  isFavorite 
-                    ? "text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20 dark:bg-yellow-500/20 dark:hover:bg-yellow-500/30 shadow-lg shadow-yellow-500/20 dark:shadow-yellow-500/30" 
+                  isFavorite
+                    ? "text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20 dark:bg-yellow-500/20 dark:hover:bg-yellow-500/30 shadow-lg shadow-yellow-500/20 dark:shadow-yellow-500/30"
                     : "text-muted-foreground hover:text-yellow-500 hover:bg-yellow-500/10 dark:hover:bg-yellow-500/20"
                 }`}
                 onClick={handleFavorite}
@@ -191,6 +192,7 @@ const OutreachTemplateCard = ({
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="View template"
                 className="h-9 w-9 rounded-xl text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 dark:group-hover:bg-primary/20 transition-all"
               >
                 <ChevronRight className="h-4 w-4" />
