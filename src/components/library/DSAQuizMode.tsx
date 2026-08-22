@@ -530,7 +530,7 @@ const DSA_TIMED_CHALLENGES: QuizPreset[] = [
              <Badge variant="outline" className={getDifficultyStyles(currentQuestion?.difficulty || "Easy")}>{currentQuestion?.difficulty}</Badge>
            </div>
            <div className="flex items-center gap-2">
-             <Button variant="ghost" size="icon" onClick={() => setIsPaused(!isPaused)}>
+             <Button variant="ghost" size="icon" aria-label={isPaused ? "Resume quiz" : "Pause quiz"} onClick={() => setIsPaused(!isPaused)}>
                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
              </Button>
              <div className={cn("flex items-center gap-1 font-mono text-lg", getTimeColor())}>
