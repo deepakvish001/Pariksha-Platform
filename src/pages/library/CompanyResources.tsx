@@ -481,6 +481,7 @@ const CompanyResources = () => {
               size="sm"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
+              aria-label="Previous page"
               className="gap-1"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -512,6 +513,7 @@ const CompanyResources = () => {
               size="sm"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
+              aria-label="Next page"
               className="gap-1"
             >
               <span className="hidden sm:inline">Next</span>

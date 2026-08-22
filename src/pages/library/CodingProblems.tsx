@@ -803,6 +803,7 @@ const CodingProblems = () => {
                   onClick={toggleFocusMode}
                   className="gap-1.5 h-9"
                   aria-pressed={focusMode}
+                  aria-label={focusMode ? "Focus on" : "Focus"}
                 >
                   <Focus className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">
@@ -818,12 +819,12 @@ const CodingProblems = () => {
             </Tooltip>
           </TooltipProvider>
           <Button asChild variant="outline" size="sm" className="gap-1.5 h-9">
-            <Link to="/library/problems/leaderboard">
+            <Link to="/library/problems/leaderboard" aria-label="Leaderboard">
               <Trophy className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Leaderboard</span>
             </Link>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleShareFilters} className="gap-1.5 h-9">
+          <Button variant="outline" size="sm" onClick={handleShareFilters} aria-label="Share filters" className="gap-1.5 h-9">
             <Share2 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Share filters</span>
           </Button>
