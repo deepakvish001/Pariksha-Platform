@@ -57,7 +57,15 @@ import { useFollows } from "@/hooks/useFollows";
       initial={{ opacity: 0, y: -5 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex items-center gap-3 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+      role="button"
+      tabIndex={0}
       onClick={() => compareWith(user)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          compareWith(user);
+        }
+      }}
     >
       <Avatar className="h-8 w-8">
         <AvatarImage src={user.avatarUrl || undefined} />

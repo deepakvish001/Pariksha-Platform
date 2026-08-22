@@ -125,11 +125,19 @@ const AstraHistoryPanel = ({
                   className={cn(
                     "group flex items-center gap-2 p-3 rounded-xl transition-all duration-200",
                     editingId === conv.id ? "" : "cursor-pointer",
-                    currentConversationId === conv.id 
-                      ? "bg-primary/10 border border-primary/20" 
+                    currentConversationId === conv.id
+                      ? "bg-primary/10 border border-primary/20"
                       : "bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.05]"
                   )}
+                  role={editingId === conv.id ? undefined : "button"}
+                  tabIndex={editingId === conv.id ? undefined : 0}
                   onClick={() => editingId !== conv.id && handleLoadConversation(conv.id)}
+                  onKeyDown={(e) => {
+                    if (editingId !== conv.id && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleLoadConversation(conv.id);
+                    }
+                  }}
                 >
                   {editingId === conv.id ? (
                     <>
