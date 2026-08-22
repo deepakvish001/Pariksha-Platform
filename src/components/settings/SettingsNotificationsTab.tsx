@@ -219,6 +219,7 @@ const SettingsNotificationsTab = () => {
                   checked={prefs[type.id as keyof NotificationPrefs]}
                   onCheckedChange={() => togglePref(type.id as keyof NotificationPrefs)}
                   className="data-[state=checked]:bg-primary"
+                  aria-label={type.title}
                 />
               </div>
               {index < notificationTypes.length - 1 && (

@@ -409,6 +409,7 @@ export default function ArenaModeration() {
                     <div className="flex items-center gap-2">
                       <Checkbox
                         checked={checked}
+                        aria-label="Select report"
                         onCheckedChange={(v) => {
                           setSelectedReports((prev) => {
                             const next = new Set(prev);
@@ -542,6 +543,7 @@ export default function ArenaModeration() {
                 <div key={b.id} className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5 text-sm">
                   <Checkbox
                     checked={checked}
+                    aria-label="Select block"
                     onCheckedChange={(v) => {
                       setSelectedBlocks((prev) => {
                         const next = new Set(prev);

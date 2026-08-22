@@ -395,6 +395,7 @@ export function InvitesPanel({ assessmentId }: { assessmentId: string }) {
         <div className="b2b-card divide-y">
           <div className="px-3 py-2 flex items-center gap-3 bg-[hsl(var(--muted))/0.3]">
             <Checkbox
+              aria-label="Select all"
               checked={
                 selected.size > 0 && selected.size === visible.length
                   ? true

@@ -301,14 +301,14 @@ export function ShareDialog({
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <span>Show resume</span>
                 </div>
-                <Switch checked={allowResume} onCheckedChange={setAllowResume} />
+                <Switch checked={allowResume} onCheckedChange={setAllowResume} aria-label="Show resume" />
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <span>Show contact info</span>
                 </div>
-                <Switch checked={allowContact} onCheckedChange={setAllowContact} />
+                <Switch checked={allowContact} onCheckedChange={setAllowContact} aria-label="Show contact info" />
               </div>
             </div>
 
