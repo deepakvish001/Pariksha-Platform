@@ -336,7 +336,7 @@ export default function Experiences() {
             {activeChips.map((c) => (
               <Badge key={c.key} variant="secondary" className="gap-1 pr-1">
                 {c.label}
-                <button onClick={c.onRemove} className="hover:bg-background/40 rounded-full p-0.5">
+                <button onClick={c.onRemove} aria-label={`Remove filter: ${c.label}`} className="hover:bg-background/40 rounded-full p-0.5">
                   <X className="size-3" />
                 </button>
               </Badge>

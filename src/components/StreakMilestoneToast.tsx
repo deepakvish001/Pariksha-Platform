@@ -62,6 +62,7 @@
            >
              <button
                onClick={onClose}
+               aria-label="Close"
                className="absolute top-3 right-3 p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
              >
                <X className="h-4 w-4 text-white" />

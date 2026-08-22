@@ -637,7 +637,7 @@ const DashboardProfile = () => {
                     {(editForm[field] as string[] || []).map((item, index) => (
                       <Badge key={index} variant="secondary" className="gap-1 pr-1">
                         {item}
-                        <button onClick={() => removeArrayItem(field, index)} className="ml-1 hover:text-destructive"><X className="w-3 h-3" /></button>
+                        <button onClick={() => removeArrayItem(field, index)} aria-label={`Remove ${item}`} className="ml-1 hover:text-destructive"><X className="w-3 h-3" /></button>
                       </Badge>
                     ))}
                   </div>
