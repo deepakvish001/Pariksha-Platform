@@ -212,6 +212,7 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
               type="button"
               variant="ghost"
               size="icon"
+              aria-label={`Remove link ${i + 1}`}
               onClick={() => setLinks((arr) => arr.filter((_, idx) => idx !== i))}
             >
               <Trash2 className="h-4 w-4" />
