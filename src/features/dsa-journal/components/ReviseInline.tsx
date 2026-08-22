@@ -57,8 +57,9 @@ export default function ReviseInline({
         <form onSubmit={submit} className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-[11px]">Attempts</Label>
+              <Label htmlFor="revise-inline-attempts" className="text-[11px]">Attempts</Label>
               <Input
+                id="revise-inline-attempts"
                 type="number"
                 min={1}
                 className="h-8"
@@ -67,8 +68,9 @@ export default function ReviseInline({
               />
             </div>
             <div>
-              <Label className="text-[11px]">Time (min)</Label>
+              <Label htmlFor="revise-inline-time" className="text-[11px]">Time (min)</Label>
               <Input
+                id="revise-inline-time"
                 type="number"
                 min={0}
                 className="h-8"
@@ -84,8 +86,9 @@ export default function ReviseInline({
             <Switch checked={clean} onCheckedChange={setClean} aria-label="Solved cleanly in 1 try?" />
           </div>
           <div>
-            <Label className="text-[11px]">Note</Label>
+            <Label htmlFor="revise-inline-note" className="text-[11px]">Note</Label>
             <Textarea
+              id="revise-inline-note"
               rows={2}
               value={note}
               onChange={(e) => setNote(e.target.value)}

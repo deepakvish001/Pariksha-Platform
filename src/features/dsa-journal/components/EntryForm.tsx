@@ -160,8 +160,8 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
     >
       <div className="flex items-start gap-2">
         <div className="flex-1">
-          <Label>Problem title *</Label>
-          <Input {...form.register("title")} placeholder="e.g. Two Sum" />
+          <Label htmlFor="entry-title">Problem title *</Label>
+          <Input id="entry-title" {...form.register("title")} placeholder="e.g. Two Sum" />
           {form.formState.errors.title && (
             <p className="text-xs text-destructive mt-1">
               {form.formState.errors.title.message}
@@ -231,24 +231,24 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div>
-          <Label>Topic</Label>
-          <Input {...form.register("topic")} placeholder="Array" />
+          <Label htmlFor="entry-topic">Topic</Label>
+          <Input id="entry-topic" {...form.register("topic")} placeholder="Array" />
         </div>
         <div>
-          <Label>Pattern</Label>
-          <Input {...form.register("pattern")} placeholder="Sliding Window" />
+          <Label htmlFor="entry-pattern">Pattern</Label>
+          <Input id="entry-pattern" {...form.register("pattern")} placeholder="Sliding Window" />
         </div>
         <div>
-          <Label>Algorithm</Label>
-          <Input {...form.register("algorithm")} placeholder="Two pointers" />
+          <Label htmlFor="entry-algorithm">Algorithm</Label>
+          <Input id="entry-algorithm" {...form.register("algorithm")} placeholder="Two pointers" />
         </div>
         <div>
-          <Label>Difficulty</Label>
+          <Label htmlFor="entry-difficulty">Difficulty</Label>
           <Select
             value={form.watch("difficulty") ?? ""}
             onValueChange={(v) => form.setValue("difficulty", v as any)}
           >
-            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectTrigger id="entry-difficulty"><SelectValue placeholder="—" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Easy">Easy</SelectItem>
               <SelectItem value="Medium">Medium</SelectItem>
@@ -257,12 +257,12 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
           </Select>
         </div>
         <div>
-          <Label>Status</Label>
+          <Label htmlFor="entry-status">Status</Label>
           <Select
             value={form.watch("status")}
             onValueChange={(v) => form.setValue("status", v as any)}
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="entry-status"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="solved">Solved</SelectItem>
               <SelectItem value="partial">Partial</SelectItem>
@@ -271,16 +271,18 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
           </Select>
         </div>
         <div>
-          <Label>Time taken (min)</Label>
+          <Label htmlFor="entry-time-taken">Time taken (min)</Label>
           <Input
+            id="entry-time-taken"
             type="number"
             min={0}
             {...form.register("time_taken_min", { valueAsNumber: true })}
           />
         </div>
         <div>
-          <Label>Attempts till correct</Label>
+          <Label htmlFor="entry-attempts">Attempts till correct</Label>
           <Input
+            id="entry-attempts"
             type="number"
             min={1}
             {...form.register("attempts", { valueAsNumber: true })}
@@ -347,12 +349,12 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <Label>Language</Label>
+          <Label htmlFor="entry-language">Language</Label>
           <Select
             value={form.watch("language") ?? ""}
             onValueChange={(v) => form.setValue("language", v)}
           >
-            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectTrigger id="entry-language"><SelectValue placeholder="—" /></SelectTrigger>
             <SelectContent>
               {LANGUAGES.map((l) => (
                 <SelectItem key={l} value={l}>{l}</SelectItem>
@@ -361,12 +363,12 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
           </Select>
         </div>
         <div>
-          <Label>Time complexity</Label>
-          <Input {...form.register("time_complexity")} placeholder="O(n log n)" />
+          <Label htmlFor="entry-time-complexity">Time complexity</Label>
+          <Input id="entry-time-complexity" {...form.register("time_complexity")} placeholder="O(n log n)" />
         </div>
         <div>
-          <Label>Space complexity</Label>
-          <Input {...form.register("space_complexity")} placeholder="O(n)" />
+          <Label htmlFor="entry-space-complexity">Space complexity</Label>
+          <Input id="entry-space-complexity" {...form.register("space_complexity")} placeholder="O(n)" />
         </div>
       </div>
 
@@ -385,27 +387,29 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <Label>Tags (comma separated)</Label>
-          <Input {...form.register("tags")} placeholder="hashmap, prefix-sum" />
+          <Label htmlFor="entry-tags">Tags (comma separated)</Label>
+          <Input id="entry-tags" {...form.register("tags")} placeholder="hashmap, prefix-sum" />
         </div>
         <div>
-          <Label>Companies (comma separated)</Label>
-          <Input {...form.register("companies")} placeholder="Google, Amazon" />
+          <Label htmlFor="entry-companies">Companies (comma separated)</Label>
+          <Input id="entry-companies" {...form.register("companies")} placeholder="Google, Amazon" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <Label>Mistakes made</Label>
+          <Label htmlFor="entry-mistakes">Mistakes made</Label>
           <Textarea
+            id="entry-mistakes"
             rows={3}
             {...form.register("mistakes")}
             placeholder="Forgot to handle negative numbers..."
           />
         </div>
         <div>
-          <Label>Key learning</Label>
+          <Label htmlFor="entry-learnings">Key learning</Label>
           <Textarea
+            id="entry-learnings"
             rows={3}
             {...form.register("learnings")}
             placeholder="Use prefix sums when range-queries appear"
@@ -414,8 +418,9 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
       </div>
 
       <div>
-        <Label>Code snippet</Label>
+        <Label htmlFor="entry-code-snippet">Code snippet</Label>
         <Textarea
+          id="entry-code-snippet"
           rows={6}
           className="font-mono text-xs"
           {...form.register("code_snippet")}
@@ -424,8 +429,9 @@ export default function EntryForm({ dayId, entry, onDone }: Props) {
       </div>
 
       <div>
-        <Label>Notes (markdown)</Label>
+        <Label htmlFor="entry-notes-md">Notes (markdown)</Label>
         <Textarea
+          id="entry-notes-md"
           rows={4}
           className="font-mono text-xs"
           {...form.register("notes_md")}
