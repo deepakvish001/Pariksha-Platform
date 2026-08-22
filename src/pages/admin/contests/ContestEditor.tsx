@@ -237,7 +237,7 @@ const ContestEditor = () => {
                     <Input type="number" value={p.points} onChange={(e) => {
                       const next = [...problems]; next[i] = { ...p, points: Number(e.target.value) }; setProblems(next);
                     }} className="w-20" />
-                    <Button size="icon" variant="ghost" onClick={() => setProblems(problems.filter((_, j) => j !== i))}>
+                    <Button size="icon" variant="ghost" aria-label={`Remove ${p.problem_slug}`} onClick={() => setProblems(problems.filter((_, j) => j !== i))}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
