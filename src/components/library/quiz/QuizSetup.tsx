@@ -148,11 +148,20 @@ const QuizSetup = ({
                  return (
                    <div
                      key={cat}
+                     role="button"
+                     tabIndex={0}
+                     aria-pressed={enabledCategories[cat]}
                      onClick={() => setEnabledCategories({ ...enabledCategories, [cat]: !enabledCategories[cat] })}
+                     onKeyDown={(e) => {
+                       if (e.key === "Enter" || e.key === " ") {
+                         e.preventDefault();
+                         setEnabledCategories({ ...enabledCategories, [cat]: !enabledCategories[cat] });
+                       }
+                     }}
                      className={cn(
                        "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                       enabledCategories[cat] 
-                         ? `${config.bgColor} ${config.borderColor}` 
+                       enabledCategories[cat]
+                         ? `${config.bgColor} ${config.borderColor}`
                          : "bg-muted/50 opacity-50"
                      )}
                    >

@@ -233,12 +233,21 @@ const OutreachTemplateDetail = ({
               <h3 className="font-semibold mb-3">Related Templates</h3>
               <div className="space-y-2">
                 {relatedTemplates.map((t) => (
-                  <div 
-                    key={t.id} 
+                  <div
+                    key={t.id}
                     className="p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       setPlaceholderValues({});
                       setShowAI(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setPlaceholderValues({});
+                        setShowAI(false);
+                      }
                     }}
                   >
                     <div className="flex items-center justify-between">

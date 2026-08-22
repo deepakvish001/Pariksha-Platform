@@ -100,13 +100,21 @@ const ProfileField = ({
 }: { 
   label: string; value?: string; icon: React.ElementType; onEdit: () => void; isEmpty?: boolean;
 }) => (
-  <div 
+  <div
     className={cn(
       "flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer group",
-      isEmpty ? "border-dashed border-muted-foreground/30 bg-muted/30 hover:border-primary/50 hover:bg-primary/5" 
+      isEmpty ? "border-dashed border-muted-foreground/30 bg-muted/30 hover:border-primary/50 hover:bg-primary/5"
         : "border-border bg-card hover:bg-muted/50"
     )}
+    role="button"
+    tabIndex={0}
     onClick={onEdit}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onEdit();
+      }
+    }}
   >
     <div className="flex items-center gap-3">
       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", isEmpty ? "bg-muted" : "bg-primary/10")}>

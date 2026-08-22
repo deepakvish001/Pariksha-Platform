@@ -189,7 +189,15 @@ export function AddCandidatesCard({
               if (f) handleFile(f);
             }}
             className="border border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-[hsl(var(--muted))/0.4]"
+            role="button"
+            tabIndex={0}
             onClick={() => fileInput.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInput.current?.click();
+              }
+            }}
           >
             <input
               ref={fileInput}
