@@ -130,7 +130,7 @@ export default function AdminIntegrityQueue() {
               <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={() => void load()} disabled={loading}>
+          <Button variant="outline" size="icon" aria-label="Refresh" onClick={() => void load()} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
