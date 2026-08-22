@@ -95,6 +95,7 @@ const QuizzesAdmin = () => {
                     <td className="px-2 py-2 text-right">{Number(q.accuracy).toFixed(1)}%</td>
                     <td className="px-2 py-2 text-right">
                       <Button size="icon" variant="ghost" className="h-7 w-7"
+                        aria-label="Delete attempt"
                         onClick={() => { if (confirm("Delete this attempt?")) del.mutate(q.id); }}
                         disabled={del.isPending}>
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
