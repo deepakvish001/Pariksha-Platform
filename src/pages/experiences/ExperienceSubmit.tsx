@@ -155,29 +155,29 @@ export default function ExperienceSubmit() {
         <h2 className="font-semibold">Company & Role</h2>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <Label>Company *</Label>
-            <Input value={form.company_name} onChange={(e) => setForm((f) => ({ ...f, company_name: e.target.value }))} placeholder="e.g. Google" />
+            <Label htmlFor="exp-company">Company *</Label>
+            <Input id="exp-company" value={form.company_name} onChange={(e) => setForm((f) => ({ ...f, company_name: e.target.value }))} placeholder="e.g. Google" />
           </div>
           <div>
-            <Label>Role *</Label>
-            <Input value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder="e.g. SDE-1" />
+            <Label htmlFor="exp-role">Role *</Label>
+            <Input id="exp-role" value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} placeholder="e.g. SDE-1" />
           </div>
           <div>
-            <Label>Year</Label>
-            <Input type="number" value={form.year} onChange={(e) => setForm((f) => ({ ...f, year: Number(e.target.value) }))} />
+            <Label htmlFor="exp-year">Year</Label>
+            <Input id="exp-year" type="number" value={form.year} onChange={(e) => setForm((f) => ({ ...f, year: Number(e.target.value) }))} />
           </div>
           <div>
-            <Label>Location</Label>
-            <Input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="e.g. Bangalore" />
+            <Label htmlFor="exp-location">Location</Label>
+            <Input id="exp-location" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="e.g. Bangalore" />
           </div>
           <div>
-            <Label>CTC (LPA)</Label>
-            <Input type="number" step="0.1" value={form.ctc_lpa} onChange={(e) => setForm((f) => ({ ...f, ctc_lpa: e.target.value }))} placeholder="optional" />
+            <Label htmlFor="exp-ctc">CTC (LPA)</Label>
+            <Input id="exp-ctc" type="number" step="0.1" value={form.ctc_lpa} onChange={(e) => setForm((f) => ({ ...f, ctc_lpa: e.target.value }))} placeholder="optional" />
           </div>
           <div>
-            <Label>Type</Label>
+            <Label htmlFor="exp-type">Type</Label>
             <Select value={form.experience_type} onValueChange={(v: any) => setForm((f) => ({ ...f, experience_type: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="exp-type"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="on_campus">On-Campus</SelectItem>
                 <SelectItem value="off_campus">Off-Campus</SelectItem>
@@ -187,9 +187,9 @@ export default function ExperienceSubmit() {
             </Select>
           </div>
           <div>
-            <Label>Difficulty</Label>
+            <Label htmlFor="exp-difficulty">Difficulty</Label>
             <Select value={form.difficulty} onValueChange={(v) => setForm((f) => ({ ...f, difficulty: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="exp-difficulty"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="easy">Easy</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
@@ -198,9 +198,9 @@ export default function ExperienceSubmit() {
             </Select>
           </div>
           <div>
-            <Label>Outcome</Label>
+            <Label htmlFor="exp-outcome">Outcome</Label>
             <Select value={form.offer_status} onValueChange={(v: any) => setForm((f) => ({ ...f, offer_status: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="exp-outcome"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="selected">Selected</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
@@ -213,8 +213,9 @@ export default function ExperienceSubmit() {
       </Card>
 
       <Card className="p-6 space-y-3">
-        <Label>Overall experience * (markdown supported)</Label>
+        <Label htmlFor="exp-overall">Overall experience * (markdown supported)</Label>
         <Textarea
+          id="exp-overall"
           rows={6}
           value={form.overall_text}
           onChange={(e) => setForm((f) => ({ ...f, overall_text: e.target.value }))}
@@ -255,8 +256,8 @@ export default function ExperienceSubmit() {
       </Card>
 
       <Card className="p-6 space-y-3">
-        <Label>Tips for future candidates (optional)</Label>
-        <Textarea rows={4} value={form.tips} onChange={(e) => setForm((f) => ({ ...f, tips: e.target.value }))} placeholder="What worked, what to avoid, resources you'd recommend..." />
+        <Label htmlFor="exp-tips">Tips for future candidates (optional)</Label>
+        <Textarea id="exp-tips" rows={4} value={form.tips} onChange={(e) => setForm((f) => ({ ...f, tips: e.target.value }))} placeholder="What worked, what to avoid, resources you'd recommend..." />
       </Card>
 
       <div className="flex justify-end gap-2">
