@@ -137,6 +137,7 @@ export default function B2BTeam() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      aria-label={`Revoke invite for ${inv.email}`}
                       className="text-destructive hover:text-destructive"
                       onClick={() => {
                         if (!confirm(`Revoke invite for ${inv.email}?`)) return;
