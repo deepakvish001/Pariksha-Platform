@@ -414,6 +414,7 @@ const CompanyDetail = () => {
                   size="icon"
                   onClick={() => navigate("/library/companies")}
                   className="mr-2"
+                  aria-label="Back to companies"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
@@ -494,6 +495,7 @@ const CompanyDetail = () => {
                             size="sm"
                             onClick={() => setLayoutMode("sections")}
                             className="h-7 px-2 gap-1"
+                            aria-label="Section view"
                           >
                             <LayoutGrid className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline text-xs">Sections</span>
@@ -508,6 +510,7 @@ const CompanyDetail = () => {
                             size="sm"
                             onClick={() => setLayoutMode("tabs")}
                             className="h-7 px-2 gap-1"
+                            aria-label="Tab view"
                           >
                             <List className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline text-xs">Tabs</span>
@@ -526,6 +529,7 @@ const CompanyDetail = () => {
                             size="sm"
                             onClick={openSection ? collapseAllSections : expandAllSections}
                             className="h-7 px-2 gap-1"
+                            aria-label={openSection ? "Collapse section" : "Expand first section"}
                           >
                             {openSection ? (
                               <ChevronsDownUp className="h-3.5 w-3.5" />
@@ -598,6 +602,7 @@ const CompanyDetail = () => {
                         size="icon"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                         onClick={() => setSearchQuery("")}
+                        aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -648,6 +653,7 @@ const CompanyDetail = () => {
                             onClick={goToRandomQuestion}
                             disabled={unsolvedCount === 0}
                             className="h-9 w-9 md:h-10 md:w-10"
+                            aria-label="Pick a random unsolved question"
                           >
                             <Shuffle className="h-4 w-4" />
                           </Button>
@@ -668,7 +674,7 @@ const CompanyDetail = () => {
                         >
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={clearFilters} className="h-9 w-9 md:h-10 md:w-10">
+                              <Button variant="ghost" size="icon" onClick={clearFilters} className="h-9 w-9 md:h-10 md:w-10" aria-label="Clear all filters">
                                 <X className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
