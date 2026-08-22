@@ -148,6 +148,7 @@ const AstraHistoryPanel = ({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                        aria-label="Save name"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSaveRename();
@@ -159,6 +160,7 @@ const AstraHistoryPanel = ({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-white/60 hover:text-white hover:bg-white/[0.05]"
+                        aria-label="Cancel rename"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCancelRename();
@@ -182,6 +184,7 @@ const AstraHistoryPanel = ({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-white hover:bg-white/[0.05]"
+                        aria-label="Rename conversation"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStartRename(conv);
@@ -193,6 +196,7 @@ const AstraHistoryPanel = ({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-red-400 hover:bg-red-500/10"
+                        aria-label="Delete conversation"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDeleteConversation(conv.id);
