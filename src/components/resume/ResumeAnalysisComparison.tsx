@@ -96,7 +96,7 @@ export const ResumeAnalysisComparison = ({ analyses, onClose }: ResumeAnalysisCo
           <ArrowLeftRight className="h-5 w-5" />
           Compare Analyses
         </CardTitle>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" aria-label="Close comparison" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
