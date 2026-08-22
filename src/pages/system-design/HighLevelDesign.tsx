@@ -244,7 +244,7 @@ const HighLevelDesign: React.FC = () => {
 
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-6">
-            <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)}>
+            <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)} aria-label="Back to categories">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3 flex-1">
@@ -427,6 +427,7 @@ const HighLevelDesign: React.FC = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 shrink-0"
+                                    aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       toggleSolved(question.id);
@@ -448,6 +449,7 @@ const HighLevelDesign: React.FC = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 shrink-0"
+                                    aria-label={isRevision ? "Remove from revision" : "Add to revision"}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       toggleRevision(question.id);
