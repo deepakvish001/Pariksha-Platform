@@ -67,7 +67,7 @@ const QuizSetup = ({
              <p className="text-muted-foreground">Mix questions from all categories</p>
            </div>
          </div>
-         <Button variant="ghost" size="icon" onClick={onClose}>
+         <Button variant="ghost" size="icon" aria-label="Close quiz setup" onClick={onClose}>
            <X className="h-5 w-5" />
          </Button>
        </div>
