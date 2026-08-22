@@ -421,14 +421,14 @@ function VirtualizedShareList({
                     </div>
                     <div className="text-right">
                       <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCopy(r)}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Copy link" onClick={() => onCopy(r)}>
                           <Copy className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onOpen(r)}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="View share details" onClick={() => onOpen(r)}>
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
                         {st === "Active" && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" aria-label="Revoke link"
                             onClick={() => onRevoke(r.id)} disabled={revoking}>
                             <Ban className="h-3.5 w-3.5" />
                           </Button>
@@ -514,10 +514,10 @@ function ShareDetailsSheet({
             )}
             <div className="pt-2 flex items-center gap-2">
               <Input readOnly value={url} className="text-xs font-mono" />
-              <Button size="icon" variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}>
+              <Button size="icon" variant="outline" aria-label="Copy link" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}>
                 <Copy className="h-3.5 w-3.5" />
               </Button>
-              <Button size="icon" variant="outline" asChild>
+              <Button size="icon" variant="outline" aria-label="Open link" asChild>
                 <a href={url} target="_blank" rel="noreferrer"><ExternalLink className="h-3.5 w-3.5" /></a>
               </Button>
             </div>
