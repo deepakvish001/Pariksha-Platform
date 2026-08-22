@@ -178,7 +178,7 @@ export function PlayerTopBar({
             {proctoring && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="outline" onClick={onFullscreen} className="h-8 w-8 p-0">
+                  <Button size="sm" variant="outline" onClick={onFullscreen} className="h-8 w-8 p-0" aria-label="Enter fullscreen">
                     <Maximize2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
