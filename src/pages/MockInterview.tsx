@@ -264,17 +264,17 @@ export default function MockInterview() {
         <Card className="p-6 space-y-4">
           <div className="grid md:grid-cols-3 gap-4">
             <div>
-              <Label>Role</Label>
-              <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. SDE-1, Data Analyst" />
+              <Label htmlFor="mock-interview-role">Role</Label>
+              <Input id="mock-interview-role" value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. SDE-1, Data Analyst" />
             </div>
             <div>
-              <Label>Company <span className="text-muted-foreground">(optional)</span></Label>
-              <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Google" />
+              <Label htmlFor="mock-interview-company">Company <span className="text-muted-foreground">(optional)</span></Label>
+              <Input id="mock-interview-company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Google" />
             </div>
             <div>
-              <Label>Difficulty</Label>
+              <Label htmlFor="mock-interview-difficulty">Difficulty</Label>
               <Select value={difficulty} onValueChange={(v) => setDifficulty(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="mock-interview-difficulty"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>

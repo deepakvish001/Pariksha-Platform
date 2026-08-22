@@ -569,8 +569,8 @@ const DashboardProfile = () => {
 
             <TabsContent value="info" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label>Username</Label>
-                <Input placeholder="your-username" value={editForm.username || ""}
+                <Label htmlFor="profile-username">Username</Label>
+                <Input id="profile-username" placeholder="your-username" value={editForm.username || ""}
                   onChange={e => setEditForm(prev => ({ ...prev, username: e.target.value }))}
                   className={validationErrors.username ? "border-destructive" : ""} />
                 {validationErrors.username && (
@@ -579,30 +579,30 @@ const DashboardProfile = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Mobile Number</Label>
-                  <Input placeholder="+91 XXXXX XXXXX" value={editForm.mobile_number || ""}
+                  <Label htmlFor="profile-mobile">Mobile Number</Label>
+                  <Input id="profile-mobile" placeholder="+91 XXXXX XXXXX" value={editForm.mobile_number || ""}
                     onChange={e => setEditForm(prev => ({ ...prev, mobile_number: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Location</Label>
-                  <Input placeholder="City, Country" value={editForm.location || ""}
+                  <Label htmlFor="profile-location">Location</Label>
+                  <Input id="profile-location" placeholder="City, Country" value={editForm.location || ""}
                     onChange={e => setEditForm(prev => ({ ...prev, location: e.target.value }))} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Bio</Label>
-                <Textarea placeholder="Tell us about yourself..." value={editForm.bio || ""}
+                <Label htmlFor="profile-bio">Bio</Label>
+                <Textarea id="profile-bio" placeholder="Tell us about yourself..." value={editForm.bio || ""}
                   onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))} rows={3} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Occupation</Label>
-                  <Input placeholder="Software Engineer" value={editForm.occupation || ""}
+                  <Label htmlFor="profile-occupation">Occupation</Label>
+                  <Input id="profile-occupation" placeholder="Software Engineer" value={editForm.occupation || ""}
                     onChange={e => setEditForm(prev => ({ ...prev, occupation: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Website</Label>
-                  <Input placeholder="https://yourwebsite.com" value={editForm.website || ""}
+                  <Label htmlFor="profile-website">Website</Label>
+                  <Input id="profile-website" placeholder="https://yourwebsite.com" value={editForm.website || ""}
                     onChange={e => setEditForm(prev => ({ ...prev, website: e.target.value }))} />
                 </div>
               </div>
@@ -615,9 +615,9 @@ const DashboardProfile = () => {
                 { label: "Goals", field: "goals" as const, temp: tempGoal, setTemp: setTempGoal, placeholder: "Add a goal" },
               ].map(({ label, field, temp, setTemp, placeholder }) => (
                 <div key={field}>
-                  <Label>{label}</Label>
+                  <Label htmlFor={`profile-array-${field}`}>{label}</Label>
                   <div className="flex gap-2 mt-2">
-                    <Input placeholder={placeholder} value={temp}
+                    <Input id={`profile-array-${field}`} placeholder={placeholder} value={temp}
                       onChange={e => setTemp(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addArrayItem(field, temp, () => setTemp("")))} />
                     <Button type="button" onClick={() => addArrayItem(field, temp, () => setTemp(""))}><Plus className="w-4 h-4" /></Button>
@@ -648,21 +648,21 @@ const DashboardProfile = () => {
                   { label: "CodeChef", key: "codechef_url", icon: Code, placeholder: "https://codechef.com/users/username" },
                 ].map(({ label, key, icon: LinkIconComp, placeholder }) => (
                   <div key={key} className="space-y-2">
-                    <Label className="flex items-center gap-2"><LinkIconComp className="w-3.5 h-3.5" /> {label}</Label>
-                    <Input placeholder={placeholder} value={(editForm as any)[key] || ""}
+                    <Label htmlFor={`profile-link-${key}`} className="flex items-center gap-2"><LinkIconComp className="w-3.5 h-3.5" /> {label}</Label>
+                    <Input id={`profile-link-${key}`} placeholder={placeholder} value={(editForm as any)[key] || ""}
                       onChange={e => setEditForm(prev => ({ ...prev, [key]: e.target.value }))} />
                   </div>
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><Code className="w-3.5 h-3.5" /> GeeksForGeeks</Label>
-                  <Input placeholder="https://geeksforgeeks.org/user/username" value={editForm.geeksforgeeks_url || ""}
+                  <Label htmlFor="profile-geeksforgeeks" className="flex items-center gap-2"><Code className="w-3.5 h-3.5" /> GeeksForGeeks</Label>
+                  <Input id="profile-geeksforgeeks" placeholder="https://geeksforgeeks.org/user/username" value={editForm.geeksforgeeks_url || ""}
                     onChange={e => setEditForm(prev => ({ ...prev, geeksforgeeks_url: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2"><FileText className="w-3.5 h-3.5" /> Resume URL</Label>
-                  <Input placeholder="https://drive.google.com/your-resume" value={editForm.resume_url || ""}
+                  <Label htmlFor="profile-resume-url" className="flex items-center gap-2"><FileText className="w-3.5 h-3.5" /> Resume URL</Label>
+                  <Input id="profile-resume-url" placeholder="https://drive.google.com/your-resume" value={editForm.resume_url || ""}
                     onChange={e => setEditForm(prev => ({ ...prev, resume_url: e.target.value }))} />
                 </div>
               </div>
