@@ -50,10 +50,11 @@ const AstraInputArea = ({ onSubmit, isLoading }: AstraInputAreaProps) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Button 
-                type="submit" 
-                size="icon" 
+              <Button
+                type="submit"
+                size="icon"
                 disabled={isLoading || !inputValue.trim()}
+                aria-label="Send message"
                 className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none"
               >
                 {isLoading ? (
