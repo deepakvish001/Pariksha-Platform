@@ -56,6 +56,7 @@ const CollectionsHeader = ({
                 variant="ghost"
                 size="icon"
                 onClick={onBackToFolders}
+                aria-label="Back to folders"
                 className="flex-shrink-0 text-white/60 hover:text-white hover:bg-white/[0.05]"
               >
                 <ArrowLeft className="h-5 w-5" />
