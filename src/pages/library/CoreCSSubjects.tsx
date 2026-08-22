@@ -548,6 +548,7 @@ const CoreCSSubjects = () => {
                             <Checkbox
                               checked={isSolved(question.id)}
                               onCheckedChange={() => toggleSolved(question.id)}
+                              aria-label={isSolved(question.id) ? "Mark as unsolved" : "Mark as solved"}
                               className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                             />
                           </TableCell>
@@ -580,6 +581,7 @@ const CoreCSSubjects = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
+                                    aria-label={isRevision(question.id) ? "Remove from revision" : "Add to revision"}
                                     onClick={() => toggleRevision(question.id)}
                                   >
                                     <Bookmark
