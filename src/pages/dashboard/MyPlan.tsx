@@ -209,7 +209,7 @@ const MyPlan = () => {
               />
             )}
             {profile && !editProfileOpen && (
-              <Button variant="outline" size="sm" onClick={() => setEditProfileOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setEditProfileOpen(true)} aria-label="Edit profile">
                 <Settings2 className="h-3.5 w-3.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Edit profile</span>
               </Button>
@@ -231,7 +231,7 @@ const MyPlan = () => {
             {profile && plan && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" aria-label="Export">
                     <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
                     <span className="hidden sm:inline">Export</span>
                     <ChevronDown className="h-3 w-3 ml-1" />
@@ -265,7 +265,7 @@ const MyPlan = () => {
             {profile && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" disabled={generating}>
+                  <Button size="sm" disabled={generating} aria-label={plan ? "Re-plan" : "Generate plan"}>
                     {generating
                       ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                       : <RefreshCw className="h-3.5 w-3.5 sm:mr-1.5" />}

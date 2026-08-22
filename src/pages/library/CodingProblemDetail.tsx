@@ -993,7 +993,7 @@ const CodingProblemDetail = () => {
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
         <div className="flex items-center gap-3 min-w-0">
           <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2">
-            <Link to="/library/problems">
+            <Link to="/library/problems" aria-label="All Problems">
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">All Problems</span>
             </Link>
