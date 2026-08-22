@@ -522,6 +522,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
               size="icon"
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
               onClick={goToPrevious}
+              aria-label="Previous template"
             >
               <ChevronLeft className="h-6 w-6" />
             </Button>
@@ -530,19 +531,20 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
               size="icon"
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
               onClick={goToNext}
+              aria-label="Next template"
             >
               <ChevronRight className="h-6 w-6" />
             </Button>
 
             {/* Zoom Controls */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-1.5 border">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomOut}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomOut} aria-label="Zoom out">
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-sm text-muted-foreground w-12 text-center">
                 {Math.round(zoom * 100)}%
               </span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomIn}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomIn} aria-label="Zoom in">
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
