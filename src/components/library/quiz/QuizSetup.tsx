@@ -74,9 +74,17 @@ const QuizSetup = ({
  
         {/* Spaced Repetition Review Mode */}
         {stats.total > 0 && onStartReviewMode && (
-          <Card 
+          <Card
             className="cursor-pointer border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:border-amber-500/50 transition-colors"
+            role="button"
+            tabIndex={0}
             onClick={onStartReviewMode}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onStartReviewMode();
+              }
+            }}
           >
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -108,10 +116,18 @@ const QuizSetup = ({
           <h3 className="text-lg font-semibold mb-3">Quick Start</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {presets.map((preset) => (
-              <Card 
+              <Card
                 key={preset.name}
                 className="cursor-pointer hover:border-primary/50 transition-colors"
+                role="button"
+                tabIndex={0}
                 onClick={() => onStartQuiz(preset)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onStartQuiz(preset);
+                  }
+                }}
               >
                 <CardContent className="p-4 text-center">
                   <div className="flex items-center justify-center gap-1 mb-2">

@@ -63,9 +63,17 @@ const ContinueLearningSection = ({ sheets }: ContinueLearningSectionProps) => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card 
+            <Card
               className="group cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300"
+              role="button"
+              tabIndex={0}
               onClick={() => navigate(`/learn/sheets/${sheet.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(`/learn/sheets/${sheet.id}`);
+                }
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">

@@ -76,14 +76,22 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, lastActivit
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Card 
+      <Card
         className={cn(
           "relative h-full overflow-hidden cursor-pointer group",
           "border-border/50 hover:border-primary/30",
           "bg-gradient-to-br from-card to-card/80",
           "transition-all duration-300 hover:shadow-xl hover:shadow-primary/5"
         )}
+        role="button"
+        tabIndex={0}
         onClick={() => navigate(`/learn/sheets/${sheet.id}`)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate(`/learn/sheets/${sheet.id}`);
+          }
+        }}
       >
         {/* Category Color Strip */}
         <div className={cn("absolute top-0 left-0 right-0 h-1", categoryStyles.bg)} />
