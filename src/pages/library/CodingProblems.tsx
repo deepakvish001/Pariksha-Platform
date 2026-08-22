@@ -1230,6 +1230,7 @@ const CodingProblems = () => {
                   {selectionMode && (
                     <TableHead className="w-[44px]">
                       <Checkbox
+                        aria-label="Select all"
                         checked={
                           pageSlice.length > 0 &&
                           pageSlice.every((p) => selected.has(p.slug))

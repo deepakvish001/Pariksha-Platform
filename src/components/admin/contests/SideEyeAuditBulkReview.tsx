@@ -449,6 +449,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
                 <Checkbox
                   checked={visibleRows.length > 0 && visibleRows.every((r) => selected.has(r.id))}
                   onCheckedChange={toggleAll}
+                  aria-label="Select all"
                 />
               </th>
               <th className="p-2 text-left">Time</th>
@@ -462,7 +463,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
             {visibleRows.map((r) => (
               <tr key={r.id} className="border-t border-border/30 hover:bg-muted/20">
                 <td className="p-2">
-                  <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} />
+                  <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} aria-label="Select row" />
                 </td>
                 <td className="p-2 font-mono text-muted-foreground whitespace-nowrap">
                   {format(new Date(r.created_at), "HH:mm:ss")}

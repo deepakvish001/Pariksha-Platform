@@ -1390,6 +1390,7 @@ function McqEditor({ questionId }: { questionId: string }) {
               onCheckedChange={(v) =>
                 upsert.mutate({ id: o.id, question_id: questionId, body: o.body, is_correct: !!v, order_index: o.order_index })
               }
+              aria-label={`Mark "${o.body}" as correct`}
             />
             <span className="flex-1 text-sm">{o.body}</span>
             <Button variant="ghost" size="sm" onClick={() => del.mutate({ id: o.id, question_id: questionId })}>
@@ -1399,7 +1400,7 @@ function McqEditor({ questionId }: { questionId: string }) {
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <Checkbox checked={correct} onCheckedChange={(v) => setCorrect(!!v)} />
+        <Checkbox checked={correct} onCheckedChange={(v) => setCorrect(!!v)} aria-label="Mark new option as correct" />
         <Input value={body} onChange={(e) => setBody(e.target.value)} placeholder="New option…" />
         <Button
           variant="outline"

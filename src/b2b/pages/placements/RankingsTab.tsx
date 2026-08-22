@@ -811,6 +811,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                         if (v) next.add(r.student_id); else next.delete(r.student_id);
                         setSelected(next);
                       }}
+                      aria-label={`Select ${r.full_name || r.email}`}
                     />
                   </div>
                 </div>
@@ -918,6 +919,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                     <Checkbox
                       checked={!!visible.length && selected.size === visible.length}
                       onCheckedChange={toggleAll}
+                      aria-label="Select all"
                     />
                   </th>
                   <th className="text-left px-3 py-2 font-medium w-12">#</th>
@@ -939,6 +941,7 @@ export function RankingsTab({ orgId }: { orgId: string }) {
                     <td className="px-3 py-2">
                       <Checkbox
                         checked={selected.has(r.student_id)}
+                        aria-label={`Select ${r.full_name || r.email}`}
                         onCheckedChange={(v) => {
                           const next = new Set(selected);
                           if (v) next.add(r.student_id); else next.delete(r.student_id);

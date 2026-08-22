@@ -144,7 +144,7 @@ export const SideEyeAnomalyHistory = ({
           <div className="flex items-center gap-1 pl-1 border-l border-border/40">
             <Radio className={`h-3 w-3 ${autoRefresh ? "text-emerald-400" : "text-muted-foreground"}`} />
             <span className="text-[10px] text-muted-foreground">Auto</span>
-            <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} className="scale-75" />
+            <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} className="scale-75" aria-label="Auto-refresh" />
             {autoRefresh && (
               <Select value={String(intervalSec)} onValueChange={(v) => setIntervalSec(Number(v))}>
                 <SelectTrigger className="h-7 w-16 text-[10px]"><SelectValue /></SelectTrigger>
