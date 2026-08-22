@@ -208,8 +208,9 @@ export const SideEyeSettingsPanel = () => {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs">Recipient user IDs (one per line)</Label>
+        <Label htmlFor="sideeye-recipients" className="text-xs">Recipient user IDs (one per line)</Label>
         <Textarea
+          id="sideeye-recipients"
           value={recipientsText}
           onChange={(e) => setRecipientsText(e.target.value)}
           placeholder="00000000-0000-0000-0000-000000000000"
@@ -236,8 +237,9 @@ export const SideEyeSettingsPanel = () => {
             ["retention_days_recordings", "Recordings"],
           ] as const).map(([key, label]) => (
             <div key={key} className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground">{label}</Label>
+              <Label htmlFor={`sideeye-retention-${key}`} className="text-[11px] text-muted-foreground">{label}</Label>
               <Input
+                id={`sideeye-retention-${key}`}
                 type="number"
                 min={1}
                 max={365}

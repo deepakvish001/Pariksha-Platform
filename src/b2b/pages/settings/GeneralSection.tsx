@@ -25,8 +25,9 @@ export function GeneralSection({ org, canEdit, name, setName }: Props) {
         </div>
         <div className="space-y-4">
           <div>
-            <Label className="text-xs">Display name</Label>
+            <Label htmlFor="org-display-name" className="text-xs">Display name</Label>
             <Input
+              id="org-display-name"
               className="mt-1"
               value={name}
               onChange={(e) => setName(e.target.value)}

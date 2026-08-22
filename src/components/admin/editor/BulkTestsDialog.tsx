@@ -81,8 +81,9 @@ export const BulkTestsDialog = ({ trigger, onAdd, existing }: Props) => {
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Paste lines</Label>
+            <Label htmlFor="bulk-tests-paste">Paste lines</Label>
             <Textarea
+              id="bulk-tests-paste"
               rows={8}
               value={text}
               onChange={(e) => setText(e.target.value)}
