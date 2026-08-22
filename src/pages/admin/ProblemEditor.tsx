@@ -802,6 +802,7 @@ const ProblemEditor = () => {
                         [next[i - 1], next[i]] = [next[i], next[i - 1]];
                         update("examples", next);
                       }}
+                      aria-label={`Move example ${i + 1} up`}
                       title="Move up"
                     >
                       ↑
@@ -815,6 +816,7 @@ const ProblemEditor = () => {
                         [next[i + 1], next[i]] = [next[i], next[i + 1]];
                         update("examples", next);
                       }}
+                      aria-label={`Move example ${i + 1} down`}
                       title="Move down"
                     >
                       ↓
@@ -1476,12 +1478,12 @@ const ListEditor = ({
               <div className="flex shrink-0 items-center gap-1">
                 {numbered && (
                   <>
-                    <Button variant="ghost" size="icon" disabled={i === 0} onClick={() => {
+                    <Button variant="ghost" size="icon" disabled={i === 0} aria-label={`Move ${title.toLowerCase()} ${i + 1} up`} onClick={() => {
                       const next = [...items];
                       [next[i - 1], next[i]] = [next[i], next[i - 1]];
                       onChange(next);
                     }}>↑</Button>
-                    <Button variant="ghost" size="icon" disabled={i === items.length - 1} onClick={() => {
+                    <Button variant="ghost" size="icon" disabled={i === items.length - 1} aria-label={`Move ${title.toLowerCase()} ${i + 1} down`} onClick={() => {
                       const next = [...items];
                       [next[i + 1], next[i]] = [next[i], next[i + 1]];
                       onChange(next);

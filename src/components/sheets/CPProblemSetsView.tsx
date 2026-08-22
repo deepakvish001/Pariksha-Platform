@@ -600,10 +600,11 @@ const CPProblemSetsView = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="flex h-14 items-center gap-4 px-4 sm:px-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => navigate("/learn/sheets")}
+            aria-label="Back to Sheets"
             className="gap-1 shrink-0"
           >
             <ChevronRight className="h-4 w-4 rotate-180" />
