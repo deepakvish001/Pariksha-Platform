@@ -358,6 +358,7 @@ const ResumeAnalyser = () => {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
+                          aria-label="Previous demo scenario"
                           onClick={handlePrevDemo}
                         >
                           <ChevronLeft className="h-4 w-4" />
@@ -376,6 +377,7 @@ const ResumeAnalyser = () => {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
+                          aria-label="Next demo scenario"
                           onClick={handleNextDemo}
                         >
                           <ChevronRight className="h-4 w-4" />
