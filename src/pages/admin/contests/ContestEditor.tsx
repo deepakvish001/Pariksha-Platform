@@ -246,7 +246,7 @@ const ContestEditor = () => {
             </div>
           )}
           <div className="space-y-2 pt-2">
-            <Input placeholder="Search problems to add..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input aria-label="Search problems to add" placeholder="Search problems to add..." value={search} onChange={(e) => setSearch(e.target.value)} />
             <p className="text-xs text-muted-foreground">
               Private problems remain hidden from the library but become visible to registered contestants while this contest is live.
             </p>
