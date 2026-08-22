@@ -444,6 +444,7 @@ const DashboardProfile = () => {
                     </AvatarFallback>
                   </Avatar>
                   <Button size="icon" variant="secondary" className="absolute bottom-0 right-0 rounded-full h-9 w-9 shadow-lg"
+                    aria-label="Change profile photo"
                     onClick={() => requireAuth(() => fileInputRef.current?.click())} disabled={isUploadingAvatar}>
                     {isUploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
                   </Button>
