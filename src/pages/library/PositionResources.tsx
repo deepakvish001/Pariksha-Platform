@@ -341,6 +341,7 @@ const PositionResources = () => {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Clear search"
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                 onClick={() => setSearchQuery("")}
               >
@@ -383,6 +384,7 @@ const PositionResources = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={role.isFavorite ? "Remove from starred" : "Add to starred"}
                             className={cn(
                               "h-8 w-8 transition-colors",
                               role.isFavorite
