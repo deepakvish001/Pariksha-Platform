@@ -64,7 +64,7 @@ import { useXPGoalNotifications } from "@/hooks/useXPGoalNotifications";
              </div>
              <Popover open={isOpen} onOpenChange={setIsOpen}>
                <PopoverTrigger asChild>
-                 <Button variant="ghost" size="icon" className="h-7 w-7">
+                 <Button variant="ghost" size="icon" aria-label="Set XP goals" className="h-7 w-7">
                    <Settings className="h-3.5 w-3.5" />
                  </Button>
                </PopoverTrigger>
