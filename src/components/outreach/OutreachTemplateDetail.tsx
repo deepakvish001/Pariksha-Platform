@@ -148,10 +148,11 @@ const OutreachTemplateDetail = ({
               <div className="grid grid-cols-2 gap-3">
                 {template.placeholders.map((placeholder) => (
                   <div key={placeholder} className="space-y-1">
-                    <Label className="text-xs capitalize">
+                    <Label htmlFor={`outreach-placeholder-${placeholder}`} className="text-xs capitalize">
                       {placeholder.replace(/_/g, ' ')}
                     </Label>
                     <Input
+                      id={`outreach-placeholder-${placeholder}`}
                       placeholder={`Enter ${placeholder.replace(/_/g, ' ')}`}
                       value={placeholderValues[placeholder] || ''}
                       onChange={(e) => setPlaceholderValues(prev => ({

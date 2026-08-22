@@ -160,8 +160,9 @@ export function RetentionCard() {
       </div>
       <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto_auto] items-end">
         <div className="space-y-1">
-          <Label className="text-xs">Webcam snapshots — keep for (days)</Label>
+          <Label htmlFor="retention-card-snapshots" className="text-xs">Webcam snapshots — keep for (days)</Label>
           <Input
+            id="retention-card-snapshots"
             type="number"
             min={1}
             max={3650}
@@ -171,8 +172,9 @@ export function RetentionCard() {
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Proctoring events — keep for (days)</Label>
+          <Label htmlFor="retention-card-events" className="text-xs">Proctoring events — keep for (days)</Label>
           <Input
+            id="retention-card-events"
             type="number"
             min={1}
             max={3650}

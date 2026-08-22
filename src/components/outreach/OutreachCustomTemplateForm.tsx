@@ -117,9 +117,9 @@ const OutreachCustomTemplateForm = ({
           {/* Category & Platform */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Category</Label>
+              <Label htmlFor="outreach-category">Category</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as OutreachCategory)}>
-                <SelectTrigger>
+                <SelectTrigger id="outreach-category">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -132,9 +132,9 @@ const OutreachCustomTemplateForm = ({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Platform</Label>
+              <Label htmlFor="outreach-platform">Platform</Label>
               <Select value={platform} onValueChange={(v) => setPlatform(v as OutreachPlatform)}>
-                <SelectTrigger>
+                <SelectTrigger id="outreach-platform">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -198,9 +198,10 @@ Best,
 
           {/* Tags */}
           <div className="space-y-2">
-            <Label>Tags (optional)</Label>
+            <Label htmlFor="outreach-tag-input">Tags (optional)</Label>
             <div className="flex gap-2">
               <Input
+                id="outreach-tag-input"
                 placeholder="Add a tag..."
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
