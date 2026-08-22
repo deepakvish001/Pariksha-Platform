@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
@@ -614,8 +614,9 @@ const ProblemEditor = () => {
         <TabsContent value="basics">
           <Card className="space-y-4 p-4">
             <div>
-              <Label>Title</Label>
+              <Label htmlFor="problem-editor-title">Title</Label>
               <Input
+                id="problem-editor-title"
                 data-field="title"
                 className={fieldHighlightClass("title", highlightedField)}
                 value={form.title}
@@ -628,10 +629,11 @@ const ProblemEditor = () => {
               />
             </div>
             <div>
-              <Label>Slug</Label>
+              <Label htmlFor="problem-editor-slug">Slug</Label>
               {isNew ? (
                 <>
                   <Input
+                    id="problem-editor-slug"
                     data-field="slug"
                     className={fieldHighlightClass("slug", highlightedField)}
                     value={form.slug}
@@ -674,12 +676,12 @@ const ProblemEditor = () => {
               )}
             </div>
             <div>
-              <Label>Difficulty</Label>
+              <Label htmlFor="problem-editor-difficulty">Difficulty</Label>
               <Select
                 value={form.difficulty}
                 onValueChange={(v: any) => update("difficulty", v)}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="problem-editor-difficulty"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
@@ -702,9 +704,10 @@ const ProblemEditor = () => {
               </div>
             </div>
             <div>
-              <Label>Topics</Label>
+              <Label htmlFor="problem-editor-topics">Topics</Label>
               <div className="flex gap-2">
                 <Input
+                  id="problem-editor-topics"
                   value={topicInput}
                   onChange={(e) => setTopicInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1307,8 +1310,9 @@ const ProblemEditor = () => {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label>CPU time limit (seconds)</Label>
+                <Label htmlFor="problem-editor-cpu-limit">CPU time limit (seconds)</Label>
                 <Input
+                  id="problem-editor-cpu-limit"
                   data-field="cpu_time_limit_sec"
                   className={fieldHighlightClass("cpu_time_limit_sec", highlightedField)}
                   type="number"
@@ -1320,8 +1324,9 @@ const ProblemEditor = () => {
                 />
               </div>
               <div>
-                <Label>Memory limit (KB)</Label>
+                <Label htmlFor="problem-editor-memory-limit">Memory limit (KB)</Label>
                 <Input
+                  id="problem-editor-memory-limit"
                   data-field="memory_limit_kb"
                   className={fieldHighlightClass("memory_limit_kb", highlightedField)}
                   type="number"
@@ -1397,9 +1402,10 @@ const ListEditor = ({
 
   return (
     <Wrapper className={inline ? "space-y-2" : "space-y-2 p-4"} data-field={fieldPrefix} id={groupId}>
-      <Label>{title}</Label>
+      <Label htmlFor={`${groupId}-input`}>{title}</Label>
       <div className="flex gap-2">
         <Input
+          id={`${groupId}-input`}
           value={val}
           onChange={(e) => setVal(e.target.value)}
           placeholder={placeholder}
@@ -1716,16 +1722,20 @@ const SqlField = ({
   label: string;
   value: string;
   onChange: (v: string) => void;
-}) => (
-  <div>
-    <Label>{label}</Label>
-    <Textarea
-      rows={5}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="font-mono text-xs"
-    />
-  </div>
-);
+}) => {
+  const inputId = useId();
+  return (
+    <div>
+      <Label htmlFor={inputId}>{label}</Label>
+      <Textarea
+        id={inputId}
+        rows={5}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="font-mono text-xs"
+      />
+    </div>
+  );
+};
 
 export default ProblemEditor;
