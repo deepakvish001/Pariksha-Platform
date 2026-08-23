@@ -144,14 +144,14 @@ export const PlanOnboardingWizard = ({ open, onOpenChange, initial, onComplete }
                 <Label>Weekday study time</Label>
                 <span className="text-sm text-muted-foreground">{weekday} min/day</span>
               </div>
-              <Slider value={[weekday]} onValueChange={(v) => setWeekday(v[0])} min={15} max={300} step={15} />
+              <Slider value={[weekday]} onValueChange={(v) => setWeekday(v[0])} min={15} max={300} step={15} aria-label="Weekday study time" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Weekend study time</Label>
                 <span className="text-sm text-muted-foreground">{weekend} min/day</span>
               </div>
-              <Slider value={[weekend]} onValueChange={(v) => setWeekend(v[0])} min={15} max={480} step={15} />
+              <Slider value={[weekend]} onValueChange={(v) => setWeekend(v[0])} min={15} max={480} step={15} aria-label="Weekend study time" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Anything else? (optional)</Label>

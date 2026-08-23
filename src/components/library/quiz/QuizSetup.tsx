@@ -200,6 +200,7 @@ const QuizSetup = ({
                min={5}
                max={Math.min(50, allQuestionsCount)}
                step={5}
+               aria-label="Number of questions"
              />
            </div>
  
@@ -223,6 +224,7 @@ const QuizSetup = ({
                  min={5}
                  max={60}
                  step={5}
+                 aria-label="Time limit"
                />
              </div>
            )}

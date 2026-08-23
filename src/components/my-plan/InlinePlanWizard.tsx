@@ -181,7 +181,7 @@ export const InlinePlanWizard = ({ initial, onComplete }: Props) => {
                   {weekday} min/day · {(weekday * 5 / 60).toFixed(1)} hrs/week
                 </span>
               </div>
-              <Slider value={[weekday]} onValueChange={(v) => setWeekday(v[0])} min={15} max={300} step={15} />
+              <Slider value={[weekday]} onValueChange={(v) => setWeekday(v[0])} min={15} max={300} step={15} aria-label="Weekday study time" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -190,7 +190,7 @@ export const InlinePlanWizard = ({ initial, onComplete }: Props) => {
                   {weekend} min/day · {(weekend * 2 / 60).toFixed(1)} hrs/weekend
                 </span>
               </div>
-              <Slider value={[weekend]} onValueChange={(v) => setWeekend(v[0])} min={15} max={480} step={15} />
+              <Slider value={[weekend]} onValueChange={(v) => setWeekend(v[0])} min={15} max={480} step={15} aria-label="Weekend study time" />
             </div>
             <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-sm">
               <strong>Total weekly:</strong>{" "}
