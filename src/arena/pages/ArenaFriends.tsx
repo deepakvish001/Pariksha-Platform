@@ -667,6 +667,7 @@ export default function ArenaFriends() {
                 onValueChange={(v) =>
                   setFilters((f) => ({ ...f, eloMin: v[0] ?? 0, eloMax: v[1] ?? 3000 }))
                 }
+                aria-label="Elo range"
               />
             </div>
             <div>
@@ -680,6 +681,7 @@ export default function ArenaFriends() {
                 step={1}
                 value={[filters.minBattles]}
                 onValueChange={(v) => setFilters((f) => ({ ...f, minBattles: v[0] ?? 0 }))}
+                aria-label="Minimum battles"
               />
             </div>
             <div className="flex justify-end">
