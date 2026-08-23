@@ -424,6 +424,7 @@ export default function DsaStudioProblem() {
                     min={0.5}
                     max={2}
                     step={0.25}
+                    aria-label="Playback speed"
                     className="w-28"
                   />
                   <span className="text-[11px] text-muted-foreground w-10 text-right">{speed}x</span>
