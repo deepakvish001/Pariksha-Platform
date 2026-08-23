@@ -298,6 +298,7 @@ const FundamentalsQuizMode = ({ title, questions, sheetId, onClose }: Fundamenta
                     min={5}
                     max={Math.min(30, availableQuestions.length)}
                     step={5}
+                    aria-label="Number of questions"
                     className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -343,6 +344,7 @@ const FundamentalsQuizMode = ({ title, questions, sheetId, onClose }: Fundamenta
                       min={5}
                       max={60}
                       step={5}
+                      aria-label="Time limit"
                       className="w-full"
                     />
                   </div>
