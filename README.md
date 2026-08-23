@@ -1,73 +1,112 @@
-# Welcome to your Lovable project
+# Parikshaa
 
-## Project info
+Parikshaa runs secure, AI-proctored contests and structured learning for colleges — with proctoring, analytics, and integrity reports.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
+## Tech Stack
 
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (database, auth, edge functions)
 
-## How can I deploy this project?
+## Prerequisites
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- Node.js 20 or later
+- npm (comes with Node.js)
+- A Supabase project (for the database, auth, and edge functions)
 
-## Can I connect a custom domain to my Lovable project?
+## Getting Started
 
-Yes, you can!
+1. **Clone the repository**
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd pariksha-platform
+   ```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+2. **Install dependencies**
+
+   ```sh
+   npm install
+   ```
+
+3. **Configure environment variables**
+
+   Copy `.env.example` to `.env` and fill in your Supabase project credentials:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+   At minimum you need:
+
+   | Variable | Description |
+   | --- | --- |
+   | `VITE_SUPABASE_URL` | Your Supabase project URL |
+   | `VITE_SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/publishable key |
+   | `VITE_SUPABASE_PROJECT_ID` | Your Supabase project reference ID |
+
+   See the comments in `.env.example` for the remaining optional variables (site URL for canonical/OG links, feature flags, and end-to-end test credentials).
+
+4. **Start the dev server**
+
+   ```sh
+   npm run dev
+   ```
+
+   The app will be available at the URL printed in your terminal (typically `http://localhost:5173`).
+
+## Available Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server with hot reload |
+| `npm run build` | Type-check and build for production into `dist/` |
+| `npm run build:dev` | Build in development mode |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run ESLint over the project |
+| `npm test` | Run the unit test suite once (Vitest) |
+| `npm run test:watch` | Run the unit test suite in watch mode |
+| `npm run e2e` | Run end-to-end tests (Playwright) |
+| `npm run e2e:headed` | Run end-to-end tests with a visible browser |
+| `npm run e2e:ui` | Run end-to-end tests with the Playwright UI |
+
+## Backend (Supabase)
+
+The `supabase/` directory contains:
+
+- `migrations/` — SQL migrations for the database schema
+- `functions/` — Edge functions used for things like AI proctoring, quiz summaries, and notification emails
+- `config.toml` — Supabase project configuration
+
+If you're working against your own Supabase project, apply the migrations and deploy the edge functions using the [Supabase CLI](https://supabase.com/docs/guides/cli).
+
+## Testing
+
+- Unit tests live alongside the source under `src/` and run with Vitest (`npm test`).
+- End-to-end tests live in `e2e/` and run with Playwright (`npm run e2e`). Some end-to-end checks require the optional Supabase test credentials described in `.env.example`.
+
+## Building for Production
+
+```sh
+npm run build
+```
+
+This produces a static `dist/` folder that can be deployed to any static hosting provider (e.g. Vercel, Netlify, Cloudflare Pages, or your own server).
+
+## Project Structure
+
+```
+src/
+  arena/         # Contest/arena feature
+  components/    # Shared UI components
+  pages/         # Route-level pages
+  data/          # Static data and config
+supabase/
+  functions/     # Edge functions
+  migrations/    # Database migrations
+e2e/             # Playwright end-to-end tests
+scripts/         # Build and maintenance scripts
+```
